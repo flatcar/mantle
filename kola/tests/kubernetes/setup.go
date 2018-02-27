@@ -255,7 +255,7 @@ func stripSemverSuffix(v string) (string, error) {
 
 // Run and configure the coreos-kubernetes generic install scripts.
 func runInstallScript(c cluster.TestCluster, m platform.Machine, script string, options map[string]string) {
-	c.MustSSH(m, "sudo stat /usr/lib/coreos/kubelet-wrapper")
+	c.MustSSH(m, "sudo stat /usr/lib/flatcar/kubelet-wrapper")
 
 	var buffer = new(bytes.Buffer)
 
