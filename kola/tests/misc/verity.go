@@ -30,7 +30,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         Verity,
 		ClusterSize: 1,
-		Name:        "coreos.verity",
+		Name:        "flatcar.verity",
 	})
 }
 
@@ -52,7 +52,7 @@ func VerityVerify(c cluster.TestCluster) {
 	rootOffset := getKernelVerityHashOffset(c)
 
 	// extract verity hash from kernel
-	ddcmd := fmt.Sprintf("dd if=/boot/coreos/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
+	ddcmd := fmt.Sprintf("dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
 	hash := c.MustSSH(m, ddcmd)
 
 	// find /usr dev
@@ -85,13 +85,13 @@ func VerityCorruption(c cluster.TestCluster) {
 	}
 
 	// corrupt a file on disk and flush disk caches.
-	// try setting NAME=CoreOS to NAME=LulzOS in /usr/lib/os-release
+	// try setting NAME=CoreOS to NAME=LulzOSS in /usr/lib/os-release
 
 	// get usr device, probably vda3
 	usrdev := getUsrDeviceNode(c, m)
 
 	// poke bytes into /usr/lib/os-release
-	c.MustSSH(m, fmt.Sprintf(`echo NAME=LulzOS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
+	c.MustSSH(m, fmt.Sprintf(`echo NAME=LulzOSS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
 
 	// make sure we flush everything so cat has to go through to the device backing verity.
 	c.MustSSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches'")

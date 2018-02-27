@@ -73,14 +73,14 @@ do_ssh_keys() {
 trap do_ssh_keys EXIT
 
 # update atomicly so nothing reading update.conf fails
-cat >/etc/coreos/update.conf.new <<EOF
+cat >/etc/flatcar/update.conf.new <<EOF
 GROUP=developer
 SERVER=http://10.0.0.1:{{printf "%d" .Port}}/v1/update/
 EOF
-mv /etc/coreos/update.conf{.new,}
+mv /etc/flatcar/update.conf{.new,}
 
 # inject the dev key so official images can be used for testing
-cat >/etc/coreos/update-payload-key.pub.pem <<EOF
+cat >/etc/flatcar/update-payload-key.pub.pem <<EOF
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzFS5uVJ+pgibcFLD3kbY
 k02Edj0HXq31ZT/Bva1sLp3Ysv+QTv/ezjf0gGFfASdgpz6G+zTipS9AIrQr0yFR
@@ -91,7 +91,7 @@ EFkZphrGjiqiCdp9AAbAvE7a5rFcJf86YR73QX08K8BX7OMzkn3DsqdnWvLB3l3W
 5QIDAQAB
 -----END PUBLIC KEY-----
 EOF
-mount --bind /etc/coreos/update-payload-key.pub.pem \
+mount --bind /etc/flatcar/update-payload-key.pub.pem \
 	/usr/share/update_engine/update-payload-key.pub.pem
 
 # disable reboot so we have explicit control
@@ -177,7 +177,7 @@ func runUpdateTest() error {
 	}
 
 	// Invalidate USR-A to ensure the update is legit.
-	if out, stderr, err := m.SSH("sudo coreos-setgoodroot && " +
+	if out, stderr, err := m.SSH("sudo flatcar-setgoodroot && " +
 		"sudo wipefs /dev/disk/by-partlabel/USR-A"); err != nil {
 		return fmt.Errorf("invalidating USR-A failed: %s: %v: %s", out, err, stderr)
 	}
@@ -240,7 +240,7 @@ func newPayload() string {
 		plog.Fatalf("Building full update failed: %v", err)
 	}
 
-	return filepath.Join(dir, "coreos_production_update.gz")
+	return filepath.Join(dir, "flatcar_production_update.gz")
 }
 
 func newUserdata(qc *qemu.Cluster) (*conf.UserData, error) {
