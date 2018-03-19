@@ -48,7 +48,7 @@ systemd:
       # The regression was in rkt's handling of RKT_OPTS; if we get far enough
       # that rkt runs the kubelet successfully, we haven't hit this regression,
       # so just printing the version is enough.
-      ExecStart=/usr/lib/coreos/kubelet-wrapper --version
+      ExecStart=/usr/lib/flatcar/kubelet-wrapper --version
       [Install]
       WantedBy=multi-user.target
 `),
