@@ -96,9 +96,9 @@ func VersionsFromDir(dir string) (ver Versions, err error) {
 	}
 	defer f.Close()
 
-	ver, err = parseVersions(f, "COREOS_")
+	ver, err = parseVersions(f, "FLATCAR_")
 	if ver.SDKVersion == "" {
-		err = fmt.Errorf("Missing COREOS_SDK_VERSION in %s", f.Name())
+		err = fmt.Errorf("Missing FLATCAR_SDK_VERSION in %s", f.Name())
 	}
 
 	return
