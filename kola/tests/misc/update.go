@@ -43,20 +43,20 @@ func init() {
 	register.Register(&register.Test{
 		Run:         RebootIntoUSRB,
 		ClusterSize: 1,
-		Name:        "coreos.update.reboot",
+		Name:        "flatcar.update.reboot",
 		UserData:    disableUpdateEngine,
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadVerity,
 		ClusterSize: 1,
-		Name:        "coreos.update.badverity",
+		Name:        "flatcar.update.badverity",
 		Flags:       []register.Flag{register.NoEmergencyShellCheck},
 		UserData:    disableUpdateEngine,
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadUsr,
 		ClusterSize: 1,
-		Name:        "coreos.update.badusr",
+		Name:        "flatcar.update.badusr",
 		Flags:       []register.Flag{register.NoEmergencyShellCheck},
 		UserData:    disableUpdateEngine,
 	})
@@ -75,7 +75,7 @@ func RebootIntoUSRB(c cluster.TestCluster) {
 	c.MustSSH(m, "sudo dd if=/dev/disk/by-partlabel/USR-A of=/dev/disk/by-partlabel/USR-B bs=10M status=none")
 
 	// copy kernel
-	c.MustSSH(m, "sudo cp /boot/coreos/vmlinuz-a /boot/coreos/vmlinuz-b")
+	c.MustSSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b")
 
 	prioritizeUsr(c, m, "USR-B")
 	if err := m.Reboot(); err != nil {
@@ -97,10 +97,10 @@ func RecoverBadVerity(c cluster.TestCluster) {
 	c.MustSSH(m, "sudo dd if=/dev/disk/by-partlabel/USR-A of=/dev/disk/by-partlabel/USR-B bs=10M status=none")
 
 	// copy kernel
-	c.MustSSH(m, "sudo cp /boot/coreos/vmlinuz-a /boot/coreos/vmlinuz-b")
+	c.MustSSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b")
 
 	// invalidate verity hash on B kernel
-	c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/coreos/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<0000000000000000000000000000000000000000000000000000000000000000", getKernelVerityHashOffset(c)))
+	c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/flatcar/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<0000000000000000000000000000000000000000000000000000000000000000", getKernelVerityHashOffset(c)))
 
 	prioritizeUsr(c, m, "USR-B")
 	rebootWithEmergencyShellTimeout(c, m)
@@ -130,10 +130,10 @@ func RecoverBadUsr(c cluster.TestCluster) {
 	verityHash := match[1]
 
 	// copy kernel
-	c.MustSSH(m, "sudo cp /boot/coreos/vmlinuz-a /boot/coreos/vmlinuz-b")
+	c.MustSSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b")
 
 	// update verity hash on B kernel
-	c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/coreos/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<%s", getKernelVerityHashOffset(c), verityHash))
+	c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/flatcar/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<%s", getKernelVerityHashOffset(c), verityHash))
 
 	prioritizeUsr(c, m, "USR-B")
 	rebootWithEmergencyShellTimeout(c, m)
