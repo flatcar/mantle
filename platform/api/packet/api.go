@@ -55,12 +55,12 @@ var (
 
 	defaultInstallerImageBaseURL = map[string]string{
 		// HTTPS causes iPXE to fail on a "permission denied" error
-		"amd64-usr": "http://stable.release.core-os.net/amd64-usr/current",
-		"arm64-usr": "http://beta.release.core-os.net/arm64-usr/current",
+		"amd64-usr": "http://stable.release.flatcar-linux.net/amd64-usr/current",
+		"arm64-usr": "http://beta.release.flatcar-linux.net/arm64-usr/current",
 	}
 	defaultImageURL = map[string]string{
-		"amd64-usr": "https://alpha.release.core-os.net/amd64-usr/current/coreos_production_packet_image.bin.bz2",
-		"arm64-usr": "https://alpha.release.core-os.net/arm64-usr/current/coreos_production_packet_image.bin.bz2",
+		"amd64-usr": "https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2",
+		"arm64-usr": "https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_packet_image.bin.bz2",
 	}
 	defaultPlan = map[string]string{
 		"amd64-usr": "baremetal_0",
@@ -90,9 +90,9 @@ type Options struct {
 	Plan string
 	// The Container Linux board name
 	Board string
-	// e.g. http://alpha.release.core-os.net/amd64-usr/current
+	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current
 	InstallerImageBaseURL string
-	// e.g. https://alpha.release.core-os.net/amd64-usr/current/coreos_production_packet_image.bin.bz2
+	// e.g. https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2
 	ImageURL string
 
 	// Options for Google Storage
