@@ -85,7 +85,7 @@ func init() {
 
 	// gce-specific options
 	sv(&kola.GCEOptions.Image, "gce-image", "projects/coreos-cloud/global/images/family/coreos-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
-	sv(&kola.GCEOptions.Project, "gce-project", "coreos-gce-testing", "GCE project name")
+	sv(&kola.GCEOptions.Project, "gce-project", "iaguis", "GCE project name")
 	sv(&kola.GCEOptions.Zone, "gce-zone", "us-central1-a", "GCE zone name")
 	sv(&kola.GCEOptions.MachineType, "gce-machinetype", "n1-standard-1", "GCE machine type")
 	sv(&kola.GCEOptions.DiskType, "gce-disktype", "pd-ssd", "GCE disk type")
