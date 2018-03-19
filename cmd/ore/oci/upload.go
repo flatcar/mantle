@@ -41,7 +41,7 @@ func init() {
 	cmdUpload.Flags().StringVar(&uploadImageName, "name", "", "Image name")
 	cmdUpload.Flags().StringVar(&uploadImageBucket, "bucket", "image-upload", "OCI storage bucket name")
 	cmdUpload.Flags().StringVar(&uploadImageFile, "file",
-		build+"/images/amd64-usr/latest/coreos_production_oracle_oci_qcow_image.img",
+		build+"/images/amd64-usr/latest/flatcar_production_oracle_oci_qcow_image.img",
 		"Image file")
 	OCI.AddCommand(cmdUpload)
 }
