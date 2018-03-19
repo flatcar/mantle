@@ -42,7 +42,7 @@ var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "sdk")
 
 func TarballName(version string) string {
 	arch := system.PortageArch()
-	return fmt.Sprintf("coreos-sdk-%s-%s.tar.bz2", arch, version)
+	return fmt.Sprintf("flatcar-sdk-%s-%s.tar.bz2", arch, version)
 }
 
 func TarballURL(version string) string {
