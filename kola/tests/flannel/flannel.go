@@ -41,7 +41,7 @@ var (
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/coreos/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=flatcar-metadata.service\nAfter=flatcar-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       },
       {
@@ -56,7 +56,7 @@ var (
         "name": "flannel-docker-opts.service",
         "dropins": [{
           "name": "retry.conf",
-          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/coreos/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
+          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/flatcar/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
         }]
       },
       {
@@ -76,7 +76,7 @@ var (
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
+          "contents": "[Unit]\nWants=flatcar-metadata.service\nAfter=flatcar-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
         }]
       },
       {
@@ -91,7 +91,7 @@ var (
         "name": "flannel-docker-opts.service",
         "dropins": [{
           "name": "retry.conf",
-          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/coreos/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
+          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/flatcar/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
         }]
       },
       {
@@ -99,10 +99,10 @@ var (
         "enable": true
       },
       {
-        "name": "coreos-metadata.service",
+        "name": "flatcar-metadata.service",
         "dropins": [{
           "name": "qemu.conf",
-          "contents": "[Unit]\nConditionKernelCommandLine=coreos.oem.id"
+          "contents": "[Unit]\nConditionKernelCommandLine=flatcar.oem.id"
         }]
       }
     ]
@@ -114,7 +114,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:              udp,
 		ClusterSize:      3,
-		Name:             "coreos.flannel.udp",
+		Name:             "flatcar.flannel.udp",
 		ExcludePlatforms: []string{"qemu"},
 		UserData:         flannelConf.Subst("$type", "udp"),
 	})
@@ -122,7 +122,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:              udp,
 		ClusterSize:      3,
-		Name:             "coreos.flannel.udp.etcd2",
+		Name:             "flatcar.flannel.udp.etcd2",
 		ExcludePlatforms: []string{"qemu"},
 		UserData:         flannelConfEtcd2.Subst("$type", "udp"),
 		EndVersion:       semver.Version{Major: 1662},
@@ -131,7 +131,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:              vxlan,
 		ClusterSize:      3,
-		Name:             "coreos.flannel.vxlan",
+		Name:             "flatcar.flannel.vxlan",
 		ExcludePlatforms: []string{"qemu"},
 		UserData:         flannelConf.Subst("$type", "vxlan"),
 	})
@@ -139,7 +139,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:              vxlan,
 		ClusterSize:      3,
-		Name:             "coreos.flannel.vxlan.etcd2",
+		Name:             "flatcar.flannel.vxlan.etcd2",
 		ExcludePlatforms: []string{"qemu"},
 		UserData:         flannelConfEtcd2.Subst("$type", "vxlan"),
 		EndVersion:       semver.Version{Major: 1662},
