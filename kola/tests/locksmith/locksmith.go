@@ -35,7 +35,7 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "coreos.locksmith.cluster",
+		Name:        "flatcar.locksmith.cluster",
 		Run:         locksmithCluster,
 		ClusterSize: 3,
 		UserData: conf.Ignition(`{
@@ -47,7 +47,7 @@ func init() {
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/coreos/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=flatcar-metadata.service\nAfter=flatcar-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       }
     ]
@@ -55,7 +55,7 @@ func init() {
   "storage": {
     "files": [{
       "filesystem": "root",
-      "path": "/etc/coreos/update.conf",
+      "path": "/etc/flatcar/update.conf",
       "contents": { "source": "data:,REBOOT_STRATEGY=etcd-lock%0A" },
       "mode": 420
     }]
@@ -64,7 +64,7 @@ func init() {
 		ExcludePlatforms: []string{"qemu"}, // etcd-member requires networking
 	})
 	register.Register(&register.Test{
-		Name:        "coreos.locksmith.cluster.etcd2",
+		Name:        "flatcar.locksmith.cluster.etcd2",
 		Run:         locksmithCluster,
 		ClusterSize: 3,
 		UserData: conf.Ignition(`{
@@ -76,14 +76,14 @@ func init() {
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
+          "contents": "[Unit]\nWants=flatcar-metadata.service\nAfter=flatcar-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
         }]
       },
       {
-        "name": "coreos-metadata.service",
+        "name": "flatcar-metadata.service",
         "dropins": [{
           "name": "qemu.conf",
-          "contents": "[Unit]\nConditionKernelCommandLine=coreos.oem.id"
+          "contents": "[Unit]\nConditionKernelCommandLine=flatcar.oem.id"
         }]
       }
     ]
@@ -91,7 +91,7 @@ func init() {
   "storage": {
     "files": [{
       "filesystem": "root",
-      "path": "/etc/coreos/update.conf",
+      "path": "/etc/flatcar/update.conf",
       "contents": { "source": "data:,REBOOT_STRATEGY=etcd-lock%0A" },
       "mode": 420
     }]
@@ -100,12 +100,12 @@ func init() {
 		EndVersion: semver.Version{Major: 1662},
 	})
 	register.Register(&register.Test{
-		Name:        "coreos.locksmith.reboot",
+		Name:        "flatcar.locksmith.reboot",
 		Run:         locksmithReboot,
 		ClusterSize: 1,
 	})
 	register.Register(&register.Test{
-		Name:        "coreos.locksmith.tls",
+		Name:        "flatcar.locksmith.tls",
 		Run:         locksmithTLS,
 		ClusterSize: 1,
 		UserData: conf.Ignition(`{
@@ -137,7 +137,7 @@ func init() {
     "files": [
       {
         "filesystem": "root",
-        "path": "/etc/coreos/update.conf",
+        "path": "/etc/flatcar/update.conf",
         "contents": { "source": "data:,REBOOT_STRATEGY=etcd-lock%0A" },
         "mode": 420
       },
@@ -153,7 +153,7 @@ func init() {
 		ExcludePlatforms: []string{"qemu"}, // etcd-member requires networking
 	})
 	register.Register(&register.Test{
-		Name:        "coreos.locksmith.tls.etcd2",
+		Name:        "flatcar.locksmith.tls.etcd2",
 		Run:         locksmithTLS,
 		ClusterSize: 1,
 		UserData: conf.Ignition(`{
@@ -185,7 +185,7 @@ func init() {
     "files": [
       {
         "filesystem": "root",
-        "path": "/etc/coreos/update.conf",
+        "path": "/etc/flatcar/update.conf",
         "contents": { "source": "data:,REBOOT_STRATEGY=etcd-lock%0A" },
         "mode": 420
       },

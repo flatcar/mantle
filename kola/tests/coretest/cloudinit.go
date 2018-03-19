@@ -11,7 +11,7 @@ import (
 	"syscall"
 )
 
-const cloudinitBinPath = "/usr/bin/coreos-cloudinit"
+const cloudinitBinPath = "/usr/bin/flatcar-cloudinit"
 
 func read(filename string) (string, error) {
 	bytes, err := ioutil.ReadFile(filename)
