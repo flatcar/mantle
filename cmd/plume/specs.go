@@ -169,7 +169,7 @@ var (
 				IndexHTML:     true,
 			}},
 			GCE: gceSpec{
-				Project:     "coreos-gce-testing",
+				Project:     "iaguis",
 				Family:      "coreos-user",
 				Description: "CoreOS Container Linux development image",
 				Image:       "coreos_production_gce.tar.gz",
@@ -213,7 +213,7 @@ var (
 			BaseURL: "gs://builds.developer.core-os.net/boards",
 			Boards:  []string{"amd64-usr", "arm64-usr"},
 			GCE: gceSpec{
-				Project:     "coreos-gce-testing",
+				Project:     "iaguis",
 				Family:      "coreos-developer",
 				Description: "CoreOS Container Linux development image",
 				Image:       "coreos_production_gce.tar.gz",
