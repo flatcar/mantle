@@ -55,7 +55,7 @@ func init() {
 		"gs://users.developer.core-os.net/"+user+"/boards",
 		"Storage URL prefix")
 	cmdCreateImage.Flags().StringVar(&createImageName, "source-name",
-		"coreos_production_gce.tar.gz",
+		"flatcar_production_gce.tar.gz",
 		"Storage image name")
 	cmdCreateImage.Flags().BoolVar(&createImageForce, "force",
 		false, "overwrite existing GCE images without prompt")
