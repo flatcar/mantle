@@ -386,7 +386,7 @@ RequiredBy=multi-user.target
 				},
 				ignition.File{
 					Filesystem: "root",
-					Path:       "/root/bin/coreos-cloudinit",
+					Path:       "/root/bin/flatcar-cloudinit",
 					Contents: ignition.FileContents{
 						Source: ignition.Url{
 							Scheme: "data",
