@@ -234,7 +234,7 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 	err = waitForInstall(ipAddress)
 	if err != nil {
 		a.DeleteDevice(deviceID)
-		return nil, fmt.Errorf("timed out waiting for coreos-install: %v", err)
+		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
 	}
 
 	return device, nil
@@ -331,14 +331,14 @@ After=dev-sda.device
 
 [Service]
 Type=oneshot
-# Prevent coreos-install from validating cloud-config
+# Prevent flatcar-install from validating cloud-config
 Environment=PATH=/root/bin:/usr/sbin:/usr/bin
 
 ExecStart=/usr/bin/curl -fo image.bin.bz2 "%v"
 # We don't verify signatures because the iPXE script isn't verified either
 # (and, in fact, is transferred over HTTP)
 
-ExecStart=/usr/bin/coreos-install -d /dev/sda -f image.bin.bz2 %v /userdata
+ExecStart=/usr/bin/flatcar-install -d /dev/sda -f image.bin.bz2 %v /userdata
 
 ExecStart=/usr/bin/systemctl --no-block isolate reboot.target
 
@@ -386,7 +386,7 @@ RequiredBy=multi-user.target
 				},
 				ignition.File{
 					Filesystem: "root",
-					Path:       "/root/bin/coreos-cloudinit",
+					Path:       "/root/bin/flatcar-cloudinit",
 					Contents: ignition.FileContents{
 						Source: ignition.Url{
 							Scheme: "data",
@@ -420,7 +420,7 @@ RequiredBy=multi-user.target
 					Contents: discardServiceUnit,
 				},
 				ignition.SystemdUnit{
-					Name:     "coreos-install.service",
+					Name:     "flatcar-install.service",
 					Enable:   true,
 					Contents: installUnit,
 				},
@@ -459,8 +459,8 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 func (a *API) ipxeScript(userdataURL string) string {
 	return fmt.Sprintf(`#!ipxe
 set base-url %s
-kernel ${base-url}/coreos_production_pxe.vmlinuz initrd=coreos_production_pxe_image.cpio.gz coreos.first_boot=1 coreos.config.url=%s console=%s
-initrd ${base-url}/coreos_production_pxe_image.cpio.gz
+kernel ${base-url}/flatcar_production_pxe.vmlinuz initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 flatcar.config.url=%s console=%s
+initrd ${base-url}/flatcar_production_pxe_image.cpio.gz
 boot`, strings.TrimRight(a.opts.InstallerImageBaseURL, "/"), userdataURL, linuxConsole[a.opts.Board])
 }
 
