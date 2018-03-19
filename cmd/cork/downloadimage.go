@@ -46,7 +46,7 @@ var (
 
 func init() {
 	downloadImageCmd.Flags().StringVar(&downloadImageRoot,
-		"root", "https://alpha.release.core-os.net/amd64-usr/current/", "base URL of images")
+		"root", "https://alpha.release.flatcar-linux.net/amd64-usr/current/", "base URL of images")
 	downloadImageCmd.Flags().StringVar(&downloadImageCacheDir,
 		"cache-dir", filepath.Join(sdk.RepoCache(), "images"), "local dir for image cache")
 	downloadImageCmd.Flags().StringVar(&downloadImagePrefix,
@@ -101,9 +101,9 @@ func (platforms *platformList) Set(value string) error {
 
 func convertSpecialPaths(root string) string {
 	specialPaths := map[string]string{
-		"stable": "gs://stable.release.core-os.net/amd64-usr/current/",
-		"beta":   "gs://beta.release.core-os.net/amd64-usr/current/",
-		"alpha":  "gs://alpha.release.core-os.net/amd64-usr/current/",
+		"stable": "https://stable.release.flatcar-linux.net/amd64-usr/current/",
+		"beta":   "https://beta.release.flatcar-linux.net/amd64-usr/current/",
+		"alpha":  "https://alpha.release.flatcar-linux.net/amd64-usr/current/",
 	}
 	path, ok := specialPaths[root]
 	if ok {
