@@ -50,7 +50,7 @@ func init() {
 	downloadImageCmd.Flags().StringVar(&downloadImageCacheDir,
 		"cache-dir", filepath.Join(sdk.RepoCache(), "images"), "local dir for image cache")
 	downloadImageCmd.Flags().StringVar(&downloadImagePrefix,
-		"image-prefix", "coreos_production", "image filename prefix")
+		"image-prefix", "flatcar_production", "image filename prefix")
 	downloadImageCmd.Flags().StringVar(&downloadImageJSONKeyFile,
 		"json-key", "", "Google service account key for use with private buckets")
 	downloadImageCmd.Flags().StringVar(&downloadImageVerifyKeyFile,
