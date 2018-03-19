@@ -22,7 +22,7 @@ import (
 )
 
 // relaseAMIs matches the structure of the AMIs listed in our
-// coreos_production_ami_all.json release file
+// flatcar_production_ami_all.json release file
 type releaseAMIs struct {
 	AMIS []struct {
 		Name string `json:"name"`

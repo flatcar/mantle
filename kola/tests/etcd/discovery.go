@@ -31,7 +31,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         Discovery,
 		ClusterSize: 3,
-		Name:        "coreos.etcd2.discovery",
+		Name:        "flatcar.etcd2.discovery",
 		UserData: conf.Ignition(`{
   "ignition": { "version": "2.0.0" },
   "systemd": {
@@ -41,14 +41,14 @@ func init() {
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
+          "contents": "[Unit]\nWants=flatcar-metadata.service\nAfter=flatcar-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
         }]
       },
       {
-        "name": "coreos-metadata.service",
+        "name": "flatcar-metadata.service",
         "dropins": [{
           "name": "qemu.conf",
-          "contents": "[Unit]\nConditionKernelCommandLine=coreos.oem.id"
+          "contents": "[Unit]\nConditionKernelCommandLine=flatcar.oem.id"
         }]
       }
     ]
@@ -60,7 +60,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         Discovery,
 		ClusterSize: 3,
-		Name:        "coreos.etcd-member.discovery",
+		Name:        "flatcar.etcd-member.discovery",
 		UserData: conf.Ignition(`{
   "ignition": { "version": "2.0.0" },
   "systemd": {
@@ -70,7 +70,7 @@ func init() {
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/coreos/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=flatcar-metadata.service\nAfter=flatcar-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       }
     ]
@@ -82,7 +82,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         etcdMemberV2BackupRestore,
 		ClusterSize: 1,
-		Name:        "coreos.etcd-member.v2-backup-restore",
+		Name:        "flatcar.etcd-member.v2-backup-restore",
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
@@ -100,7 +100,7 @@ etcd:
 		// Clustersize of 1 to avoid needing private ips everywhere for clustering;
 		// this lets it run on more platforms, and also faster
 		ClusterSize: 1,
-		Name:        "coreos.etcd-member.etcdctlv3",
+		Name:        "flatcar.etcd-member.etcdctlv3",
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:

@@ -2,7 +2,7 @@ package kubernetes
 
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic.
 // The only change besides paramaterizing the env vars was:
-// s/COREOS_PUBLIC_IP/COREOS_PRIVATE so this works on GCE.
+// s/FLATCAR_PUBLIC_IP/FLATCAR_PRIVATE so this works on GCE.
 const workerInstallScript = `#!/bin/bash
 set -e
 
@@ -43,7 +43,7 @@ function init_config {
     fi
 
     if [ -z $ADVERTISE_IP ]; then
-        export ADVERTISE_IP=$(awk -F= '/COREOS_PRIVATE_IPV4/ {print $2}' /etc/environment)
+        export ADVERTISE_IP=$(awk -F= '/FLATCAR_PRIVATE_IPV4/ {print $2}' /etc/environment)
     fi
 
     for REQ in "${REQUIRED[@]}"; do
@@ -72,7 +72,7 @@ Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
   --volume=stage,kind=host,source=/tmp \
   --mount volume=stage,target=/tmp"
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-ExecStart=/usr/lib/coreos/kubelet-wrapper \
+ExecStart=/usr/lib/flatcar/kubelet-wrapper \
   --api-servers=${CONTROLLER_ENDPOINT} \
   --network-plugin-dir=/etc/kubernetes/cni/net.d \
   --network-plugin=cni \
