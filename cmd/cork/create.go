@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	coreosManifestURL = "https://github.com/coreos/manifest.git"
+	coreosManifestURL = "https://github.com/flatcar-linux/manifest.git"
 )
 
 var (
@@ -105,7 +105,7 @@ func init() {
 	creationFlags.StringVar(&manifestURL,
 		"manifest-url", coreosManifestURL, "Manifest git repo location")
 	creationFlags.StringVar(&manifestBranch,
-		"manifest-branch", "master", "Manifest git repo branch")
+		"manifest-branch", "flatcar-master", "Manifest git repo branch")
 	creationFlags.StringVar(&manifestName,
 		"manifest-name", "default.xml", "Manifest file name")
 	creationFlags.BoolVar(&repoVerify,
