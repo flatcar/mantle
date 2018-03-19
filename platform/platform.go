@@ -283,8 +283,8 @@ func CheckMachine(m Machine) error {
 		return fmt.Errorf("no /etc/os-release file: %v: %s", err, stderr)
 	}
 
-	if !bytes.Equal(out, []byte("ID=coreos")) {
-		return fmt.Errorf("not a Container Linux instance")
+	if !bytes.Equal(out, []byte("ID=flatcar")) {
+		return fmt.Errorf("not a Flatcar Linux instance")
 	}
 
 	if !m.RuntimeConf().AllowFailedUnits {
