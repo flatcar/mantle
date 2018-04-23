@@ -330,6 +330,10 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 		return
 	}
 
+	if azureProfile == "" {
+		return
+	}
+
 	prof, err := auth.ReadAzureProfile(azureProfile)
 	if err != nil {
 		plog.Fatalf("failed reading Azure profile: %v", err)
