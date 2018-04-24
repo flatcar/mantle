@@ -140,17 +140,8 @@ var (
 			BaseURL:      "gs://jenkins-flatcar/alpha/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
-			GCE: gceSpec{
-				// TODO(iaguis): switch to the final project
-				Project:     "iaguis",
-				Family:      "flatcar-alpha",
-				Description: "Flatcar, Flatcar alpha",
-				Licenses:    []string{"flatcar-alpha"},
-				Image:       "flatcar_production_gce.tar.gz",
-				Publish:     "flatcar_production_gce.txt",
-				Limit:       25,
-			},
-			Azure: azureSpec{},
+			GCE:          gceSpec{},
+			Azure:        azureSpec{},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
 				BaseDescription: "Flatcar Linux",
@@ -163,17 +154,8 @@ var (
 			BaseURL:      "gs://jenkins-flatcar/beta/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
-			GCE: gceSpec{
-				// TODO(iaguis): switch to the final project
-				Project:     "iaguis",
-				Family:      "flatcar-beta",
-				Description: "Flatcar, Flatcar beta",
-				Licenses:    []string{"flatcar-beta"},
-				Image:       "flatcar_production_gce.tar.gz",
-				Publish:     "flatcar_production_gce.txt",
-				Limit:       25,
-			},
-			Azure: azureSpec{},
+			GCE:          gceSpec{},
+			Azure:        azureSpec{},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
 				BaseDescription: "Flatcar Linux",
@@ -186,17 +168,8 @@ var (
 			BaseURL:      "gs://jenkins-flatcar/stable/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
-			GCE: gceSpec{
-				// TODO(iaguis): switch to the final project
-				Project:     "iaguis",
-				Family:      "flatcar-stable",
-				Description: "Flatcar, Flatcar stable",
-				Licenses:    []string{"flatcar-stable"},
-				Image:       "flatcar_production_gce.tar.gz",
-				Publish:     "flatcar_production_gce.txt",
-				Limit:       25,
-			},
-			Azure: azureSpec{},
+			GCE:          gceSpec{},
+			Azure:        azureSpec{},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
 				BaseDescription: "Flatcar Linux",
