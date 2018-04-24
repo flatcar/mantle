@@ -141,7 +141,8 @@ var (
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE: gceSpec{
-				Project:     "flatcar-cloud",
+				// TODO(iaguis): switch to the final project
+				Project:     "iaguis",
 				Family:      "flatcar-alpha",
 				Description: "Flatcar, Flatcar alpha",
 				Licenses:    []string{"flatcar-alpha"},
@@ -163,7 +164,8 @@ var (
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE: gceSpec{
-				Project:     "flatcar-cloud",
+				// TODO(iaguis): switch to the final project
+				Project:     "iaguis",
 				Family:      "flatcar-beta",
 				Description: "Flatcar, Flatcar beta",
 				Licenses:    []string{"flatcar-beta"},
@@ -185,7 +187,8 @@ var (
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE: gceSpec{
-				Project:     "flatcar-cloud",
+				// TODO(iaguis): switch to the final project
+				Project:     "iaguis",
 				Family:      "flatcar-stable",
 				Description: "Flatcar, Flatcar stable",
 				Licenses:    []string{"flatcar-stable"},
