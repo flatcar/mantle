@@ -147,19 +147,18 @@ var (
 				RecommendedVMSize: "Medium",
 				IconURI:           "coreos-globe-color-lg-100px.png",
 				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
 =======
 			GCE: gceSpec{
-				Project:     "flatcar-cloud",
+				// TODO(iaguis): switch to the final project
+				Project:     "iaguis",
 				Family:      "flatcar-alpha",
 				Description: "Flatcar, Flatcar alpha",
 				Licenses:    []string{"flatcar-alpha"},
 				Image:       "flatcar_production_gce.tar.gz",
 				Publish:     "flatcar_production_gce.txt",
 				Limit:       25,
+>>>>>>> plume: switch to current temp project
 			},
-			Azure: azureSpec{},
->>>>>>> plume: trim specs
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
 				BaseDescription: "Flatcar Linux",
@@ -185,19 +184,18 @@ var (
 				RecommendedVMSize: "Medium",
 				IconURI:           "coreos-globe-color-lg-100px.png",
 				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
 =======
 			GCE: gceSpec{
-				Project:     "flatcar-cloud",
+				// TODO(iaguis): switch to the final project
+				Project:     "iaguis",
 				Family:      "flatcar-beta",
 				Description: "Flatcar, Flatcar beta",
 				Licenses:    []string{"flatcar-beta"},
 				Image:       "flatcar_production_gce.tar.gz",
 				Publish:     "flatcar_production_gce.txt",
 				Limit:       25,
+>>>>>>> plume: switch to current temp project
 			},
-			Azure: azureSpec{},
->>>>>>> plume: trim specs
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
 				BaseDescription: "Flatcar Linux",
@@ -223,19 +221,18 @@ var (
 				RecommendedVMSize: "Medium",
 				IconURI:           "coreos-globe-color-lg-100px.png",
 				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
 =======
 			GCE: gceSpec{
-				Project:     "flatcar-cloud",
+				// TODO(iaguis): switch to the final project
+				Project:     "iaguis",
 				Family:      "flatcar-stable",
 				Description: "Flatcar, Flatcar stable",
 				Licenses:    []string{"flatcar-stable"},
 				Image:       "flatcar_production_gce.tar.gz",
 				Publish:     "flatcar_production_gce.txt",
 				Limit:       25,
+>>>>>>> plume: switch to current temp project
 			},
-			Azure: azureSpec{},
->>>>>>> plume: trim specs
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
 				BaseDescription: "Flatcar Linux",
