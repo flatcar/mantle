@@ -99,14 +99,8 @@ var (
 	awsBoards         = []string{"amd64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
 		azureEnvironmentSpec{
-			SubscriptionName:     "BizSpark",
+			SubscriptionName:     "AzureCloud",
 			AdditionalContainers: []string{"pre-publish"},
-		},
-		azureEnvironmentSpec{
-			SubscriptionName: "BlackForest",
-		},
-		azureEnvironmentSpec{
-			SubscriptionName: "Mooncake",
 		},
 	}
 	awsPartitions = []awsPartitionSpec{
