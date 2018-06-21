@@ -295,6 +295,7 @@ func (a *API) wrapUserData(conf *conf.Conf) (string, error) {
 		// metadata endpoint.
 		userDataOption = "-i /noop.ign -c"
 	}
+	escapedImageURL := strings.Replace(a.opts.ImageURL, "%", "%%", -1)
 
 	// make systemd units
 	discardSocketUnit := `
@@ -346,7 +347,7 @@ StandardError=journal+console
 
 [Install]
 RequiredBy=multi-user.target
-`, a.opts.ImageURL, userDataOption)
+`, escapedImageURL, userDataOption)
 
 	// make workarounds
 	noopIgnitionConfig := base64.StdEncoding.EncodeToString([]byte(`{"ignition": {"version": "2.1.0"}}`))
@@ -472,9 +473,9 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 			Facility:      a.opts.Facility,
 			Plan:          a.opts.Plan,
 			BillingCycle:  "hourly",
-			HostName:      hostname,
+			Hostname:      hostname,
 			OS:            "custom_ipxe",
-			IPXEScriptUrl: ipxeScriptURL,
+			IPXEScriptURL: ipxeScriptURL,
 			Tags:          []string{"mantle"},
 		})
 		if err == nil || response.StatusCode != 500 {
@@ -583,42 +584,52 @@ func waitForInstall(address string) (err error) {
 func (a *API) GC(gracePeriod time.Duration) error {
 	threshold := time.Now().Add(-gracePeriod)
 
-	devices, _, err := a.c.Devices.List(a.opts.Project)
-	if err != nil {
-		return fmt.Errorf("listing devices: %v", err)
+	page := packngo.ListOptions{
+		Page:    1,
+		PerPage: 1000,
 	}
-	for _, device := range devices {
-		tagged := false
-		for _, tag := range device.Tags {
-			if tag == "mantle" {
-				tagged = true
-				break
+
+	for {
+		devices, _, err := a.c.Devices.List(a.opts.Project, &page)
+		if err != nil {
+			return fmt.Errorf("listing devices: %v", err)
+		}
+		for _, device := range devices {
+			tagged := false
+			for _, tag := range device.Tags {
+				if tag == "mantle" {
+					tagged = true
+					break
+				}
+			}
+			if !tagged {
+				continue
+			}
+
+			switch device.State {
+			case "queued", "provisioning":
+				continue
+			}
+
+			if device.Locked {
+				continue
+			}
+
+			created, err := time.Parse(time.RFC3339, device.Created)
+			if err != nil {
+				return fmt.Errorf("couldn't parse %q: %v", device.Created, err)
+			}
+			if created.After(threshold) {
+				continue
+			}
+
+			if err := a.DeleteDevice(device.ID); err != nil {
+				return fmt.Errorf("couldn't delete device %v: %v", device.ID, err)
 			}
 		}
-		if !tagged {
-			continue
+		if len(devices) < page.PerPage {
+			return nil
 		}
-
-		switch device.State {
-		case "queued", "provisioning":
-			continue
-		}
-
-		if device.Locked {
-			continue
-		}
-
-		created, err := time.Parse(time.RFC3339, device.Created)
-		if err != nil {
-			return fmt.Errorf("couldn't parse %q: %v", device.Created, err)
-		}
-		if created.After(threshold) {
-			continue
-		}
-
-		if err := a.DeleteDevice(device.ID); err != nil {
-			return fmt.Errorf("couldn't delete device %v: %v", device.ID, err)
-		}
+		page.Page += 1
 	}
-	return nil
 }

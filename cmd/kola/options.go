@@ -21,6 +21,7 @@ import (
 
 	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/kola"
+	"github.com/coreos/mantle/platform"
 	"github.com/coreos/mantle/sdk"
 )
 
@@ -28,7 +29,7 @@ var (
 	outputDir          string
 	kolaPlatform       string
 	defaultTargetBoard = sdk.DefaultBoard()
-	kolaPlatforms      = []string{"aws", "do", "esx", "gce", "oci", "packet", "qemu"}
+	kolaPlatforms      = []string{"aws", "do", "esx", "gce", "packet", "qemu"}
 	kolaDefaultImages  = map[string]string{
 		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/flatcar_production_image.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_image.bin",
@@ -43,6 +44,7 @@ var (
 func init() {
 	sv := root.PersistentFlags().StringVar
 	bv := root.PersistentFlags().BoolVar
+	ss := root.PersistentFlags().StringSlice
 
 	// general options
 	sv(&outputDir, "output-dir", "", "Temporary output directory for test data and logs")
@@ -51,6 +53,8 @@ func init() {
 	root.PersistentFlags().IntVarP(&kola.TestParallelism, "parallel", "j", 1, "number of tests to run in parallel")
 	sv(&kola.TAPFile, "tapfile", "", "file to write TAP results to")
 	sv(&kola.Options.BaseName, "basename", "kola", "Cluster name prefix")
+	ss("debug-systemd-unit", []string{}, "full-unit-name.service to enable SYSTEMD_LOG_LEVEL=debug on. Specify multiple times for multiple units.")
+	sv(&kola.UpdatePayloadFile, "update-payload", "", "Path to an update payload that should be made available to tests")
 
 	// aws-specific options
 	defaultRegion := os.Getenv("AWS_REGION")
@@ -88,13 +92,6 @@ func init() {
 	sv(&kola.GCEOptions.Network, "gce-network", "default", "GCE network")
 	bv(&kola.GCEOptions.ServiceAuth, "gce-service-auth", false, "for non-interactive auth when running within GCE")
 	sv(&kola.GCEOptions.JSONKeyFile, "gce-json-key", "", "use a service account's JSON key for authentication")
-
-	// oci-specific options
-	sv(&kola.OCIOptions.ConfigPath, "oci-config-file", "", "OCI config file (default \"~/"+auth.OCIConfigPath+"\")")
-	sv(&kola.OCIOptions.Profile, "oci-profile", "", "OCI profile (default \"default\")")
-	sv(&kola.OCIOptions.Region, "oci-region", "", "OCI region (overrides config file)")
-	sv(&kola.OCIOptions.Image, "oci-image", "", "OCI image id")
-	sv(&kola.OCIOptions.Shape, "oci-shape", "VM.Standard1.1", "OCI shape")
 
 	// packet-specific options
 	sv(&kola.PacketOptions.ConfigPath, "packet-config-file", "", "Packet config file (default \"~/"+auth.PacketConfigPath+"\")")
@@ -140,6 +137,14 @@ func syncOptions() error {
 
 	if kola.QEMUOptions.BIOSImage == "" {
 		kola.QEMUOptions.BIOSImage = kolaDefaultBIOS[kola.QEMUOptions.Board]
+	}
+	units, _ := root.PersistentFlags().GetStringSlice("debug-systemd-units")
+	for _, unit := range units {
+		kola.Options.SystemdDropins = append(kola.Options.SystemdDropins, platform.SystemdDropin{
+			Unit:     unit,
+			Name:     "10-debug.conf",
+			Contents: "[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug",
+		})
 	}
 
 	return nil

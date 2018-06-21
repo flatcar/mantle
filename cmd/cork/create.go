@@ -49,6 +49,7 @@ var (
 
 	// only for `enter` command
 	experimental bool
+	bindGpgAgent bool
 
 	// only for `update` command
 	allowCreate      bool
@@ -125,6 +126,9 @@ func init() {
 	enterCmd.Flags().AddFlagSet(chrootFlags)
 	enterCmd.Flags().BoolVar(&experimental,
 		"experimental", false, "Use new enter implementation")
+	enterCmd.Flags().MarkDeprecated("experimental", "--experimental is deprecated and will be removed next release. Equivilent to --bind-gpg-agent=false")
+	enterCmd.Flags().BoolVar(&bindGpgAgent,
+		"bind-gpg-agent", true, "bind mount the gpg agent socket directory")
 	root.AddCommand(enterCmd)
 
 	deleteCmd.Flags().AddFlagSet(chrootFlags)
@@ -262,12 +266,12 @@ func updateRepo() {
 }
 
 func runEnter(cmd *cobra.Command, args []string) {
-	enter := sdk.OldEnter
 	if experimental {
-		enter = sdk.Enter
+		bindGpgAgent = false
 	}
 
-	if err := enter(chrootName, args...); err != nil && len(args) != 0 {
+	err := sdk.Enter(chrootName, bindGpgAgent, args...)
+	if err != nil && len(args) != 0 {
 		plog.Fatalf("Running %v failed: %v", args, err)
 	}
 }
@@ -349,7 +353,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 
 	updateRepo()
 
-	if err := sdk.Enter(chrootName, updateCommand...); err != nil {
+	if err := sdk.Enter(chrootName, false, updateCommand...); err != nil {
 		plog.Fatalf("update_chroot failed: %v", err)
 	}
 }

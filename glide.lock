@@ -1,5 +1,5 @@
-hash: d7c26224e97d03fbba50efe1beebc5a1dd863041e0d1ae6a6992b0d543bf50ef
-updated: 2018-01-22T13:35:50.083268783-08:00
+hash: 38a07ddcf4a0cc0e0653933542a4064beb3a4e190a704a78996c57c4e04e37bd
+updated: 2018-06-12T16:16:01.992869409-04:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -55,7 +55,7 @@ imports:
 - name: github.com/boltdb/bolt
   version: dfb21201d9270c1082d5fb0f07f500311ff72f18
 - name: github.com/coreos/container-linux-config-transpiler
-  version: b76ab0b2d66ff1ac6902f4fe118a02c1bed6e5ce
+  version: 73f2769c53710f016a6036f4803ac5af1fbe23ea
   subpackages:
   - config
   - config/astyaml
@@ -132,16 +132,22 @@ imports:
   - journal
   - unit
 - name: github.com/coreos/ignition
-  version: bf496dea2504d9015852d4ed60361852fc193bd3
+  version: 76107251acd117c6d3e5b4dae2b47f82f944984b
   subpackages:
   - config
+  - config/shared/errors
+  - config/shared/validations
   - config/types
+  - config/util
   - config/v1
   - config/v1/types
   - config/v2_0
   - config/v2_0/types
   - config/v2_1
   - config/v2_1/types
+  - config/v2_2
+  - config/v2_2/types
+  - config/v2_3_experimental/types
   - config/validate
   - config/validate/astjson
   - config/validate/astnode
@@ -160,7 +166,7 @@ imports:
   subpackages:
   - md2man
 - name: github.com/digitalocean/godo
-  version: 77ea48de76a7b31b234d854f15d003c68bb2fb90
+  version: 7a32b5ce17203924a21366d5031032fd326d5051
   subpackages:
   - context
 - name: github.com/gengo/grpc-gateway
@@ -205,8 +211,8 @@ imports:
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
   - pbutil
-- name: github.com/Microsoft/azure-vhd-utils-for-go
-  version: 070db2d701a462ca2edcf89d677ed3cac309d8e8
+- name: github.com/Microsoft/azure-vhd-utils
+  version: 43293b8d76460dd25093d216c95abc79342e1657
   subpackages:
   - upload
   - upload/concurrent
@@ -226,7 +232,7 @@ imports:
   - vhdcore/vhdfile
   - vhdcore/writer
 - name: github.com/packethost/packngo
-  version: 8ff1de745a8a4fdc5323ffd9ac2bc55195ff671e
+  version: 80f62d78849dba04e42d8812329ee00558e37c5b
 - name: github.com/pin/tftp
   version: 9ea92f6b1029bc1bf3072bba195c84bb9b0370e3
   subpackages:
@@ -292,6 +298,7 @@ imports:
   version: 6a0cc1ae81b4cc11db5e491e030e4b98fba79c19
 - name: go4.org
   version: 03efcb870d84809319ea509714dd6d19a1498483
+  repo: https://github.com/go4org/go4
   subpackages:
   - errorutil
 - name: golang.org/x/crypto

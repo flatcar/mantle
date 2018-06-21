@@ -48,7 +48,6 @@ write_files:
   - path: "/etc/flatcar/docker-1.12"
     content: yes
 `),
-		ExcludePlatforms: []string{"oci"},
 	})
 }
 

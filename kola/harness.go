@@ -38,13 +38,11 @@ import (
 	doapi "github.com/coreos/mantle/platform/api/do"
 	esxapi "github.com/coreos/mantle/platform/api/esx"
 	gcloudapi "github.com/coreos/mantle/platform/api/gcloud"
-	ociapi "github.com/coreos/mantle/platform/api/oci"
 	packetapi "github.com/coreos/mantle/platform/api/packet"
 	"github.com/coreos/mantle/platform/machine/aws"
 	"github.com/coreos/mantle/platform/machine/do"
 	"github.com/coreos/mantle/platform/machine/esx"
 	"github.com/coreos/mantle/platform/machine/gcloud"
-	"github.com/coreos/mantle/platform/machine/oci"
 	"github.com/coreos/mantle/platform/machine/packet"
 	"github.com/coreos/mantle/platform/machine/qemu"
 	"github.com/coreos/mantle/system"
@@ -58,7 +56,6 @@ var (
 	DOOptions     = doapi.Options{Options: &Options}     // glue to set platform options from main
 	ESXOptions    = esxapi.Options{Options: &Options}    // glue to set platform options from main
 	GCEOptions    = gcloudapi.Options{Options: &Options} // glue to set platform options from main
-	OCIOptions    = ociapi.Options{Options: &Options}    // glue to set platform options from main
 	PacketOptions = packetapi.Options{Options: &Options} // glue to set platform options from main
 	QEMUOptions   = qemu.Options{Options: &Options}      // glue to set platform options from main
 
@@ -69,6 +66,8 @@ var (
 	// tests to access via `kola.TorcxManifest`. It will be nil if there was no
 	// manifest given to kola.
 	TorcxManifest *torcx.Manifest = nil
+
+	UpdatePayloadFile string
 
 	consoleChecks = []struct {
 		desc     string
@@ -97,6 +96,12 @@ var (
 			match: regexp.MustCompile("rejecting I/O to offline device"),
 		},
 		{
+			// Failure to set up Packet networking in initramfs,
+			// perhaps due to unresponsive metadata server
+			desc:  "coreos-metadata failure to set up initramfs network",
+			match: regexp.MustCompile("Failed to start CoreOS Static Network Agent"),
+		},
+		{
 			// https://github.com/coreos/bugs/issues/2065
 			desc:  "excessive bonding link status messages",
 			match: regexp.MustCompile("(?s:link status up for interface [^,]+, enabling it in [0-9]+ ms.*?){10}"),
@@ -105,6 +110,16 @@ var (
 			// https://github.com/coreos/bugs/issues/2180
 			desc:  "ext4 delayed allocation failure",
 			match: regexp.MustCompile(`EXT4-fs \([^)]+\): Delayed block allocation failed for inode \d+ at logical offset \d+ with max blocks \d+ with (error \d+)`),
+		},
+		{
+			// https://github.com/coreos/bugs/issues/2284
+			desc:  "GRUB memory corruption",
+			match: regexp.MustCompile("((alloc|free) magic) (is )?broken"),
+		},
+		{
+			// https://github.com/coreos/bugs/issues/2435
+			desc:  "Ignition fetch cancellation race",
+			match: regexp.MustCompile("ignition\\[[0-9]+\\]: failed to fetch config: context canceled"),
 		},
 		{
 			// kernel 4.14.11
@@ -141,8 +156,6 @@ func NewCluster(pltfrm string, rconf *platform.RuntimeConfig) (cluster platform.
 		cluster, err = esx.NewCluster(&ESXOptions, rconf)
 	case "gce":
 		cluster, err = gcloud.NewCluster(&GCEOptions, rconf)
-	case "oci":
-		cluster, err = oci.NewCluster(&OCIOptions, rconf)
 	case "packet":
 		cluster, err = packet.NewCluster(&PacketOptions, rconf)
 	case "qemu":

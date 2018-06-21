@@ -139,7 +139,7 @@ func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
 		return nil, fmt.Errorf("unable to describe import tasks: %v", err)
 	}
 	for _, task := range taskRes.ImportSnapshotTasks {
-		if *task.Description != imageName {
+		if task.Description == nil || *task.Description != imageName {
 			continue
 		}
 		switch *task.SnapshotTaskDetail.Status {
@@ -374,26 +374,38 @@ func (a *API) CreatePVImage(snapshotID string, name string, description string) 
 func (a *API) createImage(params *ec2.RegisterImageInput) (string, error) {
 	res, err := a.ec2.RegisterImage(params)
 
+	var imageID string
 	if err == nil {
-		return *res.ImageId, nil
-	}
-	if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "InvalidAMIName.Duplicate" {
+		imageID = *res.ImageId
+	} else if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "InvalidAMIName.Duplicate" {
 		// The AMI already exists. Get its ID. Due to races, this
 		// may take several attempts.
 		for {
-			imageID, err := a.FindImage(*params.Name)
+			imageID, err = a.FindImage(*params.Name)
 			if err != nil {
 				return "", err
 			}
 			if imageID != "" {
 				plog.Infof("found existing image %v, reusing", imageID)
-				return imageID, nil
+				break
 			}
 			plog.Debugf("failed to locate image %q, retrying...", *params.Name)
 			time.Sleep(10 * time.Second)
 		}
+	} else {
+		return "", fmt.Errorf("error creating AMI: %v", err)
 	}
-	return "", fmt.Errorf("error creating AMI: %v", err)
+
+	// We do this even in the already-exists path in case the previous
+	// run was interrupted.
+	err = a.CreateTags([]string{imageID}, map[string]string{
+		"Name": *params.Name,
+	})
+	if err != nil {
+		return "", fmt.Errorf("couldn't tag image name: %v", err)
+	}
+
+	return imageID, nil
 }
 
 const diskSize = 8 // GB
@@ -611,7 +623,7 @@ func (a *API) FindImage(name string) (string, error) {
 		return "", fmt.Errorf("couldn't describe images: %v", err)
 	}
 	if len(describeRes.Images) > 1 {
-		return "", fmt.Errorf("found multiple images with name %v", name)
+		return "", fmt.Errorf("found multiple images with name %v. DescribeImage output: %v", name, describeRes.Images)
 	}
 	if len(describeRes.Images) == 1 {
 		return *describeRes.Images[0].ImageId, nil
@@ -637,13 +649,21 @@ func (a *API) PublishImage(imageID string) error {
 	if err != nil {
 		return err
 	}
-	if len(image.BlockDeviceMappings) == 0 || image.BlockDeviceMappings[0].Ebs == nil {
+	var snapshotID *string
+	// The EBS volume is usually listed before the ephemeral volume, but
+	// not always, e.g. ami-fddb0490 in cn-north-1
+	for _, mapping := range image.BlockDeviceMappings {
+		if mapping.Ebs != nil {
+			snapshotID = mapping.Ebs.SnapshotId
+			break
+		}
+	}
+	if snapshotID == nil {
 		// We observed a case where a returned `image` didn't have a block device mapping.
 		// Hopefully retrying this a couple times will work and it's just a sorta
 		// eventual consistency thing
 		return fmt.Errorf("no backing block device for %v", imageID)
 	}
-	snapshotID := image.BlockDeviceMappings[0].Ebs.SnapshotId
 	_, err = a.ec2.ModifySnapshotAttribute(&ec2.ModifySnapshotAttributeInput{
 		Attribute:  aws.String("createVolumePermission"),
 		SnapshotId: snapshotID,
