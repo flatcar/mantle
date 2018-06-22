@@ -66,9 +66,9 @@ var (
         
         function patch_grub {
         	# See bug #2400
-        	local file='/boot/coreos/grub/i386-pc/linux'
+        	local file='/boot/flatcar/grub/i386-pc/linux'
         	local tmpfile="$(mktemp)"
-        	local escape_hatch='/boot/coreos/grub/skip-bug-2400-patch'
+        	local escape_hatch='/boot/flatcar/grub/skip-bug-2400-patch'
         	
         	[[ -e "${escape_hatch}" ]] && return
         	[[ ! -e "${file}.mod" ]] && return
@@ -130,7 +130,7 @@ var (
         
         	# use mv then sync to be as atomic as possible
         	mv "${file}.tmp" "${file}.mod"
-        	sync '/boot/coreos/grub/i386-pc/'
+        	sync '/boot/flatcar/grub/i386-pc/'
         
         	touch "${escape_hatch}"
         
@@ -182,7 +182,7 @@ func UpdateGrub(c cluster.TestCluster) {
 	// work around bug 1872
 	c.MustSSH(m, "cat /opt/patch.sh || ( sudo systemctl start system-config.target && sleep 10 )")
 
-	originalBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/coreos/grub/i386-pc/linux.mod"))
+	originalBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/flatcar/grub/i386-pc/linux.mod"))
 	if err != nil {
 		c.Fatalf("failed decompressing: %v", err)
 	}
@@ -197,7 +197,7 @@ func UpdateGrub(c cluster.TestCluster) {
 		c.Fatalf("Could not find correct linux.mod: %v", msg)
 	}
 
-	newBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/coreos/grub/i386-pc/linux.mod"))
+	newBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/flatcar/grub/i386-pc/linux.mod"))
 	if err != nil {
 		c.Fatalf("failed decompressing: %v", err)
 	}
@@ -210,7 +210,7 @@ func UpdateGrub(c cluster.TestCluster) {
 		c.Fatalf("final hash did not match: expected %v got %v", offsetValue.newHash, hex.EncodeToString(sumAr[:]))
 	}
 
-	c.MustSSH(m, "cat /boot/coreos/grub/skip-bug-2400-patch")
+	c.MustSSH(m, "cat /boot/flatcar/grub/skip-bug-2400-patch")
 
 	m.Reboot()
 	if msg := string(c.MustSSH(m, "sudo /opt/patch.sh")); msg != "" {
@@ -222,7 +222,7 @@ func UpdateGrub(c cluster.TestCluster) {
 
 func UpdateGrubNop(c cluster.TestCluster) {
 	m := c.Machines()[0]
-	originalBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/coreos/grub/i386-pc/linux.mod"))
+	originalBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/flatcar/grub/i386-pc/linux.mod"))
 	if err != nil {
 		c.Fatalf("failed decompressing: %v", err)
 	}
