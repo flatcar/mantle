@@ -131,7 +131,7 @@ var (
 	}
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
-			BaseURL:      "gs://jenkins-flatcar/alpha/boards",
+			BaseURL:      "gs://flatcar-jenkins/alpha/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
@@ -156,7 +156,7 @@ var (
 			},
 		},
 		"beta": channelSpec{
-			BaseURL:      "gs://jenkins-flatcar/beta/boards",
+			BaseURL:      "gs://flatcar-jenkins/beta/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
@@ -181,7 +181,7 @@ var (
 			},
 		},
 		"stable": channelSpec{
-			BaseURL:      "gs://jenkins-flatcar/stable/boards",
+			BaseURL:      "gs://flatcar-jenkins/stable/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
