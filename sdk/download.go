@@ -35,7 +35,7 @@ import (
 
 const (
 	urlHost = "storage.googleapis.com"
-	urlPath = "/jenkins-flatcar/sdk"
+	urlPath = "/flatcar-jenkins/sdk"
 )
 
 var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "sdk")
