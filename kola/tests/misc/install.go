@@ -32,12 +32,13 @@ func init() {
   "storage": {
     "files": [{
       "filesystem": "root",
-      "path": "/var/lib/coreos-install/user_data",
+      "path": "/var/lib/flatcar-install/user_data",
       "contents": { "source": "data:,%23cloud-config%0Ahostname:%20%22cloud-config-worked%22" },
       "mode": 420
     }]
   }
 }`),
+		Distros: []string{"cl"},
 	})
 }
 

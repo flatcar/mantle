@@ -8,21 +8,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/go-semver/semver"
 	"github.com/satori/go.uuid"
 
 	"github.com/coreos/mantle/kola/register"
-	"github.com/coreos/mantle/platform/conf"
 )
 
 const (
-	CmdTimeout           = time.Second * 20
-	DbusTimeout          = time.Second * 20
-	DockerTimeout        = time.Second * 60
-	PortTimeout          = time.Second * 3
-	UpdateEnginePubKey   = "/usr/share/update_engine/update-payload-key.pub.pem"
-	UpdateEnginePubKeyV1 = "d410d94dc56a1cba8df71c94ea6925811e44b09416f66958ab7a453f0731d80e"
-	UpdateEnginePubKeyV2 = "a76a22e6afcdfbc55dd2953aa950c7ec93b254774fca02d13ec52c59672e5982"
+	CmdTimeout                  = time.Second * 20
+	DbusTimeout                 = time.Second * 20
+	DockerTimeout               = time.Second * 60
+	PortTimeout                 = time.Second * 3
+	UpdateEnginePubKey          = "/usr/share/update_engine/update-payload-key.pub.pem"
+	UpdateEnginePubKeyV1        = "d410d94dc56a1cba8df71c94ea6925811e44b09416f66958ab7a453f0731d80e"
+	UpdateEnginePubKeyV2        = "a76a22e6afcdfbc55dd2953aa950c7ec93b254774fca02d13ec52c59672e5982"
+	UpdateEnginePubKeyFlatcarV1 = "b59a0fa528fec10d706e5d48030218199568769e385dcf473aa696763331a353"
+	UpdateEnginePubKeyFlatcarV2 = "b6a8227f835a4a56988241eaeeda57a19ef5ff413c8533fd791827be2c15dd6c"
 )
 
 func init() {
@@ -43,46 +43,21 @@ func init() {
 			"Useradd":          TestUseradd,
 			"MachineID":        TestMachineID,
 		},
+		Distros: []string{"cl"},
 	})
 	register.Register(&register.Test{
-		Name:        "coreos.cluster",
-		Run:         ClusterTests,
-		ClusterSize: 3,
+		Name:        "rhcos.basic",
+		Run:         LocalTests,
+		ClusterSize: 1,
 		NativeFuncs: map[string]func() error{
-			"EtcdUpdateValue":    TestEtcdUpdateValue,
-			"FleetctlRunService": TestFleetctlRunService,
+			"PortSSH":        TestPortSsh,
+			"DbusPerms":      TestDbusPerms,
+			"ServicesActive": TestServicesActiveRHCOS,
+			"ReadOnly":       TestReadOnlyFs,
+			"Useradd":        TestUseradd,
+			"MachineID":      TestMachineID,
 		},
-		UserData: conf.Ignition(`{
-  "ignition": { "version": "2.0.0" },
-  "systemd": {
-    "units": [
-      {
-        "name": "etcd2.service",
-        "enable": true,
-        "dropins": [{
-          "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
-        }]
-      },
-      {
-        "name": "fleet.service",
-        "enable": true,
-        "dropins": [{
-          "name": "environment.conf",
-          "contents": "[Service]\nEnvironment=FLEET_ETCD_REQUEST_TIMEOUT=15"
-        }]
-      },
-      {
-        "name": "coreos-metadata.service",
-        "dropins": [{
-          "name": "qemu.conf",
-          "contents": "[Unit]\nConditionKernelCommandLine=coreos.oem.id"
-        }]
-      }
-    ]
-  }
-}`),
-		EndVersion: semver.Version{Major: 1662},
+		Distros: []string{"rhcos"},
 	})
 
 	// tests requiring network connection to internet
@@ -97,6 +72,7 @@ func init() {
 			"DockerEcho":   TestDockerEcho,
 			"NTPDate":      TestNTPDate,
 		},
+		Distros: []string{"cl"},
 	})
 }
 
@@ -246,7 +222,7 @@ func TestInstalledUpdateEngineRsaKeys() error {
 	}
 
 	switch string(fileHash) {
-	case UpdateEnginePubKeyV1, UpdateEnginePubKeyV2:
+	case UpdateEnginePubKeyV1, UpdateEnginePubKeyV2, UpdateEnginePubKeyFlatcarV1, UpdateEnginePubKeyFlatcarV2:
 		return nil
 	default:
 		return fmt.Errorf("%s:%s unexpected hash.", UpdateEnginePubKey, fileHash)
@@ -254,13 +230,23 @@ func TestInstalledUpdateEngineRsaKeys() error {
 }
 
 func TestServicesActive() error {
-	//t.Parallel()
-	units := []string{
+	return servicesActive([]string{
 		"multi-user.target",
 		"docker.socket",
 		"systemd-timesyncd.service",
 		"update-engine.service",
-	}
+	})
+}
+
+func TestServicesActiveRHCOS() error {
+	return servicesActive([]string{
+		"multi-user.target",
+		"crio.service",
+	})
+}
+
+func servicesActive(units []string) error {
+	//t.Parallel()
 	for _, unit := range units {
 		c := exec.Command("systemctl", "is-active", unit)
 		err := c.Run()

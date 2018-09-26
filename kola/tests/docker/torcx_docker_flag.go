@@ -32,11 +32,12 @@ func init() {
 storage:
   files:
     - filesystem: root
-      path: /etc/coreos/docker-1.12
+      path: /etc/flatcar/docker-1.12
       contents:
         inline: yes
       mode: 0644
 `),
+		Distros: []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerTorcxFlagFileCloudConfig,
@@ -45,9 +46,10 @@ storage:
 		UserData: conf.CloudConfig(`
 #cloud-config
 write_files:
-  - path: "/etc/coreos/docker-1.12"
+  - path: "/etc/flatcar/docker-1.12"
     content: yes
 `),
+		Distros: []string{"cl"},
 	})
 }
 
@@ -58,7 +60,7 @@ func dockerTorcxFlagFile(c cluster.TestCluster) {
 	checkTorcxDockerVersions(c, m, `^1\.12$`, `^1\.12\.`)
 
 	// flag=no
-	c.MustSSH(m, "echo no | sudo tee /etc/coreos/docker-1.12")
+	c.MustSSH(m, "echo no | sudo tee /etc/flatcar/docker-1.12")
 	if err := m.Reboot(); err != nil {
 		c.Fatalf("could not reboot: %v", err)
 	}
