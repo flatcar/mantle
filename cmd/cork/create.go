@@ -48,8 +48,10 @@ var (
 	allowReplace bool
 
 	// only for `enter` command
-	experimental bool
 	bindGpgAgent bool
+
+	// for create/update/enter
+	useHostDNS bool
 
 	// only for `update` command
 	allowCreate      bool
@@ -98,6 +100,8 @@ func init() {
 	chrootFlags = pflag.NewFlagSet("chroot", pflag.ExitOnError)
 	chrootFlags.StringVar(&chrootName,
 		"chroot", "chroot", "SDK chroot directory name")
+	chrootFlags.BoolVar(&useHostDNS,
+		"use-host-dns", false, "Use the host's /etc/resolv.conf instead of 8.8.8.8 and 8.8.4.4")
 
 	creationFlags = pflag.NewFlagSet("creation", pflag.ExitOnError)
 	creationFlags.StringVar(&sdkVersion,
@@ -124,9 +128,6 @@ func init() {
 	root.AddCommand(createCmd)
 
 	enterCmd.Flags().AddFlagSet(chrootFlags)
-	enterCmd.Flags().BoolVar(&experimental,
-		"experimental", false, "Use new enter implementation")
-	enterCmd.Flags().MarkDeprecated("experimental", "--experimental is deprecated and will be removed next release. Equivilent to --bind-gpg-agent=false")
 	enterCmd.Flags().BoolVar(&bindGpgAgent,
 		"bind-gpg-agent", true, "bind mount the gpg agent socket directory")
 	root.AddCommand(enterCmd)
@@ -244,7 +245,7 @@ func unpackChroot(replace bool) {
 }
 
 func updateRepo() {
-	if err := sdk.RepoInit(chrootName, manifestURL, manifestBranch, manifestName); err != nil {
+	if err := sdk.RepoInit(chrootName, manifestURL, manifestBranch, manifestName, useHostDNS); err != nil {
 		plog.Fatalf("repo init failed: %v", err)
 	}
 
@@ -254,7 +255,7 @@ func updateRepo() {
 		}
 	}
 
-	if err := sdk.RepoSync(chrootName, forceSync); err != nil {
+	if err := sdk.RepoSync(chrootName, forceSync, useHostDNS); err != nil {
 		plog.Fatalf("repo sync failed: %v", err)
 	}
 
@@ -266,11 +267,7 @@ func updateRepo() {
 }
 
 func runEnter(cmd *cobra.Command, args []string) {
-	if experimental {
-		bindGpgAgent = false
-	}
-
-	err := sdk.Enter(chrootName, bindGpgAgent, args...)
+	err := sdk.Enter(chrootName, bindGpgAgent, useHostDNS, args...)
 	if err != nil && len(args) != 0 {
 		plog.Fatalf("Running %v failed: %v", args, err)
 	}
@@ -353,7 +350,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 
 	updateRepo()
 
-	if err := sdk.Enter(chrootName, false, updateCommand...); err != nil {
+	if err := sdk.Enter(chrootName, false, false, updateCommand...); err != nil {
 		plog.Fatalf("update_chroot failed: %v", err)
 	}
 }

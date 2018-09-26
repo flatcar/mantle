@@ -70,6 +70,10 @@ type Machine interface {
 	// ConsoleOutput returns the machine's console output if available,
 	// or an empty string.  Only expected to be valid after Destroy().
 	ConsoleOutput() string
+
+	// JournalOutput returns the machine's journal output if available,
+	// or an empty string.  Only expected to be valid after Destroy().
+	JournalOutput() string
 }
 
 // Cluster represents a cluster of Container Linux machines within a single platform.
@@ -94,6 +98,10 @@ type Cluster interface {
 	// ConsoleOutput returns a map of console output from destroyed
 	// cluster machines.
 	ConsoleOutput() map[string]string
+
+	// JournalOutput returns a map of journal output from destroyed
+	// cluster machines.
+	JournalOutput() map[string]string
 }
 
 // SystemdDropin is a userdata type agnostic struct representing a systemd dropin
@@ -106,6 +114,7 @@ type SystemdDropin struct {
 // Options contains the base options for all clusters.
 type Options struct {
 	BaseName       string
+	Distribution   string
 	SystemdDropins []SystemdDropin
 }
 
@@ -266,7 +275,7 @@ func NewMachines(c Cluster, userdata *conf.UserData, n int) ([]Machine, error) {
 
 // CheckMachine tests a machine for various error conditions such as ssh
 // being available and no systemd units failing at the time ssh is reachable.
-// It also ensures the remote system is running Container Linux by CoreOS.
+// It also ensures the remote system is running Flatcar Linux.
 //
 // TODO(mischief): better error messages.
 func CheckMachine(ctx context.Context, m Machine) error {
