@@ -15,11 +15,14 @@
 package misc
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
+	"github.com/coreos/mantle/util"
 )
 
 func init() {
@@ -27,12 +30,14 @@ func init() {
 		Run:         NetworkListeners,
 		ClusterSize: 1,
 		Name:        "coreos.network.listeners",
+		Distros:     []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Run:              NetworkInitramfsSecondBoot,
 		ClusterSize:      1,
 		Name:             "coreos.network.initramfs.second-boot",
 		ExcludePlatforms: []string{"do"},
+		Distros:          []string{"cl"},
 	})
 }
 
@@ -43,7 +48,7 @@ type listener struct {
 	process  string
 }
 
-func checkListeners(c cluster.TestCluster, expectedListeners []listener) {
+func checkListeners(c cluster.TestCluster, expectedListeners []listener) error {
 	m := c.Machines()[0]
 
 	output := c.MustSSH(m, "sudo netstat -plutn")
@@ -95,8 +100,10 @@ NextProcess:
 		}
 
 		c.Logf("full netstat output: %q", output)
-		c.Errorf("Unexpected listener process: %q", line)
+		return fmt.Errorf("Unexpected listener process: %q", line)
 	}
+
+	return nil
 }
 
 func NetworkListeners(c cluster.TestCluster) {
@@ -105,7 +112,12 @@ func NetworkListeners(c cluster.TestCluster) {
 		{"udp", "68", "systemd-network"},  // dhcp6-client
 		{"udp", "546", "systemd-network"}, // bootpc
 	}
-	checkListeners(c, expectedListeners)
+	checkList := func() error {
+		return checkListeners(c, expectedListeners)
+	}
+	if err := util.Retry(3, 5*time.Second, checkList); err != nil {
+		c.Errorf(err.Error())
+	}
 }
 
 // Verify that networking is not started in the initramfs on the second boot.

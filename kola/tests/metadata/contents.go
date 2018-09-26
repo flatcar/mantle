@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ignition
+package metadata
 
 import (
 	"strings"
@@ -46,6 +46,7 @@ func init() {
 		ClusterSize: 1,
 		Platforms:   []string{"aws"},
 		UserData:    enableMetadataService,
+		Distros:     []string{"cl"},
 	})
 
 	register.Register(&register.Test{
@@ -54,6 +55,7 @@ func init() {
 		ClusterSize: 1,
 		Platforms:   []string{"azure"},
 		UserData:    enableMetadataService,
+		Distros:     []string{"cl"},
 	})
 
 	register.Register(&register.Test{
@@ -62,6 +64,7 @@ func init() {
 		ClusterSize: 1,
 		Platforms:   []string{"packet"},
 		UserData:    enableMetadataService,
+		Distros:     []string{"cl"},
 	})
 }
 

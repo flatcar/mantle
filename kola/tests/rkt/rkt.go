@@ -20,12 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/mantle/kola"
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/platform"
 	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/platform/machine/qemu"
 	"github.com/coreos/mantle/util"
 )
 
@@ -46,6 +44,7 @@ func init() {
 		Run:              rktEtcd,
 		ClusterSize:      1,
 		ExcludePlatforms: []string{"qemu"},
+		Distros:          []string{"cl"},
 		Name:             "coreos.rkt.etcd3",
 		UserData:         config,
 	})
@@ -54,6 +53,7 @@ func init() {
 		Name:        "rkt.base",
 		ClusterSize: 1,
 		Run:         rktBase,
+		Distros:     []string{"cl"},
 	})
 
 }
@@ -148,19 +148,14 @@ func createTestAci(c cluster.TestCluster, m platform.Machine, name string, bins 
 	"acKind": "ImageManifest",
 	"acVersion": "0.8.9",
 	"name": "%s",
-	"labels": [{"name": "os","value": "linux"},{"name": "arch","value": "%s"},{"name": "version","value": "latest"}]
+	"labels": [{"name": "os","value": "linux"},{"name": "arch","value": "amd64"},{"name": "version","value": "latest"}]
 }`
-
-	arch := "amd64"
-	if _, ok := c.Cluster.(*qemu.Cluster); ok && kola.QEMUOptions.Board == "arm64-usr" {
-		arch = "aarch64"
-	}
 
 	c.MustSSH(m, `set -e
 	tmpdir=$(mktemp -d)
 	cd $tmpdir
 	cat > manifest <<EOF
-`+fmt.Sprintf(testAciManifest, name, arch)+`
+`+fmt.Sprintf(testAciManifest, name)+`
 EOF
 
 	mkdir rootfs

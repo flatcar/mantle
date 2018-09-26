@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/coreos/go-semver/semver"
-
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/kola/tests/etcd"
@@ -41,7 +39,7 @@ var (
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       },
       {
@@ -76,7 +74,7 @@ var (
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
+          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
         }]
       },
       {
@@ -102,7 +100,7 @@ var (
         "name": "coreos-metadata.service",
         "dropins": [{
           "name": "qemu.conf",
-          "contents": "[Unit]\nConditionKernelCommandLine=flatcar.oem.id"
+          "contents": "[Unit]\nConditionKernelCommandLine=coreos.oem.id"
         }]
       }
     ]
@@ -114,35 +112,19 @@ func init() {
 	register.Register(&register.Test{
 		Run:              udp,
 		ClusterSize:      3,
-		Name:             "flatcar.flannel.udp",
+		Name:             "coreos.flannel.udp",
 		ExcludePlatforms: []string{"qemu"},
+		Distros:          []string{"cl"},
 		UserData:         flannelConf.Subst("$type", "udp"),
 	})
 
 	register.Register(&register.Test{
-		Run:              udp,
-		ClusterSize:      3,
-		Name:             "flatcar.flannel.udp.etcd2",
-		ExcludePlatforms: []string{"qemu"},
-		UserData:         flannelConfEtcd2.Subst("$type", "udp"),
-		EndVersion:       semver.Version{Major: 1662},
-	})
-
-	register.Register(&register.Test{
 		Run:              vxlan,
 		ClusterSize:      3,
-		Name:             "flatcar.flannel.vxlan",
+		Name:             "coreos.flannel.vxlan",
 		ExcludePlatforms: []string{"qemu"},
+		Distros:          []string{"cl"},
 		UserData:         flannelConf.Subst("$type", "vxlan"),
-	})
-
-	register.Register(&register.Test{
-		Run:              vxlan,
-		ClusterSize:      3,
-		Name:             "flatcar.flannel.vxlan.etcd2",
-		ExcludePlatforms: []string{"qemu"},
-		UserData:         flannelConfEtcd2.Subst("$type", "vxlan"),
-		EndVersion:       semver.Version{Major: 1662},
 	})
 }
 

@@ -17,7 +17,6 @@ package etcd
 import (
 	"encoding/json"
 
-	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 
 	"github.com/coreos/mantle/kola/cluster"
@@ -31,36 +30,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         Discovery,
 		ClusterSize: 3,
-		Name:        "flatcar.etcd2.discovery",
-		UserData: conf.Ignition(`{
-  "ignition": { "version": "2.0.0" },
-  "systemd": {
-    "units": [
-      {
-        "name": "etcd2.service",
-        "enable": true,
-        "dropins": [{
-          "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/bin/etcd2 --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 --listen-peer-urls=http://$private_ipv4:2380,http://$private_ipv4:7001"
-        }]
-      },
-      {
-        "name": "coreos-metadata.service",
-        "dropins": [{
-          "name": "qemu.conf",
-          "contents": "[Unit]\nConditionKernelCommandLine=flatcar.oem.id"
-        }]
-      }
-    ]
-  }
-}`),
-		EndVersion: semver.Version{Major: 1662},
-	})
-
-	register.Register(&register.Test{
-		Run:         Discovery,
-		ClusterSize: 3,
-		Name:        "flatcar.etcd-member.discovery",
+		Name:        "coreos.etcd-member.discovery",
 		UserData: conf.Ignition(`{
   "ignition": { "version": "2.0.0" },
   "systemd": {
@@ -70,19 +40,20 @@ func init() {
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/flatcar\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       }
     ]
   }
 }`),
 		ExcludePlatforms: []string{"qemu"}, // etcd-member requires networking
+		Distros:          []string{"cl"},
 	})
 
 	register.Register(&register.Test{
 		Run:         etcdMemberV2BackupRestore,
 		ClusterSize: 1,
-		Name:        "flatcar.etcd-member.v2-backup-restore",
+		Name:        "coreos.etcd-member.v2-backup-restore",
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
@@ -93,6 +64,7 @@ etcd:
   discovery:                   $discovery
 `),
 		ExcludePlatforms: []string{"qemu", "esx"}, // etcd-member requires networking and ct rendering
+		Distros:          []string{"cl"},
 	})
 
 	register.Register(&register.Test{
@@ -100,7 +72,7 @@ etcd:
 		// Clustersize of 1 to avoid needing private ips everywhere for clustering;
 		// this lets it run on more platforms, and also faster
 		ClusterSize: 1,
-		Name:        "flatcar.etcd-member.etcdctlv3",
+		Name:        "coreos.etcd-member.etcdctlv3",
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
@@ -110,6 +82,7 @@ etcd:
   initial_advertise_peer_urls: http://127.0.0.1:2380
 `),
 		ExcludePlatforms: []string{"qemu"}, // networking to download etcd image
+		Distros:          []string{"cl"},
 	})
 }
 

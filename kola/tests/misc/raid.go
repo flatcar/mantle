@@ -69,6 +69,7 @@ func init() {
 		ClusterSize: 0,
 		Platforms:   []string{"qemu"},
 		Name:        "coreos.disk.raid.root",
+		Distros:     []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Run:         DataOnRaid,
@@ -99,13 +100,14 @@ systemd:
           
           [Install]
           WantedBy=local-fs.target`),
+		Distros: []string{"cl"},
 	})
 }
 
 func RootOnRaid(c cluster.TestCluster) {
 	options := qemu.MachineOptions{
 		AdditionalDisks: []qemu.Disk{
-			{Size: "520M", Serial: "secondary"},
+			{Size: "520M", DeviceOpts: []string{"serial=secondary"}},
 		},
 	}
 	m, err := c.Cluster.(*qemu.Cluster).NewMachineWithOptions(raidRootUserData, options)

@@ -223,6 +223,10 @@ func (bc *BaseCluster) GetDiscoveryURL(size int) (string, error) {
 	return result, err
 }
 
+func (bc *BaseCluster) Distribution() string {
+	return bc.baseopts.Distribution
+}
+
 func (bc *BaseCluster) Platform() Name {
 	return bc.platform
 }
@@ -241,6 +245,16 @@ func (bc *BaseCluster) ConsoleOutput() map[string]string {
 	defer bc.machlock.Unlock()
 	for k, v := range bc.consolemap {
 		ret[k] = v
+	}
+	return ret
+}
+
+func (bc *BaseCluster) JournalOutput() map[string]string {
+	ret := map[string]string{}
+	bc.machlock.Lock()
+	defer bc.machlock.Unlock()
+	for k, v := range bc.machmap {
+		ret[k] = v.JournalOutput()
 	}
 	return ret
 }
