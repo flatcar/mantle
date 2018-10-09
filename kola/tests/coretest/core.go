@@ -16,13 +16,15 @@ import (
 )
 
 const (
-	CmdTimeout           = time.Second * 20
-	DbusTimeout          = time.Second * 20
-	DockerTimeout        = time.Second * 60
-	PortTimeout          = time.Second * 3
-	UpdateEnginePubKey   = "/usr/share/update_engine/update-payload-key.pub.pem"
-	UpdateEnginePubKeyV1 = "d410d94dc56a1cba8df71c94ea6925811e44b09416f66958ab7a453f0731d80e"
-	UpdateEnginePubKeyV2 = "a76a22e6afcdfbc55dd2953aa950c7ec93b254774fca02d13ec52c59672e5982"
+	CmdTimeout                  = time.Second * 20
+	DbusTimeout                 = time.Second * 20
+	DockerTimeout               = time.Second * 60
+	PortTimeout                 = time.Second * 3
+	UpdateEnginePubKey          = "/usr/share/update_engine/update-payload-key.pub.pem"
+	UpdateEnginePubKeyV1        = "d410d94dc56a1cba8df71c94ea6925811e44b09416f66958ab7a453f0731d80e"
+	UpdateEnginePubKeyV2        = "a76a22e6afcdfbc55dd2953aa950c7ec93b254774fca02d13ec52c59672e5982"
+	UpdateEnginePubKeyFlatcarV1 = "b59a0fa528fec10d706e5d48030218199568769e385dcf473aa696763331a353"
+	UpdateEnginePubKeyFlatcarV2 = "b6a8227f835a4a56988241eaeeda57a19ef5ff413c8533fd791827be2c15dd6c"
 )
 
 func init() {
@@ -246,7 +248,7 @@ func TestInstalledUpdateEngineRsaKeys() error {
 	}
 
 	switch string(fileHash) {
-	case UpdateEnginePubKeyV1, UpdateEnginePubKeyV2:
+	case UpdateEnginePubKeyV1, UpdateEnginePubKeyV2, UpdateEnginePubKeyFlatcarV1, UpdateEnginePubKeyFlatcarV2:
 		return nil
 	default:
 		return fmt.Errorf("%s:%s unexpected hash.", UpdateEnginePubKey, fileHash)
