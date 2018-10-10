@@ -36,6 +36,7 @@ func init() {
 			"PortSSH":          TestPortSsh,
 			"DbusPerms":        TestDbusPerms,
 			"Symlink":          TestSymlinkResolvConf,
+			"SymlinkFlatcar":   TestSymlinkFlatcar,
 			"UpdateEngineKeys": TestInstalledUpdateEngineRsaKeys,
 			"ServicesActive":   TestServicesActive,
 			"ReadOnly":         TestReadOnlyFs,
@@ -211,6 +212,35 @@ func TestSymlinkResolvConf() error {
 	if !IsLink(f) {
 		return fmt.Errorf("/etc/resolv.conf is not a symlink.")
 	}
+	return nil
+}
+
+func TestSymlinkFlatcar() error {
+	coreosPath := "/usr/lib/coreos"
+	flatcarPath := "/usr/lib/flatcar"
+
+	f, err := os.Lstat(coreosPath)
+	if err != nil {
+		return fmt.Errorf("unable to lstat on %s: %v", coreosPath, err)
+	}
+	if !IsLink(f) {
+		return fmt.Errorf("coreos path %s is not a symlink.", coreosPath)
+	}
+	resolved, err := os.Readlink(coreosPath)
+	if err != nil {
+		return fmt.Errorf("unable to resolve symlink %s.", f)
+	}
+	if resolved != "flatcar" {
+		return fmt.Errorf("resolved path %s does not point to flatcar", resolved)
+	}
+	fr, err := os.Lstat(flatcarPath)
+	if err != nil {
+		return fmt.Errorf("unable to stat on %s: %v", flatcarPath, err)
+	}
+	if !fr.Mode().IsDir() {
+		return fmt.Errorf("path %s is not a directory.", flatcarPath)
+	}
+
 	return nil
 }
 
