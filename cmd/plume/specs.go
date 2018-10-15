@@ -205,6 +205,31 @@ var (
 				Partitions:      awsPartitions,
 			},
 		},
+		"edge": channelSpec{
+			BaseURL:      "gs://flatcar-jenkins/edge/boards",
+			Boards:       []string{"amd64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
+			Azure: azureSpec{
+				Offer:             "Flatcar",
+				Image:             "flatcar_production_azure_image.vhd.bz2",
+				StorageAccount:    "flatcar",
+				Container:         "publish",
+				Environments:      azureEnvironments,
+				Label:             "Flatcar Edge",
+				Description:       "The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+				RecommendedVMSize: "Medium",
+				IconURI:           "coreos-globe-color-lg-100px.png",
+				SmallIconURI:      "coreos-globe-color-lg-45px.png",
+			},
+			AWS: awsSpec{
+				BaseName:        "Flatcar",
+				BaseDescription: "Flatcar Linux",
+				Prefix:          "flatcar_production_ami_",
+				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
+				Partitions:      awsPartitions,
+			},
+		},
 	}
 )
 
