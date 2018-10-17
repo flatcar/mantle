@@ -60,7 +60,7 @@ func init() {
 		          }
 		      }`)
 	register.Register(&register.Test{
-		Name:        "coreos.ignition.v1.sethostname",
+		Name:        "cl.ignition.v1.sethostname",
 		Run:         setHostname,
 		ClusterSize: 1,
 		UserData:    configV1,
@@ -71,7 +71,7 @@ func init() {
 		Run:         setHostname,
 		ClusterSize: 1,
 		UserData:    configV2,
-		Distros:     []string{"cl", "rhcos"},
+		Distros:     []string{"cl", "rhcos", "fcos"},
 	})
 }
 
