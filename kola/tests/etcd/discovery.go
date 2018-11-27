@@ -70,7 +70,7 @@ func init() {
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/coreos/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       }
     ]
