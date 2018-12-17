@@ -41,8 +41,8 @@ After a successful run, the final line of output will be the name of the VM crea
 func init() {
 	ESX.AddCommand(cmdCreateBase)
 	cmdCreateBase.Flags().StringVar(&ovaPath, "file",
-		sdk.BuildRoot()+"/images/amd64-usr/latest/coreos_production_vmware_ova.ova",
-		"path to CoreOS image (build with: ./image_to_vm.sh --format=vmware_ova ...)")
+		sdk.BuildRoot()+"/images/amd64-usr/latest/flatcar_production_vmware_ova.ova",
+		"path to Flatcar image (build with: ./image_to_vm.sh --format=vmware_ova ...)")
 	cmdCreateBase.Flags().StringVar(&baseVMName, "name", "", "name of base VM")
 }
 
