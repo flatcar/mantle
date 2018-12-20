@@ -87,7 +87,7 @@ func defaultBucketNameForRegion(region string) string {
 
 func defaultUploadFile() string {
 	build := sdk.BuildRoot()
-	return build + "/images/amd64-usr/latest/coreos_production_ami_vmdk_image.vmdk"
+	return build + "/images/amd64-usr/latest/flatcar_production_ami_vmdk_image.vmdk"
 }
 
 // defaultBucketURL determines the location the tool should upload to.
