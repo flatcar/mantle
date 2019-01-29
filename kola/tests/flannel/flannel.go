@@ -41,7 +41,7 @@ var (
         "enable": true,
         "dropins": [{
           "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/coreos/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
+          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
         }]
       },
       {
@@ -56,7 +56,7 @@ var (
         "name": "flannel-docker-opts.service",
         "dropins": [{
           "name": "retry.conf",
-          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/coreos/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
+          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/flatcar/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
         }]
       },
       {
@@ -91,7 +91,7 @@ var (
         "name": "flannel-docker-opts.service",
         "dropins": [{
           "name": "retry.conf",
-          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/coreos/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
+          "contents": "[Service]\nTimeoutStartSec=300\nExecStart=\nExecStart=/bin/sh -exc 'for try in 1 2 3 4 5 6 ; do /usr/lib/flatcar/flannel-wrapper -d /run/flannel/flannel_docker_opts.env -i && break || sleep 10 ; try=fail ; done ; [ $try != fail ]'"
         }]
       },
       {
