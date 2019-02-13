@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/pin/tftp"
 
 	"github.com/coreos/mantle/kola/cluster"
@@ -75,14 +76,15 @@ func init() {
 		},
 		// https://github.com/coreos/bugs/issues/2205
 		ExcludePlatforms: []string{"do"},
-		Distros:          []string{"cl", "rhcos"},
+		Distros:          []string{"cl", "rhcos", "fcos"},
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.ignition.v2_1.resource.remote",
 		Run:         resourceRemote,
 		ClusterSize: 1,
+		Flags:       []register.Flag{register.RequiresInternetAccess},
 		// https://github.com/coreos/bugs/issues/2205 for DO
-		ExcludePlatforms: []string{"qemu", "do"},
+		ExcludePlatforms: []string{"do"},
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "2.1.0"
@@ -147,12 +149,50 @@ func init() {
 	      }`),
 		Distros: []string{"cl", "rhcos"},
 	})
+	// TODO: once Ignition supports this on all channels/distros
+	//       this test should be rolled into coreos.ignition.v2_1.resources.remote
+	// Test specifically for versioned s3 objects
+	register.Register(&register.Test{
+		Name:        "coreos.ignition.v2_1.resource.s3.versioned",
+		Run:         resourceS3Versioned,
+		ClusterSize: 1,
+		Flags:       []register.Flag{register.RequiresInternetAccess},
+		// https://github.com/coreos/bugs/issues/2205 for DO
+		ExcludePlatforms: []string{"do"},
+		MinVersion:       semver.Version{Major: 1995},
+		UserData: conf.Ignition(`{
+		  "ignition": {
+		      "version": "2.1.0"
+		  },
+		  "storage": {
+		      "files": [
+			  {
+			      "filesystem": "root",
+			      "path": "/var/resource/original",
+			      "contents": {
+				  "source": "http://s3-us-west-2.amazonaws.com/kola-fixtures/resources/versioned?versionId=null"
+			      },
+			      "mode": 420
+			  },
+			  {
+			      "filesystem": "root",
+			      "path": "/var/resource/latest",
+			      "contents": {
+				  "source": "http://s3-us-west-2.amazonaws.com/kola-fixtures/resources/versioned?versionId=RDWqxfnlcJOSDf1.5jy6ZP.oK9Bt7_Id"
+			      },
+			      "mode": 420
+			  }
+		      ]
+		  }
+	      }`),
+		Distros: []string{"cl", "rhcos"},
+	})
 }
 
 func resourceLocal(c cluster.TestCluster) {
 	server := c.Machines()[0]
 
-	c.MustSSH(server, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Serve", c.Name()))
+	c.MustSSH(server, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Serve", c.H.Name()))
 
 	ip := server.PrivateIP()
 	if c.Platform() == packet.Platform {
@@ -203,6 +243,15 @@ func resourceS3(c cluster.TestCluster) {
 
 	// ...but that the anonymous object is accessible
 	c.MustSSH(m, "curl -sf https://s3-us-west-2.amazonaws.com/kola-fixtures/resources/anonymous")
+}
+
+func resourceS3Versioned(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	checkResources(c, m, map[string]string{
+		"original": "original",
+		"latest":   "updated",
+	})
 }
 
 func checkResources(c cluster.TestCluster, m platform.Machine, resources map[string]string) {

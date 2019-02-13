@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -38,11 +37,13 @@ import (
 	doapi "github.com/coreos/mantle/platform/api/do"
 	esxapi "github.com/coreos/mantle/platform/api/esx"
 	gcloudapi "github.com/coreos/mantle/platform/api/gcloud"
+	openstackapi "github.com/coreos/mantle/platform/api/openstack"
 	packetapi "github.com/coreos/mantle/platform/api/packet"
 	"github.com/coreos/mantle/platform/machine/aws"
 	"github.com/coreos/mantle/platform/machine/do"
 	"github.com/coreos/mantle/platform/machine/esx"
 	"github.com/coreos/mantle/platform/machine/gcloud"
+	"github.com/coreos/mantle/platform/machine/openstack"
 	"github.com/coreos/mantle/platform/machine/packet"
 	"github.com/coreos/mantle/platform/machine/qemu"
 	"github.com/coreos/mantle/system"
@@ -51,13 +52,14 @@ import (
 var (
 	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola")
 
-	Options       = platform.Options{}
-	AWSOptions    = awsapi.Options{Options: &Options}    // glue to set platform options from main
-	DOOptions     = doapi.Options{Options: &Options}     // glue to set platform options from main
-	ESXOptions    = esxapi.Options{Options: &Options}    // glue to set platform options from main
-	GCEOptions    = gcloudapi.Options{Options: &Options} // glue to set platform options from main
-	PacketOptions = packetapi.Options{Options: &Options} // glue to set platform options from main
-	QEMUOptions   = qemu.Options{Options: &Options}      // glue to set platform options from main
+	Options          = platform.Options{}
+	AWSOptions       = awsapi.Options{Options: &Options}       // glue to set platform options from main
+	DOOptions        = doapi.Options{Options: &Options}        // glue to set platform options from main
+	ESXOptions       = esxapi.Options{Options: &Options}       // glue to set platform options from main
+	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
+	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
+	PacketOptions    = packetapi.Options{Options: &Options}    // glue to set platform options from main
+	QEMUOptions      = qemu.Options{Options: &Options}         // glue to set platform options from main
 
 	TestParallelism   int    //glue var to set test parallelism from main
 	TAPFile           string // if not "", write TAP results here
@@ -122,6 +124,11 @@ var (
 			match: regexp.MustCompile("ignition\\[[0-9]+\\]: failed to fetch config: context canceled"),
 		},
 		{
+			// https://github.com/coreos/bugs/issues/2526
+			desc:  "initrd-cleanup.service terminated",
+			match: regexp.MustCompile("initrd-cleanup\\.service: Main process exited, code=killed, status=15/TERM"),
+		},
+		{
 			// kernel 4.14.11
 			desc:  "bad page table",
 			match: regexp.MustCompile("mm/pgtable-generic.c:\\d+: bad (p.d|pte)"),
@@ -146,20 +153,22 @@ var (
 // glue until kola does introspection.
 type NativeRunner func(funcName string, m platform.Machine) error
 
-func NewCluster(pltfrm string, rconf *platform.RuntimeConfig) (cluster platform.Cluster, err error) {
+func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 	switch pltfrm {
 	case "aws":
-		cluster, err = aws.NewCluster(&AWSOptions, rconf)
+		flight, err = aws.NewFlight(&AWSOptions)
 	case "do":
-		cluster, err = do.NewCluster(&DOOptions, rconf)
+		flight, err = do.NewFlight(&DOOptions)
 	case "esx":
-		cluster, err = esx.NewCluster(&ESXOptions, rconf)
+		flight, err = esx.NewFlight(&ESXOptions)
 	case "gce":
-		cluster, err = gcloud.NewCluster(&GCEOptions, rconf)
+		flight, err = gcloud.NewFlight(&GCEOptions)
+	case "openstack":
+		flight, err = openstack.NewFlight(&OpenStackOptions)
 	case "packet":
-		cluster, err = packet.NewCluster(&PacketOptions, rconf)
+		flight, err = packet.NewFlight(&PacketOptions)
 	case "qemu":
-		cluster, err = qemu.NewCluster(&QEMUOptions, rconf)
+		flight, err = qemu.NewFlight(&QEMUOptions)
 	default:
 		err = fmt.Errorf("invalid platform %q", pltfrm)
 	}
@@ -180,6 +189,20 @@ func filterTests(tests map[string]*register.Test, pattern, platform string, vers
 
 		// Check the test's min and end versions when running more than one test
 		if t.Name != pattern && versionOutsideRange(version, t.MinVersion, t.EndVersion) {
+			continue
+		}
+
+		existsIn := func(item string, entries []string) bool {
+			for _, i := range entries {
+				if i == item {
+					return true
+				}
+			}
+			return false
+		}
+
+		if existsIn(platform, register.PlatformsNoInternet) && t.HasFlag(register.RequiresInternetAccess) {
+			plog.Debugf("skipping test %s: Internet required but not supported by platform %s", t.Name, platform)
 			continue
 		}
 
@@ -278,9 +301,15 @@ func RunTests(pattern, pltfrm, outputDir string) error {
 		torcxManifestFile.Close()
 	}
 
+	flight, err := NewFlight(pltfrm)
+	if err != nil {
+		plog.Fatalf("Flight failed: %v", err)
+	}
+	defer flight.Destroy()
+
 	if !skipGetVersion {
 		plog.Info("Creating cluster to check semver...")
-		version, err := getClusterSemver(pltfrm, outputDir)
+		version, err := getClusterSemver(flight, outputDir)
 		if err != nil {
 			plog.Fatal(err)
 		}
@@ -306,7 +335,7 @@ func RunTests(pattern, pltfrm, outputDir string) error {
 	for _, test := range tests {
 		test := test // for the closure
 		run := func(h *harness.H) {
-			runTest(h, test, pltfrm)
+			runTest(h, test, pltfrm, flight)
 		}
 		htests.Add(test.Name, run)
 	}
@@ -332,7 +361,7 @@ func RunTests(pattern, pltfrm, outputDir string) error {
 
 // getClusterSemVer returns the CoreOS semantic version via starting a
 // machine and checking
-func getClusterSemver(pltfrm, outputDir string) (*semver.Version, error) {
+func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version, error) {
 	var err error
 
 	testDir := filepath.Join(outputDir, "get_cluster_semver")
@@ -340,7 +369,7 @@ func getClusterSemver(pltfrm, outputDir string) (*semver.Version, error) {
 		return nil, err
 	}
 
-	cluster, err := NewCluster(pltfrm, &platform.RuntimeConfig{
+	cluster, err := flight.NewCluster(&platform.RuntimeConfig{
 		OutputDir: testDir,
 	})
 	if err != nil {
@@ -382,15 +411,8 @@ func parseCLVersion(input string) (*semver.Version, error) {
 // runTest is a harness for running a single test.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. It should already exist.
-func runTest(h *harness.H, t *register.Test, pltfrm string) {
+func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flight) {
 	h.Parallel()
-
-	// don't go too fast, in case we're talking to a rate limiting api like AWS EC2.
-	// FIXME(marineam): API requests must do their own
-	// backoff due to rate limiting, this is unreliable.
-	max := int64(2 * time.Second)
-	splay := time.Duration(rand.Int63n(max))
-	time.Sleep(splay)
 
 	rconf := &platform.RuntimeConfig{
 		OutputDir:          h.OutputDir(),
@@ -398,7 +420,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string) {
 		NoSSHKeyInMetadata: t.HasFlag(register.NoSSHKeyInMetadata),
 		NoEnableSelinux:    t.HasFlag(register.NoEnableSelinux),
 	}
-	c, err := NewCluster(pltfrm, rconf)
+	c, err := flight.NewCluster(rconf)
 	if err != nil {
 		h.Fatalf("Cluster failed: %v", err)
 	}
@@ -446,6 +468,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string) {
 		H:           h,
 		Cluster:     c,
 		NativeFuncs: names,
+		FailFast:    t.FailFast,
 	}
 
 	// drop kolet binary on machines
@@ -492,6 +515,15 @@ func scpKolet(c cluster.TestCluster, mArch string) {
 		if _, err := os.Stat(kolet); err == nil {
 			if err := c.DropFile(kolet); err != nil {
 				c.Fatalf("dropping kolet binary: %v", err)
+			}
+			// The default SELinux rules do not allow init_t to execute user_home_t
+			if Options.Distribution == "rhcos" || Options.Distribution == "fcos" {
+				for _, machine := range c.Machines() {
+					out, stderr, err := machine.SSH("sudo chcon -t bin_t kolet")
+					if err != nil {
+						c.Fatalf("running chcon on kolet: %s: %s: %v", out, stderr, err)
+					}
+				}
 			}
 			return
 		}

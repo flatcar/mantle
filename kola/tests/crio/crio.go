@@ -27,6 +27,7 @@ import (
 
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
+	"github.com/coreos/mantle/kola/tests/util"
 	"github.com/coreos/mantle/lang/worker"
 	"github.com/coreos/mantle/platform"
 )
@@ -146,18 +147,19 @@ var crioContainerTemplate = `{
 // init runs when the package is imported and takes care of registering tests
 func init() {
 	register.Register(&register.Test{
-		Run:              crioBaseTests,
-		ClusterSize:      1,
-		Name:             `crio.base`,
-		ExcludePlatforms: []string{"qemu"}, // crio pods require fetching a kubernetes pause image
-		Distros:          []string{"rhcos"},
+		Run:         crioBaseTests,
+		ClusterSize: 1,
+		Name:        `crio.base`,
+		// crio pods require fetching a kubernetes pause image
+		Flags:   []register.Flag{register.RequiresInternetAccess},
+		Distros: []string{"rhcos"},
 	})
 	register.Register(&register.Test{
-		Run:              crioNetwork,
-		ClusterSize:      2,
-		Name:             "crio.network",
-		ExcludePlatforms: []string{"qemu"},
-		Distros:          []string{"rhcos"},
+		Run:         crioNetwork,
+		ClusterSize: 2,
+		Name:        "crio.network",
+		Flags:       []register.Flag{register.RequiresInternetAccess},
+		Distros:     []string{"rhcos"},
 	})
 }
 
@@ -212,12 +214,8 @@ func genContainer(c cluster.TestCluster, m platform.Machine, name string, binnam
 		return "", "", err
 	}
 
-	// This shell script creates the crio image used for testing
-	cmd := `tmpdir=$(mktemp -d); cd $tmpdir; echo -e "FROM scratch\nCOPY . /" > Dockerfile;
-	        b=$(which %s); libs=$(sudo ldd $b | grep -o /lib'[^ ]*' | sort -u);
-			sudo rsync -av --relative --copy-links $b $libs ./;
-			sudo podman build -t localhost/%s .`
-	c.MustSSH(m, fmt.Sprintf(cmd, strings.Join(binnames, " "), name))
+	// Create the crio image used for testing
+	util.GenPodmanScratchContainer(c, m, name, binnames)
 
 	return path.Base(configPathPod), path.Base(configPathContainer), nil
 }

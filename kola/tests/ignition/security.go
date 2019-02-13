@@ -59,9 +59,10 @@ func init() {
 		NativeFuncs: map[string]func() error{
 			"TLSServe": TLSServe,
 		},
-		// https://github.com/coreos/bugs/issues/2205
-		ExcludePlatforms: []string{"do"},
-		Distros:          []string{"cl", "rhcos"},
+		// DO: https://github.com/coreos/bugs/issues/2205
+		// Packet & QEMU: https://github.com/coreos/ignition/issues/645
+		ExcludePlatforms: []string{"do", "packet", "qemu"},
+		Distros:          []string{"cl", "rhcos", "fcos"},
 	})
 }
 
@@ -91,7 +92,7 @@ EOF
 ) -extensions SAN'`, "$IP", ip, -1))
 	publicKey := c.MustSSH(server, "sudo cat /var/tls/server.crt")
 
-	c.MustSSH(server, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s TLSServe", c.Name()))
+	c.MustSSH(server, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s TLSServe", c.H.Name()))
 
 	client, err := c.NewMachine(localSecurityClient.Subst("$IP", ip).Subst("$KEY", dataurl.EncodeBytes(publicKey)))
 	if err != nil {

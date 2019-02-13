@@ -12,6 +12,7 @@ Mantle is composed of many utilities:
  - `kolet` an agent for kola that runs on instances
  - `ore` for interfacing with cloud providers
  - `plume` for releasing Container Linux
+
 All of the utilities support the `help` command to get a full listing of their subcommands
 and options.
 
@@ -55,7 +56,7 @@ Ideally, all software needed for a test should be included by building
 it into the image from the SDK.
 
 Kola supports running tests on multiple platforms, currently QEMU, GCE,
-AWS, VMware VSphere, and Packet. In the future systemd-nspawn and other
+AWS, VMware VSphere, Packet, and OpenStack. In the future systemd-nspawn and other
 platforms may be added.
 Local platforms do not rely on access to the Internet as a design
 principle of kola, minimizing external dependencies. Any network
@@ -99,6 +100,20 @@ The updatepayload command launches a Container Linux instance then updates it by
 sending an update to its update_engine. The update is the `coreos_*_update.gz` in the
 latest build directory.
 
+#### kola subtest parallelization
+Subtests can be parallelized by adding `c.H.Parallel()` at the top of the inline function
+given to `c.Run`. It is not recommended to utilize the `FailFast` flag in tests that utilize
+this functionality as it can have unintended results.
+
+#### kola test namespacing
+The top-level namespace of tests should fit into one of the following categories:
+1. Groups of tests targeting specific packages/binaries may use that
+namespace (ex: `docker.*`)
+2. Tests that target multiple supported distributions may use the
+`coreos` namespace.
+3. Tests that target singular distributions may use the distribution's
+namespace.
+
 #### kola test registration
 Registering kola tests currently requires that the tests are registered
 under the kola package and that the test function itself lives within
@@ -108,7 +123,7 @@ Groups of similar tests are registered in an init() function inside the
 kola package.  `Register(*Test)` is called per test. A kola `Test`
 struct requires a unique name, and a single function that is the entry
 point into the test. Additionally, userdata (such as a Container Linux
-Config) can be be supplied. See the `Test` struct in
+Config) can be supplied. See the `Test` struct in
 [kola/register/register.go](https://github.com/coreos/mantle/tree/master/kola/register/register.go)
 for a complete list of options.
 
@@ -151,7 +166,7 @@ kolet is run on kola instances to run native functions in tests. Generally kolet
 is not invoked manually.
 
 ### ore
-Ore provides a low level interface for each cloud provider. It has commands
+Ore provides a low-level interface for each cloud provider. It has commands
 related to launching instances on a variety of platforms (gcloud, aws,
 azure, esx, and packet) within the latest SDK image. Ore mimics the underlying
 api for each cloud provider closely, so the interface for each cloud provider
@@ -245,6 +260,25 @@ you can paste in. This will populate the `.boto` file.
 
 See [Google Cloud Platform's Documentation](https://cloud.google.com/storage/docs/boto-gsutil)
 for more information about the `.boto` file.
+
+### openstack
+`openstack` uses `~/.config/openstack.json`. This can be configured manually:
+```
+{
+    "default": {
+        "auth_url": "auth url here",
+        "tenant_id": "tenant id here",
+        "tenant_name": "tenant name here",
+        "username": "username here",
+        "password": "password here",
+        "user_domain": "domain id here",
+        "floating_ip_pool": "floating ip pool here",
+        "region_name": "region here"
+    }
+}
+```
+
+`user_domain` is required on some newer versions of OpenStack using Keystone V3 but is optional on older versions. `floating_ip_pool` and `region_name` can be optionally specified here to be used as a default if not specified on the command line.
 
 ### packet
 `packet` uses `~/.config/packet.json`. This can be configured manually:

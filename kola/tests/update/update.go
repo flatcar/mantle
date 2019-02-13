@@ -34,7 +34,7 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "coreos.update.payload",
+		Name:        "cl.update.payload",
 		Run:         payload,
 		ClusterSize: 1,
 		NativeFuncs: map[string]func() error{
@@ -102,7 +102,7 @@ func configureOmahaServer(c cluster.TestCluster, srv platform.Machine) string {
 		c.Fatalf("copying update payload to omaha server: %v", err)
 	}
 
-	c.MustSSH(srv, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Omaha", c.Name()))
+	c.MustSSH(srv, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Omaha", c.H.Name()))
 
 	err = util.WaitUntilReady(60*time.Second, 5*time.Second, func() (bool, error) {
 		_, _, err := srv.SSH(fmt.Sprintf("curl %s:34567", srv.PrivateIP()))

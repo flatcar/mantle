@@ -22,7 +22,7 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "coreos.ignition.v1.once",
+		Name:        "cl.ignition.v1.once",
 		Run:         runsOnce,
 		ClusterSize: 1,
 		UserData: conf.Ignition(`{
@@ -64,7 +64,7 @@ func init() {
                                ]
                              }
                            }`),
-		Distros: []string{"cl", "rhcos"},
+		Distros: []string{"cl", "rhcos", "fcos"},
 	})
 }
 

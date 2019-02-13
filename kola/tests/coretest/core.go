@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"github.com/pborman/uuid"
 
 	"github.com/coreos/mantle/kola/register"
 )
@@ -27,7 +27,7 @@ const (
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "coreos.basic",
+		Name:        "cl.basic",
 		Run:         LocalTests,
 		ClusterSize: 1,
 		NativeFuncs: map[string]func() error{
@@ -60,13 +60,27 @@ func init() {
 		},
 		Distros: []string{"rhcos"},
 	})
+	register.Register(&register.Test{
+		Name:        "fcos.basic",
+		Run:         LocalTests,
+		ClusterSize: 1,
+		NativeFuncs: map[string]func() error{
+			"PortSSH":        TestPortSsh,
+			"DbusPerms":      TestDbusPerms,
+			"ServicesActive": TestServicesActiveFCOS,
+			"ReadOnly":       TestReadOnlyFs,
+			"Useradd":        TestUseradd,
+			"MachineID":      TestMachineID,
+		},
+		Distros: []string{"fcos"},
+	})
 
 	// tests requiring network connection to internet
 	register.Register(&register.Test{
-		Name:             "coreos.internet",
-		Run:              InternetTests,
-		ClusterSize:      1,
-		ExcludePlatforms: []string{"qemu"},
+		Name:        "cl.internet",
+		Run:         InternetTests,
+		ClusterSize: 1,
+		Flags:       []register.Flag{register.RequiresInternetAccess},
 		NativeFuncs: map[string]func() error{
 			"UpdateEngine": TestUpdateEngine,
 			"DockerPing":   TestDockerPing,
@@ -275,6 +289,12 @@ func TestServicesActiveRHCOS() error {
 	})
 }
 
+func TestServicesActiveFCOS() error {
+	return servicesActive([]string{
+		"multi-user.target",
+	})
+}
+
 func servicesActive(units []string) error {
 	//t.Parallel()
 	for _, unit := range units {
@@ -320,16 +340,13 @@ func TestFsRandomUUID() error {
 		return fmt.Errorf("findmnt: %v", err)
 	}
 
-	got := bytes.TrimSpace(out)
-
-	var id uuid.UUID
-
-	if err := id.UnmarshalText(got); err != nil {
+	got, err := uuid.ParseBytes(bytes.TrimSpace(out))
+	if err != nil {
 		return fmt.Errorf("malformed GUID: %v", err)
 	}
 
-	defaultGUID := []byte("00000000-0000-0000-0000-000000000001")
-	if bytes.Equal(defaultGUID, got) {
+	defaultGUID := uuid.Parse("00000000-0000-0000-0000-000000000001")
+	if uuid.Equal(defaultGUID, got) {
 		return fmt.Errorf("unexpected default GUID found")
 	}
 

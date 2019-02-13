@@ -30,30 +30,21 @@ func init() {
 	register.Register(&register.Test{
 		Run:         Discovery,
 		ClusterSize: 3,
-		Name:        "coreos.etcd-member.discovery",
-		UserData: conf.Ignition(`{
-  "ignition": { "version": "2.0.0" },
-  "systemd": {
-    "units": [
-      {
-        "name": "etcd-member.service",
-        "enable": true,
-        "dropins": [{
-          "name": "metadata.conf",
-          "contents": "[Unit]\nWants=coreos-metadata.service\nAfter=coreos-metadata.service\n\n[Service]\nEnvironmentFile=-/run/metadata/coreos\nExecStart=\nExecStart=/usr/lib/flatcar/etcd-wrapper --discovery=$discovery --advertise-client-urls=http://$private_ipv4:2379 --initial-advertise-peer-urls=http://$private_ipv4:2380 --listen-client-urls=http://0.0.0.0:2379 --listen-peer-urls=http://$private_ipv4:2380"
-        }]
-      }
-    ]
-  }
-}`),
-		ExcludePlatforms: []string{"qemu"}, // etcd-member requires networking
-		Distros:          []string{"cl"},
+		Name:        "cl.etcd-member.discovery",
+		UserData: conf.ContainerLinuxConfig(`etcd:
+  listen_client_urls:          http://0.0.0.0:2379
+  advertise_client_urls:       http://{PRIVATE_IPV4}:2379
+  listen_peer_urls:            http://{PRIVATE_IPV4}:2380
+  initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
+  discovery:                   $discovery`),
+		Flags:   []register.Flag{register.RequiresInternetAccess}, // etcd-member requires networking
+		Distros: []string{"cl"},
 	})
 
 	register.Register(&register.Test{
 		Run:         etcdMemberV2BackupRestore,
 		ClusterSize: 1,
-		Name:        "coreos.etcd-member.v2-backup-restore",
+		Name:        "cl.etcd-member.v2-backup-restore",
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
@@ -63,7 +54,8 @@ etcd:
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery
 `),
-		ExcludePlatforms: []string{"qemu", "esx"}, // etcd-member requires networking and ct rendering
+		Flags:            []register.Flag{register.RequiresInternetAccess}, // etcd-member requires networking
+		ExcludePlatforms: []string{"esx"},                                  // etcd-member requires ct rendering
 		Distros:          []string{"cl"},
 	})
 
@@ -72,7 +64,7 @@ etcd:
 		// Clustersize of 1 to avoid needing private ips everywhere for clustering;
 		// this lets it run on more platforms, and also faster
 		ClusterSize: 1,
-		Name:        "coreos.etcd-member.etcdctlv3",
+		Name:        "cl.etcd-member.etcdctlv3",
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
@@ -81,8 +73,8 @@ etcd:
   listen_peer_urls:            http://0.0.0.0:2380
   initial_advertise_peer_urls: http://127.0.0.1:2380
 `),
-		ExcludePlatforms: []string{"qemu"}, // networking to download etcd image
-		Distros:          []string{"cl"},
+		Flags:   []register.Flag{register.RequiresInternetAccess}, // networking to download etcd image
+		Distros: []string{"cl"},
 	})
 }
 
@@ -168,7 +160,7 @@ EOF
 `)
 }
 
-// etcdmemberEtcdctlV3 tests the basic operatoin of the ETCDCTL_API=3 behavior
+// etcdmemberEtcdctlV3 tests the basic operation of the ETCDCTL_API=3 behavior
 // of the etcdctl we ship.
 func etcdmemberEtcdctlV3(c cluster.TestCluster) {
 	m := c.Machines()[0]

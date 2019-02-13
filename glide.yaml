@@ -1,5 +1,7 @@
 package: github.com/coreos/mantle
 import:
+- package: github.com/gophercloud/gophercloud
+  version: 185230dfbd12fc178f22e1e2a5c4cf0e3ef5ae45
 - package: github.com/Azure/azure-sdk-for-go
   version: f8b0607613f19ae9509b5ed6fbfda56caf06d59d
 - package: github.com/Microsoft/azure-vhd-utils
@@ -17,15 +19,13 @@ import:
 - package: github.com/coreos/go-semver
   version: 5e3acbb5668c4c3deb4842615c4098eb61fb6b1e
 - package: github.com/coreos/ignition
-  version: v0.28.0
+  version: v0.29.0
 - package: github.com/coreos/ioprogress
   version: 4637e494fd9b23c5565ee193e89f91fdc1639bc0
 - package: github.com/coreos/pkg
   version: 447b7ec906e523386d9c53be15b55a8ae86ea944
 - package: github.com/digitalocean/godo
   version: v1.1.3
-- package: github.com/go-ini/ini
-  version: v1.28.2
 - package: github.com/godbus/dbus
   version: a5942dec6340eb0d57f43f2003c190ce06e43dea
 - package: github.com/golang/protobuf
@@ -36,8 +36,8 @@ import:
   version: 21cb3784d9bda523911b96719efba02b7e983256
 - package: github.com/packethost/packngo
   version: 80f62d78849dba04e42d8812329ee00558e37c5b
-- package: github.com/satori/go.uuid
-  version: 08f0718b61e95ddba0ade3346725fe0e4bf28ca6
+- package: github.com/pborman/uuid
+  version: v1.2.0
 - package: github.com/spf13/cobra
   version: 1c44ec8d3f1552cac48999f9306da23c4d8a288b
 - package: github.com/spf13/pflag
@@ -56,3 +56,8 @@ import:
   version: c858ef4400610cbfd097ffc5f5c6e4a1a51eac86
 - package: github.com/vmware/govmomi
   version: v0.15.0
+# This needs to be pinned. Dunno why.
+- package: github.com/cpuguy83/go-md2man
+  version: 71acacd42f85e5e82f70a55327789582a5200a90
+- package: golang.org/x/sys
+  version: c2ed4eda69e7f62900806e4cd6e45f0429f859fa

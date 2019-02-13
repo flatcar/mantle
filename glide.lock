@@ -1,5 +1,5 @@
-hash: 62c9a9bf8775efb8edf7b1ac40b96cf1d031a3edc2a44dffb56fc0bbfc9cb384
-updated: 2018-09-14T16:49:18.799025796-07:00
+hash: 5475c3d087b7babe6ca84b095ca35202a7d093f3ad93873ff673855acb18e501
+updated: 2019-01-08T15:50:26.470658939-06:00
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -47,7 +47,7 @@ imports:
   - management/storageservice
   - storage
 - name: github.com/beorn7/perks
-  version: b965b613227fddccbfffe13eae360ed3fa822f8d
+  version: 3a771d992973f24aa725d07868b467d1ddfceafb
   subpackages:
   - quantile
 - name: github.com/coreos/bbolt
@@ -130,12 +130,12 @@ imports:
   subpackages:
   - semver
 - name: github.com/coreos/go-systemd
-  version: 39ca1b05acc7ad1220e09f133283b8859a8b71ab
+  version: 9002847aa1425fb6ac49077c0a630b3b67e0fbfd
   subpackages:
   - journal
   - unit
 - name: github.com/coreos/ignition
-  version: f7079129b8651ac51dba14c3af65692bb413c1dd
+  version: 2a88cd95b6812a70a7dad150f4cb18c5f028bc22
   subpackages:
   - config/shared/errors
   - config/shared/validations
@@ -148,7 +148,9 @@ imports:
   - config/v2_1/types
   - config/v2_2
   - config/v2_2/types
-  - config/v2_3_experimental/types
+  - config/v2_3
+  - config/v2_3/types
+  - config/v2_4_experimental/types
   - config/validate
   - config/validate/astjson
   - config/validate/astnode
@@ -173,7 +175,7 @@ imports:
   subpackages:
   - context
 - name: github.com/go-ini/ini
-  version: 20b96f641a5ea98f2f8619ff4f3e061cff4833bd
+  version: 300e940a926eb277d3901b20bdfcc54928ad3642
 - name: github.com/godbus/dbus
   version: a5942dec6340eb0d57f43f2003c190ce06e43dea
 - name: github.com/gogo/protobuf
@@ -193,13 +195,35 @@ imports:
 - name: github.com/google/btree
   version: 925471ac9e2131377a91e1595defec898166fe49
 - name: github.com/google/go-querystring
-  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  version: 44c6ddd0a2342c386950e880b658017258da92fc
   subpackages:
   - query
+- name: github.com/google/uuid
+  version: 9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8
+- name: github.com/gophercloud/gophercloud
+  version: 185230dfbd12fc178f22e1e2a5c4cf0e3ef5ae45
+  subpackages:
+  - internal
+  - openstack
+  - openstack/compute/v2/extensions/floatingips
+  - openstack/compute/v2/extensions/keypairs
+  - openstack/compute/v2/flavors
+  - openstack/compute/v2/images
+  - openstack/compute/v2/servers
+  - openstack/identity/v2/tenants
+  - openstack/identity/v2/tokens
+  - openstack/identity/v3/tokens
+  - openstack/imageservice/v2/imagedata
+  - openstack/imageservice/v2/images
+  - openstack/networking/v2/extensions/security/groups
+  - openstack/networking/v2/extensions/security/rules
+  - openstack/networking/v2/networks
+  - openstack/utils
+  - pagination
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/jmespath/go-jmespath
-  version: c01cf91b011868172fdcd9f41838e80c9d716264
+  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
 - name: github.com/jonboulle/clockwork
   version: 2eee05ed794112d45db504eb05aa693efd2b8b09
 - name: github.com/kballard/go-shellquote
@@ -210,7 +234,7 @@ imports:
   - diff
   - pretty
 - name: github.com/matttproud/golang_protobuf_extensions
-  version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
+  version: c182affec369e30f25d3eb8cd8a478dee585ae7d
   subpackages:
   - pbutil
 - name: github.com/Microsoft/azure-vhd-utils
@@ -235,6 +259,8 @@ imports:
   - vhdcore/writer
 - name: github.com/packethost/packngo
   version: 80f62d78849dba04e42d8812329ee00558e37c5b
+- name: github.com/pborman/uuid
+  version: 8b1b92947f46224e3b97bb1a3a5b0382be00d31e
 - name: github.com/pin/tftp
   version: 9ea92f6b1029bc1bf3072bba195c84bb9b0370e3
   subpackages:
@@ -260,8 +286,6 @@ imports:
   - xfs
 - name: github.com/russross/blackfriday
   version: 4048872b16cc0fc2c5fd9eacf0ed2c2fedaa0c8c
-- name: github.com/satori/go.uuid
-  version: 08f0718b61e95ddba0ade3346725fe0e4bf28ca6
 - name: github.com/spf13/cobra
   version: 1c44ec8d3f1552cac48999f9306da23c4d8a288b
 - name: github.com/spf13/pflag
@@ -327,12 +351,17 @@ imports:
 - name: golang.org/x/net
   version: 66aacef3dd8a676686c7ae3716979581e8b03c47
   subpackages:
+  - bpf
   - context
   - context/ctxhttp
   - http2
   - http2/hpack
   - idna
+  - internal/iana
+  - internal/socket
   - internal/timeseries
+  - ipv4
+  - ipv6
   - lex/httplex
   - trace
 - name: golang.org/x/oauth2
@@ -343,7 +372,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: ebfc5b4631820b793c9010c87fd8fef0f39eb082
+  version: c2ed4eda69e7f62900806e4cd6e45f0429f859fa
   subpackages:
   - unix
 - name: golang.org/x/text
@@ -366,7 +395,7 @@ imports:
   - googleapi/internal/uritemplates
   - storage/v1
 - name: google.golang.org/appengine
-  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
+  version: e9657d882bb81064595ca3b56cbe2546bbabf7b1
   subpackages:
   - internal
   - internal/app_identity
@@ -378,10 +407,9 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/cloud
-  version: ab6762587120f590adf808437a5819b991ac2d20
+  version: 23e89d0c751acbfd91a6342a2a3cdba1e90928a5
   subpackages:
   - compute/metadata
-  - internal
 - name: google.golang.org/genproto
   version: 09f6ed296fc66555a25fe4ce95173148778dfa85
   subpackages:
