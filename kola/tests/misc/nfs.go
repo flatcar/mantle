@@ -49,19 +49,12 @@ func init() {
 		Run:         NFSv3,
 		ClusterSize: 0,
 		Name:        "linux.nfs.v3",
-		Distros:     []string{"cl"},
+		Distros:     []string{"cl", "fcos"},
 	})
 	register.Register(&register.Test{
 		Run:         NFSv4,
 		ClusterSize: 0,
 		Name:        "linux.nfs.v4",
-		Distros:     []string{"cl"},
-	})
-	register.Register(&register.Test{
-		Run:         RHCOSNFSv4,
-		ClusterSize: 0,
-		Name:        "rhcos.linux.nfs.v4",
-		Distros:     []string{"rhcos"},
 	})
 }
 
@@ -79,6 +72,11 @@ func testNFS(c cluster.TestCluster, nfsversion int, remotePath string) {
 	tmp := c.MustSSH(m1, "mktemp")
 
 	c.Logf("Test file %q created on server.", tmp)
+
+	nfstype := "nfs"
+	if nfsversion == 4 {
+		nfstype = "nfs4"
+	}
 
 	c2 := conf.ContainerLinuxConfig(fmt.Sprintf(`storage:
   files:
@@ -102,11 +100,11 @@ systemd:
         [Mount]
         What=%s:%s
         Where=/var/mnt
-        Type=nfs
+        Type=%s
         Options=defaults,noexec,nfsvers=%d
 
         [Install]
-        WantedBy=multi-user.target`, m1.PrivateIP(), remotePath, nfsversion))
+        WantedBy=multi-user.target`, m1.PrivateIP(), remotePath, nfstype, nfsversion))
 
 	m2, err := c.NewMachine(c2)
 	if err != nil {
@@ -139,12 +137,7 @@ func NFSv3(c cluster.TestCluster) {
 	testNFS(c, 3, "/tmp")
 }
 
-// Test that NFSv4 without security works on CoreOS.
+// Test that NFSv4 without security works.
 func NFSv4(c cluster.TestCluster) {
-	testNFS(c, 4, "/tmp")
-}
-
-// Test that NFSv4 without security works on RHCOS.
-func RHCOSNFSv4(c cluster.TestCluster) {
 	testNFS(c, 4, "/")
 }

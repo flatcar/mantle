@@ -60,11 +60,15 @@ will be ignored.
 		Short: "List kola test names",
 		Run:   runList,
 	}
+
+	listJSON bool
 )
 
 func init() {
 	root.AddCommand(cmdRun)
 	root.AddCommand(cmdList)
+
+	cmdList.Flags().BoolVar(&listJSON, "json", false, "format output in JSON")
 }
 
 func main() {
@@ -148,6 +152,11 @@ func writeProps() error {
 		Image       string `json:"image"`
 		MachineType string `json:"type"`
 	}
+	type OpenStack struct {
+		Region string `json:"region"`
+		Image  string `json:"image"`
+		Flavor string `json:"flavor"`
+	}
 	type Packet struct {
 		Facility              string `json:"facility"`
 		Plan                  string `json:"plan"`
@@ -155,19 +164,21 @@ func writeProps() error {
 		ImageURL              string `json:"image"`
 	}
 	type QEMU struct {
-		Image string `json:"image"`
+		Image   string `json:"image"`
+		Mangled bool   `json:"mangled"`
 	}
 	return enc.Encode(&struct {
-		Cmdline  []string `json:"cmdline"`
-		Platform string   `json:"platform"`
-		Distro   string   `json:"distro"`
-		Board    string   `json:"board"`
-		AWS      AWS      `json:"aws"`
-		DO       DO       `json:"do"`
-		ESX      ESX      `json:"esx"`
-		GCE      GCE      `json:"gce"`
-		Packet   Packet   `json:"packet"`
-		QEMU     QEMU     `json:"qemu"`
+		Cmdline   []string  `json:"cmdline"`
+		Platform  string    `json:"platform"`
+		Distro    string    `json:"distro"`
+		Board     string    `json:"board"`
+		AWS       AWS       `json:"aws"`
+		DO        DO        `json:"do"`
+		ESX       ESX       `json:"esx"`
+		GCE       GCE       `json:"gce"`
+		OpenStack OpenStack `json:"openstack"`
+		Packet    Packet    `json:"packet"`
+		QEMU      QEMU      `json:"qemu"`
 	}{
 		Cmdline:  os.Args,
 		Platform: kolaPlatform,
@@ -191,71 +202,107 @@ func writeProps() error {
 			Image:       kola.GCEOptions.Image,
 			MachineType: kola.GCEOptions.MachineType,
 		},
+		OpenStack: OpenStack{
+			Region: kola.OpenStackOptions.Region,
+			Image:  kola.OpenStackOptions.Image,
+			Flavor: kola.OpenStackOptions.Flavor,
+		},
 		Packet: Packet{
-			Facility: kola.PacketOptions.Facility,
-			Plan:     kola.PacketOptions.Plan,
+			Facility:              kola.PacketOptions.Facility,
+			Plan:                  kola.PacketOptions.Plan,
 			InstallerImageBaseURL: kola.PacketOptions.InstallerImageBaseURL,
 			ImageURL:              kola.PacketOptions.ImageURL,
 		},
 		QEMU: QEMU{
-			Image: kola.QEMUOptions.DiskImage,
+			Image:   kola.QEMUOptions.DiskImage,
+			Mangled: !kola.QEMUOptions.UseVanillaImage,
 		},
 	})
 }
 
 func runList(cmd *cobra.Command, args []string) {
-	var w = tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
-	var testlist []item
-
+	var testlist []*item
 	for name, test := range register.Tests {
-		testlist = append(testlist, item{
+		item := &item{
 			name,
 			test.Platforms,
 			test.ExcludePlatforms,
-			test.Architectures})
+			test.Architectures,
+			test.Distros,
+			test.ExcludeDistros}
+		item.updateValues()
+		testlist = append(testlist, item)
 	}
 
 	sort.Slice(testlist, func(i, j int) bool {
 		return testlist[i].Name < testlist[j].Name
 	})
 
-	fmt.Fprintln(w, "Test Name\tPlatforms\tArchitectures")
-	fmt.Fprintln(w, "\t")
-	for _, item := range testlist {
-		fmt.Fprintf(w, "%v\n", item)
+	if !listJSON {
+		var w = tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
+
+		fmt.Fprintln(w, "Test Name\tPlatforms\tArchitectures\tDistributions")
+		fmt.Fprintln(w, "\t")
+		for _, item := range testlist {
+			fmt.Fprintf(w, "%v\n", item)
+		}
+		w.Flush()
+	} else {
+		out, err := json.MarshalIndent(testlist, "", "\t")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "marshalling test list: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(string(out))
 	}
-	w.Flush()
 }
 
 type item struct {
 	Name             string
 	Platforms        []string
-	ExcludePlatforms []string
+	ExcludePlatforms []string `json:"-"`
 	Architectures    []string
+	Distros          []string
+	ExcludeDistros   []string `json:"-"`
+}
+
+func (i *item) updateValues() {
+	buildItems := func(include, exclude, all []string) []string {
+		if len(include) == 0 && len(exclude) == 0 {
+			if listJSON {
+				return all
+			} else {
+				return []string{"all"}
+			}
+		}
+		var retItems []string
+		if len(exclude) > 0 {
+			excludeMap := map[string]struct{}{}
+			for _, item := range exclude {
+				excludeMap[item] = struct{}{}
+			}
+			if len(include) == 0 {
+				retItems = all
+			} else {
+				retItems = include
+			}
+			items := []string{}
+			for _, item := range retItems {
+				if _, ok := excludeMap[item]; !ok {
+					items = append(items, item)
+				}
+			}
+			retItems = items
+		} else {
+			retItems = include
+		}
+		return retItems
+	}
+	i.Platforms = buildItems(i.Platforms, i.ExcludePlatforms, kolaPlatforms)
+	i.Architectures = buildItems(i.Architectures, nil, kolaArchitectures)
+	i.Distros = buildItems(i.Distros, i.ExcludeDistros, kolaDistros)
 }
 
 func (i item) String() string {
-	if len(i.ExcludePlatforms) > 0 {
-		excludePlatforms := map[string]struct{}{}
-		for _, platform := range i.ExcludePlatforms {
-			excludePlatforms[platform] = struct{}{}
-		}
-		if len(i.Platforms) == 0 {
-			i.Platforms = kolaPlatforms
-		}
-		platforms := []string{}
-		for _, platform := range i.Platforms {
-			if _, ok := excludePlatforms[platform]; !ok {
-				platforms = append(platforms, platform)
-			}
-		}
-		i.Platforms = platforms
-	}
-	if len(i.Platforms) == 0 {
-		i.Platforms = []string{"all"}
-	}
-	if len(i.Architectures) == 0 {
-		i.Architectures = []string{"all"}
-	}
-	return fmt.Sprintf("%v\t%v\t%v", i.Name, i.Platforms, i.Architectures)
+	return fmt.Sprintf("%v\t%v\t%v\t%v", i.Name, i.Platforms, i.Architectures, i.Distros)
 }

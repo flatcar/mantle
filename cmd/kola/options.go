@@ -29,8 +29,9 @@ var (
 	outputDir          string
 	kolaPlatform       string
 	defaultTargetBoard = sdk.DefaultBoard()
-	kolaPlatforms      = []string{"aws", "do", "esx", "gce", "packet", "qemu"}
-	kolaDistros        = []string{"cl", "rhcos"}
+	kolaArchitectures  = []string{"amd64"}
+	kolaPlatforms      = []string{"aws", "do", "esx", "gce", "openstack", "packet", "qemu"}
+	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaDefaultImages  = map[string]string{
 		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/flatcar_production_image.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_image.bin",
@@ -95,6 +96,16 @@ func init() {
 	bv(&kola.GCEOptions.ServiceAuth, "gce-service-auth", false, "for non-interactive auth when running within GCE")
 	sv(&kola.GCEOptions.JSONKeyFile, "gce-json-key", "", "use a service account's JSON key for authentication")
 
+	// openstack-specific options
+	sv(&kola.OpenStackOptions.ConfigPath, "openstack-config-file", "", "OpenStack config file (default \"~/"+auth.OpenStackConfigPath+"\")")
+	sv(&kola.OpenStackOptions.Profile, "openstack-profile", "", "OpenStack profile (default \"default\")")
+	sv(&kola.OpenStackOptions.Region, "openstack-region", "", "OpenStack region")
+	sv(&kola.OpenStackOptions.Image, "openstack-image", "", "OpenStack image ref")
+	sv(&kola.OpenStackOptions.Flavor, "openstack-flavor", "1", "OpenStack flavor ref")
+	sv(&kola.OpenStackOptions.Network, "openstack-network", "", "OpenStack network")
+	sv(&kola.OpenStackOptions.Domain, "openstack-domain", "", "OpenStack domain ID")
+	sv(&kola.OpenStackOptions.FloatingIPPool, "openstack-floating-ip-pool", "", "OpenStack floating IP pool for Compute v2 networking")
+
 	// packet-specific options
 	sv(&kola.PacketOptions.ConfigPath, "packet-config-file", "", "Packet config file (default \"~/"+auth.PacketConfigPath+"\")")
 	sv(&kola.PacketOptions.Profile, "packet-profile", "", "Packet profile (default \"default\")")
@@ -110,6 +121,7 @@ func init() {
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
 	sv(&kola.QEMUOptions.BIOSImage, "qemu-bios", "", "BIOS to use for QEMU vm")
+	bv(&kola.QEMUOptions.UseVanillaImage, "qemu-skip-mangle", false, "don't modify CL disk image to capture console log")
 }
 
 // Sync up the command line options if there is dependency
