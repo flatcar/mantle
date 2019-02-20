@@ -72,7 +72,7 @@ type Machine interface {
 	ConsoleOutput() string
 }
 
-// Cluster represents a cluster of Container Linux machines within a single platform.
+// Cluster represents a cluster of Flatcar Linux machines within a single platform.
 type Cluster interface {
 	// Platform returns the name of the platform.
 	Platform() Name
@@ -266,7 +266,7 @@ func NewMachines(c Cluster, userdata *conf.UserData, n int) ([]Machine, error) {
 
 // CheckMachine tests a machine for various error conditions such as ssh
 // being available and no systemd units failing at the time ssh is reachable.
-// It also ensures the remote system is running Container Linux by CoreOS.
+// It also ensures the remote system is running Flatcar Linux.
 //
 // TODO(mischief): better error messages.
 func CheckMachine(ctx context.Context, m Machine) error {
@@ -295,8 +295,8 @@ func CheckMachine(ctx context.Context, m Machine) error {
 		return fmt.Errorf("no /etc/os-release file: %v: %s", err, stderr)
 	}
 
-	if !bytes.Equal(out, []byte("ID=coreos")) {
-		return fmt.Errorf("not a Container Linux instance")
+	if !bytes.Equal(out, []byte("ID=flatcar")) {
+		return fmt.Errorf("not a Flatcar Linux instance")
 	}
 
 	if !m.RuntimeConf().AllowFailedUnits {
