@@ -84,11 +84,11 @@ func checkUpdate(dir, update_xml string) error {
 
 func GenerateFullUpdate(dir string) error {
 	var (
-		update_prefix = filepath.Join(dir, "coreos_production_update")
+		update_prefix = filepath.Join(dir, "flatcar_production_update")
 		update_bin    = update_prefix + ".bin"
 		update_gz     = update_prefix + ".gz"
 		update_xml    = update_prefix + ".xml"
-		vmlinuz       = filepath.Join(dir, "coreos_production_image.vmlinuz")
+		vmlinuz       = filepath.Join(dir, "flatcar_production_image.vmlinuz")
 	)
 
 	if err := checkUpdate(dir, update_xml); err == nil {
