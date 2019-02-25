@@ -31,7 +31,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         Verity,
 		ClusterSize: 1,
-		Name:        "coreos.verity",
+		Name:        "cl.verity",
 	})
 }
 
@@ -53,7 +53,7 @@ func VerityVerify(c cluster.TestCluster) {
 	rootOffset := getKernelVerityHashOffset(c)
 
 	// extract verity hash from kernel
-	ddcmd := fmt.Sprintf("dd if=/boot/coreos/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
+	ddcmd := fmt.Sprintf("dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
 	hash := c.MustSSH(m, ddcmd)
 
 	// find /usr dev
@@ -86,7 +86,7 @@ func VerityCorruption(c cluster.TestCluster) {
 	}
 
 	// corrupt a file on disk and flush disk caches.
-	// try setting NAME=CoreOS to NAME=LulzOS in /usr/lib/os-release
+	// try setting NAME=Flatcar to NAME=LulzOS in /usr/lib/os-release
 
 	// get usr device, probably vda3
 	usrdev := util.GetUsrDeviceNode(c, m)
