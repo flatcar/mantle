@@ -42,7 +42,7 @@ func init() {
 	DO.AddCommand(cmdCreateImage)
 	cmdCreateImage.Flags().StringVar(&options.Region, "region", "sfo2", "region slug")
 	cmdCreateImage.Flags().StringVarP(&imageName, "name", "n", "", "image name")
-	cmdCreateImage.Flags().StringVarP(&imageURL, "url", "u", "", "image source URL (e.g. \"https://stable.release.core-os.net/amd64-usr/current/coreos_production_digitalocean_image.bin.bz2\"")
+	cmdCreateImage.Flags().StringVarP(&imageURL, "url", "u", "", "image source URL (e.g. \"https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_digitalocean_image.bin.bz2\"")
 }
 
 func runCreateImage(cmd *cobra.Command, args []string) error {
