@@ -26,7 +26,7 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "coreos.ignition.v1.groups",
+		Name:        "cl.ignition.v1.groups",
 		Run:         groups,
 		ClusterSize: 1,
 		UserData: conf.Ignition(`{
@@ -51,7 +51,7 @@ func init() {
 		               ]
 		             }
 		           }`),
-		Distros: []string{"cl", "rhcos", "fcos"},
+		Distros: []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.ignition.v2.groups",
@@ -150,34 +150,6 @@ func init() {
 		Distros: []string{"cl"},
 	})
 	register.Register(&register.Test{
-		Name:        "rhcos.ignition.v1.users",
-		Run:         usersRhcos,
-		ClusterSize: 1,
-		UserData: conf.Ignition(`{
-		             "ignitionVersion": 1,
-		             "passwd": {
-		               "users": [
-		                 {
-		                   "name": "core",
-		                   "passwordHash": "foobar"
-		                 },
-		                 {
-		                   "name": "user1",
-		                   "create": {}
-		                 },
-		                 {
-		                   "name": "user2",
-		                   "create": {
-		                     "uid": 1010,
-		                     "groups": [ "sudo" ]
-		                   }
-		                 }
-		               ]
-		             }
-		           }`),
-		Distros: []string{"rhcos", "fcos"},
-	})
-	register.Register(&register.Test{
 		Name:        "rhcos.ignition.v2.users",
 		Run:         usersRhcos,
 		ClusterSize: 1,
@@ -271,12 +243,12 @@ func usersRhcos(c cluster.TestCluster) {
 		},
 		{
 			user:           "user1",
-			passwdRecord:   "user1:x:1001:1001::/home/user1:/bin/bash",
+			passwdRecord:   "user1:x:1001:1001::/var/home/user1:/bin/bash",
 			shadowPassword: "*",
 		},
 		{
 			user:           "user2",
-			passwdRecord:   "user2:x:1010:1010::/home/user2:/bin/bash",
+			passwdRecord:   "user2:x:1010:1010::/var/home/user2:/bin/bash",
 			shadowPassword: "*",
 		},
 	}

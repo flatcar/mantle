@@ -19,7 +19,7 @@ import:
 - package: github.com/coreos/go-semver
   version: 5e3acbb5668c4c3deb4842615c4098eb61fb6b1e
 - package: github.com/coreos/ignition
-  version: v0.29.0
+  version: v0.31.0
 - package: github.com/coreos/ioprogress
   version: 4637e494fd9b23c5565ee193e89f91fdc1639bc0
 - package: github.com/coreos/pkg
@@ -56,6 +56,8 @@ import:
   version: c858ef4400610cbfd097ffc5f5c6e4a1a51eac86
 - package: github.com/vmware/govmomi
   version: v0.15.0
+- package: github.com/ulikunitz/xz
+  version: v0.5.4
 # This needs to be pinned. Dunno why.
 - package: github.com/cpuguy83/go-md2man
   version: 71acacd42f85e5e82f70a55327789582a5200a90
