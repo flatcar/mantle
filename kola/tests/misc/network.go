@@ -127,6 +127,7 @@ func NetworkListeners(c cluster.TestCluster) {
 		{"tcp", "22", "systemd"},          // ssh
 		{"udp", "68", "systemd-network"},  // dhcp6-client
 		{"udp", "546", "systemd-network"}, // bootpc
+		{"tcp", "10010", "containerd"},    // containerd
 	}
 	checkList := func() error {
 		return checkListeners(c, expectedListeners)
