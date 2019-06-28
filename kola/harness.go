@@ -39,6 +39,7 @@ import (
 	gcloudapi "github.com/coreos/mantle/platform/api/gcloud"
 	openstackapi "github.com/coreos/mantle/platform/api/openstack"
 	packetapi "github.com/coreos/mantle/platform/api/packet"
+	"github.com/coreos/mantle/platform/conf"
 	"github.com/coreos/mantle/platform/machine/aws"
 	"github.com/coreos/mantle/platform/machine/do"
 	"github.com/coreos/mantle/platform/machine/esx"
@@ -46,6 +47,7 @@ import (
 	"github.com/coreos/mantle/platform/machine/openstack"
 	"github.com/coreos/mantle/platform/machine/packet"
 	"github.com/coreos/mantle/platform/machine/qemu"
+	"github.com/coreos/mantle/platform/machine/unprivqemu"
 	"github.com/coreos/mantle/system"
 )
 
@@ -169,14 +171,23 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = packet.NewFlight(&PacketOptions)
 	case "qemu":
 		flight, err = qemu.NewFlight(&QEMUOptions)
+	case "qemu-unpriv":
+		flight, err = unprivqemu.NewFlight(&QEMUOptions)
 	default:
 		err = fmt.Errorf("invalid platform %q", pltfrm)
 	}
 	return
 }
 
-func filterTests(tests map[string]*register.Test, pattern, platform string, version semver.Version) (map[string]*register.Test, error) {
+func filterTests(tests map[string]*register.Test, pattern, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
+
+	checkPlatforms := []string{pltfrm}
+
+	// qemu-unpriv has the same restrictions as QEMU but might also want additional restrictions due to the lack of a Local cluster
+	if pltfrm == "qemu-unpriv" {
+		checkPlatforms = append(checkPlatforms, "qemu")
+	}
 
 	for name, t := range tests {
 		match, err := filepath.Match(pattern, t.Name)
@@ -201,13 +212,13 @@ func filterTests(tests map[string]*register.Test, pattern, platform string, vers
 			return false
 		}
 
-		if existsIn(platform, register.PlatformsNoInternet) && t.HasFlag(register.RequiresInternetAccess) {
-			plog.Debugf("skipping test %s: Internet required but not supported by platform %s", t.Name, platform)
+		if existsIn(pltfrm, register.PlatformsNoInternet) && t.HasFlag(register.RequiresInternetAccess) {
+			plog.Debugf("skipping test %s: Internet required but not supported by platform %s", t.Name, pltfrm)
 			continue
 		}
 
-		isAllowed := func(item string, include, exclude []string) bool {
-			allowed := true
+		isAllowed := func(item string, include, exclude []string) (bool, bool) {
+			allowed, excluded := true, false
 			for _, i := range include {
 				if i == item {
 					allowed = true
@@ -219,20 +230,28 @@ func filterTests(tests map[string]*register.Test, pattern, platform string, vers
 			for _, i := range exclude {
 				if i == item {
 					allowed = false
+					excluded = true
 				}
 			}
-			return allowed
+			return allowed, excluded
 		}
 
-		if !isAllowed(platform, t.Platforms, t.ExcludePlatforms) {
+		isExcluded := false
+		allowed := false
+		for _, platform := range checkPlatforms {
+			allowedPlatform, excluded := isAllowed(platform, t.Platforms, t.ExcludePlatforms)
+			if excluded {
+				isExcluded = true
+				break
+			}
+			allowedArchitecture, _ := isAllowed(architecture(platform), t.Architectures, []string{})
+			allowed = allowed || (allowedPlatform && allowedArchitecture)
+		}
+		if isExcluded || !allowed {
 			continue
 		}
 
-		if !isAllowed(Options.Distribution, t.Distros, t.ExcludeDistros) {
-			continue
-		}
-
-		if !isAllowed(architecture(platform), t.Architectures, []string{}) {
+		if allowed, excluded := isAllowed(Options.Distribution, t.Distros, t.ExcludeDistros); !allowed || excluded {
 			continue
 		}
 
@@ -439,7 +458,12 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 	}()
 
 	if t.ClusterSize > 0 {
-		userdata := t.UserData
+		var userdata *conf.UserData
+		if Options.IgnitionVersion == "v2" {
+			userdata = t.UserData
+		} else if Options.IgnitionVersion == "v3" {
+			userdata = t.UserDataV3
+		}
 		if userdata != nil && userdata.Contains("$discovery") {
 			url, err := c.GetDiscoveryURL(t.ClusterSize)
 			if err != nil {

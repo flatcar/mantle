@@ -140,6 +140,8 @@ To see test examples look under
 [kola/tests](https://github.com/coreos/mantle/tree/master/kola/tests) in the
 mantle codebase.
 
+For a quickstart see [kola/README.md](/kola/README.md).
+
 #### kola native code
 For some tests, the `Cluster` interface is limited and it is desirable to
 run native go code directly on one of the Container Linux machines. This is
@@ -293,3 +295,10 @@ for more information about the `.boto` file.
 
 ### qemu
 `qemu` is run locally and needs no credentials, but does need to be run as root.
+
+### qemu-unpriv
+`qemu-unpriv` is run locally and needs no credentials. It has a restricted set of functionality compared to the `qemu` platform, such as:
+
+- Single node only, no machine to machine networking
+- DHCP provides no data (forces several tests to be disabled)
+- No [Local cluster](platform/local/)

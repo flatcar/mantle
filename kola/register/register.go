@@ -37,6 +37,7 @@ var (
 	// platforms that have no Internet access
 	PlatformsNoInternet = []string{
 		"qemu",
+		"qemu-unpriv",
 	}
 )
 
@@ -49,6 +50,7 @@ type Test struct {
 	Run              func(cluster.TestCluster)
 	NativeFuncs      map[string]func() error
 	UserData         *conf.UserData
+	UserDataV3       *conf.UserData
 	ClusterSize      int
 	Platforms        []string // whitelist of platforms to run test against -- defaults to all
 	ExcludePlatforms []string // blacklist of platforms to ignore -- defaults to none

@@ -25,6 +25,26 @@ const (
 	UpdateEnginePubKeyFlatcarV2 = "b6a8227f835a4a56988241eaeeda57a19ef5ff413c8533fd791827be2c15dd6c"
 )
 
+// RHCOS services we expect disabled/inactive
+var offServices = []string{
+	"dnsmasq.service",
+	"iscsid.service",
+	"iscsid.socket",
+	"iscsiuio.service",
+	"nfs-blkmap.service",
+	"nfs-idmapd.service",
+	"nfs-mountd.service",
+	"nfs-server.service",
+	"nis-domainname.service",
+	"rbdmap.service",
+	"rdisc.service",
+	"rpc-statd.service",
+	"rpcbind.service",
+	"rpcbind.socket",
+	"sssd.service",
+	"tcsd.service",
+}
+
 func init() {
 	register.Register(&register.Test{
 		Name:        "cl.basic",
@@ -51,12 +71,13 @@ func init() {
 		Run:         LocalTests,
 		ClusterSize: 1,
 		NativeFuncs: map[string]func() error{
-			"PortSSH":        TestPortSsh,
-			"DbusPerms":      TestDbusPerms,
-			"ServicesActive": TestServicesActiveRHCOS,
-			"ReadOnly":       TestReadOnlyFs,
-			"Useradd":        TestUseradd,
-			"MachineID":      TestMachineID,
+			"PortSSH":          TestPortSsh,
+			"DbusPerms":        TestDbusPerms,
+			"ServicesActive":   TestServicesActiveRHCOS,
+			"ServicesDisabled": TestServicesDisabledRHCOS,
+			"ReadOnly":         TestReadOnlyFs,
+			"Useradd":          TestUseradd,
+			"MachineID":        TestMachineID,
 		},
 		Distros: []string{"rhcos"},
 	})
@@ -302,6 +323,47 @@ func servicesActive(units []string) error {
 		err := c.Run()
 		if err != nil {
 			return fmt.Errorf("Services Active: %v", err)
+		}
+	}
+	return nil
+}
+
+func TestServicesDisabledRHCOS() error {
+	err := servicesInactive(offServices)
+	if err != nil {
+		return err
+	}
+
+	err = servicesDisabled(offServices)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func servicesInactive(units []string) error {
+	for _, unit := range units {
+		c := exec.Command("systemctl", "is-active", unit)
+		err := c.Run()
+		if err == nil {
+			return fmt.Errorf("Service Incorrectly Active: %q", unit)
+		}
+	}
+	return nil
+}
+
+func servicesDisabled(units []string) error {
+	for _, unit := range units {
+		c := exec.Command("systemctl", "is-enabled", unit)
+		out, err := c.Output()
+		if err == nil {
+			// "is-enabled" can return 0 in some cases when the output is not
+			// explicitly "disabled".  In the case of the RHCOS services
+			// that are checked, we expect some to report "static"
+			outString := strings.TrimSuffix(string(out), "\n")
+			if (outString != "disabled") && (outString != "static") {
+				return fmt.Errorf("Service Incorrectly Enabled: %q", unit)
+			}
 		}
 	}
 	return nil
