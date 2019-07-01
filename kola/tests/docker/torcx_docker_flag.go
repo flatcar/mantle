@@ -49,7 +49,8 @@ write_files:
   - path: "/etc/flatcar/docker-1.12"
     content: yes
 `),
-		Distros: []string{"cl"},
+		Distros:          []string{"cl"},
+		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
 }
 

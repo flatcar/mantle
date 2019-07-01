@@ -30,11 +30,16 @@ var (
 	kolaPlatform       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "do", "esx", "gce", "openstack", "packet", "qemu"}
+	kolaPlatforms      = []string{"aws", "do", "esx", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaDefaultImages  = map[string]string{
 		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/flatcar_production_image.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_image.bin",
+	}
+	kolaIgnitionVersionDefaults = map[string]string{
+		"cl":    "v2",
+		"fcos":  "v3",
+		"rhcos": "v3",
 	}
 
 	kolaDefaultBIOS = map[string]string{
@@ -58,6 +63,7 @@ func init() {
 	sv(&kola.Options.BaseName, "basename", "kola", "Cluster name prefix")
 	ss("debug-systemd-unit", []string{}, "full-unit-name.service to enable SYSTEMD_LOG_LEVEL=debug on. Specify multiple times for multiple units.")
 	sv(&kola.UpdatePayloadFile, "update-payload", "", "Path to an update payload that should be made available to tests")
+	sv(&kola.Options.IgnitionVersion, "ignition-version", "", "Ignition version override: v2, v3")
 
 	// rhcos-specific options
 	sv(&kola.Options.OSContainer, "oscontainer", "", "oscontainer image pullspec for pivot (RHCOS only)")
@@ -172,6 +178,13 @@ func syncOptions() error {
 
 	if kola.Options.OSContainer != "" && kola.Options.Distribution != "rhcos" {
 		return fmt.Errorf("oscontainer is only supported on rhcos")
+	}
+
+	if kola.Options.IgnitionVersion == "" {
+		kola.Options.IgnitionVersion, ok = kolaIgnitionVersionDefaults[kola.Options.Distribution]
+		if !ok {
+			return fmt.Errorf("Distribution %q has no default Ignition version", kola.Options.Distribution)
+		}
 	}
 
 	return nil

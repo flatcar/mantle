@@ -52,12 +52,20 @@ func init() {
 		Run:         NFSv3,
 		ClusterSize: 0,
 		Name:        "linux.nfs.v3",
-		Distros:     []string{"cl", "fcos"},
+		Distros:     []string{"cl"},
+
+		// qemu-unpriv machines cannot communicate
+		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
+	// TODO: enable FCOS when FCCT exists
 	register.Register(&register.Test{
-		Run:         NFSv4,
-		ClusterSize: 0,
-		Name:        "linux.nfs.v4",
+		Run:            NFSv4,
+		ClusterSize:    0,
+		Name:           "linux.nfs.v4",
+		ExcludeDistros: []string{"fcos"},
+
+		// qemu-unpriv machines cannot communicate
+		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
 }
 
