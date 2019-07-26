@@ -50,8 +50,8 @@ func init() {
 	cmdUpload.Flags().StringVar(&uploadImageName, "name", "", "name for uploaded image, defaults to COREOS_VERSION")
 	cmdUpload.Flags().StringVar(&uploadBoard, "board", "amd64-usr", "board used for naming with default prefix only")
 	cmdUpload.Flags().StringVar(&uploadFile, "file",
-		build+"/images/amd64-usr/latest/coreos_production_gce.tar.gz",
-		"path_to_coreos_image (build with: ./image_to_vm.sh --format=gce ...)")
+		build+"/images/amd64-usr/latest/flatcar_production_gce.tar.gz",
+		"path_to_flatcar_image (build with: ./image_to_vm.sh --format=gce ...)")
 	cmdUpload.Flags().BoolVar(&uploadForce, "force", false, "overwrite existing GS and GCE images without prompt")
 	GCloud.AddCommand(cmdUpload)
 }
