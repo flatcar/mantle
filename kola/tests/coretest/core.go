@@ -73,7 +73,7 @@ func init() {
 		NativeFuncs: map[string]func() error{
 			"PortSSH":          TestPortSsh,
 			"DbusPerms":        TestDbusPerms,
-			"ServicesActive":   TestServicesActiveRHCOS,
+			"ServicesActive":   TestServicesActiveCoreOS,
 			"ServicesDisabled": TestServicesDisabledRHCOS,
 			"ReadOnly":         TestReadOnlyFs,
 			"Useradd":          TestUseradd,
@@ -88,7 +88,7 @@ func init() {
 		NativeFuncs: map[string]func() error{
 			"PortSSH":        TestPortSsh,
 			"DbusPerms":      TestDbusPerms,
-			"ServicesActive": TestServicesActiveFCOS,
+			"ServicesActive": TestServicesActiveCoreOS,
 			"ReadOnly":       TestReadOnlyFs,
 			"Useradd":        TestUseradd,
 			"MachineID":      TestMachineID,
@@ -303,14 +303,7 @@ func TestServicesActive() error {
 	})
 }
 
-func TestServicesActiveRHCOS() error {
-	return servicesActive([]string{
-		"multi-user.target",
-		"crio.service",
-	})
-}
-
-func TestServicesActiveFCOS() error {
+func TestServicesActiveCoreOS() error {
 	return servicesActive([]string{
 		"multi-user.target",
 	})

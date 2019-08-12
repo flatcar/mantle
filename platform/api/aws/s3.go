@@ -28,6 +28,9 @@ import (
 )
 
 const (
+	// ContentTypeJSON is canonical content-type for JSON objects
+	ContentTypeJSON = "application/json"
+
 	// The SDK documentation claims the error code should be `NoSuchKey`, but in
 	// practice that's the error for Get and NotFound is the error for Head.
 	// https://github.com/aws/aws-sdk-go/blob/b84b5a456f5f281454e9fbe89b38e34d617f4a51/service/s3/api.go#L2618-L2620
@@ -46,7 +49,12 @@ func s3IsNotFound(err error) bool {
 }
 
 // UploadObject uploads an object to S3
-func (a *API) UploadObject(r io.Reader, bucket, path string, force bool, policy string) error {
+func (a *API) UploadObject(r io.Reader, bucket, path string, force bool) error {
+	return a.UploadObjectExt(r, bucket, path, force, "", "", -1)
+}
+
+// UploadObjectExt uploads an object to S3 with more control over options.
+func (a *API) UploadObjectExt(r io.Reader, bucket, path string, force bool, policy string, contentType string, max_age int) error {
 	s3uploader := s3manager.NewUploaderWithClient(a.s3)
 
 	if !force {
@@ -64,17 +72,25 @@ func (a *API) UploadObject(r io.Reader, bucket, path string, force bool, policy 
 		}
 	}
 
-	plog.Infof("uploading s3://%v/%v", bucket, path)
-	_, err := s3uploader.Upload(&s3manager.UploadInput{
+	input := s3manager.UploadInput{
 		Body:   r,
 		Bucket: aws.String(bucket),
 		Key:    aws.String(path),
 		ACL:    aws.String(policy),
-	})
-	if err != nil {
+	}
+	if max_age >= 0 {
+		input.CacheControl = aws.String(fmt.Sprintf("max-age=%d", max_age))
+	}
+	if contentType != "" {
+		input.ContentType = aws.String(contentType)
+	}
+
+	plog.Infof("uploading s3://%v/%v", bucket, path)
+	if _, err := s3uploader.Upload(&input); err != nil {
 		return fmt.Errorf("error uploading s3://%v/%v: %v", bucket, path, err)
 	}
-	return err
+
+	return nil
 }
 
 func (a *API) DeleteObject(bucket, path string) error {
