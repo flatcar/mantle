@@ -18,39 +18,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 
-	"golang.org/x/text/encoding/unicode"
-	"golang.org/x/text/transform"
-
-	"github.com/coreos/mantle/platform"
+	"github.com/coreos/mantle/platform/api/azure"
 )
 
-const (
-	AzureAuthPath    = ".azure/credentials.json"
-	AzureProfilePath = ".azure/azureProfile.json"
-)
-
-// A version of the Options struct from platform/api/azure that only
-// contains the ASM values. Otherwise there's a cyclical depdendence
-// because platform/api/azure has to import auth to have access to
-// the ReadAzureProfile function.
-type Options struct {
-	*platform.Options
-
-	SubscriptionName string
-	SubscriptionID   string
-
-	// Azure API endpoint. If unset, the Azure SDK default will be used.
-	ManagementURL         string
-	ManagementCertificate []byte
-
-	// Azure Storage API endpoint suffix. If unset, the Azure SDK default will be used.
-	StorageEndpointSuffix string
-}
+const AzureProfilePath = ".azure/azureProfile.json"
 
 type AzureEnvironment struct {
 	ActiveDirectoryEndpointURL                        string `json:"activeDirectoryEndpointUrl"`
@@ -93,13 +68,13 @@ type AzureProfile struct {
 	Subscriptions []AzureSubscription `json:"subscriptions"`
 }
 
-// AsOptions converts all subscriptions into a slice of Options.
+// AsOptions converts all subscriptions into a slice of azure.Options.
 // If there is an environment with a name matching the subscription, that environment's storage endpoint will be copied to the options.
-func (ap *AzureProfile) AsOptions() []Options {
-	var o []Options
+func (ap *AzureProfile) AsOptions() []azure.Options {
+	var o []azure.Options
 
 	for _, sub := range ap.Subscriptions {
-		newo := Options{
+		newo := azure.Options{
 			SubscriptionName:      sub.Name,
 			SubscriptionID:        sub.ID,
 			ManagementURL:         sub.ManagementEndpointURL,
@@ -120,10 +95,10 @@ func (ap *AzureProfile) AsOptions() []Options {
 	return o
 }
 
-// SubscriptionOptions returns the name subscription in the Azure profile as a Options struct.
+// SubscriptionOptions returns the name subscription in the Azure profile as a azure.Options struct.
 // If the subscription name is "", the first subscription is returned.
 // If there are no subscriptions or the named subscription is not found, SubscriptionOptions returns nil.
-func (ap *AzureProfile) SubscriptionOptions(name string) *Options {
+func (ap *AzureProfile) SubscriptionOptions(name string) *azure.Options {
 	opts := ap.AsOptions()
 
 	if len(opts) == 0 {
@@ -156,13 +131,14 @@ func ReadAzureProfile(path string) (*AzureProfile, error) {
 		path = filepath.Join(user.HomeDir, AzureProfilePath)
 	}
 
-	contents, err := DecodeBOMFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	var ap AzureProfile
-	if err := json.Unmarshal(contents, &ap); err != nil {
+	if err := json.NewDecoder(f).Decode(&ap); err != nil {
 		return nil, err
 	}
 
@@ -171,15 +147,4 @@ func ReadAzureProfile(path string) (*AzureProfile, error) {
 	}
 
 	return &ap, nil
-}
-
-func DecodeBOMFile(path string) ([]byte, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	decoder := unicode.UTF8.NewDecoder()
-	reader := transform.NewReader(f, unicode.BOMOverride(decoder))
-	return ioutil.ReadAll(reader)
 }

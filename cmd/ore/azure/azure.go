@@ -32,9 +32,7 @@ var (
 	}
 
 	azureProfile      string
-	azureAuth         string
 	azureSubscription string
-	azureLocation     string
 
 	api *azure.API
 )
@@ -44,20 +42,23 @@ func init() {
 
 	sv := Azure.PersistentFlags().StringVar
 	sv(&azureProfile, "azure-profile", "", "Azure Profile json file")
-	sv(&azureAuth, "azure-auth", "", "Azure auth location (default \"~/"+auth.AzureAuthPath+"\")")
 	sv(&azureSubscription, "azure-subscription", "", "Azure subscription name. If unset, the first is used.")
-	sv(&azureLocation, "azure-location", "westus", "Azure location (default \"westus\")")
 }
 
 func preauth(cmd *cobra.Command, args []string) error {
 	plog.Printf("Creating Azure API...")
 
-	a, err := azure.New(&azure.Options{
-		AzureProfile:      azureProfile,
-		AzureAuthLocation: azureAuth,
-		AzureSubscription: azureSubscription,
-		Location:          azureLocation,
-	})
+	prof, err := auth.ReadAzureProfile(azureProfile)
+	if err != nil {
+		plog.Fatalf("Failed to read Azure Profile %q: %v", azureProfile, err)
+	}
+
+	opt := prof.SubscriptionOptions(azureSubscription)
+	if opt == nil {
+		plog.Fatalf("Azure subscription named %q doesn't exist in %q", azureSubscription, azureProfile)
+	}
+
+	a, err := azure.New(opt)
 	if err != nil {
 		plog.Fatalf("Failed to create Azure API: %v", err)
 	}

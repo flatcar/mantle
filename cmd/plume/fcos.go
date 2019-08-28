@@ -19,17 +19,17 @@ import (
 )
 
 var (
-	specBucket   string
-	specRegion   string
-	specProfile  string
 	specPolicy   string
 	specCommitId string
+
+	fcosSpec = fcosChannelSpec{
+		Bucket:  "fcos-builds",
+		Profile: "default",
+		Region:  "us-east-1",
+	}
 )
 
 func AddFcosSpecFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&specBucket, "bucket", "fcos-builds", "S3 bucket")
-	flags.StringVar(&specRegion, "region", "us-east-1", "S3 bucket region")
-	flags.StringVar(&specProfile, "profile", "default", "AWS profile")
 	flags.StringVar(&specPolicy, "policy", "public-read", "Canned ACL policy")
 }
 
@@ -40,18 +40,8 @@ func FcosValidateArguments() {
 	if specChannel == "" {
 		plog.Fatal("--channel is required")
 	}
-	if specBucket == "" {
-		plog.Fatal("--bucket is required")
-	}
-	if specRegion == "" {
-		plog.Fatal("--region is required")
-	}
 }
 
 func FcosChannelSpec() fcosChannelSpec {
-	return fcosChannelSpec{
-		Bucket:  specBucket,
-		Profile: specProfile,
-		Region:  specRegion,
-	}
+	return fcosSpec
 }

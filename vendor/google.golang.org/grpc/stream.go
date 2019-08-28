@@ -235,7 +235,7 @@ func newClientStream(ctx context.Context, desc *StreamDesc, cc *ClientConn, meth
 		trInfo.tr = trace.New("grpc.Sent."+methodFamily(method), method)
 		trInfo.firstLine.client = true
 		if deadline, ok := ctx.Deadline(); ok {
-			trInfo.firstLine.deadline = time.Until(deadline)
+			trInfo.firstLine.deadline = deadline.Sub(time.Now())
 		}
 		trInfo.tr.LazyLog(&trInfo.firstLine, false)
 		ctx = trace.NewContext(ctx, trInfo.tr)
@@ -297,7 +297,7 @@ func newClientStream(ctx context.Context, desc *StreamDesc, cc *ClientConn, meth
 			Authority:    cs.cc.authority,
 		}
 		if deadline, ok := ctx.Deadline(); ok {
-			logEntry.Timeout = time.Until(deadline)
+			logEntry.Timeout = deadline.Sub(time.Now())
 			if logEntry.Timeout < 0 {
 				logEntry.Timeout = 0
 			}
@@ -462,7 +462,10 @@ func (cs *clientStream) shouldRetry(err error) error {
 	pushback := 0
 	hasPushback := false
 	if cs.attempt.s != nil {
-		if to, toErr := cs.attempt.s.TrailersOnly(); toErr != nil || !to {
+		if to, toErr := cs.attempt.s.TrailersOnly(); toErr != nil {
+			// Context error; stop now.
+			return toErr
+		} else if !to {
 			return err
 		}
 
@@ -1086,6 +1089,7 @@ type addrConnStream struct {
 	dc        Decompressor
 	decomp    encoding.Compressor
 	p         *parser
+	done      func(balancer.DoneInfo)
 	mu        sync.Mutex
 	finished  bool
 }

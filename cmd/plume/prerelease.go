@@ -35,6 +35,7 @@ import (
 	"golang.org/x/net/context"
 	gs "google.golang.org/api/storage/v1"
 
+	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/platform/api/aws"
 	"github.com/coreos/mantle/platform/api/azure"
 	"github.com/coreos/mantle/sdk"
@@ -368,6 +369,11 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 		return nil
 	}
 
+	prof, err := auth.ReadAzureProfile(azureProfile)
+	if err != nil {
+		return fmt.Errorf("failed reading Azure profile: %v", err)
+	}
+
 	// download azure vhd image and unzip it
 	vhdfile, err := getImageFile(client, spec, src, spec.Azure.Image)
 	if err != nil {
@@ -388,11 +394,14 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
 
 	for _, environment := range spec.Azure.Environments {
+		opt := prof.SubscriptionOptions(environment.SubscriptionName)
+		if opt == nil {
+			return fmt.Errorf("couldn't find subscription %q", environment.SubscriptionName)
+		}
+
 		// construct azure api client
-		api, err := azure.New(&azure.Options{
-			AzureProfile:      azureProfile,
-			AzureSubscription: environment.SubscriptionName,
-		})
+		plog.Printf("Creating Azure API from subscription %q endpoint %q", opt.SubscriptionID, opt.ManagementURL)
+		api, err := azure.New(opt)
 		if err != nil {
 			return fmt.Errorf("failed to create Azure API: %v", err)
 		}
@@ -516,7 +525,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imageName, 
 
 	if snapshot == nil {
 		plog.Printf("Creating S3 object %v...", s3ObjectURL)
-		err = api.UploadObject(f, part.Bucket, s3ObjectPath, false, "", "")
+		err = api.UploadObject(f, part.Bucket, s3ObjectPath, false, "")
 		if err != nil {
 			return nil, nil, fmt.Errorf("Error uploading: %v", err)
 		}
