@@ -243,7 +243,7 @@ func users(c cluster.TestCluster) {
 	tests := []userTest{
 		{
 			user:           "core",
-			passwdRecord:   "core:x:500:500:CoreOS Admin:/home/core:/bin/bash",
+			passwdRecord:   "core:x:500:500:Flatcar Admin:/home/core:/bin/bash",
 			shadowPassword: "foobar",
 		},
 		{
