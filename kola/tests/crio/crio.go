@@ -30,7 +30,6 @@ import (
 	"github.com/coreos/mantle/kola/tests/util"
 	"github.com/coreos/mantle/lang/worker"
 	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/conf"
 )
 
 // simplifiedCrioInfo represents the results from crio info
@@ -145,35 +144,6 @@ var crioContainerTemplate = `{
 	}
 }`
 
-// RHCOS has the crio service disabled by default, so use Ignition to enable it
-var enableCrioIgn = conf.Ignition(`{
-  "ignition": {
-    "version": "2.2.0"
-  },
-  "systemd": {
-    "units": [
-      {
-        "enabled": true,
-        "name": "crio.service"
-      }
-    ]
-  }
-}`)
-
-var enableCrioIgnV3 = conf.Ignition(`{
-  "ignition": {
-    "version": "3.0.0"
-  },
-  "systemd": {
-    "units": [
-      {
-        "enabled": true,
-        "name": "crio.service"
-      }
-    ]
-  }
-}`)
-
 // init runs when the package is imported and takes care of registering tests
 func init() {
 	register.Register(&register.Test{
@@ -181,10 +151,8 @@ func init() {
 		ClusterSize: 1,
 		Name:        `crio.base`,
 		// crio pods require fetching a kubernetes pause image
-		Flags:      []register.Flag{register.RequiresInternetAccess},
-		Distros:    []string{"rhcos"},
-		UserData:   enableCrioIgn,
-		UserDataV3: enableCrioIgnV3,
+		Flags:   []register.Flag{register.RequiresInternetAccess},
+		Distros: []string{"rhcos"},
 	})
 	register.Register(&register.Test{
 		Run:         crioNetwork,
@@ -192,8 +160,6 @@ func init() {
 		Name:        "crio.network",
 		Flags:       []register.Flag{register.RequiresInternetAccess},
 		Distros:     []string{"rhcos"},
-		UserData:    enableCrioIgn,
-		UserDataV3:  enableCrioIgnV3,
 	})
 }
 
@@ -205,10 +171,10 @@ func crioBaseTests(c cluster.TestCluster) {
 
 // generateCrioConfig generates a crio pod/container configuration
 // based on the input name and arguments returning the path to the generated configs.
-func generateCrioConfig(podName, imageName string, command []string) (string, string, error) {
-	fileContentsPod := fmt.Sprintf(crioPodTemplate, podName, imageName)
+func generateCrioConfig(name string, command []string) (string, string, error) {
+	fileContentsPod := fmt.Sprintf(crioPodTemplate, name, name)
 
-	tmpFilePod, err := ioutil.TempFile("", podName+"Pod")
+	tmpFilePod, err := ioutil.TempFile("", name+"Pod")
 	if err != nil {
 		return "", "", err
 	}
@@ -217,9 +183,9 @@ func generateCrioConfig(podName, imageName string, command []string) (string, st
 		return "", "", err
 	}
 	cmd := strings.Join(command, " ")
-	fileContentsContainer := fmt.Sprintf(crioContainerTemplate, imageName, imageName, cmd)
+	fileContentsContainer := fmt.Sprintf(crioContainerTemplate, name, name, cmd)
 
-	tmpFileContainer, err := ioutil.TempFile("", imageName+"Container")
+	tmpFileContainer, err := ioutil.TempFile("", name+"Container")
 	if err != nil {
 		return "", "", err
 	}
@@ -236,8 +202,8 @@ func generateCrioConfig(podName, imageName string, command []string) (string, st
 // string returned is the container config to be used with crictl create/exec. They will be dropped
 // on to all machines in the cluster as ~/$STRING_RETURNED_FROM_FUNCTION. Note that the string returned
 // here is just the name, not the full path on the cluster machine(s).
-func genContainer(c cluster.TestCluster, m platform.Machine, podName, imageName string, binnames []string, shellCommands []string) (string, string, error) {
-	configPathPod, configPathContainer, err := generateCrioConfig(podName, imageName, shellCommands)
+func genContainer(c cluster.TestCluster, m platform.Machine, name string, binnames []string, shellCommands []string) (string, string, error) {
+	configPathPod, configPathContainer, err := generateCrioConfig(name, shellCommands)
 	if err != nil {
 		return "", "", err
 	}
@@ -248,11 +214,8 @@ func genContainer(c cluster.TestCluster, m platform.Machine, podName, imageName 
 		return "", "", err
 	}
 
-	// Create the crio image used for testing, only if it doesn't exist already
-	output := c.MustSSH(m, "sudo podman images -n --format '{{.Repository}}'")
-	if !strings.Contains(string(output), "localhost/"+imageName) {
-		util.GenPodmanScratchContainer(c, m, imageName, binnames)
-	}
+	// Create the crio image used for testing
+	util.GenPodmanScratchContainer(c, m, name, binnames)
 
 	return path.Base(configPathPod), path.Base(configPathContainer), nil
 }
@@ -267,11 +230,11 @@ func crioNetwork(c cluster.TestCluster) {
 	// Since genContainer also generates crio pod/container configs,
 	// there will be a duplicate config file on each machine.
 	// Thus we only save one set for later use.
-	crioConfigPod, crioConfigContainer, err := genContainer(c, src, "ncat", "ncat", []string{"ncat", "echo"}, []string{"ncat"})
+	crioConfigPod, crioConfigContainer, err := genContainer(c, src, "ncat", []string{"ncat", "echo"}, []string{"ncat"})
 	if err != nil {
 		c.Fatal(err)
 	}
-	_, _, err = genContainer(c, dest, "ncat", "ncat", []string{"ncat", "echo"}, []string{"ncat"})
+	_, _, err = genContainer(c, dest, "ncat", []string{"ncat", "echo"}, []string{"ncat"})
 	if err != nil {
 		c.Fatal(err)
 	}
@@ -355,18 +318,18 @@ func crioNetwork(c cluster.TestCluster) {
 func crioNetworksReliably(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
+	crioConfigPod, crioConfigContainer, err := genContainer(
+		c, m, "ping", []string{"ping"},
+		[]string{"ping"})
+	if err != nil {
+		c.Fatal(err)
+	}
+
 	// Here we generate 10 pods, each will run a container responsible for
 	// pinging to host
+	cmdCreatePod := fmt.Sprintf("sudo crictl runp %s", crioConfigPod)
 	output := ""
 	for x := 1; x <= 10; x++ {
-		// append int to name to avoid pod name collision
-		crioConfigPod, crioConfigContainer, err := genContainer(
-			c, m, fmt.Sprintf("ping%d", x), "ping", []string{"ping"},
-			[]string{"ping"})
-		if err != nil {
-			c.Fatal(err)
-		}
-		cmdCreatePod := fmt.Sprintf("sudo crictl runp %s", crioConfigPod)
 		podID := c.MustSSH(m, cmdCreatePod)
 		containerID := c.MustSSH(m, fmt.Sprintf("sudo crictl create %s %s %s",
 			podID, crioConfigContainer, crioConfigPod))

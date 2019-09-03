@@ -280,7 +280,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 
 	if isIgnition {
 		qmCmd = append(qmCmd,
-			"-fw_cfg", "name=opt/org.flatcar-linux/config,file="+confPath)
+			"-fw_cfg", "name=opt/com.coreos/config,file="+confPath)
 	} else {
 		qmCmd = append(qmCmd,
 			"-fsdev", "local,id=cfg,security_model=none,readonly,path="+confPath,

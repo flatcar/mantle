@@ -70,10 +70,7 @@ func (client client) sendAzureRequest(method, url, contentType string, data []by
 		return nil, fmt.Errorf(errParamNotSpecified, "url")
 	}
 
-	httpClient, err := client.createHTTPClient()
-	if err != nil {
-		return nil, err
-	}
+	httpClient := client.createHTTPClient()
 
 	response, err := client.sendRequest(httpClient, url, method, contentType, data, 5)
 	if err != nil {
@@ -85,12 +82,8 @@ func (client client) sendAzureRequest(method, url, contentType string, data []by
 
 // createHTTPClient creates an HTTP Client configured with the key pair for
 // the subscription for this client.
-func (client client) createHTTPClient() (*http.Client, error) {
-	cert, err := tls.X509KeyPair(client.publishSettings.SubscriptionCert, client.publishSettings.SubscriptionKey)
-	if err != nil {
-		return nil, err
-	}
-
+func (client client) createHTTPClient() *http.Client {
+	cert, _ := tls.X509KeyPair(client.publishSettings.SubscriptionCert, client.publishSettings.SubscriptionKey)
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -99,7 +92,7 @@ func (client client) createHTTPClient() (*http.Client, error) {
 				Certificates:  []tls.Certificate{cert},
 			},
 		},
-	}, nil
+	}
 }
 
 // sendRequest sends a request to the Azure management API using the given
