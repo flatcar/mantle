@@ -127,6 +127,7 @@ NextProcess:
 func NetworkListeners(c cluster.TestCluster) {
 	expectedListeners := []listener{
 		{"tcp", "22", "systemd"},          // ssh
+		{"tcp", "10010", "containerd"},    // containerd
 		{"udp", "68", "systemd-network"},  // dhcp6-client
 		{"udp", "546", "systemd-network"}, // bootpc
 	}
