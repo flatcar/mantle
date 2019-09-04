@@ -49,7 +49,7 @@ func VerityVerify(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
 	// extract verity hash from kernel
-	hash := c.MustSSH(m, "dd if=/boot/coreos/vmlinuz-a skip=64 count=64 bs=1 status=none")
+	hash := c.MustSSH(m, "dd if=/boot/flatcar/vmlinuz-a skip=64 count=64 bs=1 status=none")
 
 	// find /usr dev
 	usrdev := util.GetUsrDeviceNode(c, m)
@@ -81,13 +81,13 @@ func VerityCorruption(c cluster.TestCluster) {
 	}
 
 	// corrupt a file on disk and flush disk caches.
-	// try setting NAME=CoreOS to NAME=LulzOS in /usr/lib/os-release
+	// try setting NAME=Flatcar to NAME=LullzOS in /usr/lib/os-release
 
 	// get usr device, probably vda3
 	usrdev := util.GetUsrDeviceNode(c, m)
 
 	// poke bytes into /usr/lib/os-release
-	c.MustSSH(m, fmt.Sprintf(`echo NAME=LulzOS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
+	c.MustSSH(m, fmt.Sprintf(`echo NAME=LullzOS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
 
 	// make sure we flush everything so cat has to go through to the device backing verity.
 	c.MustSSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches'")

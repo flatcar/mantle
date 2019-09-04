@@ -571,7 +571,7 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 		c.Errorf("unexpected security options: %+v", info.SecurityOptions)
 	}
 
-	if info.CgroupDriver != "cgroupfs" {
+	if info.CgroupDriver != "cgroupfs" && info.CgroupDriver != "systemd" {
 		c.Errorf("unexpected cgroup driver %v", info.CgroupDriver)
 	}
 
