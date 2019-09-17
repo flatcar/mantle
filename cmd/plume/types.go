@@ -89,6 +89,7 @@ type ReleaseMetadata struct {
 	Note     string          `json:"note"` // used to note to users not to consume the release metadata index
 	Releases []BuildMetadata `json:"releases"`
 	Metadata Metadata        `json:"metadata"`
+	Stream   string          `json:"stream"`
 }
 
 type BuildMetadata struct {
@@ -106,7 +107,16 @@ type IndividualReleaseMetadata struct {
 }
 
 type Architecture struct {
-	Commit string `json:"commit"`
+	Commit string           `json:"commit"`
+	Media  map[string]Media `json:"media"`
+}
+
+type Media struct {
+	Images map[string]AMI `json:"images"`
+}
+
+type AMI struct {
+	Image string `json:"image"`
 }
 
 type Commit struct {

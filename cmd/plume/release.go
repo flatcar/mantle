@@ -26,12 +26,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/api/compute/v1"
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/platform/api/aws"
 	"github.com/coreos/mantle/platform/api/azure"
 	"github.com/coreos/mantle/platform/api/gcloud"
@@ -391,21 +391,14 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 		return
 	}
 
-	prof, err := auth.ReadAzureProfile(azureProfile)
-	if err != nil {
-		plog.Fatalf("failed reading Azure profile: %v", err)
-	}
-
 	// channel name should be caps for azure image
 	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
 
 	for _, environment := range spec.Azure.Environments {
-		opt := prof.SubscriptionOptions(environment.SubscriptionName)
-		if opt == nil {
-			plog.Fatalf("couldn't find subscription %q", environment.SubscriptionName)
-		}
-
-		api, err := azure.New(opt)
+		api, err := azure.New(&azure.Options{
+			AzureProfile:      azureProfile,
+			AzureSubscription: environment.SubscriptionName,
+		})
 		if err != nil {
 			plog.Fatalf("failed to create Azure API: %v", err)
 		}
@@ -504,16 +497,25 @@ func modifyReleaseMetadataIndex(spec *fcosChannelSpec, commitId string) {
 	}
 
 	path := filepath.Join("prod", "streams", specChannel, "releases.json")
-
-	f, err := api.DownloadFile(spec.Bucket, path)
+	data, err := func() ([]byte, error) {
+		f, err := api.DownloadFile(spec.Bucket, path)
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				if awsErr.Code() == "NoSuchKey" {
+					return []byte("{}"), nil
+				}
+			}
+			return []byte{}, fmt.Errorf("downloading release metadata index: %v", err)
+		}
+		defer f.Close()
+		d, err := ioutil.ReadAll(f)
+		if err != nil {
+			return []byte{}, fmt.Errorf("reading release metadata index: %v", err)
+		}
+		return d, nil
+	}()
 	if err != nil {
-		plog.Fatalf("downloading release metadata index: %v", err)
-	}
-	defer f.Close()
-
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		plog.Fatalf("reading release metadata index: %v", err)
+		plog.Fatal(err)
 	}
 
 	var m ReleaseMetadata
@@ -523,14 +525,14 @@ func modifyReleaseMetadataIndex(spec *fcosChannelSpec, commitId string) {
 	}
 
 	releasePath := filepath.Join("prod", "streams", specChannel, "builds", specVersion, "release.json")
-	url, err := url.Parse(fmt.Sprintf("https://%s.s3.amazonaws.com/%s", spec.Bucket, releasePath))
+	url, err := url.Parse(fmt.Sprintf("https://builds.coreos.fedoraproject.org/%s", releasePath))
 	if err != nil {
 		plog.Fatalf("creating metadata url: %v", err)
 	}
 
 	releaseFile, err := api.DownloadFile(spec.Bucket, releasePath)
 	if err != nil {
-		plog.Fatalf("downloading release metadata: %v", err)
+		plog.Fatalf("downloading release metadata at %s: %v", releasePath, err)
 	}
 	defer releaseFile.Close()
 
@@ -581,17 +583,42 @@ func modifyReleaseMetadataIndex(spec *fcosChannelSpec, commitId string) {
 		}
 	}
 
+	for _, archs := range im.Architectures {
+		for name, media := range archs.Media {
+			if name == "aws" {
+				for region, ami := range media.Images {
+					aws_api, err := aws.New(&aws.Options{
+						CredentialsFile: awsCredentialsFile,
+						Profile:         specProfile,
+						Region:          region,
+					})
+					if err != nil {
+						plog.Fatalf("creating AWS API for modifying launch permissions: %v", err)
+					}
+
+					err = aws_api.PublishImage(ami.Image)
+					if err != nil {
+						plog.Fatalf("couldn't publish image in %v: %v", region, err)
+					}
+				}
+			}
+		}
+	}
+
 	m.Releases = append(m.Releases, newRel)
 
 	m.Metadata.LastModified = time.Now().UTC().Format("2006-01-02T15:04:05Z")
-	m.Note = "not for general usage"
+	m.Note = "For use only by Fedora CoreOS internal tooling.  All other applications should obtain release info from stream metadata endpoints."
+	m.Stream = specChannel
 
 	out, err := json.Marshal(m)
 	if err != nil {
 		plog.Fatalf("marshalling release metadata json: %v", err)
 	}
 
-	err = api.UploadObject(bytes.NewReader(out), spec.Bucket, path, true, specPolicy)
+	// we don't want this to be cached for very long so that e.g. Cincinnati picks it up quickly
+	var releases_max_age = 60 * 5
+	err = api.UploadObjectExt(bytes.NewReader(out), spec.Bucket, path, true, specPolicy, aws.ContentTypeJSON, releases_max_age)
 	if err != nil {
 		plog.Fatalf("uploading release metadata json: %v", err)
 	}
