@@ -459,7 +459,7 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 func (a *API) ipxeScript(userdataURL string) string {
 	return fmt.Sprintf(`#!ipxe
 set base-url %s
-kernel ${base-url}/flatcar_production_pxe.vmlinuz initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 ignition.config.url=%s console=%s
+kernel ${base-url}/flatcar_production_pxe.vmlinuz initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 flatcar.config.url=%s console=%s
 initrd ${base-url}/flatcar_production_pxe_image.cpio.gz
 boot`, strings.TrimRight(a.opts.InstallerImageBaseURL, "/"), userdataURL, linuxConsole[a.opts.Board])
 }
