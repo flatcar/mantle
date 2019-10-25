@@ -264,10 +264,9 @@ func dockerResources(c cluster.TestCluster) {
 		dCmd("--memory-reservation=10m"),
 		dCmd("--kernel-memory=10m"),
 		dCmd("--cpu-shares=100"),
-		dCmd("--cpu-period=1000"),
+		dCmd("--cpu-period=1000 --cpu-quota=1000"),
 		dCmd("--cpuset-cpus=0"),
 		dCmd("--cpuset-mems=0"),
-		dCmd("--cpu-quota=1000"),
 		dCmd("--blkio-weight=10"),
 		// none of these work in QEMU due to apparent lack of cfq for
 		// blkio in virtual block devices.
