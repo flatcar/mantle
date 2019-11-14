@@ -84,7 +84,7 @@ var (
 			},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Linux",
+				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
@@ -109,7 +109,7 @@ var (
 			},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Linux",
+				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
@@ -134,7 +134,7 @@ var (
 			},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Linux",
+				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
@@ -159,7 +159,7 @@ var (
 			},
 			AWS: awsSpec{
 				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Linux",
+				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
