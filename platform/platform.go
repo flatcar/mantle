@@ -314,7 +314,7 @@ func NewMachines(c Cluster, userdata *conf.UserData, n int) ([]Machine, error) {
 
 // CheckMachine tests a machine for various error conditions such as ssh
 // being available and no systemd units failing at the time ssh is reachable.
-// It also ensures the remote system is running Flatcar Linux.
+// It also ensures the remote system is running Flatcar Container Linux.
 //
 // TODO(mischief): better error messages.
 func CheckMachine(ctx context.Context, m Machine) error {
@@ -344,7 +344,7 @@ func CheckMachine(ctx context.Context, m Machine) error {
 	}
 
 	if !bytes.Equal(out, []byte("ID=flatcar")) {
-		return fmt.Errorf("not a Flatcar Linux instance")
+		return fmt.Errorf("not a Flatcar Container Linux instance")
 	}
 
 	if !m.RuntimeConf().AllowFailedUnits {
