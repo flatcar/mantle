@@ -65,9 +65,9 @@ var (
         
         function patch_grub {
         	# See bug #2400
-        	local file='/boot/coreos/grub/i386-pc/linux'
+        	local file='/boot/flatcar/grub/i386-pc/linux'
         	local tmpfile="$(mktemp)"
-        	local escape_hatch='/boot/coreos/grub/skip-bug-2400-patch'
+        	local escape_hatch='/boot/flatcar/grub/skip-bug-2400-patch'
         	
         	[[ -e "${escape_hatch}" ]] && return
         	[[ ! -e "${file}.mod" ]] && return
@@ -129,7 +129,7 @@ var (
         
         	# use mv then sync to be as atomic as possible
         	mv "${file}.tmp" "${file}.mod"
-        	sync '/boot/coreos/grub/i386-pc/'
+        	sync '/boot/flatcar/grub/i386-pc/'
         
         	touch "${escape_hatch}"
         
@@ -152,6 +152,7 @@ func init() {
 		Name:             "cl.update.grubnop",
 		UserData:         grubUpdaterConf,
 		MinVersion:       semver.Version{Major: 1745},
+		Architectures: []string{"amd64"},
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
@@ -169,7 +170,7 @@ func gunzipAndRead(comp []byte) ([]byte, error) {
 
 func UpdateGrubNop(c cluster.TestCluster) {
 	m := c.Machines()[0]
-	originalBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/coreos/grub/i386-pc/linux.mod"))
+	originalBytes, err := gunzipAndRead(c.MustSSH(m, "cat /boot/flatcar/grub/i386-pc/linux.mod"))
 	if err != nil {
 		c.Fatalf("failed decompressing: %v", err)
 	}
