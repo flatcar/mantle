@@ -152,7 +152,7 @@ func init() {
 		Name:             "cl.update.grubnop",
 		UserData:         grubUpdaterConf,
 		MinVersion:       semver.Version{Major: 1745},
-		Architectures: []string{"amd64"},
+		Architectures:    []string{"amd64"},
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
