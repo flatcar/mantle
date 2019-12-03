@@ -102,6 +102,7 @@ func (e *enter) MountAPI() error {
 		Opts string
 	}{
 		{"/proc", "proc", "ro,nosuid,nodev,noexec"},
+		{"/proc/sys/fs/binfmt_misc", "binfmt_misc", "rw,nosuid,nodev,noexec,relatime"},
 		{"/sys", "sysfs", "ro,nosuid,nodev,noexec"},
 		{"/run", "tmpfs", "nosuid,nodev,mode=755"},
 	}

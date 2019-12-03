@@ -16,7 +16,6 @@ package main
 
 import (
 	"net/url"
-	"os"
 	"path"
 	"strings"
 
@@ -30,30 +29,22 @@ var (
 	specBoard         string
 	specChannel       string
 	specVersion       string
-	gceBoards         = []string{"amd64-usr"}
+	gceBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureBoards       = []string{"amd64-usr"}
 	awsBoards         = []string{"amd64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
 		azureEnvironmentSpec{
-			SubscriptionName:     "BizSpark",
+			SubscriptionName:     "AzureCloud",
 			AdditionalContainers: []string{"pre-publish"},
-		},
-		azureEnvironmentSpec{
-			SubscriptionName: "BlackForest",
-		},
-		azureEnvironmentSpec{
-			SubscriptionName: "Mooncake",
 		},
 	}
 	awsPartitions = []awsPartitionSpec{
 		awsPartitionSpec{
-			Name:         "AWS",
-			Profile:      "default",
-			Bucket:       "coreos-prod-ami-import-us-west-2",
-			BucketRegion: "us-west-2",
-			LaunchPermissions: []string{
-				"017021077683", // coreos-cl
-			},
+			Name:              "AWS",
+			Profile:           "default",
+			Bucket:            "flatcar-prod-ami-import-eu-central-1",
+			BucketRegion:      "eu-central-1",
+			LaunchPermissions: []string{},
 			Regions: []string{
 				"us-east-1",
 				"us-east-2",
@@ -63,7 +54,6 @@ var (
 				"eu-west-2",
 				"eu-west-3",
 				"eu-central-1",
-				"eu-north-1",
 				"ap-south-1",
 				"ap-southeast-1",
 				"ap-southeast-2",
@@ -73,262 +63,105 @@ var (
 				"ca-central-1",
 			},
 		},
-		awsPartitionSpec{
-			Name:         "AWS GovCloud",
-			Profile:      "govcloud",
-			Bucket:       "coreos-prod-ami-import-us-gov-west-1",
-			BucketRegion: "us-gov-west-1",
-			Regions: []string{
-				"us-gov-west-1",
-				"us-gov-east-1",
-			},
-		},
-		awsPartitionSpec{
-			Name:         "AWS China",
-			Profile:      "china",
-			Bucket:       "coreos-prod-ami-import-cn-north-1",
-			BucketRegion: "cn-north-1",
-			Regions: []string{
-				"cn-north-1",
-				"cn-northwest-1",
-			},
-		},
 	}
 	specs = map[string]channelSpec{
-		"user": channelSpec{
-			BaseURL: "gs://users.developer.core-os.net/" + os.Getenv("USER") + "/boards",
-			Boards:  []string{"amd64-usr"},
-			Destinations: []storageSpec{storageSpec{
-				BaseURL:       "gs://users.developer.core-os.net/" + os.Getenv("USER") + "/releases",
-				NamedPath:     "current",
-				VersionPath:   true,
-				DirectoryHTML: true,
-				IndexHTML:     true,
-			}},
-			GCE: gceSpec{
-				Project:     "coreos-gce-testing",
-				Family:      "coreos-user",
-				Description: "CoreOS Container Linux development image",
-				Image:       "coreos_production_gce.tar.gz",
-				Publish:     "coreos_production_gce.txt",
-				Limit:       2,
-			},
-			AWS: awsSpec{
-				BaseName:        "Container-Linux",
-				BaseDescription: "CoreOS Container Linux development image",
-				Prefix:          "coreos_production_ami_",
-				Image:           "coreos_production_ami_vmdk_image.vmdk.bz2",
-				Partitions: []awsPartitionSpec{
-					awsPartitionSpec{
-						Name:         "AWS West",
-						Profile:      "coreos-cl",
-						Bucket:       "coreos-dev-ami-import-us-west-2",
-						BucketRegion: "us-west-2",
-						Regions: []string{
-							"us-west-1",
-							"us-west-2",
-							"eu-west-3", // no PV
-						},
-					},
-					awsPartitionSpec{
-						// partition with a single region
-						Name:         "AWS East",
-						Profile:      "coreos-cl",
-						Bucket:       "coreos-dev-ami-import-us-east-1",
-						BucketRegion: "us-east-1",
-						LaunchPermissions: []string{
-							"595879546273", // prod account, to test LaunchPermissions
-						},
-						Regions: []string{
-							"us-east-1",
-						},
-					},
-				},
-			},
-		},
-		"developer": channelSpec{
-			BaseURL: "gs://builds.developer.core-os.net/boards",
-			Boards:  []string{"amd64-usr"},
-			GCE: gceSpec{
-				Project:     "coreos-gce-testing",
-				Family:      "coreos-developer",
-				Description: "CoreOS Container Linux development image",
-				Image:       "coreos_production_gce.tar.gz",
-				Publish:     "coreos_production_gce.txt",
-				Limit:       25,
-			},
-			AWS: awsSpec{
-				BaseName:        "Container-Linux",
-				BaseDescription: "CoreOS Container Linux development image",
-				Prefix:          "coreos_production_ami_",
-				Image:           "coreos_production_ami_vmdk_image.vmdk.bz2",
-				Partitions: []awsPartitionSpec{
-					awsPartitionSpec{
-						Name:         "AWS West",
-						Profile:      "coreos-cl",
-						Bucket:       "coreos-dev-ami-import-us-west-2",
-						BucketRegion: "us-west-2",
-						Regions: []string{
-							"us-west-2",
-						},
-					},
-				},
-			},
-		},
 		"alpha": channelSpec{
-			BaseURL: "gs://builds.release.core-os.net/alpha/boards",
-			Boards:  []string{"amd64-usr"},
-			Destinations: []storageSpec{storageSpec{
-				BaseURL:     "gs://alpha.release.core-os.net",
-				NamedPath:   "current",
-				VersionPath: true,
-				IndexHTML:   true,
-			}, storageSpec{
-				BaseURL:       "gs://coreos-alpha",
-				Title:         "alpha.release.core-os.net",
-				NamedPath:     "current",
-				VersionPath:   true,
-				DirectoryHTML: true,
-				IndexHTML:     true,
-			}, storageSpec{
-				BaseURL:     "gs://storage.core-os.net/coreos",
-				NamedPath:   "alpha",
-				VersionPath: true,
-				IndexHTML:   true,
-			}, storageSpec{
-				BaseURL:       "gs://coreos-net-storage/coreos",
-				Title:         "storage.core-os.net",
-				NamedPath:     "alpha",
-				VersionPath:   true,
-				DirectoryHTML: true,
-				IndexHTML:     true,
-			}},
-			GCE: gceSpec{
-				Project:     "coreos-cloud",
-				Family:      "coreos-alpha",
-				Description: "CoreOS, CoreOS alpha",
-				Licenses:    []string{"coreos-alpha"},
-				Image:       "coreos_production_gce.tar.gz",
-				Publish:     "coreos_production_gce.txt",
-				Limit:       25,
-			},
+			BaseURL:      "gs://flatcar-jenkins/alpha/boards",
+			Boards:       []string{"amd64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
 			Azure: azureSpec{
-				Offer:             "CoreOS",
-				Image:             "coreos_production_azure_image.vhd.bz2",
-				StorageAccount:    "coreos",
+				Offer:             "Flatcar",
+				Image:             "flatcar_production_azure_image.vhd.bz2",
+				StorageAccount:    "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
-				Label:             "CoreOS Alpha",
+				Label:             "Flatcar Alpha",
 				Description:       "The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
 				RecommendedVMSize: "Medium",
 				IconURI:           "coreos-globe-color-lg-100px.png",
 				SmallIconURI:      "coreos-globe-color-lg-45px.png",
 			},
 			AWS: awsSpec{
-				BaseName:        "CoreOS",
-				BaseDescription: "CoreOS Container Linux",
-				Prefix:          "coreos_production_ami_",
-				Image:           "coreos_production_ami_vmdk_image.vmdk.bz2",
+				BaseName:        "Flatcar",
+				BaseDescription: "Flatcar Container Linux",
+				Prefix:          "flatcar_production_ami_",
+				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
 			},
 		},
 		"beta": channelSpec{
-			BaseURL: "gs://builds.release.core-os.net/beta/boards",
-			Boards:  []string{"amd64-usr"},
-			Destinations: []storageSpec{storageSpec{
-				BaseURL:     "gs://beta.release.core-os.net",
-				NamedPath:   "current",
-				VersionPath: true,
-				IndexHTML:   true,
-			}, storageSpec{
-				BaseURL:       "gs://coreos-beta",
-				Title:         "beta.release.core-os.net",
-				NamedPath:     "current",
-				VersionPath:   true,
-				DirectoryHTML: true,
-				IndexHTML:     true,
-			}, storageSpec{
-				BaseURL:   "gs://storage.core-os.net/coreos",
-				NamedPath: "beta",
-				IndexHTML: true,
-			}, storageSpec{
-				BaseURL:       "gs://coreos-net-storage/coreos",
-				Title:         "storage.core-os.net",
-				NamedPath:     "beta",
-				DirectoryHTML: true,
-				IndexHTML:     true,
-			}},
-			GCE: gceSpec{
-				Project:     "coreos-cloud",
-				Family:      "coreos-beta",
-				Description: "CoreOS, CoreOS beta",
-				Licenses:    []string{"coreos-beta"},
-				Image:       "coreos_production_gce.tar.gz",
-				Publish:     "coreos_production_gce.txt",
-				Limit:       25,
-			},
+			BaseURL:      "gs://flatcar-jenkins/beta/boards",
+			Boards:       []string{"amd64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
 			Azure: azureSpec{
-				Offer:             "CoreOS",
-				Image:             "coreos_production_azure_image.vhd.bz2",
-				StorageAccount:    "coreos",
+				Offer:             "Flatcar",
+				Image:             "flatcar_production_azure_image.vhd.bz2",
+				StorageAccount:    "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
-				Label:             "CoreOS Beta",
-				Description:       "The Beta channel consists of promoted Alpha releases. Mix a few Beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
+				Label:             "Flatcar Beta",
+				Description:       "The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
 				RecommendedVMSize: "Medium",
 				IconURI:           "coreos-globe-color-lg-100px.png",
 				SmallIconURI:      "coreos-globe-color-lg-45px.png",
 			},
 			AWS: awsSpec{
-				BaseName:        "CoreOS",
-				BaseDescription: "CoreOS Container Linux",
-				Prefix:          "coreos_production_ami_",
-				Image:           "coreos_production_ami_vmdk_image.vmdk.bz2",
+				BaseName:        "Flatcar",
+				BaseDescription: "Flatcar Container Linux",
+				Prefix:          "flatcar_production_ami_",
+				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
 			},
 		},
 		"stable": channelSpec{
-			BaseURL: "gs://builds.release.core-os.net/stable/boards",
-			Boards:  []string{"amd64-usr"},
-			Destinations: []storageSpec{storageSpec{
-				BaseURL:     "gs://stable.release.core-os.net",
-				NamedPath:   "current",
-				VersionPath: true,
-				IndexHTML:   true,
-			}, storageSpec{
-				BaseURL:       "gs://coreos-stable",
-				Title:         "stable.release.core-os.net",
-				NamedPath:     "current",
-				VersionPath:   true,
-				DirectoryHTML: true,
-				IndexHTML:     true,
-			}},
-			GCE: gceSpec{
-				Project:     "coreos-cloud",
-				Family:      "coreos-stable",
-				Description: "CoreOS, CoreOS stable",
-				Licenses:    []string{"coreos-stable"},
-				Image:       "coreos_production_gce.tar.gz",
-				Publish:     "coreos_production_gce.txt",
-				Limit:       25,
-			},
+			BaseURL:      "gs://flatcar-jenkins/stable/boards",
+			Boards:       []string{"amd64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
 			Azure: azureSpec{
-				Offer:             "CoreOS",
-				Image:             "coreos_production_azure_image.vhd.bz2",
-				StorageAccount:    "coreos",
+				Offer:             "Flatcar",
+				Image:             "flatcar_production_azure_image.vhd.bz2",
+				StorageAccount:    "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
-				Label:             "CoreOS Stable",
-				Description:       "The Stable channel should be used by production clusters. Versions of CoreOS are battle-tested within the Beta and Alpha channels before being promoted.",
+				Label:             "Flatcar Stable",
+				Description:       "The Stable channel should be used by production clusters. Versions of CoreOS Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
 				RecommendedVMSize: "Medium",
 				IconURI:           "coreos-globe-color-lg-100px.png",
 				SmallIconURI:      "coreos-globe-color-lg-45px.png",
 			},
 			AWS: awsSpec{
-				BaseName:        "CoreOS",
-				BaseDescription: "CoreOS Container Linux",
-				Prefix:          "coreos_production_ami_",
-				Image:           "coreos_production_ami_vmdk_image.vmdk.bz2",
+				BaseName:        "Flatcar",
+				BaseDescription: "Flatcar Container Linux",
+				Prefix:          "flatcar_production_ami_",
+				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
+				Partitions:      awsPartitions,
+			},
+		},
+		"edge": channelSpec{
+			BaseURL:      "gs://flatcar-jenkins/edge/boards",
+			Boards:       []string{"amd64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
+			Azure: azureSpec{
+				Offer:             "Flatcar",
+				Image:             "flatcar_production_azure_image.vhd.bz2",
+				StorageAccount:    "flatcar",
+				Container:         "publish",
+				Environments:      azureEnvironments,
+				Label:             "Flatcar Edge",
+				Description:       "The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+				RecommendedVMSize: "Medium",
+				IconURI:           "coreos-globe-color-lg-100px.png",
+				SmallIconURI:      "coreos-globe-color-lg-45px.png",
+			},
+			AWS: awsSpec{
+				BaseName:        "Flatcar",
+				BaseDescription: "Flatcar Container Linux",
+				Prefix:          "flatcar_production_ami_",
+				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
 				Partitions:      awsPartitions,
 			},
 		},
