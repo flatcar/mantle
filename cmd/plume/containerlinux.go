@@ -29,7 +29,7 @@ var (
 	specBoard         string
 	specChannel       string
 	specVersion       string
-	gceBoards         = []string{"amd64-usr"}
+	gceBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureBoards       = []string{"amd64-usr"}
 	awsBoards         = []string{"amd64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
