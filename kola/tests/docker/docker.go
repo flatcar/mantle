@@ -64,10 +64,11 @@ func init() {
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
 	register.Register(&register.Test{
-		Run:         dockerOldClient,
-		ClusterSize: 0,
-		Name:        "docker.oldclient",
-		Distros:     []string{"cl"},
+		Run:           dockerOldClient,
+		ClusterSize:   0,
+		Name:          "docker.oldclient",
+		Architectures: []string{"amd64"},
+		Distros:       []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerUserns,
