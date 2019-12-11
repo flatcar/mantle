@@ -31,7 +31,7 @@ var (
 	specVersion       string
 	gceBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureBoards       = []string{"amd64-usr"}
-	awsBoards         = []string{"amd64-usr"}
+	awsBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
 		azureEnvironmentSpec{
 			SubscriptionName:     "AzureCloud",
@@ -67,7 +67,7 @@ var (
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
 			BaseURL:      "gs://flatcar-jenkins/alpha/boards",
-			Boards:       []string{"amd64-usr"},
+			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
 			Azure: azureSpec{
@@ -142,7 +142,7 @@ var (
 		},
 		"edge": channelSpec{
 			BaseURL:      "gs://flatcar-jenkins/edge/boards",
-			Boards:       []string{"amd64-usr"},
+			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
 			Azure: azureSpec{
