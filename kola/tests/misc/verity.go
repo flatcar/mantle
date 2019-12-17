@@ -19,10 +19,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/coreos/mantle/kola"
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/kola/tests/util"
 	"github.com/coreos/mantle/platform"
+	"github.com/coreos/mantle/platform/machine/qemu"
 )
 
 func init() {
@@ -48,8 +50,12 @@ func Verity(c cluster.TestCluster) {
 func VerityVerify(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
+	// get offset of verity hash within kernel
+	rootOffset := getKernelVerityHashOffset(c)
+
 	// extract verity hash from kernel
-	hash := c.MustSSH(m, "dd if=/boot/coreos/vmlinuz-a skip=64 count=64 bs=1 status=none")
+	ddcmd := fmt.Sprintf("dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
+	hash := c.MustSSH(m, ddcmd)
 
 	// find /usr dev
 	usrdev := util.GetUsrDeviceNode(c, m)
@@ -81,13 +87,13 @@ func VerityCorruption(c cluster.TestCluster) {
 	}
 
 	// corrupt a file on disk and flush disk caches.
-	// try setting NAME=CoreOS to NAME=LulzOS in /usr/lib/os-release
+	// try setting NAME=Flatcar to NAME=LullzOS in /usr/lib/os-release
 
 	// get usr device, probably vda3
 	usrdev := util.GetUsrDeviceNode(c, m)
 
 	// poke bytes into /usr/lib/os-release
-	c.MustSSH(m, fmt.Sprintf(`echo NAME=LulzOS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
+	c.MustSSH(m, fmt.Sprintf(`echo NAME=LullzOS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
 
 	// make sure we flush everything so cat has to go through to the device backing verity.
 	c.MustSSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches'")
@@ -115,6 +121,15 @@ func VerityCorruption(c cluster.TestCluster) {
 	if fields[3] != "C" {
 		c.Fatalf("dmsetup status usr reports verity is valid after corruption!")
 	}
+}
+
+// get offset of verity hash within kernel
+func getKernelVerityHashOffset(c cluster.TestCluster) int {
+	// assume ARM64 is only on QEMU for now
+	if _, ok := c.Cluster.(*qemu.Cluster); ok && kola.QEMUOptions.Board == "arm64-usr" {
+		return 512
+	}
+	return 64
 }
 
 func skipUnlessVerity(c cluster.TestCluster, m platform.Machine) {

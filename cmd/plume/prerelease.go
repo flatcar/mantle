@@ -383,7 +383,7 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 		return err
 	}
 
-	blobName := fmt.Sprintf("container-linux-%s-%s.vhd", specVersion, specChannel)
+	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
 	// channel name should be caps for azure image
 	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
 
