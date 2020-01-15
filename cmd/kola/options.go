@@ -33,8 +33,8 @@ var (
 	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaDefaultImages  = map[string]string{
-		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/coreos_production_image.bin",
-		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/coreos_production_image.bin",
+		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/flatcar_production_image.bin",
+		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_image.bin",
 	}
 	kolaIgnitionVersionDefaults = map[string]string{
 		"cl":    "v2",
@@ -44,7 +44,7 @@ var (
 
 	kolaDefaultBIOS = map[string]string{
 		"amd64-usr": "bios-256k.bin",
-		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/coreos_production_qemu_uefi_efi_code.fd",
+		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_qemu_uefi_efi_code.fd",
 	}
 )
 
@@ -108,7 +108,7 @@ func init() {
 
 	// gce-specific options
 	sv(&kola.GCEOptions.Image, "gce-image", "projects/coreos-cloud/global/images/family/coreos-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
-	sv(&kola.GCEOptions.Project, "gce-project", "coreos-gce-testing", "GCE project name")
+	sv(&kola.GCEOptions.Project, "gce-project", "flatcar-212911", "GCE project name")
 	sv(&kola.GCEOptions.Zone, "gce-zone", "us-central1-a", "GCE zone name")
 	sv(&kola.GCEOptions.MachineType, "gce-machinetype", "n1-standard-1", "GCE machine type")
 	sv(&kola.GCEOptions.DiskType, "gce-disktype", "pd-ssd", "GCE disk type")
@@ -133,8 +133,8 @@ func init() {
 	sv(&kola.PacketOptions.Project, "packet-project", "", "Packet project UUID (overrides config file)")
 	sv(&kola.PacketOptions.Facility, "packet-facility", "sjc1", "Packet facility code")
 	sv(&kola.PacketOptions.Plan, "packet-plan", "", "Packet plan slug (default board-dependent, e.g. \"baremetal_0\")")
-	sv(&kola.PacketOptions.InstallerImageBaseURL, "packet-installer-image-base-url", "", "Packet installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.core-os.net/amd64-usr/current\")")
-	sv(&kola.PacketOptions.ImageURL, "packet-image-url", "", "Packet image URL (default board-dependent, e.g. \"https://alpha.release.core-os.net/amd64-usr/current/coreos_production_packet_image.bin.bz2\")")
+	sv(&kola.PacketOptions.InstallerImageBaseURL, "packet-installer-image-base-url", "", "Packet installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
+	sv(&kola.PacketOptions.ImageURL, "packet-image-url", "", "Packet image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
 	sv(&kola.PacketOptions.StorageURL, "packet-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
 
 	// QEMU-specific options
