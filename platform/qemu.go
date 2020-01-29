@@ -239,7 +239,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"qemu-system-x86_64",
 			"-machine", "accel=kvm",
 			"-cpu", "host",
-			"-m", "1024",
+			"-m", "1280",
 		}
 	case "amd64--arm64-usr":
 		qmBinary = "qemu-system-aarch64"
@@ -255,7 +255,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"qemu-system-x86_64",
 			"-machine", "pc-q35-2.8",
 			"-cpu", "kvm64",
-			"-m", "1024",
+			"-m", "1280",
 		}
 	case "arm64--arm64-usr":
 		qmBinary = "qemu-system-aarch64"
