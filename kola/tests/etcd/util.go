@@ -50,7 +50,7 @@ func GetClusterHealth(c cluster.TestCluster, m platform.Machine, csize int) erro
 		return nil
 	}
 
-	err = util.Retry(15, 10*time.Second, checker)
+	err = util.Retry(30, 10*time.Second, checker)
 	if err != nil {
 		return fmt.Errorf("health polling failed: %v: %s", err, b)
 	}
