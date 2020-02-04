@@ -322,7 +322,7 @@ func (a *API) getSubnetIDs(vpc string) ([]string, error) {
 
 	for _, id := range subIds.Subnets {
 		if id.SubnetId != nil {
-			 ids = append(ids, *id.SubnetId)
+			ids = append(ids, *id.SubnetId)
 		}
 	}
 	if len(ids) == 0 {
