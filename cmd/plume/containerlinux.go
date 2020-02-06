@@ -180,6 +180,18 @@ func AddSpecFlags(flags *pflag.FlagSet) {
 		versions.VersionID, "release version")
 }
 
+func AmiNameArchTag() string {
+	switch specBoard {
+	case "amd64-usr":
+		return ""
+	case "arm64-usr":
+		return "-arm64"
+	default:
+		plog.Fatalf("No AMI name architecture tag defined for board %q", specBoard)
+		return "" // dummy
+	}
+}
+
 func ChannelSpec() channelSpec {
 	if specBoard == "" {
 		plog.Fatal("--board is required")
