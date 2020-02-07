@@ -92,7 +92,7 @@ func defaultBucketNameForRegion(region string) string {
 
 func defaultUploadFile() string {
 	build := sdk.BuildRoot()
-	return build + "/images/amd64-usr/latest/coreos_production_ami_vmdk_image.vmdk"
+	return build + "/images/amd64-usr/latest/flatcar_production_ami_vmdk_image.vmdk"
 }
 
 // defaultBucketURL determines the location the tool should upload to.
@@ -176,6 +176,17 @@ func runUpload(cmd *cobra.Command, args []string) error {
 		}
 		awsVersion := strings.Replace(ver.Version, "+", "-", -1) // '+' is invalid in an AMI name
 		amiName = fmt.Sprintf("Container-Linux-dev-%s-%s", os.Getenv("USER"), awsVersion)
+	}
+
+	switch uploadBoard {
+	case "amd64-usr":
+	case "arm64-usr":
+		if !strings.HasSuffix(amiName, "-arm64") {
+			amiName = amiName + "-arm64"
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "No AMI name suffix known for board %q\n", uploadBoard)
+		os.Exit(1)
 	}
 
 	var s3URL *url.URL

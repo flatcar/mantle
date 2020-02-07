@@ -64,10 +64,11 @@ func init() {
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
 	register.Register(&register.Test{
-		Run:         dockerOldClient,
-		ClusterSize: 0,
-		Name:        "docker.oldclient",
-		Distros:     []string{"cl"},
+		Run:           dockerOldClient,
+		ClusterSize:   0,
+		Name:          "docker.oldclient",
+		Architectures: []string{"amd64"},
+		Distros:       []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerUserns,
@@ -583,7 +584,7 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 		c.Errorf("unexpected security options: %+v", info.SecurityOptions)
 	}
 
-	if info.CgroupDriver != "cgroupfs" {
+	if info.CgroupDriver != "cgroupfs" && info.CgroupDriver != "systemd" {
 		c.Errorf("unexpected cgroup driver %v", info.CgroupDriver)
 	}
 

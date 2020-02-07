@@ -41,15 +41,21 @@ touch /etc/{group,gshadow,passwd,shadow}
 chmod 0640 /etc/{gshadow,shadow}
 
 # add group if it doesn't exist already
-if ! getent group {{printf "%q" .Groupname}} >/dev/null; then
+gid_new={{.Gid}}
+gid_prev=$(getent group {{printf "%q" .Groupname}} | cut -d: -f3)
+
+if [[ -z "$gid_prev" ]]; then
 	echo Adding group {{printf "%q" .Groupname}}
-	groupadd -o -g {{.Gid}} {{printf "%q" .Groupname}}
+	groupadd -o -g $gid_new {{printf "%q" .Groupname}}
+else
+	echo Using existing GID $gid_prev {{printf "%q" .Groupname}}
+	gid_new=$gid_prev
 fi
 
 # add user if it doesn't exist already
 if ! getent passwd {{printf "%q" .Username}} >/dev/null; then
 	echo Adding user {{printf "%q" .Username}}
-	useradd -o -g {{.Gid}} -u {{.Uid}} -s /bin/bash -m \
+	useradd -o -g $gid_new -u {{.Uid}} -s /bin/bash -m \
 		-c {{printf "%q" .Name}} {{printf "%q" .Username}}
 fi
 
@@ -65,7 +71,7 @@ done
 echo Setting up sudoers
 cat >/etc/sudoers.d/90_env_keep <<EOF
 Defaults env_keep += "\
-COREOS_BUILD_ID COREOS_OFFICIAL \
+FLATCAR_BUILD_ID COREOS_OFFICIAL \
 EMAIL GIT_AUTHOR_EMAIL GIT_AUTHOR_NAME \
 GIT_COMMITTER_EMAIL GIT_COMMITTER_NAME \
 GIT_PROXY_COMMAND GIT_SSH RSYNC_PROXY \
@@ -129,7 +135,7 @@ source ~/trunk/src/scripts/bash_completion
 # Put your fun stuff here.
 EOF
 
-chown -R {{.Uid}}:{{.Gid}} "$HOME"
+chown -R {{.Uid}}:$gid_new "$HOME"
 
 # Checked in src/scripts/common.sh
 touch /etc/debian_chroot
