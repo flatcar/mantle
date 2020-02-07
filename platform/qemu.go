@@ -239,7 +239,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"qemu-system-x86_64",
 			"-machine", "accel=kvm",
 			"-cpu", "host",
-			"-m", "1024",
+			"-m", "1280",
 		}
 	case "amd64--arm64-usr":
 		qmBinary = "qemu-system-aarch64"
@@ -255,7 +255,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"qemu-system-x86_64",
 			"-machine", "pc-q35-2.8",
 			"-cpu", "kvm64",
-			"-m", "1024",
+			"-m", "1280",
 		}
 	case "arm64--arm64-usr":
 		qmBinary = "qemu-system-aarch64"
@@ -280,7 +280,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 
 	if isIgnition {
 		qmCmd = append(qmCmd,
-			"-fw_cfg", "name=opt/com.coreos/config,file="+confPath)
+			"-fw_cfg", "name=opt/org.flatcar-linux/config,file="+confPath)
 	} else {
 		qmCmd = append(qmCmd,
 			"-fsdev", "local,id=cfg,security_model=none,readonly,path="+confPath,

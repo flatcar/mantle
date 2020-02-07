@@ -383,7 +383,7 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 		return err
 	}
 
-	blobName := fmt.Sprintf("container-linux-%s-%s.vhd", specVersion, specChannel)
+	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
 	// channel name should be caps for azure image
 	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
 
@@ -546,7 +546,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imageName, 
 
 	plog.Printf("Creating AMIs from %v...", snapshot.SnapshotID)
 
-	hvmImageID, err := api.CreateHVMImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+"-hvm", imageDescription+" (HVM)")
+	hvmImageID, err := api.CreateHVMImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+AmiNameArchTag()+"-hvm", imageDescription+" (HVM)")
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to create HVM image: %v", err)
 	}
@@ -554,7 +554,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imageName, 
 
 	var pvImageID string
 	if selectedDistro == "cl" {
-		pvImageID, err = api.CreatePVImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName, imageDescription+" (PV)")
+		pvImageID, err = api.CreatePVImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+AmiNameArchTag(), imageDescription+" (PV)")
 		if err != nil {
 			return nil, nil, fmt.Errorf("unable to create PV image: %v", err)
 		}

@@ -387,6 +387,10 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 		return
 	}
 
+	if azureProfile == "" {
+		return
+	}
+
 	// channel name should be caps for azure image
 	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
 
@@ -457,9 +461,9 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 				}
 			}
 			if aws.RegionSupportsPV(region) {
-				publish(imageName)
+				publish(imageName + AmiNameArchTag())
 			}
-			publish(imageName + "-hvm")
+			publish(imageName + AmiNameArchTag() + "-hvm")
 		}
 	}
 }
