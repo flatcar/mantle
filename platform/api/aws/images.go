@@ -15,7 +15,6 @@
 package aws
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -34,15 +33,10 @@ import (
 // https://github.com/coreos/mantle/pull/944
 const ContainerLinuxDiskSizeGiB = 8
 
-var (
-	NoRegionPVSupport = errors.New("Region does not support PV")
-)
-
 type EC2ImageType string
 
 const (
 	EC2ImageTypeHVM EC2ImageType = "hvm"
-	EC2ImageTypePV  EC2ImageType = "paravirtual"
 )
 
 type EC2ImageFormat string
@@ -51,28 +45,6 @@ const (
 	EC2ImageFormatRaw  EC2ImageFormat = ec2.DiskImageFormatRaw
 	EC2ImageFormatVmdk EC2ImageFormat = ec2.DiskImageFormatVmdk
 )
-
-// TODO, these can be derived at runtime
-// these are pv-grub-hd0_1.04-x86_64
-var akis = map[string]string{
-	"us-east-1":      "aki-919dcaf8",
-	"us-west-1":      "aki-880531cd",
-	"us-west-2":      "aki-fc8f11cc",
-	"eu-west-1":      "aki-52a34525",
-	"eu-central-1":   "aki-184c7a05",
-	"ap-southeast-1": "aki-503e7402",
-	"ap-southeast-2": "aki-c362fff9",
-	"ap-northeast-1": "aki-176bf516",
-	"sa-east-1":      "aki-5553f448",
-
-	"us-gov-west-1": "aki-1de98d3e",
-	"cn-north-1":    "aki-9e8f1da7",
-}
-
-func RegionSupportsPV(region string) bool {
-	_, ok := akis[region]
-	return ok
-}
 
 func (e *EC2ImageFormat) Set(s string) error {
 	switch s {
@@ -361,15 +333,6 @@ func (a *API) CreateHVMImage(snapshotID string, diskSizeGiB uint, name string, d
 	return a.createImage(params)
 }
 
-func (a *API) CreatePVImage(snapshotID string, diskSizeGiB uint, name string, description string) (string, error) {
-	if !RegionSupportsPV(a.opts.Region) {
-		return "", NoRegionPVSupport
-	}
-	params := registerImageParams(snapshotID, diskSizeGiB, name, description, "sd", EC2ImageTypePV)
-	params.KernelId = aws.String(akis[a.opts.Region])
-	return a.createImage(params)
-}
-
 func (a *API) deregisterImageIfExists(name string) error {
 	imageID, err := a.FindImage(name)
 	if err != nil {
@@ -517,14 +480,6 @@ func (a *API) CopyImage(sourceImageID string, regions []string) (map[string]stri
 	image, err := a.describeImage(sourceImageID)
 	if err != nil {
 		return nil, err
-	}
-
-	if *image.VirtualizationType == ec2.VirtualizationTypeParavirtual {
-		for _, region := range regions {
-			if !RegionSupportsPV(region) {
-				return nil, NoRegionPVSupport
-			}
-		}
 	}
 
 	snapshotID, err := getImageSnapshotID(image)

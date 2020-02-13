@@ -460,9 +460,6 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 					}
 				}
 			}
-			if aws.RegionSupportsPV(region) {
-				publish(imageName + AmiNameArchTag())
-			}
 			publish(imageName + AmiNameArchTag() + "-hvm")
 		}
 	}
