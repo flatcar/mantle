@@ -60,7 +60,7 @@ var (
 				"ap-southeast-2",
 				"ap-northeast-1",
 				"ap-northeast-2",
-				"ap-northeast-3",
+				// "ap-northeast-3", // Disabled for now because we do not have access
 				"sa-east-1",
 				"ca-central-1",
 				"ap-east-1",
