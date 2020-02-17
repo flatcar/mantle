@@ -633,7 +633,7 @@ func (a *API) FindImage(name string) (string, error) {
 		Owners: aws.StringSlice([]string{"self"}),
 	})
 	if err != nil {
-		return "", fmt.Errorf("couldn't describe images: %v", err)
+		return "", fmt.Errorf("couldn't describe image %q: %v", name, err)
 	}
 	if len(describeRes.Images) > 1 {
 		return "", fmt.Errorf("found multiple images with name %v. DescribeImage output: %v", name, describeRes.Images)
@@ -649,7 +649,7 @@ func (a *API) describeImage(imageID string) (*ec2.Image, error) {
 		ImageIds: aws.StringSlice([]string{imageID}),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("couldn't describe image: %v", err)
+		return nil, fmt.Errorf("couldn't describe image %q: %v", imageID, err)
 	}
 	return describeRes.Images[0], nil
 }
