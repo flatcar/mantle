@@ -103,7 +103,7 @@ func (a *API) resolveImage() error {
 		return nil
 	}
 
-	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.core-os.net/amd64-usr/current/version.txt", a.opts.Sku))
+	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/version.txt", a.opts.Sku))
 	if err != nil {
 		return fmt.Errorf("unable to fetch release bucket %v version: %v", a.opts.Sku, err)
 	}
@@ -114,11 +114,11 @@ func (a *API) resolveImage() error {
 		if len(line) != 2 {
 			continue
 		}
-		if line[0] == "COREOS_VERSION" {
+		if line[0] == "FLATCAR_VERSION" {
 			a.opts.Version = line[1]
 			return nil
 		}
 	}
 
-	return fmt.Errorf("couldn't find COREOS_VERSION in version.txt")
+	return fmt.Errorf("couldn't find FLATCAR_VERSION in version.txt")
 }

@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	sshRetries = 30
+	sshRetries = 60
 	sshTimeout = 10 * time.Second
 )
 

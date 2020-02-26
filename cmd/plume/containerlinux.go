@@ -53,14 +53,18 @@ var (
 				"eu-west-1",
 				"eu-west-2",
 				"eu-west-3",
+				"eu-north-1",
 				"eu-central-1",
 				"ap-south-1",
 				"ap-southeast-1",
 				"ap-southeast-2",
 				"ap-northeast-1",
 				"ap-northeast-2",
+				// "ap-northeast-3", // Disabled for now because we do not have access
 				"sa-east-1",
 				"ca-central-1",
+				"ap-east-1",
+				"me-south-1",
 			},
 		},
 	}
@@ -178,6 +182,18 @@ func AddSpecFlags(flags *pflag.FlagSet) {
 		"user", "channels: "+channels)
 	flags.StringVarP(&specVersion, "version", "V",
 		versions.VersionID, "release version")
+}
+
+func AmiNameArchTag() string {
+	switch specBoard {
+	case "amd64-usr":
+		return ""
+	case "arm64-usr":
+		return "-arm64"
+	default:
+		plog.Fatalf("No AMI name architecture tag defined for board %q", specBoard)
+		return "" // dummy
+	}
 }
 
 func ChannelSpec() channelSpec {

@@ -56,7 +56,7 @@ var (
 	defaultInstallerImageBaseURL = map[string]string{
 		// HTTPS causes iPXE to fail on a "permission denied" error
 		"amd64-usr": "http://stable.release.flatcar-linux.net/amd64-usr/current",
-		"arm64-usr": "http://beta.release.flatcar-linux.net/arm64-usr/current",
+		"arm64-usr": "http://alpha.release.flatcar-linux.net/arm64-usr/current",
 	}
 	defaultImageURL = map[string]string{
 		"amd64-usr": "https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2",
@@ -64,7 +64,7 @@ var (
 	}
 	defaultPlan = map[string]string{
 		"amd64-usr": "baremetal_0",
-		"arm64-usr": "baremetal_2a",
+		"arm64-usr": "c2.large.arm",
 	}
 	linuxConsole = map[string]string{
 		"amd64-usr": "ttyS1,115200",
