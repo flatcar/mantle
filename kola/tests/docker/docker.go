@@ -564,9 +564,6 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 	// Because we prefer overlay2/overlay for different docker versions, figure
 	// out the correct driver to be testing for based on our docker version.
 	expectedOverlayDriver := "overlay2"
-	if strings.HasPrefix(info.ServerVersion, "1.12.") || strings.HasPrefix(info.ServerVersion, "17.04.") {
-		expectedOverlayDriver = "overlay"
-	}
 
 	expectedFsDriverMap := map[string]string{
 		"overlay":      expectedOverlayDriver,

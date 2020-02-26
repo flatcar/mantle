@@ -34,7 +34,7 @@ storage:
     - filesystem: root
       path: /etc/flatcar/docker-1.12
       contents:
-        inline: yes
+        inline: no
       mode: 0644
 `),
 		Distros: []string{"cl"},
@@ -47,7 +47,7 @@ storage:
 #cloud-config
 write_files:
   - path: "/etc/flatcar/docker-1.12"
-    content: yes
+    content: no
 `),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
@@ -57,15 +57,7 @@ write_files:
 func dockerTorcxFlagFile(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	// flag=yes
-	checkTorcxDockerVersions(c, m, `^1\.12$`, `^1\.12\.`)
-
 	// flag=no
-	c.MustSSH(m, "echo no | sudo tee /etc/flatcar/docker-1.12")
-	if err := m.Reboot(); err != nil {
-		c.Fatalf("could not reboot: %v", err)
-	}
-	c.MustSSH(m, `sudo rm -rf /var/lib/docker`)
 	checkTorcxDockerVersions(c, m, `^1[7-9]\.`, `^1[7-9]\.`)
 }
 
@@ -77,8 +69,8 @@ func dockerTorcxFlagFileCloudConfig(c cluster.TestCluster) {
 		c.Fatalf("couldn't reboot: %v", err)
 	}
 
-	// flag=yes
-	checkTorcxDockerVersions(c, m, `^1\.12$`, `^1\.12\.`)
+	// flag=no
+	checkTorcxDockerVersions(c, m, `^1[7-9]\.`, `^1[7-9]\.`)
 }
 
 func checkTorcxDockerVersions(c cluster.TestCluster, m platform.Machine, expectedRefRE, expectedVerRE string) {
