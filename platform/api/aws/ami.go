@@ -22,11 +22,10 @@ import (
 )
 
 // relaseAMIs matches the structure of the AMIs listed in our
-// coreos_production_ami_all.json release file
+// flatcar_production_ami_all.json release file
 type releaseAMIs struct {
 	AMIS []struct {
 		Name string `json:"name"`
-		PV   string `json:"pv"`
 		HVM  string `json:"hvm"`
 	} `json:"amis"`
 }
@@ -48,7 +47,7 @@ var amiCache struct {
 // this method panics.
 func resolveAMI(ami string, region string) string {
 	resolveChannel := func(channel string) *releaseAMIs {
-		resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.core-os.net/amd64-usr/current/coreos_production_ami_all.json", channel))
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/flatcar_production_ami_all.json", channel))
 		if err != nil {
 			panic(fmt.Errorf("unable to fetch %v AMI json: %v", channel, err))
 		}
