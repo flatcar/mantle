@@ -32,7 +32,7 @@ var (
 	cmdUpload = &cobra.Command{
 		Use:   "upload",
 		Short: "Create AWS images",
-		Long: `Upload CoreOS image to S3 and create relevant AMIs (hvm and pv).
+		Long: `Upload CoreOS image to S3 and create relevant AMIs (hvm).
 
 Supported source formats are VMDK (as created with ./image_to_vm --format=ami_vmdk) and RAW.
 
@@ -60,7 +60,6 @@ After a successful run, the final line of output will be a line of JSON describi
 	uploadAMIName         string
 	uploadAMIDescription  string
 	uploadGrantUsers      []string
-	uploadCreatePV        bool
 	uploadTags            []string
 )
 
@@ -82,7 +81,6 @@ func init() {
 	cmdUpload.Flags().StringVar(&uploadAMIName, "ami-name", "", "name of the AMI to create (default: Container-Linux-$USER-$VERSION)")
 	cmdUpload.Flags().StringVar(&uploadAMIDescription, "ami-description", "", "description of the AMI to create (default: empty)")
 	cmdUpload.Flags().StringSliceVar(&uploadGrantUsers, "grant-user", []string{}, "grant launch permission to this AWS user ID")
-	cmdUpload.Flags().BoolVar(&uploadCreatePV, "create-pv", false, "create a PV AMI in addition to the HVM AMI")
 	cmdUpload.Flags().StringSliceVar(&uploadTags, "tags", []string{}, "list of key=value tags to attach to the AMI")
 }
 
@@ -92,7 +90,7 @@ func defaultBucketNameForRegion(region string) string {
 
 func defaultUploadFile() string {
 	build := sdk.BuildRoot()
-	return build + "/images/amd64-usr/latest/coreos_production_ami_vmdk_image.vmdk"
+	return build + "/images/amd64-usr/latest/flatcar_production_ami_vmdk_image.vmdk"
 }
 
 // defaultBucketURL determines the location the tool should upload to.
@@ -176,6 +174,17 @@ func runUpload(cmd *cobra.Command, args []string) error {
 		}
 		awsVersion := strings.Replace(ver.Version, "+", "-", -1) // '+' is invalid in an AMI name
 		amiName = fmt.Sprintf("Container-Linux-dev-%s-%s", os.Getenv("USER"), awsVersion)
+	}
+
+	switch uploadBoard {
+	case "amd64-usr":
+	case "arm64-usr":
+		if !strings.HasSuffix(amiName, "-arm64") {
+			amiName = amiName + "-arm64"
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "No AMI name suffix known for board %q\n", uploadBoard)
+		os.Exit(1)
 	}
 
 	var s3URL *url.URL
@@ -279,37 +288,12 @@ func runUpload(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	var pvID string
-	if uploadCreatePV {
-		pvImageID, err := API.CreatePVImage(sourceSnapshot, uploadDiskSizeGiB, amiName, uploadAMIDescription)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to create PV image: %v\n", err)
-			os.Exit(1)
-		}
-		pvID = pvImageID
-
-		if len(uploadGrantUsers) > 0 {
-			err = API.GrantLaunchPermission(pvID, uploadGrantUsers)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "unable to grant launch permission: %v\n", err)
-				os.Exit(1)
-			}
-		}
-
-		if err := API.CreateTags([]string{pvID}, tagMap); err != nil {
-			fmt.Fprintf(os.Stderr, "unable to add tags: %v\n", err)
-			os.Exit(1)
-		}
-	}
-
 	err = json.NewEncoder(os.Stdout).Encode(&struct {
 		HVM        string
-		PV         string `json:",omitempty"`
 		SnapshotID string
 		S3Object   string
 	}{
 		HVM:        hvmID,
-		PV:         pvID,
 		SnapshotID: sourceSnapshot,
 		S3Object:   s3URL.String(),
 	})
