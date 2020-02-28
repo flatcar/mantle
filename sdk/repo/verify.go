@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/coreos/pkg/capnslog"
 
@@ -134,6 +135,32 @@ func isSHA1(s string) bool {
 	return err == nil && len(b) == sha1.Size
 }
 
+func (r *repo) projectBranches(p Project) ([]string, error) {
+	git := exec.Command("git", "show", "-s", "--pretty=%D", "HEAD")
+	git.Dir = filepath.Join(r.root, p.Path)
+	git.Stderr = os.Stderr
+	out, err := git.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var branches []string
+
+	for _, val := range strings.Split(string(out), ",") {
+		ref := strings.TrimSpace(val)
+
+		if strings.HasPrefix(ref, "HEAD") || strings.HasPrefix(ref, "tag:") {
+			// Skip "tag: tagname", "HEAD", and "HEAD -> branchname"
+			continue
+		}
+
+		parts := strings.Split(ref, "/")
+		branches = append(branches, parts[len(parts)-1])
+	}
+
+	return branches, nil
+}
+
 func (r *repo) projectHEAD(p Project) (string, error) {
 	git := exec.Command("git", "rev-list", "--max-count=1", "HEAD")
 	git.Dir = filepath.Join(r.root, p.Path)
@@ -175,21 +202,36 @@ func VerifySync(name string) error {
 
 	var result error
 	for _, project := range manifest.Projects {
-		if !isSHA1(project.Revision) {
+		if isSHA1(project.Revision) {
+			rev, err := manifest.projectHEAD(project)
+			if err != nil {
+				return err
+			}
+
+			if rev != project.Revision {
+				plog.Errorf("Project dir %s at %s, expected %s",
+					project.Path, rev, project.Revision)
+				result = VerifyError
+			}
+		} else if strings.HasPrefix(project.Revision, "refs/heads/") {
+			branches, err := manifest.projectBranches(project)
+			if err != nil {
+				return err
+			}
+
+			for _, branch := range branches {
+				branchRef := "refs/heads/" + branch
+
+				if branchRef != project.Revision {
+					plog.Errorf("Project dir %s at %s, expected %s",
+						project.Path, branchRef, project.Revision)
+					result = VerifyError
+				}
+			}
+		} else {
 			plog.Errorf("Cannot verify %s revision %s in %s",
 				project.Name, project.Revision, manifest.name)
 			return Unimplemented
-		}
-
-		rev, err := manifest.projectHEAD(project)
-		if err != nil {
-			return err
-		}
-
-		if rev != project.Revision {
-			plog.Errorf("Project dir %s at %s, expected %s",
-				project.Path, rev, project.Revision)
-			result = VerifyError
 		}
 
 		if err := manifest.projectIsClean(project); err != nil {
