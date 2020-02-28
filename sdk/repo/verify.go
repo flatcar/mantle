@@ -219,14 +219,21 @@ func VerifySync(name string) error {
 				return err
 			}
 
+			found := false
+
 			for _, branch := range branches {
 				branchRef := "refs/heads/" + branch
 
-				if branchRef != project.Revision {
-					plog.Errorf("Project dir %s at %s, expected %s",
-						project.Path, branchRef, project.Revision)
-					result = VerifyError
+				if branchRef == project.Revision {
+					found = true
+					break
 				}
+			}
+
+			if !found {
+				plog.Errorf("Project dir %s at %q, expected %s",
+					project.Path, branches, project.Revision)
+				result = VerifyError
 			}
 		} else {
 			plog.Errorf("Cannot verify %s revision %s in %s",
