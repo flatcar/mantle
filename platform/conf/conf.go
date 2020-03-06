@@ -862,3 +862,10 @@ func (c *Conf) IsIgnition() bool {
 func (c *Conf) IsEmpty() bool {
 	return !c.IsIgnition() && c.cloudconfig == nil && c.script == ""
 }
+
+func AddSSHKeys(userdata *UserData, keys *[]agent.Key) *UserData {
+	for _, key := range *keys {
+		userdata = userdata.AddKey(key)
+	}
+	return userdata
+}

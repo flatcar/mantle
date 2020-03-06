@@ -34,7 +34,8 @@ type BaseFlight struct {
 	ctPlatform string
 	baseopts   *Options
 
-	agent *network.SSHAgent
+	agent             *network.SSHAgent
+	AdditionalSshKeys *[]agent.Key
 }
 
 func NewBaseFlight(opts *Options, platform Name, ctPlatform string) (*BaseFlight, error) {
@@ -57,6 +58,10 @@ func NewBaseFlightWithDialer(opts *Options, platform Name, ctPlatform string, di
 	}
 
 	return bf, nil
+}
+
+func (bf *BaseFlight) GetBaseFlight() *BaseFlight {
+	return bf
 }
 
 func (bf *BaseFlight) Name() string {
