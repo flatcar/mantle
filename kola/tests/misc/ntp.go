@@ -24,6 +24,12 @@ import (
 	"github.com/coreos/mantle/util"
 )
 
+var timesyncdMsgs = [][]byte{
+	[]byte(`Status: "Synchronized to time server 10.0.0.1:123 (10.0.0.1)."`),                    // systemd < 241
+	[]byte(`Status: "Synchronized to time server for the first time 10.0.0.1:123 (10.0.0.1)."`), // systemd >= 241
+	[]byte(`Status: "Initial synchronization to time server 10.0.0.1:123 (10.0.0.1)."`),         // systemd >= 243
+}
+
 func init() {
 	register.Register(&register.Test{
 		Run:              NTP,
@@ -48,14 +54,22 @@ func NTP(c cluster.TestCluster) {
 		c.Fatalf("Bad network config:\n%s", out)
 	}
 
+	checkTimeSyncdMsgs := func(in []byte) bool {
+		for _, m := range timesyncdMsgs {
+			if bytes.Contains(in, m) {
+				return true
+			}
+		}
+		return false
+	}
+
 	checker := func() error {
 		out, err = c.SSH(m, "systemctl status systemd-timesyncd.service")
 		if err != nil {
 			return fmt.Errorf("systemctl: %v", err)
 		}
 
-		if !bytes.Contains(out, []byte(`Status: "Synchronized to time server for the first time 10.0.0.1:123 (10.0.0.1)."`)) && // systemd >= 241
-			!bytes.Contains(out, []byte(`Status: "Synchronized to time server 10.0.0.1:123 (10.0.0.1)."`)) {
+		if !checkTimeSyncdMsgs(out) {
 			return fmt.Errorf("unexpected systemd-timesyncd status: %q", out)
 		}
 
