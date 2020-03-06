@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/ssh/agent"
+
 	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 
@@ -291,7 +293,7 @@ func versionOutsideRange(version, minVersion, endVersion semver.Version) bool {
 // register tests in their init() function.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. If it already exists it will be erased!
-func RunTests(pattern, pltfrm, outputDir string) error {
+func RunTests(pattern, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
 	var versionStr string
 
 	// Avoid incurring cost of starting machine in getClusterSemver when
@@ -329,7 +331,10 @@ func RunTests(pattern, pltfrm, outputDir string) error {
 	if err != nil {
 		plog.Fatalf("Flight failed: %v", err)
 	}
-	defer flight.Destroy()
+	(*flight.GetBaseFlight()).AdditionalSshKeys = sshKeys
+	if remove {
+		defer flight.Destroy()
+	}
 
 	if !skipGetVersion {
 		plog.Info("Creating cluster to check semver...")
@@ -359,7 +364,7 @@ func RunTests(pattern, pltfrm, outputDir string) error {
 	for _, test := range tests {
 		test := test // for the closure
 		run := func(h *harness.H) {
-			runTest(h, test, pltfrm, flight)
+			runTest(h, test, pltfrm, flight, remove)
 		}
 		htests.Add(test.Name, run)
 	}
@@ -435,7 +440,7 @@ func parseCLVersion(input string) (*semver.Version, error) {
 // runTest is a harness for running a single test.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. It should already exist.
-func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flight) {
+func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flight, remove bool) {
 	h.Parallel()
 
 	rconf := &platform.RuntimeConfig{
@@ -449,7 +454,9 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 		h.Fatalf("Cluster failed: %v", err)
 	}
 	defer func() {
-		c.Destroy()
+		if remove {
+			c.Destroy()
+		}
 		for id, output := range c.ConsoleOutput() {
 			for _, badness := range CheckConsole([]byte(output), t) {
 				h.Errorf("Found %s on machine %s console", badness, id)
