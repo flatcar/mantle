@@ -16,8 +16,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
+
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/kola"
@@ -199,4 +206,60 @@ func syncOptions() error {
 	}
 
 	return nil
+}
+
+func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
+	var allKeys []agent.Key
+	// if no keys specified, use keys from agent plus ~/.ssh/id_{rsa,dsa,ecdsa,ed25519}.pub
+	if len(sshKeys) == 0 {
+		// add keys directly from the agent
+		agentEnv := os.Getenv("SSH_AUTH_SOCK")
+		if agentEnv != "" {
+			f, err := net.Dial("unix", agentEnv)
+			if err != nil {
+				return nil, fmt.Errorf("Couldn't connect to unix socket %q: %v", agentEnv, err)
+			}
+			defer f.Close()
+
+			agent := agent.NewClient(f)
+			keys, err := agent.List()
+			if err != nil {
+				return nil, fmt.Errorf("Couldn't talk to ssh-agent: %v", err)
+			}
+			for _, key := range keys {
+				allKeys = append(allKeys, *key)
+			}
+		}
+
+		// populate list of key files
+		userInfo, err := user.Current()
+		if err != nil {
+			return nil, err
+		}
+		for _, name := range []string{"id_rsa.pub", "id_dsa.pub", "id_ecdsa.pub", "id_ed25519.pub"} {
+			path := filepath.Join(userInfo.HomeDir, ".ssh", name)
+			if _, err := os.Stat(path); err == nil {
+				sshKeys = append(sshKeys, path)
+			}
+		}
+	}
+	// read key files, failing if any are missing
+	for _, path := range sshKeys {
+		keybytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		pkey, comment, _, _, err := ssh.ParseAuthorizedKey(keybytes)
+		if err != nil {
+			return nil, err
+		}
+		key := agent.Key{
+			Format:  pkey.Type(),
+			Blob:    pkey.Marshal(),
+			Comment: comment,
+		}
+		allKeys = append(allKeys, key)
+	}
+
+	return allKeys, nil
 }

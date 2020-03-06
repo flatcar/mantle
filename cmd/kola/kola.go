@@ -22,6 +22,8 @@ import (
 	"sort"
 	"text/tabwriter"
 
+	"golang.org/x/crypto/ssh/agent"
+
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
@@ -62,6 +64,10 @@ will be ignored.
 	}
 
 	listJSON bool
+
+	runRemove     bool
+	runSetSSHKeys bool
+	runSSHKeys    []string
 )
 
 func init() {
@@ -69,6 +75,11 @@ func init() {
 	root.AddCommand(cmdList)
 
 	cmdList.Flags().BoolVar(&listJSON, "json", false, "format output in JSON")
+
+	cmdRun.Flags().BoolVarP(&runRemove, "remove", "r", true, "remove instances after test exits (--remove=false will keep them)")
+	cmdRun.Flags().BoolVarP(&runSetSSHKeys, "keys", "k", false, "add SSH keys from --key options")
+	cmdRun.Flags().StringSliceVar(&runSSHKeys, "key", nil, "path to SSH public key (default: SSH agent + ~/.ssh/id_{rsa,dsa,ecdsa,ed25519}.pub)")
+
 }
 
 func main() {
@@ -110,7 +121,17 @@ func runRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	runErr := kola.RunTests(pattern, kolaPlatform, outputDir)
+	var sshKeys []agent.Key
+	if runSetSSHKeys {
+		sshKeys, err = GetSSHKeys(runSSHKeys)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		sshKeys = nil
+	}
+	runErr := kola.RunTests(pattern, kolaPlatform, outputDir, &sshKeys, runRemove)
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {

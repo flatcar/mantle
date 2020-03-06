@@ -134,6 +134,8 @@ type Flight interface {
 	// resources.  It should log any failures; since they are not
 	// actionable, it does not return an error.
 	Destroy()
+
+	GetBaseFlight() *BaseFlight
 }
 
 // SystemdDropin is a userdata type agnostic struct representing a systemd dropin
