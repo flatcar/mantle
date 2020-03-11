@@ -104,6 +104,12 @@ NextProcess:
 		pid, process := pidProgramParts[0], pidProgramParts[1]
 
 		for _, expected := range expectedListeners {
+			// netstat uses 19 chars max to display "<PID>/<process name>"
+			//  so we need to truncate the expected string accordingly
+			trunc_len := 19 - (len(pid) + len("/"))
+			if len(expected.process) > trunc_len {
+				expected.process = expected.process[0:trunc_len]
+			}
 			if strings.HasPrefix(proto, expected.protocol) && // allow expected tcp to match tcp6
 				expected.port == port &&
 				expected.process == process {
