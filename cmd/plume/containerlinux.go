@@ -34,8 +34,7 @@ var (
 	awsBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
 		azureEnvironmentSpec{
-			SubscriptionName:     "AzureCloud",
-			AdditionalContainers: []string{"pre-publish"},
+			SubscriptionName: "AzureCloud",
 		},
 	}
 	awsPartitions = []awsPartitionSpec{
@@ -78,6 +77,7 @@ var (
 				Offer:             "Flatcar",
 				Image:             "flatcar_production_azure_image.vhd.bz2",
 				StorageAccount:    "flatcar",
+				ResourceGroup:     "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
 				Label:             "Flatcar Alpha",
@@ -103,6 +103,7 @@ var (
 				Offer:             "Flatcar",
 				Image:             "flatcar_production_azure_image.vhd.bz2",
 				StorageAccount:    "flatcar",
+				ResourceGroup:     "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
 				Label:             "Flatcar Beta",
@@ -128,6 +129,7 @@ var (
 				Offer:             "Flatcar",
 				Image:             "flatcar_production_azure_image.vhd.bz2",
 				StorageAccount:    "flatcar",
+				ResourceGroup:     "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
 				Label:             "Flatcar Stable",
@@ -153,6 +155,7 @@ var (
 				Offer:             "Flatcar",
 				Image:             "flatcar_production_azure_image.vhd.bz2",
 				StorageAccount:    "flatcar",
+				ResourceGroup:     "flatcar",
 				Container:         "publish",
 				Environments:      azureEnvironments,
 				Label:             "Flatcar Edge",

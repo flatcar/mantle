@@ -25,6 +25,8 @@ type Options struct {
 	AzureAuthLocation string
 	AzureSubscription string
 
+	BlobURL   string
+	ImageFile string
 	DiskURI   string
 	Publisher string
 	Offer     string

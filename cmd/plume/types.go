@@ -34,14 +34,14 @@ type gceSpec struct {
 }
 
 type azureEnvironmentSpec struct {
-	SubscriptionName     string   // Name of subscription in Azure profile
-	AdditionalContainers []string // Extra containers to upload the disk image to
+	SubscriptionName string // Name of subscription in Azure profile
 }
 
 type azureSpec struct {
 	Offer          string                 // Azure offer name
 	Image          string                 // File name of image source
 	StorageAccount string                 // Storage account to use for image uploads in each environment
+	ResourceGroup  string                 // Resource Group to use for blobs in each environment
 	Container      string                 // Container to hold the disk image in each environment
 	Environments   []azureEnvironmentSpec // Azure environments to upload to
 

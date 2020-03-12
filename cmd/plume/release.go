@@ -53,6 +53,8 @@ func init() {
 	cmdRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdRelease.Flags().StringVar(&selectedDistro, "distro", "cl", "system to release")
 	cmdRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
+	cmdRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
+	cmdRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
 	cmdRelease.Flags().BoolVarP(&releaseDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
 	AddSpecFlags(cmdRelease.Flags())
@@ -383,42 +385,64 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 
 func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec *channelSpec) {
 	if spec.Azure.StorageAccount == "" {
-		plog.Notice("Azure image creation disabled.")
+		plog.Notice("Azure image creation disabled, skipping.")
 		return
 	}
 
 	if azureProfile == "" {
+		plog.Notice("No Azure profile defined, skipping.")
 		return
 	}
 
-	// channel name should be caps for azure image
-	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
+	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
 
 	for _, environment := range spec.Azure.Environments {
 		api, err := azure.New(&azure.Options{
 			AzureProfile:      azureProfile,
+			AzureAuthLocation: azureAuth,
 			AzureSubscription: environment.SubscriptionName,
 		})
 		if err != nil {
 			plog.Fatalf("failed to create Azure API: %v", err)
 		}
-
-		if releaseDryRun {
-			// TODO(bgilbert): check that the image exists
-			plog.Printf("Would share %q on %v", imageName, environment.SubscriptionName)
-			continue
-		} else {
-			plog.Printf("Sharing %q on %v...", imageName, environment.SubscriptionName)
+		if err := api.SetupClients(); err != nil {
+			plog.Fatalf("setting up clients: %v", err)
 		}
 
-		if err := api.ShareImage(imageName, "public"); err != nil {
-			plog.Fatalf("failed to share image %q: %v", imageName, err)
+		plog.Printf("Fetching Azure storage credentials for %q in %q", spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
+
+		storageKey, err := api.GetStorageServiceKeysARM(spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
+		if err != nil {
+			plog.Fatalf("fetching storage key: %v", err)
 		}
+		if storageKey.Keys == nil {
+			plog.Fatalf("No storage service keys found")
+		}
+
+		container := spec.Azure.Container
+		if azureTestContainer != "" {
+			container = azureTestContainer
+		}
+
+		plog.Printf("Signing %q in %q on %v...", blobName, container, environment.SubscriptionName)
+
+		var url string
+		for _, key := range *storageKey.Keys {
+			url, err = api.SignBlob(spec.Azure.StorageAccount, *key.Value, container, blobName)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			plog.Fatalf("signing failed: %v", err)
+		}
+		plog.Noticef("Generated SAS: %q for %q", url, specChannel)
+		plog.Noticef("Please update the SKU manually (or try to automate this step)!")
 	}
 }
 
 func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *channelSpec) {
-	if spec.AWS.Image == "" {
+	if spec.AWS.Image == "" || awsCredentialsFile == "" {
 		plog.Notice("AWS image creation disabled.")
 		return
 	}

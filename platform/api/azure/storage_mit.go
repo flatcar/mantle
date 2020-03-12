@@ -30,6 +30,7 @@ package azure
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Microsoft/azure-vhd-utils/upload"
@@ -257,4 +258,30 @@ func getBlobMD5Hash(client storage.BlobStorageClient, containerName, blobName st
 		return "", err
 	}
 	return properties.ContentMD5, nil
+}
+
+func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (string, error) {
+	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	if err != nil {
+		return "", err
+	}
+
+	bsc := sc.GetBlobService()
+
+	return bsc.GetBlobSASURI(container, blob, time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC), "r")
+}
+
+func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, sourceBlob string) error {
+	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	if err != nil {
+		return err
+	}
+
+	bsc := sc.GetBlobService()
+
+	if _, err = bsc.CreateContainerIfNotExists(container, storage.ContainerAccessTypePrivate); err != nil {
+		return err
+	}
+
+	return bsc.CopyBlob(container, targetBlob, sourceBlob)
 }

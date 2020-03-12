@@ -172,6 +172,10 @@ func randomName(prefix string) string {
 	return fmt.Sprintf("%s-%x", prefix, b)
 }
 
+func (a *API) GetOpts() *Options {
+	return a.opts
+}
+
 func (a *API) GC(gracePeriod time.Duration) error {
 	durationAgo := time.Now().Add(-1 * gracePeriod)
 

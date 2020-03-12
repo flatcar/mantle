@@ -91,6 +91,8 @@ func init() {
 	// azure-specific options
 	sv(&kola.AzureOptions.AzureProfile, "azure-profile", "", "Azure profile (default \"~/"+auth.AzureProfilePath+"\")")
 	sv(&kola.AzureOptions.AzureAuthLocation, "azure-auth", "", "Azure auth location (default \"~/"+auth.AzureAuthPath+"\")")
+	sv(&kola.AzureOptions.BlobURL, "azure-blob-url", "", "Azure source page blob to be copied from a public/SAS URL, recommended way (from \"plume pre-release\" or \"ore azure upload-blob-arm\")")
+	sv(&kola.AzureOptions.ImageFile, "azure-image-file", "", "Azure image file (local image to upload in the temporary kola resource group)")
 	sv(&kola.AzureOptions.DiskURI, "azure-disk-uri", "", "Azure disk uri (custom images)")
 	sv(&kola.AzureOptions.Publisher, "azure-publisher", "CoreOS", "Azure image publisher (default \"CoreOS\"")
 	sv(&kola.AzureOptions.Offer, "azure-offer", "CoreOS", "Azure image offer (default \"CoreOS\"")
