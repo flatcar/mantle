@@ -104,6 +104,12 @@ NextProcess:
 		pid, process := pidProgramParts[0], pidProgramParts[1]
 
 		for _, expected := range expectedListeners {
+			// netstat uses 19 chars max to display "<PID>/<process name>"
+			//  so we need to truncate the expected string accordingly
+			trunc_len := 19 - (len(pid) + len("/"))
+			if len(expected.process) > trunc_len {
+				expected.process = expected.process[0:trunc_len]
+			}
 			if strings.HasPrefix(proto, expected.protocol) && // allow expected tcp to match tcp6
 				expected.port == port &&
 				expected.process == process {
@@ -126,10 +132,10 @@ NextProcess:
 
 func NetworkListeners(c cluster.TestCluster) {
 	expectedListeners := []listener{
-		{"tcp", "22", "systemd"},          // ssh
-		{"tcp", "10010", "containerd"},    // containerd
-		{"udp", "68", "systemd-network"},  // dhcp6-client
-		{"udp", "546", "systemd-network"}, // bootpc
+		{"tcp", "22", "systemd"},           // ssh
+		{"tcp", "10010", "containerd"},     // containerd
+		{"udp", "68", "systemd-networkd"},  // dhcp6-client
+		{"udp", "546", "systemd-networkd"}, // bootpc
 	}
 	checkList := func() error {
 		return checkListeners(c, expectedListeners)
