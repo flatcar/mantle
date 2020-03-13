@@ -97,16 +97,25 @@ func runUploadBlobARM(cmd *cobra.Command, args []string) {
 		plog.Fatalf("No storage service keys found")
 	}
 
+	var sas string
 	for _, k := range *kr.Keys {
 		if err := api.UploadBlob(ubo.storageacct, *k.Value, ubo.vhd, ubo.container, ubo.blob, ubo.overwrite); err != nil {
 			plog.Fatalf("Uploading blob failed: %v", err)
 		}
+		sas, err = api.SignBlob(ubo.storageacct, *k.Value, ubo.container, ubo.blob)
+		if err != nil {
+			plog.Fatalf("signing failed: %v", err)
+		}
 		break
 	}
 
+	url := api.UrlOfBlob(ubo.storageacct, ubo.container, ubo.blob).String()
+
 	err = json.NewEncoder(os.Stdout).Encode(&struct {
 		URL string
+		SAS string
 	}{
-		URL: fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", ubo.storageacct, ubo.container, ubo.blob),
+		URL: url,
+		SAS: sas,
 	})
 }

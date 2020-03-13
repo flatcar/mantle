@@ -162,6 +162,8 @@ func writeProps() error {
 	}
 	type Azure struct {
 		DiskURI   string `json:"diskUri"`
+		BlobURL   string `json:"blobUrl"`
+		ImageFile string `json:"imageFile"`
 		Publisher string `json:"publisher"`
 		Offer     string `json:"offer"`
 		Sku       string `json:"sku"`
@@ -226,6 +228,8 @@ func writeProps() error {
 		},
 		Azure: Azure{
 			DiskURI:   kola.AzureOptions.DiskURI,
+			BlobURL:   kola.AzureOptions.BlobURL,
+			ImageFile: kola.AzureOptions.ImageFile,
 			Publisher: kola.AzureOptions.Publisher,
 			Offer:     kola.AzureOptions.Offer,
 			Sku:       kola.AzureOptions.Sku,

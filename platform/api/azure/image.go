@@ -92,14 +92,14 @@ func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, e
 	return a.imgClient.Get(resourceGroup, name, "")
 }
 
-// resolveImage is used to ensure that either a Version or DiskURI
+// resolveImage is used to ensure that either a Version or DiskURI/BlobURL/ImageFile
 // are provided present for a run. If neither is given via arguments
 // it attempts to parse the Version from the version.txt in the Sku's
 // release bucket.
 func (a *API) resolveImage() error {
 	// immediately return if the version has been set or if the channel
 	// is not set via the Sku (this happens in ore)
-	if a.opts.DiskURI != "" || a.opts.Version != "" || a.opts.Sku == "" {
+	if a.opts.DiskURI != "" || a.opts.BlobURL != "" || a.opts.ImageFile != "" || a.opts.Version != "" || a.opts.Sku == "" {
 		return nil
 	}
 

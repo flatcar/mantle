@@ -27,9 +27,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
-	"github.com/Azure/azure-sdk-for-go/management/storageservice"
+	azurestorage "github.com/Azure/azure-sdk-for-go/arm/storage"
 	"github.com/Microsoft/azure-vhd-utils/vhdcore/validator"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -65,6 +64,8 @@ var (
 	selectedPlatforms  []string
 	selectedDistro     string
 	azureProfile       string
+	azureAuth          string
+	azureTestContainer string
 	awsCredentialsFile string
 	verifyKeyFile      string
 	imageInfoFile      string
@@ -98,6 +99,8 @@ func init() {
 	cmdPreRelease.Flags().StringSliceVar(&selectedPlatforms, "platform", platformList, "platform to pre-release")
 	cmdPreRelease.Flags().StringVar(&selectedDistro, "system", "cl", "system to pre-release")
 	cmdPreRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
+	cmdPreRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
+	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
 	cmdPreRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPreRelease.Flags().StringVar(&verifyKeyFile,
 		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
@@ -286,54 +289,41 @@ func getFedoraImageFile(client *http.Client, spec *channelSpec, src *storage.Buc
 	return imagePath, nil
 }
 
-func uploadAzureBlob(spec *channelSpec, api *azure.API, storageKey storageservice.GetStorageServiceKeysResponse, vhdfile, container, blobName string) error {
-	blobExists, err := api.BlobExists(spec.Azure.StorageAccount, storageKey.PrimaryKey, container, blobName)
-	if err != nil {
-		return fmt.Errorf("failed to check if file %q in account %q container %q exists: %v", vhdfile, spec.Azure.StorageAccount, container, err)
-	}
-
-	if blobExists {
-		return nil
-	}
-
-	if err := api.UploadBlob(spec.Azure.StorageAccount, storageKey.PrimaryKey, vhdfile, container, blobName, false); err != nil {
-		if _, ok := err.(azure.BlobExistsError); !ok {
-			return fmt.Errorf("uploading file %q to account %q container %q failed: %v", vhdfile, spec.Azure.StorageAccount, container, err)
+func uploadAzureBlob(spec *channelSpec, api *azure.API, storageKeys azurestorage.AccountListKeysResult, vhdfile, container, blobName string) error {
+	for _, key := range *storageKeys.Keys {
+		blobExists, err := api.BlobExists(spec.Azure.StorageAccount, *key.Value, container, blobName)
+		if err != nil {
+			return fmt.Errorf("failed to check if file %q in account %q container %q exists: %v", vhdfile, spec.Azure.StorageAccount, container, err)
 		}
+
+		if blobExists {
+			return nil
+		}
+
+		if err := api.UploadBlob(spec.Azure.StorageAccount, *key.Value, vhdfile, container, blobName, false); err != nil {
+			if _, ok := err.(azure.BlobExistsError); !ok {
+				return fmt.Errorf("uploading file %q to account %q container %q failed: %v", vhdfile, spec.Azure.StorageAccount, container, err)
+			}
+		}
+		break
 	}
 	return nil
 }
 
 func createAzureImage(spec *channelSpec, api *azure.API, blobName, imageName string) error {
-	imageexists, err := api.OSImageExists(imageName)
-	if err != nil {
-		return fmt.Errorf("failed to check if image %q exists: %T %v", imageName, err, err)
-	}
-
-	if imageexists {
-		plog.Printf("OS Image %q exists, using it", imageName)
-		return nil
-	}
-
+	// If it exists already the API will behave as if it created it
 	plog.Printf("Creating OS image with name %q", imageName)
 
 	bloburl := api.UrlOfBlob(spec.Azure.StorageAccount, spec.Azure.Container, blobName).String()
 
-	// a la https://github.com/coreos/scripts/blob/998c7e093922298637e7c7e82e25cee7d336144d/oem/azure/set-image-metadata.sh
-	md := &azure.OSImage{
-		Label:             spec.Azure.Label,
-		Name:              imageName,
-		OS:                "Linux",
-		Description:       spec.Azure.Description,
-		MediaLink:         bloburl,
-		ImageFamily:       spec.Azure.Label,
-		PublishedDate:     time.Now().UTC().Format("2006-01-02"),
-		RecommendedVMSize: spec.Azure.RecommendedVMSize,
-		IconURI:           spec.Azure.IconURI,
-		SmallIconURI:      spec.Azure.SmallIconURI,
+	img, err := api.CreateImage(imageName, spec.Azure.ResourceGroup, bloburl)
+	if err != nil {
+		return fmt.Errorf("Couldn't create image %q from %q: %T %v", imageName, bloburl, err, err)
 	}
-
-	return api.AddOSImage(md)
+	if img.ID == nil {
+		return fmt.Errorf("Couldn't create image %q form %q: received nil image", imageName, bloburl)
+	}
+	return nil
 }
 
 func replicateAzureImage(spec *channelSpec, api *azure.API, imageName string) error {
@@ -384,55 +374,57 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 	}
 
 	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
-	// channel name should be caps for azure image
-	imageName := fmt.Sprintf("%s-%s-%s", spec.Azure.Offer, strings.Title(specChannel), specVersion)
 
 	for _, environment := range spec.Azure.Environments {
 		// construct azure api client
 		api, err := azure.New(&azure.Options{
 			AzureProfile:      azureProfile,
+			AzureAuthLocation: azureAuth,
 			AzureSubscription: environment.SubscriptionName,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create Azure API: %v", err)
 		}
+		if err := api.SetupClients(); err != nil {
+			return fmt.Errorf("setting up clients: %v", err)
+		}
 
 		plog.Printf("Fetching Azure storage credentials")
 
-		storageKey, err := api.GetStorageServiceKeys(spec.Azure.StorageAccount)
+		storageKey, err := api.GetStorageServiceKeysARM(spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
 		if err != nil {
 			return err
+		}
+		if storageKey.Keys == nil {
+			plog.Fatalf("No storage service keys found")
 		}
 
 		// upload blob, do not overwrite
 		plog.Printf("Uploading %q to Azure Storage...", vhdfile)
 
-		containers := append([]string{spec.Azure.Container}, environment.AdditionalContainers...)
-		for _, container := range containers {
-			err := uploadAzureBlob(spec, api, storageKey, vhdfile, container, blobName)
-			if err != nil {
-				return err
-			}
+		container := spec.Azure.Container
+		if azureTestContainer != "" {
+			container = azureTestContainer
 		}
-
-		// create image
-		if err := createAzureImage(spec, api, blobName, imageName); err != nil {
-			// if it is a conflict, it already exists!
-			if !azure.IsConflictError(err) {
-				return err
-			}
-
-			plog.Printf("Azure image %q already exists", imageName)
-		}
-
-		// replicate it
-		if err := replicateAzureImage(spec, api, imageName); err != nil {
+		err = uploadAzureBlob(spec, api, storageKey, vhdfile, container, blobName)
+		if err != nil {
 			return err
 		}
-	}
-
-	imageInfo.Azure = &azureImageInfo{
-		ImageName: imageName,
+		var sas string
+		for _, key := range *storageKey.Keys {
+			sas, err = api.SignBlob(spec.Azure.StorageAccount, *key.Value, container, blobName)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			plog.Fatalf("signing failed: %v", err)
+		}
+		url := api.UrlOfBlob(spec.Azure.StorageAccount, container, blobName).String()
+		plog.Noticef("Generated SAS: %q from %q for %q", sas, url, specChannel)
+		imageInfo.Azure = &azureImageInfo{
+			ImageName: sas, // the SAS URL can be used for publishing and for testing with kola via --azure-blob-url
+		}
 	}
 	return nil
 }

@@ -16,6 +16,7 @@ package azure
 
 import (
 	"fmt"
+	"time"
 
 	ctplatform "github.com/coreos/container-linux-config-transpiler/config/platform"
 	"github.com/coreos/pkg/capnslog"
@@ -102,6 +103,46 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 	ac.StorageAccount, err = af.api.CreateStorageAccount(ac.ResourceGroup)
 	if err != nil {
 		return nil, err
+	}
+
+	opts := af.api.GetOpts()
+	if opts.BlobURL != "" || opts.ImageFile != "" {
+		imageName := fmt.Sprintf("%v", time.Now().UnixNano())
+		blobName := imageName + ".vhd"
+		container := "temp"
+		kr, err := af.api.GetStorageServiceKeysARM(ac.StorageAccount, ac.ResourceGroup)
+		if err != nil {
+			return nil, fmt.Errorf("Fetching storage service keys failed: %v", err)
+		}
+
+		if kr.Keys == nil {
+			return nil, fmt.Errorf("No storage service keys found")
+		}
+
+		if opts.BlobURL != "" {
+			for _, k := range *kr.Keys {
+				if err := af.api.CopyBlob(ac.StorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
+					return nil, fmt.Errorf("Copying blob failed: %v", err)
+				}
+				break
+			}
+		} else if opts.ImageFile != "" {
+			for _, k := range *kr.Keys {
+				if err := af.api.UploadBlob(ac.StorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
+					return nil, fmt.Errorf("Uploading blob failed: %v", err)
+				}
+				break
+			}
+		}
+		targetBlobURL := af.api.UrlOfBlob(ac.StorageAccount, container, blobName).String()
+		img, err := af.api.CreateImage(imageName, ac.ResourceGroup, targetBlobURL)
+		if err != nil {
+			return nil, fmt.Errorf("Couldn't create image: %v\n", err)
+		}
+		if img.ID == nil {
+			return nil, fmt.Errorf("received nil image\n")
+		}
+		opts.DiskURI = *img.ID
 	}
 
 	_, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
