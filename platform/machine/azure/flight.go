@@ -35,9 +35,10 @@ var (
 
 type flight struct {
 	*platform.BaseFlight
-	api        *azure.API
-	SSHKey     string
-	FakeSSHKey string
+	api                *azure.API
+	SSHKey             string
+	FakeSSHKey         string
+	ImageResourceGroup string
 }
 
 // NewFlight creates an instance of a Flight suitable for spawning
@@ -73,6 +74,56 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		return nil, err
 	}
 
+	if opts.BlobURL != "" || opts.ImageFile != "" {
+		imageName := fmt.Sprintf("%v", time.Now().UnixNano())
+		blobName := imageName + ".vhd"
+		container := "temp"
+
+		af.ImageResourceGroup, err = af.api.CreateResourceGroup("kola-cluster-image")
+		if err != nil {
+			return nil, err
+		}
+
+		ImageStorageAccount, err := af.api.CreateStorageAccount(af.ImageResourceGroup)
+		if err != nil {
+			return nil, err
+		}
+
+		kr, err := af.api.GetStorageServiceKeysARM(ImageStorageAccount, af.ImageResourceGroup)
+		if err != nil {
+			return nil, fmt.Errorf("Fetching storage service keys failed: %v", err)
+		}
+
+		if kr.Keys == nil {
+			return nil, fmt.Errorf("No storage service keys found")
+		}
+
+		if opts.BlobURL != "" {
+			for _, k := range *kr.Keys {
+				if err := af.api.CopyBlob(ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
+					return nil, fmt.Errorf("Copying blob failed: %v", err)
+				}
+				break
+			}
+		} else if opts.ImageFile != "" {
+			for _, k := range *kr.Keys {
+				if err := af.api.UploadBlob(ImageStorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
+					return nil, fmt.Errorf("Uploading blob failed: %v", err)
+				}
+				break
+			}
+		}
+		targetBlobURL := af.api.UrlOfBlob(ImageStorageAccount, container, blobName).String()
+		img, err := af.api.CreateImage(imageName, af.ImageResourceGroup, targetBlobURL)
+		if err != nil {
+			return nil, fmt.Errorf("Couldn't create image: %v\n", err)
+		}
+		if img.ID == nil {
+			return nil, fmt.Errorf("received nil image\n")
+		}
+		opts.DiskURI = *img.ID
+	}
+
 	return af, nil
 }
 
@@ -105,46 +156,6 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		return nil, err
 	}
 
-	opts := af.api.GetOpts()
-	if opts.BlobURL != "" || opts.ImageFile != "" {
-		imageName := fmt.Sprintf("%v", time.Now().UnixNano())
-		blobName := imageName + ".vhd"
-		container := "temp"
-		kr, err := af.api.GetStorageServiceKeysARM(ac.StorageAccount, ac.ResourceGroup)
-		if err != nil {
-			return nil, fmt.Errorf("Fetching storage service keys failed: %v", err)
-		}
-
-		if kr.Keys == nil {
-			return nil, fmt.Errorf("No storage service keys found")
-		}
-
-		if opts.BlobURL != "" {
-			for _, k := range *kr.Keys {
-				if err := af.api.CopyBlob(ac.StorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
-					return nil, fmt.Errorf("Copying blob failed: %v", err)
-				}
-				break
-			}
-		} else if opts.ImageFile != "" {
-			for _, k := range *kr.Keys {
-				if err := af.api.UploadBlob(ac.StorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
-					return nil, fmt.Errorf("Uploading blob failed: %v", err)
-				}
-				break
-			}
-		}
-		targetBlobURL := af.api.UrlOfBlob(ac.StorageAccount, container, blobName).String()
-		img, err := af.api.CreateImage(imageName, ac.ResourceGroup, targetBlobURL)
-		if err != nil {
-			return nil, fmt.Errorf("Couldn't create image: %v\n", err)
-		}
-		if img.ID == nil {
-			return nil, fmt.Errorf("received nil image\n")
-		}
-		opts.DiskURI = *img.ID
-	}
-
 	_, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
 	if err != nil {
 		return nil, err
@@ -157,4 +168,10 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 
 func (af *flight) Destroy() {
 	af.BaseFlight.Destroy()
+
+	if af.ImageResourceGroup != "" {
+		if e := af.api.TerminateResourceGroup(af.ImageResourceGroup); e != nil {
+			plog.Errorf("Deleting image resource group %v: %v", af.ImageResourceGroup, e)
+		}
+	}
 }
