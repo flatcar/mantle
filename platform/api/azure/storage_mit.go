@@ -268,7 +268,7 @@ func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (stri
 
 	bsc := sc.GetBlobService()
 
-	return bsc.GetBlobSASURI(container, blob, time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC), "r")
+	return bsc.GetBlobSASURI(container, blob, time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC), "rl") // TODO: Migrate to new API version
 }
 
 func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, sourceBlob string) error {
