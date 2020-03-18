@@ -158,7 +158,7 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("connecting to Google Storage bucket: %v", err)
 	}
 
-	client := packngo.NewClient("github.com/coreos/mantle", opts.ApiKey, nil)
+	client := packngo.NewClientWithAuth("github.com/coreos/mantle", opts.ApiKey, nil)
 
 	return &API{
 		c:      client,
@@ -168,7 +168,7 @@ func New(opts *Options) (*API, error) {
 }
 
 func (a *API) PreflightCheck() error {
-	_, _, err := a.c.Projects.Get(a.opts.Project)
+	_, _, err := a.c.Projects.Get(a.opts.Project, nil)
 	if err != nil {
 		return fmt.Errorf("querying project %v: %v", a.opts.Project, err)
 	}
@@ -241,7 +241,7 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 }
 
 func (a *API) DeleteDevice(deviceID string) error {
-	_, err := a.c.Devices.Delete(deviceID)
+	_, err := a.c.Devices.Delete(deviceID, true)
 	if err != nil {
 		return fmt.Errorf("deleting device %q: %v", deviceID, err)
 	}
@@ -470,7 +470,7 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 		var response *packngo.Response
 		device, response, err = a.c.Devices.Create(&packngo.DeviceCreateRequest{
 			ProjectID:     a.opts.Project,
-			Facility:      a.opts.Facility,
+			Facility:      []string{a.opts.Facility},
 			Plan:          a.opts.Plan,
 			BillingCycle:  "hourly",
 			Hostname:      hostname,
@@ -539,7 +539,7 @@ func (a *API) waitForActive(deviceID string) (*packngo.Device, error) {
 	var device *packngo.Device
 	err := util.WaitUntilReady(launchTimeout, launchPollInterval, func() (bool, error) {
 		var err error
-		device, _, err = a.c.Devices.Get(deviceID)
+		device, _, err = a.c.Devices.Get(deviceID, nil)
 		if err != nil {
 			return false, fmt.Errorf("querying device: %v", err)
 		}

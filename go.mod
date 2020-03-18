@@ -40,7 +40,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v0.0.0-20150519154555-21cb3784d9bd
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
-	github.com/packethost/packngo v0.0.0-20180426081943-80f62d78849d
+	github.com/packethost/packngo v0.2.1-0.20200224173249-1156d996f0d5
 	github.com/pborman/uuid v1.2.0
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pin/tftp v2.1.0+incompatible
@@ -65,7 +65,7 @@ require (
 	github.com/vmware/govmomi v0.15.0
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
 	go4.org v0.0.0-20180809161055-417644f6feb5 // indirect
-	golang.org/x/crypto v0.0.0-20160913211104-119f50887f8f
+	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
 	golang.org/x/net v0.0.0-20190228165749-92fc7df08ae7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae
