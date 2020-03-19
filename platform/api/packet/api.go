@@ -488,6 +488,9 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 			return
 		}
 		plog.Debugf("Retrying to create device after failure: %q %q %q \n", device, response, err)
+		if device != nil && device.ID != "" {
+			a.DeleteDevice(device.ID)
+		}
 		if tries > 0 {
 			time.Sleep(apiRetryInterval)
 		}
