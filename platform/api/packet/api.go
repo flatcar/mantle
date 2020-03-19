@@ -67,8 +67,8 @@ var (
 		"arm64-usr": "c2.large.arm",
 	}
 	linuxConsole = map[string]string{
-		"amd64-usr": "ttyS1,115200",
-		"arm64-usr": "ttyAMA0,115200",
+		"amd64-usr": "ttyS1,115200n8",
+		"arm64-usr": "ttyAMA0,115200n8",
 	}
 )
 
