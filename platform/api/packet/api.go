@@ -210,6 +210,8 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 	}
 	deviceID := device.ID
 
+	plog.Debugf("Created device: %q", deviceID)
+
 	if console != nil {
 		err := a.startConsole(deviceID, console)
 		consoleStarted = true
@@ -231,11 +233,15 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 		return nil, fmt.Errorf("no public IP address found for %v", deviceID)
 	}
 
+	plog.Debugf("Device active: %q", deviceID)
+
 	err = waitForInstall(ipAddress)
 	if err != nil {
 		a.DeleteDevice(deviceID)
 		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
 	}
+
+	plog.Debugf("Finished installation of device: %q", deviceID)
 
 	return device, nil
 }
@@ -481,6 +487,7 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 		if err == nil || response.StatusCode != 500 {
 			return
 		}
+		plog.Debugf("Retrying to create device after failure: %q %q %q \n", device, response, err)
 		if tries > 0 {
 			time.Sleep(apiRetryInterval)
 		}
