@@ -79,9 +79,10 @@ var (
 	UpdatePayloadFile string
 
 	consoleChecks = []struct {
-		desc     string
-		match    *regexp.Regexp
-		skipFlag *register.Flag
+		desc        string
+		match       *regexp.Regexp
+		skipIfMatch *regexp.Regexp
+		skipFlag    *register.Flag
 	}{
 		{
 			desc:     "emergency shell",
@@ -112,8 +113,9 @@ var (
 		},
 		{
 			// https://github.com/coreos/bugs/issues/2065
-			desc:  "excessive bonding link status messages",
-			match: regexp.MustCompile("(?s:link status up for interface [^,]+, enabling it in [0-9]+ ms.*?){10}"),
+			desc:        "excessive bonding link status messages",
+			match:       regexp.MustCompile("(?s:link status up for interface [^,]+, enabling it in [0-9]+ ms.*?){3}"),
+			skipIfMatch: regexp.MustCompile("(bond.*? link status definitely up for interface)|(bond.*? first active interface up)|(bond.*? Gained carrier)|(bond.*? link becomes ready)"),
 		},
 		{
 			// https://github.com/coreos/bugs/issues/2180
@@ -578,6 +580,12 @@ func CheckConsole(output []byte, t *register.Test) []string {
 		}
 		match := check.match.FindSubmatch(output)
 		if match != nil {
+			if check.skipIfMatch != nil {
+				skipMatch := check.skipIfMatch.FindSubmatch(output)
+				if skipMatch != nil {
+					continue
+				}
+			}
 			badness := check.desc
 			if len(match) > 1 {
 				// include first subexpression
