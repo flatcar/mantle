@@ -344,7 +344,7 @@ ExecStart=/usr/bin/curl -fo image.bin.bz2 "%v"
 # We don't verify signatures because the iPXE script isn't verified either
 # (and, in fact, is transferred over HTTP)
 
-ExecStart=/usr/bin/flatcar-install -d /dev/sda -f image.bin.bz2 %v /userdata
+ExecStart=/usr/bin/flatcar-install -s -f image.bin.bz2 %v /userdata
 
 ExecStart=/usr/bin/systemctl --no-block isolate reboot.target
 
