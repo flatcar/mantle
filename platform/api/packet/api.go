@@ -44,7 +44,7 @@ const (
 	// Provisioning a VM is supposed to take < 8 minutes, but in practice can take longer.
 	launchTimeout       = 10 * time.Minute
 	launchPollInterval  = 30 * time.Second
-	installTimeout      = 30 * time.Minute
+	installTimeout      = 45 * time.Minute
 	installPollInterval = 5 * time.Second
 	apiRetries          = 3
 	apiRetryInterval    = 5 * time.Second
@@ -67,8 +67,8 @@ var (
 		"arm64-usr": "c2.large.arm",
 	}
 	linuxConsole = map[string]string{
-		"amd64-usr": "ttyS1,115200",
-		"arm64-usr": "ttyAMA0,115200",
+		"amd64-usr": "ttyS1,115200n8",
+		"arm64-usr": "ttyAMA0,115200n8",
 	}
 )
 
@@ -158,7 +158,7 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("connecting to Google Storage bucket: %v", err)
 	}
 
-	client := packngo.NewClient("github.com/coreos/mantle", opts.ApiKey, nil)
+	client := packngo.NewClientWithAuth("github.com/coreos/mantle", opts.ApiKey, nil)
 
 	return &API{
 		c:      client,
@@ -168,7 +168,7 @@ func New(opts *Options) (*API, error) {
 }
 
 func (a *API) PreflightCheck() error {
-	_, _, err := a.c.Projects.Get(a.opts.Project)
+	_, _, err := a.c.Projects.Get(a.opts.Project, nil)
 	if err != nil {
 		return fmt.Errorf("querying project %v: %v", a.opts.Project, err)
 	}
@@ -210,6 +210,8 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 	}
 	deviceID := device.ID
 
+	plog.Debugf("Created device: %q", deviceID)
+
 	if console != nil {
 		err := a.startConsole(deviceID, console)
 		consoleStarted = true
@@ -231,17 +233,21 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 		return nil, fmt.Errorf("no public IP address found for %v", deviceID)
 	}
 
+	plog.Debugf("Device active: %q", deviceID)
+
 	err = waitForInstall(ipAddress)
 	if err != nil {
 		a.DeleteDevice(deviceID)
 		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
 	}
 
+	plog.Debugf("Finished installation of device: %q", deviceID)
+
 	return device, nil
 }
 
 func (a *API) DeleteDevice(deviceID string) error {
-	_, err := a.c.Devices.Delete(deviceID)
+	_, err := a.c.Devices.Delete(deviceID, true)
 	if err != nil {
 		return fmt.Errorf("deleting device %q: %v", deviceID, err)
 	}
@@ -338,7 +344,7 @@ ExecStart=/usr/bin/curl -fo image.bin.bz2 "%v"
 # We don't verify signatures because the iPXE script isn't verified either
 # (and, in fact, is transferred over HTTP)
 
-ExecStart=/usr/bin/flatcar-install -d /dev/sda -f image.bin.bz2 %v /userdata
+ExecStart=/usr/bin/flatcar-install -s -f image.bin.bz2 %v /userdata
 
 ExecStart=/usr/bin/systemctl --no-block isolate reboot.target
 
@@ -470,7 +476,7 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 		var response *packngo.Response
 		device, response, err = a.c.Devices.Create(&packngo.DeviceCreateRequest{
 			ProjectID:     a.opts.Project,
-			Facility:      a.opts.Facility,
+			Facility:      []string{a.opts.Facility},
 			Plan:          a.opts.Plan,
 			BillingCycle:  "hourly",
 			Hostname:      hostname,
@@ -480,6 +486,10 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 		})
 		if err == nil || response.StatusCode != 500 {
 			return
+		}
+		plog.Debugf("Retrying to create device after failure: %q %q %q \n", device, response, err)
+		if device != nil && device.ID != "" {
+			a.DeleteDevice(device.ID)
 		}
 		if tries > 0 {
 			time.Sleep(apiRetryInterval)
@@ -539,7 +549,7 @@ func (a *API) waitForActive(deviceID string) (*packngo.Device, error) {
 	var device *packngo.Device
 	err := util.WaitUntilReady(launchTimeout, launchPollInterval, func() (bool, error) {
 		var err error
-		device, _, err = a.c.Devices.Get(deviceID)
+		device, _, err = a.c.Devices.Get(deviceID, nil)
 		if err != nil {
 			return false, fmt.Errorf("querying device: %v", err)
 		}

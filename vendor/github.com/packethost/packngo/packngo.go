@@ -2,6 +2,8 @@ package packngo
 
 import (
 	"bytes"
+	"context"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,40 +13,94 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
-	libraryVersion = "0.1.0"
-	baseURL        = "https://api.packet.net/"
-	userAgent      = "packngo/" + libraryVersion
-	mediaType      = "application/json"
-	debugEnvVar    = "PACKNGO_DEBUG"
+	packetTokenEnvVar = "PACKET_AUTH_TOKEN"
+	libraryVersion    = "0.1.0"
+	baseURL           = "https://api.packet.net/"
+	userAgent         = "packngo/" + libraryVersion
+	mediaType         = "application/json"
+	debugEnvVar       = "PACKNGO_DEBUG"
 
 	headerRateLimit     = "X-RateLimit-Limit"
 	headerRateRemaining = "X-RateLimit-Remaining"
 	headerRateReset     = "X-RateLimit-Reset"
 )
 
+var redirectsErrorRe = regexp.MustCompile(`stopped after \d+ redirects\z`)
+
+type GetOptions struct {
+	Includes []string
+	Excludes []string
+}
+
 // ListOptions specifies optional global API parameters
 type ListOptions struct {
 	// for paginated result sets, page of results to retrieve
 	Page int `url:"page,omitempty"`
-
 	// for paginated result sets, the number of results to return per page
-	PerPage int `url:"per_page,omitempty"`
-
-	// specify which resources you want to return as collections instead of references
-	Includes string
+	PerPage  int `url:"per_page,omitempty"`
+	Includes []string
+	Excludes []string
 }
 
-func (l *ListOptions) createURL() (url string) {
-	if l.Includes != "" {
-		url += fmt.Sprintf("includes=%s", l.Includes)
+func makeSureGetOptionsInclude(g *GetOptions, s string) *GetOptions {
+	if g == nil {
+		return &GetOptions{Includes: []string{s}}
 	}
+	if !contains(g.Includes, s) {
+		g.Includes = append(g.Includes, s)
+	}
+	return g
+}
 
+func makeSureListOptionsInclude(l *ListOptions, s string) *ListOptions {
+	if l == nil {
+		return &ListOptions{Includes: []string{s}}
+	}
+	if !contains(l.Includes, s) {
+		l.Includes = append(l.Includes, s)
+	}
+	return l
+}
+
+func createGetOptionsURL(g *GetOptions) (url string) {
+	if g == nil {
+		return ""
+	}
+	if len(g.Includes) != 0 {
+		url += fmt.Sprintf("include=%s", strings.Join(g.Includes, ","))
+	}
+	if len(g.Excludes) != 0 {
+		if url != "" {
+			url += "&"
+		}
+		url += fmt.Sprintf("exclude=%s", strings.Join(g.Excludes, ","))
+	}
+	return
+
+}
+
+func createListOptionsURL(l *ListOptions) (url string) {
+	if l == nil {
+		return ""
+	}
+	if len(l.Includes) != 0 {
+		url += fmt.Sprintf("include=%s", strings.Join(l.Includes, ","))
+	}
+	if len(l.Excludes) != 0 {
+		if url != "" {
+			url += "&"
+		}
+		url += fmt.Sprintf("exclude=%s", strings.Join(l.Excludes, ","))
+	}
 	if l.Page != 0 {
 		if url != "" {
 			url += "&"
@@ -114,7 +170,7 @@ func (r *ErrorResponse) Error() string {
 
 // Client is the base API Client
 type Client struct {
-	client *http.Client
+	client *retryablehttp.Client
 	debug  bool
 
 	BaseURL *url.URL
@@ -126,26 +182,37 @@ type Client struct {
 	RateLimit Rate
 
 	// Packet Api Objects
-	Plans                  PlanService
-	Users                  UserService
-	Emails                 EmailService
-	SSHKeys                SSHKeyService
-	Devices                DeviceService
-	Projects               ProjectService
-	Facilities             FacilityService
-	OperatingSystems       OSService
+	APIKeys                APIKeyService
+	BGPConfig              BGPConfigService
+	BGPSessions            BGPSessionService
+	Batches                BatchService
+	CapacityService        CapacityService
 	DeviceIPs              DeviceIPService
 	DevicePorts            DevicePortService
+	Devices                DeviceService
+	Emails                 EmailService
+	Events                 EventService
+	Facilities             FacilityService
+	HardwareReservations   HardwareReservationService
+	Notifications          NotificationService
+	OperatingSystems       OSService
+	Organizations          OrganizationService
+	Plans                  PlanService
 	ProjectIPs             ProjectIPService
 	ProjectVirtualNetworks ProjectVirtualNetworkService
-	Volumes                VolumeService
-	VolumeAttachments      VolumeAttachmentService
+	Projects               ProjectService
+	SSHKeys                SSHKeyService
 	SpotMarket             SpotMarketService
-	Organizations          OrganizationService
+	SpotMarketRequests     SpotMarketRequestService
+	TwoFactorAuth          TwoFactorAuthService
+	Users                  UserService
+	VPN                    VPNService
+	VolumeAttachments      VolumeAttachmentService
+	Volumes                VolumeService
 }
 
 // NewRequest inits a new http request with the proper headers
-func (c *Client) NewRequest(method, path string, body interface{}) (*http.Request, error) {
+func (c *Client) NewRequest(method, path string, body interface{}) (*retryablehttp.Request, error) {
 	// relative path to append to the endpoint url, no leading slash please
 	rel, err := url.Parse(path)
 	if err != nil {
@@ -163,7 +230,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 		}
 	}
 
-	req, err := http.NewRequest(method, u.String(), buf)
+	req, err := retryablehttp.NewRequest(method, u.String(), buf)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +247,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 }
 
 // Do executes the http request
-func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
+func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error) {
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -191,8 +258,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	response := Response{Response: resp}
 	response.populateRate()
 	if c.debug {
-		o, _ := httputil.DumpResponse(response.Response, true)
-		log.Printf("\n=======[RESPONSE]============\n%s\n\n", string(o))
+		dumpResponse(response.Response)
 	}
 	c.RateLimit = response.Rate
 
@@ -217,13 +283,35 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	return &response, err
 }
 
+func dumpResponse(resp *http.Response) {
+	o, _ := httputil.DumpResponse(resp, true)
+	strResp := string(o)
+	reg, _ := regexp.Compile(`"token":(.+?),`)
+	reMatches := reg.FindStringSubmatch(strResp)
+	if len(reMatches) == 2 {
+		strResp = strings.Replace(strResp, reMatches[1], strings.Repeat("-", len(reMatches[1])), 1)
+	}
+	log.Printf("\n=======[RESPONSE]============\n%s\n\n", strResp)
+}
+
+func dumpRequest(req *retryablehttp.Request) {
+	o, _ := httputil.DumpRequestOut(req.Request, false)
+	strReq := string(o)
+	reg, _ := regexp.Compile(`X-Auth-Token: (\w*)`)
+	reMatches := reg.FindStringSubmatch(strReq)
+	if len(reMatches) == 2 {
+		strReq = strings.Replace(strReq, reMatches[1], strings.Repeat("-", len(reMatches[1])), 1)
+	}
+	bbs, _ := req.BodyBytes()
+	log.Printf("\n=======[REQUEST]=============\n%s%s\n", strReq, string(bbs))
+}
+
 // DoRequest is a convenience method, it calls NewRequest followed by Do
 // v is the interface to unmarshal the response JSON into
 func (c *Client) DoRequest(method, path string, body, v interface{}) (*Response, error) {
 	req, err := c.NewRequest(method, path, body)
 	if c.debug {
-		o, _ := httputil.DumpRequestOut(req, true)
-		log.Printf("\n=======[REQUEST]=============\n%s\n", string(o))
+		dumpRequest(req)
 	}
 	if err != nil {
 		return nil, err
@@ -231,23 +319,88 @@ func (c *Client) DoRequest(method, path string, body, v interface{}) (*Response,
 	return c.Do(req, v)
 }
 
-// NewClient initializes and returns a Client, use this to get an API Client to operate on
+// DoRequestWithHeader same as DoRequest
+func (c *Client) DoRequestWithHeader(method string, headers map[string]string, path string, body, v interface{}) (*Response, error) {
+	req, err := c.NewRequest(method, path, body)
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	if c.debug {
+		dumpRequest(req)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req, v)
+}
+
+// NewClient initializes and returns a Client
+func NewClient() (*Client, error) {
+	apiToken := os.Getenv(packetTokenEnvVar)
+	if apiToken == "" {
+		return nil, fmt.Errorf("you must export %s", packetTokenEnvVar)
+	}
+	c := NewClientWithAuth("packngo lib", apiToken, nil)
+	return c, nil
+
+}
+
+// NewClientWithAuth initializes and returns a Client, use this to get an API Client to operate on
 // N.B.: Packet's API certificate requires Go 1.5+ to successfully parse. If you are using
 // an older version of Go, pass in a custom http.Client with a custom TLS configuration
 // that sets "InsecureSkipVerify" to "true"
-func NewClient(consumerToken string, apiKey string, httpClient *http.Client) *Client {
+func NewClientWithAuth(consumerToken string, apiKey string, httpClient *retryablehttp.Client) *Client {
 	client, _ := NewClientWithBaseURL(consumerToken, apiKey, httpClient, baseURL)
 	return client
 }
 
+func PacketRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	// do not retry on context.Canceled or context.DeadlineExceeded
+	if ctx.Err() != nil {
+		return false, ctx.Err()
+	}
+
+	if err != nil {
+		if v, ok := err.(*url.Error); ok {
+			// Don't retry if the error was due to too many redirects.
+			if redirectsErrorRe.MatchString(v.Error()) {
+				return false, nil
+			}
+
+			// Don't retry if the error was due to TLS cert verification failure.
+			if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
+				return false, nil
+			}
+		}
+
+		// The error is likely recoverable so retry.
+		return true, nil
+	}
+
+	// Check the response code. We retry on 500-range responses to allow
+	// the server time to recover, as 500's are typically not permanent
+	// errors and may relate to outages on the server side. This will catch
+	// invalid response codes as well, like 0 and 999.
+	//if resp.StatusCode == 0 || (resp.StatusCode >= 500 && resp.StatusCode != 501) {
+	//	return true, nil
+	//}
+
+	return false, nil
+}
+
 // NewClientWithBaseURL returns a Client pointing to nonstandard API URL, e.g.
 // for mocking the remote API
-func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.Client, apiBaseURL string) (*Client, error) {
+func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *retryablehttp.Client, apiBaseURL string) (*Client, error) {
 	if httpClient == nil {
 		// Don't fall back on http.DefaultClient as it's not nice to adjust state
 		// implicitly. If the client wants to use http.DefaultClient, they can
 		// pass it in explicitly.
-		httpClient = &http.Client{}
+		httpClient = retryablehttp.NewClient()
+		httpClient.RetryWaitMin = time.Second
+		httpClient.RetryWaitMax = 30 * time.Second
+		httpClient.RetryMax = 10
+		httpClient.CheckRetry = PacketRetryPolicy
 	}
 
 	u, err := url.Parse(apiBaseURL)
@@ -256,23 +409,34 @@ func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.
 	}
 
 	c := &Client{client: httpClient, BaseURL: u, UserAgent: userAgent, ConsumerToken: consumerToken, APIKey: apiKey}
-	c.debug = os.Getenv(debugEnvVar) != ""
-	c.Plans = &PlanServiceOp{client: c}
-	c.Organizations = &OrganizationServiceOp{client: c}
-	c.Users = &UserServiceOp{client: c}
-	c.Emails = &EmailServiceOp{client: c}
-	c.SSHKeys = &SSHKeyServiceOp{client: c}
-	c.Devices = &DeviceServiceOp{client: c}
-	c.Projects = &ProjectServiceOp{client: c}
-	c.Facilities = &FacilityServiceOp{client: c}
-	c.OperatingSystems = &OSServiceOp{client: c}
+	c.APIKeys = &APIKeyServiceOp{client: c}
+	c.BGPConfig = &BGPConfigServiceOp{client: c}
+	c.BGPSessions = &BGPSessionServiceOp{client: c}
+	c.Batches = &BatchServiceOp{client: c}
+	c.CapacityService = &CapacityServiceOp{client: c}
 	c.DeviceIPs = &DeviceIPServiceOp{client: c}
 	c.DevicePorts = &DevicePortServiceOp{client: c}
-	c.ProjectVirtualNetworks = &ProjectVirtualNetworkServiceOp{client: c}
+	c.Devices = &DeviceServiceOp{client: c}
+	c.Emails = &EmailServiceOp{client: c}
+	c.Events = &EventServiceOp{client: c}
+	c.Facilities = &FacilityServiceOp{client: c}
+	c.HardwareReservations = &HardwareReservationServiceOp{client: c}
+	c.Notifications = &NotificationServiceOp{client: c}
+	c.OperatingSystems = &OSServiceOp{client: c}
+	c.Organizations = &OrganizationServiceOp{client: c}
+	c.Plans = &PlanServiceOp{client: c}
 	c.ProjectIPs = &ProjectIPServiceOp{client: c}
-	c.Volumes = &VolumeServiceOp{client: c}
-	c.VolumeAttachments = &VolumeAttachmentServiceOp{client: c}
+	c.ProjectVirtualNetworks = &ProjectVirtualNetworkServiceOp{client: c}
+	c.Projects = &ProjectServiceOp{client: c}
+	c.SSHKeys = &SSHKeyServiceOp{client: c}
 	c.SpotMarket = &SpotMarketServiceOp{client: c}
+	c.SpotMarketRequests = &SpotMarketRequestServiceOp{client: c}
+	c.TwoFactorAuth = &TwoFactorAuthServiceOp{client: c}
+	c.Users = &UserServiceOp{client: c}
+	c.VPN = &VPNServiceOp{client: c}
+	c.VolumeAttachments = &VolumeAttachmentServiceOp{client: c}
+	c.Volumes = &VolumeServiceOp{client: c}
+	c.debug = os.Getenv(debugEnvVar) != ""
 
 	return c, nil
 }
