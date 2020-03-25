@@ -285,3 +285,14 @@ func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, source
 
 	return bsc.CopyBlob(container, targetBlob, sourceBlob)
 }
+
+func (a *API) DeleteBlob(storageaccount, storagekey, container, blob string) error {
+	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	if err != nil {
+		return err
+	}
+
+	bsc := sc.GetBlobService()
+
+	return bsc.DeleteBlob(container, blob, nil)
+}
