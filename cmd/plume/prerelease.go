@@ -63,6 +63,7 @@ var (
 
 	selectedPlatforms  []string
 	selectedDistro     string
+	force              bool
 	azureProfile       string
 	azureAuth          string
 	azureTestContainer string
@@ -98,6 +99,7 @@ func init() {
 
 	cmdPreRelease.Flags().StringSliceVar(&selectedPlatforms, "platform", platformList, "platform to pre-release")
 	cmdPreRelease.Flags().StringVar(&selectedDistro, "system", "cl", "system to pre-release")
+	cmdPreRelease.Flags().BoolVar(&force, "force", false, "Replace existing images")
 	cmdPreRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdPreRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
@@ -235,8 +237,14 @@ func getCLImageFile(client *http.Client, src *storage.Bucket, fileName string) (
 	imagePath := strings.TrimSuffix(bzipPath, filepath.Ext(bzipPath))
 
 	if _, err := os.Stat(imagePath); err == nil {
-		plog.Printf("Reusing existing image %q", imagePath)
-		return imagePath, nil
+		if !force {
+			plog.Printf("Reusing existing image %q", imagePath)
+			return imagePath, nil
+		} else {
+			if err := os.Remove(imagePath); err != nil {
+				return "", err
+			}
+		}
 	}
 
 	bzipUri, err := url.Parse(fileName)
@@ -297,7 +305,13 @@ func uploadAzureBlob(spec *channelSpec, api *azure.API, storageKeys azurestorage
 		}
 
 		if blobExists {
-			return nil
+			if !force {
+				return nil
+			} else {
+				if err := api.DeleteBlob(spec.Azure.StorageAccount, *key.Value, container, blobName); err != nil {
+					return err
+				}
+			}
 		}
 
 		if err := api.UploadBlob(spec.Azure.StorageAccount, *key.Value, vhdfile, container, blobName, false); err != nil {
@@ -501,6 +515,28 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 	}
 	s3ObjectURL := fmt.Sprintf("s3://%s/%s", part.Bucket, s3ObjectPath)
 
+	destRegions := make([]string, 0, len(part.Regions))
+	foundBucketRegion := false
+	for _, region := range part.Regions {
+		if region != part.BucketRegion {
+			destRegions = append(destRegions, region)
+		} else {
+			foundBucketRegion = true
+		}
+	}
+	if !foundBucketRegion {
+		// We don't handle this case and shouldn't ever
+		// encounter it
+		return nil, fmt.Errorf("BucketRegion %v is not listed in Regions", part.BucketRegion)
+	}
+
+	if force {
+		err := api.RemoveImage(imageName, part.Bucket, s3ObjectPath, destRegions)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	snapshot, err := api.FindSnapshot(imageName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check for snapshot: %v", err)
@@ -569,21 +605,6 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 			if err := api.GrantLaunchPermission(imageID, part.LaunchPermissions); err != nil {
 				return nil, err
 			}
-		}
-
-		destRegions := make([]string, 0, len(part.Regions))
-		foundBucketRegion := false
-		for _, region := range part.Regions {
-			if region != part.BucketRegion {
-				destRegions = append(destRegions, region)
-			} else {
-				foundBucketRegion = true
-			}
-		}
-		if !foundBucketRegion {
-			// We don't handle this case and shouldn't ever
-			// encounter it
-			return nil, fmt.Errorf("BucketRegion %v is not listed in Regions", part.BucketRegion)
 		}
 
 		amis := map[string]string{}

@@ -348,8 +348,8 @@ func (a *API) deregisterImageIfExists(name string) error {
 	return nil
 }
 
-// Remove all uploaded data associated with an AMI.
-func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string) error {
+// Remove all uploaded data associated with an AMI, also in other given regions.
+func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string, otherRegions []string) error {
 	err := a.DeleteObject(s3BucketName, s3ObjectPath)
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
@@ -363,27 +363,36 @@ func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string) error {
 		plog.Infof("Deleted existing S3 object bucket:%s path:%s", s3BucketName, s3ObjectPath)
 	}
 
-	err = a.deregisterImageIfExists(name + "-hvm")
-	if err != nil {
-		return err
-	}
-	err = a.deregisterImageIfExists(name)
-	if err != nil {
-		return err
-	}
-
-	snapshot, err := a.FindSnapshot(name)
-	if err != nil {
-		return err
-	}
-	if snapshot != nil {
-		// We explicitly ignore errors here in case somehow another AMI was based
-		// on that snapshot
-		_, err := a.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: &snapshot.SnapshotID})
+	for _, region := range append(otherRegions, a.opts.Region) {
+		opts := *a.opts
+		opts.Region = region
+		aa, err := New(&opts)
 		if err != nil {
-			plog.Warningf("deleting snapshot %s: %v", snapshot.SnapshotID, err)
-		} else {
-			plog.Infof("Deleted existing snapshot %s", snapshot.SnapshotID)
+			return err
+		}
+
+		err = aa.deregisterImageIfExists(name + "-hvm")
+		if err != nil {
+			return err
+		}
+		err = aa.deregisterImageIfExists(name)
+		if err != nil {
+			return err
+		}
+
+		snapshot, err := aa.FindSnapshot(name)
+		if err != nil {
+			return err
+		}
+		if snapshot != nil {
+			// We explicitly ignore errors here in case somehow another AMI was based
+			// on that snapshot
+			_, err := aa.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: &snapshot.SnapshotID})
+			if err != nil {
+				plog.Warningf("deleting snapshot %s: %v", snapshot.SnapshotID, err)
+			} else {
+				plog.Infof("Deleted existing snapshot %s", snapshot.SnapshotID)
+			}
 		}
 	}
 
