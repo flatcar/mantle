@@ -33,7 +33,7 @@ func init() {
 		             "ignitionVersion": 1,
 		             "systemd": {
 		               "units": [{
-		                 "name": "system-cloudinit@usr-share-coreos-developer_data.service",
+		                 "name": "system-cloudinit@usr-share-flatcar-developer_data.service",
 		                 "mask": true
 		               }]
 		             },
@@ -61,7 +61,7 @@ func init() {
 		             "ignition": { "version": "2.0.0" },
 		             "systemd": {
 		               "units": [{
-		                 "name": "system-cloudinit@usr-share-coreos-developer_data.service",
+		                 "name": "system-cloudinit@usr-share-flatcar-developer_data.service",
 		                 "mask": true
 		               }]
 		             },
@@ -83,7 +83,7 @@ func init() {
 		             "ignition": { "version": "3.0.0" },
 		             "systemd": {
 		               "units": [{
-		                 "name": "system-cloudinit@usr-share-coreos-developer_data.service",
+		                 "name": "system-cloudinit@usr-share-flatcar-developer_data.service",
 		                 "mask": true
 		               }]
 		             },
@@ -111,7 +111,7 @@ func init() {
 		             "ignitionVersion": 1,
 		             "systemd": {
 		               "units": [{
-		                 "name": "system-cloudinit@usr-share-coreos-developer_data.service",
+		                 "name": "system-cloudinit@usr-share-flatcar-developer_data.service",
 		                 "mask": true
 		               }]
 		             },
@@ -145,7 +145,7 @@ func init() {
 		             "ignition": { "version": "2.0.0" },
 		             "systemd": {
 		               "units": [{
-		                 "name": "system-cloudinit@usr-share-coreos-developer_data.service",
+		                 "name": "system-cloudinit@usr-share-flatcar-developer_data.service",
 		                 "mask": true
 		               }]
 		             },
