@@ -24,6 +24,7 @@ import (
 
 	"golang.org/x/crypto/ssh/agent"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
@@ -58,12 +59,13 @@ will be ignored.
 	}
 
 	cmdList = &cobra.Command{
-		Use:   "list",
+		Use:   "list [glob pattern, only for --filter, defaults to '*']",
 		Short: "List kola test names",
 		Run:   runList,
 	}
 
-	listJSON bool
+	listJSON   bool
+	listFilter bool
 
 	runRemove     bool
 	runSetSSHKeys bool
@@ -75,6 +77,7 @@ func init() {
 	root.AddCommand(cmdList)
 
 	cmdList.Flags().BoolVar(&listJSON, "json", false, "format output in JSON")
+	cmdList.Flags().BoolVar(&listFilter, "filter", false, "Filter by --platform and --distro, required for glob patterns, uses '*' as pattern if no pattern is specified")
 
 	cmdRun.Flags().BoolVarP(&runRemove, "remove", "r", true, "remove instances after test exits (--remove=false will keep them)")
 	cmdRun.Flags().BoolVarP(&runSetSSHKeys, "keys", "k", false, "add SSH keys from --key options")
@@ -269,8 +272,24 @@ func writeProps() error {
 }
 
 func runList(cmd *cobra.Command, args []string) {
+	tests := register.Tests
+
+	if listFilter {
+		pattern := "*"
+		if len(args) == 1 {
+			pattern = args[0]
+		}
+		var err error
+		tests, err = kola.FilterTests(register.Tests, pattern, kolaPlatform, semver.Version{})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "filtering error: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	var testlist []*item
-	for name, test := range register.Tests {
+
+	for name, test := range tests {
 		item := &item{
 			name,
 			test.Platforms,

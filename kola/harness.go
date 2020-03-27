@@ -188,7 +188,7 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 	return
 }
 
-func filterTests(tests map[string]*register.Test, pattern, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
+func FilterTests(tests map[string]*register.Test, pattern, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
 
 	checkPlatforms := []string{pltfrm}
@@ -304,7 +304,7 @@ func RunTests(pattern, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bo
 	// 2) glob is an exact match which means minVersion will be ignored
 	//    either way
 	// 3) the provided torcx flag is wrong
-	tests, err := filterTests(register.Tests, pattern, pltfrm, semver.Version{})
+	tests, err := FilterTests(register.Tests, pattern, pltfrm, semver.Version{})
 	if err != nil {
 		plog.Fatal(err)
 	}
@@ -348,7 +348,7 @@ func RunTests(pattern, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bo
 		versionStr = version.String()
 
 		// one more filter pass now that we know real version
-		tests, err = filterTests(tests, pattern, pltfrm, *version)
+		tests, err = FilterTests(tests, pattern, pltfrm, *version)
 		if err != nil {
 			plog.Fatal(err)
 		}
