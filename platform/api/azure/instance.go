@@ -193,7 +193,7 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 
 	vm, err := a.compClient.Get(resourceGroup, name, compute.InstanceView)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get VM: %v", err)
 	}
 
 	consoleURI := vm.VirtualMachineProperties.InstanceView.BootDiagnostics.SerialConsoleLogBlobURI
@@ -213,7 +213,7 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 	var data io.ReadCloser
 	err = util.Retry(6, 10*time.Second, func() error {
 		data, err = a.GetBlob(storageAccount, key, container, blobname)
-		return err
+		return fmt.Errorf("could not get blob: %v", err)
 	})
 	if err != nil {
 		return nil, err
