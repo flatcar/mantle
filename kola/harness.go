@@ -188,7 +188,7 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 	return
 }
 
-func FilterTests(tests map[string]*register.Test, pattern, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
+func FilterTests(tests map[string]*register.Test, patterns []string, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
 
 	checkPlatforms := []string{pltfrm}
@@ -199,16 +199,30 @@ func FilterTests(tests map[string]*register.Test, pattern, pltfrm string, versio
 	}
 
 	for name, t := range tests {
-		match, err := filepath.Match(pattern, t.Name)
-		if err != nil {
-			return nil, err
+		noMatch := true
+		for _, pattern := range patterns {
+			match, err := filepath.Match(pattern, t.Name)
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				noMatch = false
+				break
+			}
 		}
-		if !match {
+		if noMatch {
 			continue
+		}
+		patternNotName := true
+		for _, pattern := range patterns {
+			if t.Name == pattern {
+				patternNotName = false
+				break
+			}
 		}
 
 		// Check the test's min and end versions when running more than one test
-		if t.Name != pattern && versionOutsideRange(version, t.MinVersion, t.EndVersion) {
+		if patternNotName && versionOutsideRange(version, t.MinVersion, t.EndVersion) {
 			continue
 		}
 
@@ -290,12 +304,12 @@ func versionOutsideRange(version, minVersion, endVersion semver.Version) bool {
 }
 
 // RunTests is a harness for running multiple tests in parallel. Filters
-// tests based on a glob pattern and by platform. Has access to all
+// tests based on glob patterns and by platform. Has access to all
 // tests either registered in this package or by imported packages that
 // register tests in their init() function.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. If it already exists it will be erased!
-func RunTests(pattern, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
+func RunTests(patterns []string, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
 	var versionStr string
 
 	// Avoid incurring cost of starting machine in getClusterSemver when
@@ -304,14 +318,21 @@ func RunTests(pattern, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bo
 	// 2) glob is an exact match which means minVersion will be ignored
 	//    either way
 	// 3) the provided torcx flag is wrong
-	tests, err := FilterTests(register.Tests, pattern, pltfrm, semver.Version{})
+	tests, err := FilterTests(register.Tests, patterns, pltfrm, semver.Version{})
 	if err != nil {
 		plog.Fatal(err)
 	}
 
 	skipGetVersion := true
 	for name, t := range tests {
-		if name != pattern && (t.MinVersion != semver.Version{} || t.EndVersion != semver.Version{}) {
+		patternNotName := true
+		for _, pattern := range patterns {
+			if name == pattern {
+				patternNotName = false
+				break
+			}
+		}
+		if patternNotName && (t.MinVersion != semver.Version{} || t.EndVersion != semver.Version{}) {
 			skipGetVersion = false
 			break
 		}
@@ -348,7 +369,7 @@ func RunTests(pattern, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bo
 		versionStr = version.String()
 
 		// one more filter pass now that we know real version
-		tests, err = FilterTests(tests, pattern, pltfrm, *version)
+		tests, err = FilterTests(tests, patterns, pltfrm, *version)
 		if err != nil {
 			plog.Fatal(err)
 		}

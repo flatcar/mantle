@@ -46,7 +46,7 @@ var (
 	}
 
 	cmdRun = &cobra.Command{
-		Use:   "run [glob pattern]",
+		Use:   "run [glob pattern...]",
 		Short: "Run kola tests by category",
 		Long: `Run all kola tests (default) or related groups.
 
@@ -59,7 +59,7 @@ will be ignored.
 	}
 
 	cmdList = &cobra.Command{
-		Use:   "list [glob pattern, only for --filter, defaults to '*']",
+		Use:   "list [glob pattern..., only for --filter, defaults to '*']",
 		Short: "List kola test names",
 		Run:   runList,
 	}
@@ -110,11 +110,11 @@ func runRun(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "Extra arguments specified. Usage: 'kola run [glob pattern]'\n")
 		os.Exit(2)
 	}
-	var pattern string
-	if len(args) == 1 {
-		pattern = args[0]
+	var patterns []string
+	if len(args) >= 1 {
+		patterns = args
 	} else {
-		pattern = "*" // run all tests by default
+		patterns = []string{"*"} // run all tests by default
 	}
 
 	var err error
@@ -134,7 +134,7 @@ func runRun(cmd *cobra.Command, args []string) {
 	} else {
 		sshKeys = nil
 	}
-	runErr := kola.RunTests(pattern, kolaPlatform, outputDir, &sshKeys, runRemove)
+	runErr := kola.RunTests(patterns, kolaPlatform, outputDir, &sshKeys, runRemove)
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {
@@ -275,12 +275,14 @@ func runList(cmd *cobra.Command, args []string) {
 	tests := register.Tests
 
 	if listFilter {
-		pattern := "*"
-		if len(args) == 1 {
-			pattern = args[0]
+		var patterns []string
+		if len(args) >= 1 {
+			patterns = args
+		} else {
+			patterns = []string{"*"} // run all tests by default
 		}
 		var err error
-		tests, err = kola.FilterTests(register.Tests, pattern, kolaPlatform, semver.Version{})
+		tests, err = kola.FilterTests(register.Tests, patterns, kolaPlatform, semver.Version{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "filtering error: %v\n", err)
 			os.Exit(1)
