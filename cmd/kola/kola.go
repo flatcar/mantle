@@ -24,6 +24,7 @@ import (
 
 	"golang.org/x/crypto/ssh/agent"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
@@ -45,7 +46,7 @@ var (
 	}
 
 	cmdRun = &cobra.Command{
-		Use:   "run [glob pattern]",
+		Use:   "run [glob pattern...]",
 		Short: "Run kola tests by category",
 		Long: `Run all kola tests (default) or related groups.
 
@@ -58,12 +59,13 @@ will be ignored.
 	}
 
 	cmdList = &cobra.Command{
-		Use:   "list",
+		Use:   "list [glob pattern..., only for --filter, defaults to '*']",
 		Short: "List kola test names",
 		Run:   runList,
 	}
 
-	listJSON bool
+	listJSON   bool
+	listFilter bool
 
 	runRemove     bool
 	runSetSSHKeys bool
@@ -75,6 +77,7 @@ func init() {
 	root.AddCommand(cmdList)
 
 	cmdList.Flags().BoolVar(&listJSON, "json", false, "format output in JSON")
+	cmdList.Flags().BoolVar(&listFilter, "filter", false, "Filter by --platform and --distro, required for glob patterns, uses '*' as pattern if no pattern is specified")
 
 	cmdRun.Flags().BoolVarP(&runRemove, "remove", "r", true, "remove instances after test exits (--remove=false will keep them)")
 	cmdRun.Flags().BoolVarP(&runSetSSHKeys, "keys", "k", false, "add SSH keys from --key options")
@@ -107,11 +110,11 @@ func runRun(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "Extra arguments specified. Usage: 'kola run [glob pattern]'\n")
 		os.Exit(2)
 	}
-	var pattern string
-	if len(args) == 1 {
-		pattern = args[0]
+	var patterns []string
+	if len(args) >= 1 {
+		patterns = args
 	} else {
-		pattern = "*" // run all tests by default
+		patterns = []string{"*"} // run all tests by default
 	}
 
 	var err error
@@ -131,7 +134,7 @@ func runRun(cmd *cobra.Command, args []string) {
 	} else {
 		sshKeys = nil
 	}
-	runErr := kola.RunTests(pattern, kolaPlatform, outputDir, &sshKeys, runRemove)
+	runErr := kola.RunTests(patterns, kolaPlatform, outputDir, &sshKeys, runRemove)
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {
@@ -269,8 +272,26 @@ func writeProps() error {
 }
 
 func runList(cmd *cobra.Command, args []string) {
+	tests := register.Tests
+
+	if listFilter {
+		var patterns []string
+		if len(args) >= 1 {
+			patterns = args
+		} else {
+			patterns = []string{"*"} // run all tests by default
+		}
+		var err error
+		tests, err = kola.FilterTests(register.Tests, patterns, kolaPlatform, semver.Version{})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "filtering error: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	var testlist []*item
-	for name, test := range register.Tests {
+
+	for name, test := range tests {
 		item := &item{
 			name,
 			test.Platforms,
