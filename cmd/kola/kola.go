@@ -106,10 +106,6 @@ func preRun(cmd *cobra.Command, args []string) {
 }
 
 func runRun(cmd *cobra.Command, args []string) {
-	if len(args) > 1 {
-		fmt.Fprintf(os.Stderr, "Extra arguments specified. Usage: 'kola run [glob pattern]'\n")
-		os.Exit(2)
-	}
 	var patterns []string
 	if len(args) >= 1 {
 		patterns = args
