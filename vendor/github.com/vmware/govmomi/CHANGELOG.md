@@ -1,5 +1,133 @@
 # changelog
 
+### 0.22.1 (2020-01-13)
+
+* Fix SAML token auth using Holder-of-Key with delegated Bearer identity against 6.7 U3b+
+
+### 0.22.0 (2020-01-10)
+
+* Add OVF properties to library.Deploy method
+
+* Add retry support for HTTP status codes
+
+* Use cs.identity service type for sts endpoint lookups
+
+* Add Content Library VM template APIs
+
+* Add SearchIndex FindAllByDnsName and FindAllByIp methods
+
+* Fix HostSystem.ManagementIPs to use SelectedVnic
+
+* Change generated ResourceReductionToToleratePercent to pointer type
+
+* Add DistributedVirtualSwitch.ReconfigureDVPort method
+
+* Add VirtualMachine.IsTemplate method
+
+* Add GetInventoryPath to NetworkReference interface
+
+* Support HoK tokens with Interactive Users
+
+* Replace mo.LoadRetrievePropertiesResponse with mo.LoadObjectContent
+
+* Add VirtualHardwareSection.StorageItem
+
+* Add ResourcePool.Owner method
+
+* Add VirtualMachine.QueryChangedDiskAreas method
+
+* Update generated code to vSphere 6.7u3
+
+* Add option to propagate MissingSet faults in property.WaitForUpdates
+
+* Add content library subscription support
+
+* Fix deadlock for keep alive handlers that attempt log in
+
+* Add CNS API bindings
+
+* Add FetchCapabilityMetadata method to Pbm client
+
+* Add v4 option to VirtualMachine.WaitForIP
+
+* Add VirtualHardwareSection.StorageItem
+
+### 0.21.0 (2019-07-24)
+
+* Add vsan package
+
+* Add vslm (FCD) global catalog support
+
+* Add content library support
+
+### 0.20.0 (2019-02-06)
+
+* Add vslm package for managing First Class Disks
+
+* Add LoginByToken to session KeepAliveHandler
+
+### 0.19.0 (2018-09-30)
+
+* New vapi/rest and and vapi/tags packages
+
+* Allowing the use of STS for exchanging tokens
+
+* Add object.VirtualMachine.UUID method
+
+* SetRootCAs on the soap.Client returns an error for invalid certificates
+
+* Add ClusterComputeResource.MoveInto method
+
+### 0.18.0 (2018-05-24)
+
+* Add VirtualDiskManager wrapper to set UUID
+
+* Add vmxnet2, pcnet32 and sriov to VirtualDeviceList.EthernetCardTypes
+
+* Add new vSphere 6.7 APIs
+
+* Decrease LoginExtensionByCertificate tunnel usage
+
+* SAML token authentication support via SessionManager.LoginByToken
+
+* New SSO admin client for managing users
+
+* New STS client for issuing and renewing SAML tokens
+
+* New Lookup Service client for discovering endpoints such as STS and ssoadmin
+
+* Switch from gvt to go dep for managing dependencies
+
+### 0.17.1 (2018-03-19)
+
+* vcsim: add Destroy method for Folder and Datacenter types
+
+* In progress.Reader emit final report on EOF.
+
+* vcsim: add EventManager.QueryEvents
+
+### 0.17.0 (2018-02-28)
+
+* Add HostStorageSystem.AttachScsiLun method
+
+* Avoid possible panic in Datastore.Stat (#969)
+
+* Destroy event history collectors (#962)
+
+* Add VirtualDiskManager.CreateChildDisk method
+
+### 0.16.0 (2017-11-08)
+
+* Add support for SOAP request operation ID header
+
+* Moved ovf helpers from govc import.ovf command to ovf and nfc packages
+
+* Added guest/toolbox (client) package
+
+* Added toolbox package and toolbox command
+
+* Added simulator package and vcsim command
+
 ### 0.15.0 (2017-06-19)
 
 * WaitOptions.MaxWaitSeconds is now optional

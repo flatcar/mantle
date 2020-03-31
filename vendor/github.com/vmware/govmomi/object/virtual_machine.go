@@ -23,6 +23,7 @@ import (
 	"net"
 	"path"
 
+	"github.com/vmware/govmomi/nfc"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/methods"
@@ -32,6 +33,7 @@ import (
 
 const (
 	PropRuntimePowerState = "summary.runtime.powerState"
+	PropConfigTemplate    = "summary.config.template"
 )
 
 type VirtualMachine struct {
@@ -53,6 +55,17 @@ func (v VirtualMachine) PowerState(ctx context.Context) (types.VirtualMachinePow
 	}
 
 	return o.Summary.Runtime.PowerState, nil
+}
+
+func (v VirtualMachine) IsTemplate(ctx context.Context) (bool, error) {
+	var o mo.VirtualMachine
+
+	err := v.Properties(ctx, v.Reference(), []string{PropConfigTemplate}, &o)
+	if err != nil {
+		return false, err
+	}
+
+	return o.Summary.Config.Template, nil
 }
 
 func (v VirtualMachine) PowerOn(ctx context.Context) (*Task, error) {
@@ -79,6 +92,20 @@ func (v VirtualMachine) PowerOff(ctx context.Context) (*Task, error) {
 	}
 
 	return NewTask(v.c, res.Returnval), nil
+}
+
+func (v VirtualMachine) PutUsbScanCodes(ctx context.Context, spec types.UsbScanCodeSpec) (int32, error) {
+	req := types.PutUsbScanCodes{
+		This: v.Reference(),
+		Spec: spec,
+	}
+
+	res, err := methods.PutUsbScanCodes(ctx, v.c, &req)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.Returnval, nil
 }
 
 func (v VirtualMachine) Reset(ctx context.Context) (*Task, error) {
@@ -197,7 +224,18 @@ func (v VirtualMachine) Reconfigure(ctx context.Context, config types.VirtualMac
 	return NewTask(v.c, res.Returnval), nil
 }
 
-func (v VirtualMachine) WaitForIP(ctx context.Context) (string, error) {
+func (v VirtualMachine) RefreshStorageInfo(ctx context.Context) error {
+	req := types.RefreshStorageInfo{
+		This: v.Reference(),
+	}
+
+	_, err := methods.RefreshStorageInfo(ctx, v.c, &req)
+	return err
+}
+
+// WaitForIP waits for the VM guest.ipAddress property to report an IP address.
+// Waits for an IPv4 address if the v4 param is true.
+func (v VirtualMachine) WaitForIP(ctx context.Context, v4 ...bool) (string, error) {
 	var ip string
 
 	p := property.DefaultCollector(v.c)
@@ -214,6 +252,11 @@ func (v VirtualMachine) WaitForIP(ctx context.Context) (string, error) {
 			}
 
 			ip = c.Val.(string)
+			if len(v4) == 1 && v4[0] {
+				if net.ParseIP(ip).To4() == nil {
+					return false
+				}
+			}
 			return true
 		}
 
@@ -260,6 +303,10 @@ func (v VirtualMachine) WaitForNetIP(ctx context.Context, v4 bool, device ...str
 
 		return true
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	if len(device) != 0 {
 		// Only wait for specific NIC(s)
@@ -464,6 +511,20 @@ func (v VirtualMachine) Answer(ctx context.Context, id, answer string) error {
 	return nil
 }
 
+func (v VirtualMachine) AcquireTicket(ctx context.Context, kind string) (*types.VirtualMachineTicket, error) {
+	req := types.AcquireTicket{
+		This:       v.Reference(),
+		TicketType: kind,
+	}
+
+	res, err := methods.AcquireTicket(ctx, v.c, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &res.Returnval, nil
+}
+
 // CreateSnapshot creates a new snapshot of a virtual machine.
 func (v VirtualMachine) CreateSnapshot(ctx context.Context, name string, description string, memory bool, quiesce bool) (*Task, error) {
 	req := types.CreateSnapshot_Task{
@@ -497,7 +558,7 @@ func (v VirtualMachine) RemoveAllSnapshot(ctx context.Context, consolidate *bool
 	return NewTask(v.c, res.Returnval), nil
 }
 
-type snapshotMap map[string][]Reference
+type snapshotMap map[string][]types.ManagedObjectReference
 
 func (m snapshotMap) add(parent string, tree []types.VirtualMachineSnapshotTree) {
 	for i, st := range tree {
@@ -511,7 +572,7 @@ func (m snapshotMap) add(parent string, tree []types.VirtualMachineSnapshotTree)
 		}
 
 		for _, name := range names {
-			m[name] = append(m[name], &tree[i].Snapshot)
+			m[name] = append(m[name], tree[i].Snapshot)
 		}
 
 		m.add(sname, st.ChildSnapshotList)
@@ -522,7 +583,7 @@ func (m snapshotMap) add(parent string, tree []types.VirtualMachineSnapshotTree)
 // 1) snapshot ManagedObjectReference.Value (unique)
 // 2) snapshot name (may not be unique)
 // 3) snapshot tree path (may not be unique)
-func (v VirtualMachine) FindSnapshot(ctx context.Context, name string) (Reference, error) {
+func (v VirtualMachine) FindSnapshot(ctx context.Context, name string) (*types.ManagedObjectReference, error) {
 	var o mo.VirtualMachine
 
 	err := v.Properties(ctx, v.Reference(), []string{"snapshot"}, &o)
@@ -531,7 +592,7 @@ func (v VirtualMachine) FindSnapshot(ctx context.Context, name string) (Referenc
 	}
 
 	if o.Snapshot == nil || len(o.Snapshot.RootSnapshotList) == 0 {
-		return nil, errors.New("No snapshots for this VM")
+		return nil, errors.New("no snapshots for this VM")
 	}
 
 	m := make(snapshotMap)
@@ -542,7 +603,7 @@ func (v VirtualMachine) FindSnapshot(ctx context.Context, name string) (Referenc
 	case 0:
 		return nil, fmt.Errorf("snapshot %q not found", name)
 	case 1:
-		return s[0], nil
+		return &s[0], nil
 	default:
 		return nil, fmt.Errorf("%q resolves to %d snapshots", name, len(s))
 	}
@@ -756,4 +817,108 @@ func (v VirtualMachine) UpgradeTools(ctx context.Context, options string) (*Task
 	}
 
 	return NewTask(v.c, res.Returnval), nil
+}
+
+func (v VirtualMachine) Export(ctx context.Context) (*nfc.Lease, error) {
+	req := types.ExportVm{
+		This: v.Reference(),
+	}
+
+	res, err := methods.ExportVm(ctx, v.Client(), &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return nfc.NewLease(v.c, res.Returnval), nil
+}
+
+func (v VirtualMachine) UpgradeVM(ctx context.Context, version string) (*Task, error) {
+	req := types.UpgradeVM_Task{
+		This:    v.Reference(),
+		Version: version,
+	}
+
+	res, err := methods.UpgradeVM_Task(ctx, v.Client(), &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTask(v.c, res.Returnval), nil
+}
+
+// UUID is a helper to get the UUID of the VirtualMachine managed object.
+// This method returns an empty string if an error occurs when retrieving UUID from the VirtualMachine object.
+func (v VirtualMachine) UUID(ctx context.Context) string {
+	var o mo.VirtualMachine
+
+	err := v.Properties(ctx, v.Reference(), []string{"config.uuid"}, &o)
+	if err != nil {
+		return ""
+	}
+
+	return o.Config.Uuid
+}
+
+func (v VirtualMachine) QueryChangedDiskAreas(ctx context.Context, baseSnapshot, curSnapshot *types.ManagedObjectReference, disk *types.VirtualDisk, offset int64) (types.DiskChangeInfo, error) {
+	var noChange types.DiskChangeInfo
+	var err error
+
+	if offset > disk.CapacityInBytes {
+		return noChange, fmt.Errorf("offset is greater than the disk size (%#x and %#x)", offset, disk.CapacityInBytes)
+	} else if offset == disk.CapacityInBytes {
+		return types.DiskChangeInfo{StartOffset: offset, Length: 0}, nil
+	}
+
+	var b mo.VirtualMachineSnapshot
+	err = v.Properties(ctx, baseSnapshot.Reference(), []string{"config.hardware"}, &b)
+	if err != nil {
+		return noChange, fmt.Errorf("failed to fetch config.hardware of snapshot %s: %s", baseSnapshot, err)
+	}
+
+	var changeId *string
+	for _, vd := range b.Config.Hardware.Device {
+		d := vd.GetVirtualDevice()
+		if d.Key != disk.Key {
+			continue
+		}
+
+		// As per VDDK programming guide, these are the four types of disks
+		// that support CBT, see "Gathering Changed Block Information".
+		if b, ok := d.Backing.(*types.VirtualDiskFlatVer2BackingInfo); ok {
+			changeId = &b.ChangeId
+			break
+		}
+		if b, ok := d.Backing.(*types.VirtualDiskSparseVer2BackingInfo); ok {
+			changeId = &b.ChangeId
+			break
+		}
+		if b, ok := d.Backing.(*types.VirtualDiskRawDiskMappingVer1BackingInfo); ok {
+			changeId = &b.ChangeId
+			break
+		}
+		if b, ok := d.Backing.(*types.VirtualDiskRawDiskVer2BackingInfo); ok {
+			changeId = &b.ChangeId
+			break
+		}
+
+		return noChange, fmt.Errorf("disk %d has backing info without .ChangeId: %t", disk.Key, d.Backing)
+	}
+	if changeId == nil || *changeId == "" {
+		return noChange, fmt.Errorf("CBT is not enabled on disk %d", disk.Key)
+	}
+
+	req := types.QueryChangedDiskAreas{
+		This:        v.Reference(),
+		Snapshot:    curSnapshot,
+		DeviceKey:   disk.Key,
+		StartOffset: offset,
+		ChangeId:    *changeId,
+	}
+
+	res, err := methods.QueryChangedDiskAreas(ctx, v.Client(), &req)
+	if err != nil {
+		return noChange, err
+	}
+
+	return res.Returnval, nil
 }
