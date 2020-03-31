@@ -142,7 +142,7 @@ func New(opts *Options) (*API, error) {
 		}
 	}
 
-	esxUrl := fmt.Sprintf("%s:%s@%s", opts.User, opts.Password, opts.Server)
+	esxUrl := fmt.Sprintf("%s:%s@%s", url.QueryEscape(opts.User), url.QueryEscape(opts.Password), opts.Server)
 	u, err := soap.ParseURL(esxUrl)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ESX URL: %v", err)
