@@ -21,12 +21,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/nfc"
 	"github.com/vmware/govmomi/vim25"
 )
 
 type leaseUpdater struct {
-	lease *object.HttpNfcLease
+	lease *nfc.Lease
 
 	pos   int64 // Number of bytes
 	total int64 // Total number of bytes
@@ -36,7 +36,7 @@ type leaseUpdater struct {
 	wg sync.WaitGroup // Track when update loop is done
 }
 
-func newLeaseUpdater(client *vim25.Client, lease *object.HttpNfcLease, items []ovfFileItem) *leaseUpdater {
+func newLeaseUpdater(client *vim25.Client, lease *nfc.Lease, items []ovfFileItem) *leaseUpdater {
 	l := leaseUpdater{
 		lease: lease,
 
@@ -100,7 +100,7 @@ func (l *leaseUpdater) run() {
 			// Always report the current value of percent, as it will renew the
 			// lease even if the value hasn't changed or is 0.
 			percent := int32(float32(100*atomic.LoadInt64(&l.pos)) / float32(l.total))
-			err := l.lease.HttpNfcLeaseProgress(context.TODO(), percent)
+			err := l.lease.Progress(context.TODO(), percent)
 			if err != nil {
 				plog.Debugf("from lease updater: %s\n", err)
 			}

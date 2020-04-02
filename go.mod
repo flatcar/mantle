@@ -62,7 +62,7 @@ require (
 	github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb
 	github.com/vishvananda/netlink v0.0.0-20150217221648-2e9d285a7160
 	github.com/vishvananda/netns v0.0.0-20150710222425-604eaf189ee8
-	github.com/vmware/govmomi v0.15.0
+	github.com/vmware/govmomi v0.22.2
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
 	go4.org v0.0.0-20180809161055-417644f6feb5 // indirect
 	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
@@ -75,6 +75,7 @@ require (
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20190611190212-a7e196e89fd3 // indirect
 	google.golang.org/grpc v1.19.1 // indirect
+	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
 
 replace google.golang.org/cloud => cloud.google.com/go v0.0.0-20190220171618-cbb15e60dc6d
