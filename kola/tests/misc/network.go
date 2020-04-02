@@ -111,7 +111,7 @@ NextProcess:
 				expected.process = expected.process[0:trunc_len]
 			}
 			if strings.HasPrefix(proto, expected.protocol) && // allow expected tcp to match tcp6
-				expected.port == port &&
+				(expected.port == "*" || expected.port == port) &&
 				expected.process == process {
 				// matches expected process
 				continue NextProcess
@@ -136,6 +136,7 @@ func NetworkListeners(c cluster.TestCluster) {
 		{"tcp", "10010", "containerd"},     // containerd
 		{"udp", "68", "systemd-networkd"},  // dhcp6-client
 		{"udp", "546", "systemd-networkd"}, // bootpc
+		{"udp", "*", "systemd-timesyncd"},  // NTP client (random client ports)
 	}
 	checkList := func() error {
 		return checkListeners(c, expectedListeners)
