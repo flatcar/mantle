@@ -340,7 +340,7 @@ Type=oneshot
 # Prevent flatcar-install from validating cloud-config
 Environment=PATH=/root/bin:/usr/sbin:/usr/bin
 
-ExecStart=/usr/bin/curl -fo image.bin.bz2 "%v"
+ExecStart=/usr/bin/curl --retry-delay 1 --retry 120 --retry-connrefused --retry-max-time 120 --connect-timeout 20 -fo image.bin.bz2 "%v"
 # We don't verify signatures because the iPXE script isn't verified either
 # (and, in fact, is transferred over HTTP)
 
