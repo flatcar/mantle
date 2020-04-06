@@ -68,7 +68,7 @@ func init() {
 	cmdUpload.Flags().StringVar(&uploadSourceObject, "source-object", "", "'s3://' URI pointing to image data (default: same as upload)")
 	cmdUpload.Flags().StringVar(&uploadBucket, "bucket", "", "s3://bucket/prefix/ (defaults to a regional bucket and prefix defaults to $USER/board/name)")
 	cmdUpload.Flags().StringVar(&uploadImageName, "name", "", "name of uploaded image (default COREOS_VERSION)")
-	cmdUpload.Flags().StringVar(&uploadBoard, "board", "amd64-usr", "board used for naming with default prefix only")
+	cmdUpload.Flags().StringVar(&uploadBoard, "board", "amd64-usr", "board used for naming with default prefix and AMI architecture")
 	cmdUpload.Flags().StringVar(&uploadFile, "file",
 		defaultUploadFile(),
 		"path to CoreOS image (build with: ./image_to_vm.sh --format=ami_vmdk ...)")
@@ -261,8 +261,14 @@ func runUpload(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	amiArch, err := aws.AmiArchForBoard(uploadBoard)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not get architecture for board: %v\n", err)
+		os.Exit(1)
+	}
+
 	// create AMIs and grant permissions
-	hvmID, err := API.CreateHVMImage(sourceSnapshot, uploadDiskSizeGiB, amiName+"-hvm", uploadAMIDescription)
+	hvmID, err := API.CreateHVMImage(sourceSnapshot, uploadDiskSizeGiB, amiName+"-hvm", uploadAMIDescription, amiArch)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to create HVM image: %v\n", err)
 		os.Exit(1)

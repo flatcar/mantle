@@ -326,8 +326,8 @@ func (a *API) CreateImportRole(bucket string) error {
 	return nil
 }
 
-func (a *API) CreateHVMImage(snapshotID string, diskSizeGiB uint, name string, description string) (string, error) {
-	params := registerImageParams(snapshotID, diskSizeGiB, name, description, "xvd", EC2ImageTypeHVM)
+func (a *API) CreateHVMImage(snapshotID string, diskSizeGiB uint, name string, description string, arch string) (string, error) {
+	params := registerImageParams(snapshotID, diskSizeGiB, name, description, "xvd", EC2ImageTypeHVM, arch)
 	params.EnaSupport = aws.Bool(true)
 	params.SriovNetSupport = aws.String("simple")
 	return a.createImage(params)
@@ -436,11 +436,21 @@ func (a *API) createImage(params *ec2.RegisterImageInput) (string, error) {
 	return imageID, nil
 }
 
-func registerImageParams(snapshotID string, diskSizeGiB uint, name, description string, diskBaseName string, imageType EC2ImageType) *ec2.RegisterImageInput {
+func AmiArchForBoard(board string) (string, error) {
+	switch board {
+	case "amd64-usr":
+		return "x86_64", nil
+	case "arm64-usr":
+		return "arm64", nil
+	}
+	return "", fmt.Errorf("No AMI architecture defined for board %q", board)
+}
+
+func registerImageParams(snapshotID string, diskSizeGiB uint, name, description string, diskBaseName string, imageType EC2ImageType, arch string) *ec2.RegisterImageInput {
 	return &ec2.RegisterImageInput{
 		Name:               aws.String(name),
 		Description:        aws.String(description),
-		Architecture:       aws.String("x86_64"),
+		Architecture:       aws.String(arch),
 		VirtualizationType: aws.String(string(imageType)),
 		RootDeviceName:     aws.String(fmt.Sprintf("/dev/%sa", diskBaseName)),
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
