@@ -574,7 +574,12 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 
 	plog.Printf("Creating AMIs from %v...", snapshot.SnapshotID)
 
-	hvmImageID, err := api.CreateHVMImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+AmiNameArchTag()+"-hvm", imageDescription+" (HVM)")
+	amiArch, err := aws.AmiArchForBoard(specBoard)
+	if err != nil {
+		return nil, fmt.Errorf("could not get architecture for board: %v", err)
+	}
+
+	hvmImageID, err := api.CreateHVMImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+"-hvm", imageDescription+" (HVM)", amiArch)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create HVM image: %v", err)
 	}

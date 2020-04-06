@@ -484,7 +484,7 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 					}
 				}
 			}
-			publish(imageName + AmiNameArchTag() + "-hvm")
+			publish(imageName + "-hvm")
 		}
 	}
 }
