@@ -574,7 +574,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 
 	plog.Printf("Creating AMIs from %v...", snapshot.SnapshotID)
 
-	hvmImageID, err := api.CreateHVMImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+AmiNameArchTag()+"-hvm", imageDescription+" (HVM)")
+	hvmImageID, err := api.CreateHVMImage(snapshot.SnapshotID, aws.ContainerLinuxDiskSizeGiB, imageName+"-hvm", imageDescription+" (HVM)")
 	if err != nil {
 		return nil, fmt.Errorf("unable to create HVM image: %v", err)
 	}
