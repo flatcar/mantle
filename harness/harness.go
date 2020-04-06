@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -110,7 +111,11 @@ func (c *H) flushToParent(format string, args ...interface{}) {
 	if p.tap != nil {
 		name := strings.Replace(c.name, "#", "", -1)
 		if status == testresult.Fail {
-			fmt.Fprintf(p.tap, "not ok - %s\n", name)
+			// Filter passed subtests and their output away
+			rePassBeforeFail := regexp.MustCompile(` *?--- PASS: .*?(\n.*?)+?--- FAIL`)
+			rePassAfterFail := regexp.MustCompile(` *?--- PASS: .*?\n`)
+			msg := bytes.Trim(rePassAfterFail.ReplaceAll(rePassBeforeFail.ReplaceAll(c.output.Bytes(), []byte("--- FAIL")), nil), " \n")
+			fmt.Fprintf(p.tap, "not ok - %s\n  ---\n  Error: %q\n  ...\n", name, msg)
 		} else if status == testresult.Skip {
 			fmt.Fprintf(p.tap, "ok - %s # SKIP\n", name)
 		} else {
