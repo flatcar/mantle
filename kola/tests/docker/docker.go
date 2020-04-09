@@ -261,7 +261,7 @@ func dockerResources(c cluster.TestCluster) {
 	// ref https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
 	for _, dockerCmd := range []string{
 		// must set memory when setting memory-swap
-		dCmd("--memory=30m --memory-swap=30m"),
+		dCmd("--memory=50m --memory-swap=50m"),
 		dCmd("--memory-reservation=10m"),
 		dCmd("--kernel-memory=10m"),
 		dCmd("--cpu-shares=100"),
@@ -277,7 +277,7 @@ func dockerResources(c cluster.TestCluster) {
 		//dCmd("--device-write-bps=/dev/vda:1kb"),
 		//dCmd("--device-read-iops=/dev/vda:10"),
 		//dCmd("--device-write-iops=/dev/vda:10"),
-		dCmd("--memory=30m --oom-kill-disable=true"),
+		dCmd("--memory=50m --oom-kill-disable=true"),
 		dCmd("--memory-swappiness=50"),
 		dCmd("--shm-size=1m"),
 	} {
