@@ -130,7 +130,7 @@ func runRun(cmd *cobra.Command, args []string) {
 	} else {
 		sshKeys = nil
 	}
-	runErr := kola.RunTests(patterns, kolaPlatform, outputDir, &sshKeys, runRemove)
+	runErr := kola.RunTests(patterns, kolaChannel, kolaPlatform, outputDir, &sshKeys, runRemove)
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {
@@ -278,7 +278,7 @@ func runList(cmd *cobra.Command, args []string) {
 			patterns = []string{"*"} // run all tests by default
 		}
 		var err error
-		tests, err = kola.FilterTests(register.Tests, patterns, kolaPlatform, semver.Version{})
+		tests, err = kola.FilterTests(register.Tests, patterns, kolaChannel, kolaPlatform, semver.Version{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "filtering error: %v\n", err)
 			os.Exit(1)
