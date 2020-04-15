@@ -48,11 +48,14 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	var cons *console
 	var pcons packet.Console // need a nil interface value if unused
 	var device *packngo.Device
+	// Do not shadow assignments to err (i.e., use a, err := something) in the for loop
+	// because the "continue" case needs to access the previous error to return it when the
+	// maximal number of retries is reached or to print it at the beginning of the loop.
 	for retry := 0; retry <= 2; retry++ {
 		if err != nil {
 			plog.Infof("Retrying to provision a machine after error: %q", err)
 			if pc.sshKeyID != "" {
-				err := os.Remove(consolePath)
+				err = os.Remove(consolePath)
 				if err != nil {
 					return nil, err
 				}
@@ -60,7 +63,8 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		}
 		if pc.sshKeyID != "" {
 			// We can only read the console if Packet has our SSH key
-			f, err := os.OpenFile(consolePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
+			var f *os.File
+			f, err = os.OpenFile(consolePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
 			if err != nil {
 				return nil, err
 			}
@@ -92,20 +96,20 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		}
 
 		dir := filepath.Join(pc.RuntimeConf().OutputDir, mach.ID())
-		if err := os.Mkdir(dir, 0777); err != nil {
+		if err = os.Mkdir(dir, 0777); err != nil {
 			mach.Destroy()
 			return nil, err
 		}
 
 		if cons != nil {
-			if err := os.Rename(consolePath, filepath.Join(dir, "console.txt")); err != nil {
+			if err = os.Rename(consolePath, filepath.Join(dir, "console.txt")); err != nil {
 				mach.Destroy()
 				return nil, err
 			}
 		}
 
 		confPath := filepath.Join(dir, "user-data")
-		if err := conf.WriteFile(confPath); err != nil {
+		if err = conf.WriteFile(confPath); err != nil {
 			mach.Destroy()
 			return nil, err
 		}
@@ -115,7 +119,7 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 			return nil, err
 		}
 
-		if err := platform.StartMachine(mach, mach.journal); err != nil {
+		if err = platform.StartMachine(mach, mach.journal); err != nil {
 			mach.Destroy()
 			continue // provisioning error
 		}
