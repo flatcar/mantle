@@ -36,10 +36,14 @@ var (
 )
 
 func init() {
-	root.PersistentFlags().StringVar(&gceJSONKeyFile, "gce-json-key", "", "use a JSON key for authentication")
+	root.PersistentFlags().StringVar(&gceJSONKeyFile, "gce-json-key", "", "use a JSON key for authentication (set to 'none' for unauthorized access)")
 }
 
 func getGoogleClient() (*http.Client, error) {
+	if gceJSONKeyFile == "none" {
+		return &http.Client{}, nil
+	}
+
 	if gceJSONKeyFile != "" {
 		if b, err := ioutil.ReadFile(gceJSONKeyFile); err == nil {
 			return auth.GoogleClientFromJSONKey(b)
