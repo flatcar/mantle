@@ -29,6 +29,7 @@ var (
 	specBoard         string
 	specChannel       string
 	specVersion       string
+	specAwsPartition  string
 	gceBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureBoards       = []string{"amd64-usr"}
 	awsBoards         = []string{"amd64-usr", "arm64-usr"}
@@ -37,8 +38,8 @@ var (
 			SubscriptionName: "AzureCloud",
 		},
 	}
-	awsPartitions = []awsPartitionSpec{
-		awsPartitionSpec{
+	awsPartitions = map[string]awsPartitionSpec{
+		"default": awsPartitionSpec{
 			Name:              "AWS",
 			Profile:           "default",
 			Bucket:            "flatcar-prod-ami-import-eu-central-1",
@@ -66,6 +67,16 @@ var (
 				"me-south-1",
 			},
 		},
+		"china": awsPartitionSpec{
+			Name:         "AWS China",
+			Profile:      "china",
+			Bucket:       "flatcar-prod-ami-import-cn-north-1",
+			BucketRegion: "cn-north-1",
+			Regions: []string{
+				"cn-north-1",
+				"cn-northwest-1",
+			},
+		},
 	}
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
@@ -91,7 +102,6 @@ var (
 				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-				Partitions:      awsPartitions,
 			},
 		},
 		"beta": channelSpec{
@@ -117,7 +127,6 @@ var (
 				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-				Partitions:      awsPartitions,
 			},
 		},
 		"stable": channelSpec{
@@ -143,7 +152,6 @@ var (
 				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-				Partitions:      awsPartitions,
 			},
 		},
 		"edge": channelSpec{
@@ -169,7 +177,6 @@ var (
 				BaseDescription: "Flatcar Container Linux",
 				Prefix:          "flatcar_production_ami_",
 				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-				Partitions:      awsPartitions,
 			},
 		},
 	}
@@ -179,12 +186,15 @@ func AddSpecFlags(flags *pflag.FlagSet) {
 	board := sdk.DefaultBoard()
 	channels := strings.Join(maps.SortedKeys(specs), " ")
 	versions, _ := sdk.VersionsFromManifest()
+	awsPartition := "default"
 	flags.StringVarP(&specBoard, "board", "B",
 		board, "target board")
 	flags.StringVarP(&specChannel, "channel", "C",
 		"user", "channels: "+channels)
 	flags.StringVarP(&specVersion, "version", "V",
 		versions.VersionID, "release version")
+	flags.StringVarP(&specAwsPartition, "partition", "P",
+		awsPartition, "aws partition")
 }
 
 func AmiNameArchTag() string {
@@ -208,6 +218,9 @@ func ChannelSpec() channelSpec {
 	}
 	if specVersion == "" {
 		plog.Fatal("--version is required")
+	}
+	if specAwsPartition == "" {
+		plog.Fatal("--partition is required")
 	}
 
 	spec, ok := specs[specChannel]
@@ -258,6 +271,13 @@ func ChannelSpec() channelSpec {
 	if !awsOk {
 		spec.AWS = awsSpec{}
 	}
+
+	awsPartition, awsPartitionOk := awsPartitions[specAwsPartition]
+	if !awsPartitionOk {
+		plog.Fatalf("Unknown AWS Partition: %s", specAwsPartition)
+	}
+
+	spec.AWS.Partitions = []awsPartitionSpec{awsPartition}
 
 	return spec
 }
