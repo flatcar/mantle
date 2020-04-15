@@ -130,7 +130,7 @@ func runRun(cmd *cobra.Command, args []string) {
 	} else {
 		sshKeys = nil
 	}
-	runErr := kola.RunTests(patterns, kolaPlatform, outputDir, &sshKeys, runRemove)
+	runErr := kola.RunTests(patterns, kolaChannel, kolaPlatform, outputDir, &sshKeys, runRemove)
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {
@@ -278,7 +278,7 @@ func runList(cmd *cobra.Command, args []string) {
 			patterns = []string{"*"} // run all tests by default
 		}
 		var err error
-		tests, err = kola.FilterTests(register.Tests, patterns, kolaPlatform, semver.Version{})
+		tests, err = kola.FilterTests(register.Tests, patterns, kolaChannel, kolaPlatform, semver.Version{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "filtering error: %v\n", err)
 			os.Exit(1)
@@ -294,7 +294,9 @@ func runList(cmd *cobra.Command, args []string) {
 			test.ExcludePlatforms,
 			test.Architectures,
 			test.Distros,
-			test.ExcludeDistros}
+			test.ExcludeDistros,
+			test.Channels,
+			test.ExcludeChannels}
 		item.updateValues()
 		testlist = append(testlist, item)
 	}
@@ -306,7 +308,7 @@ func runList(cmd *cobra.Command, args []string) {
 	if !listJSON {
 		var w = tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
 
-		fmt.Fprintln(w, "Test Name\tPlatforms\tArchitectures\tDistributions")
+		fmt.Fprintln(w, "Test Name\tPlatforms\tArchitectures\tDistributions\tChannels")
 		fmt.Fprintln(w, "\t")
 		for _, item := range testlist {
 			fmt.Fprintf(w, "%v\n", item)
@@ -329,6 +331,8 @@ type item struct {
 	Architectures    []string
 	Distros          []string
 	ExcludeDistros   []string `json:"-"`
+	Channels         []string
+	ExcludeChannels  []string `json:"-"`
 }
 
 func (i *item) updateValues() {
@@ -366,8 +370,9 @@ func (i *item) updateValues() {
 	i.Platforms = buildItems(i.Platforms, i.ExcludePlatforms, kolaPlatforms)
 	i.Architectures = buildItems(i.Architectures, nil, kolaArchitectures)
 	i.Distros = buildItems(i.Distros, i.ExcludeDistros, kolaDistros)
+	i.Channels = buildItems(i.Channels, i.ExcludeChannels, kolaChannels)
 }
 
 func (i item) String() string {
-	return fmt.Sprintf("%v\t%v\t%v\t%v", i.Name, i.Platforms, i.Architectures, i.Distros)
+	return fmt.Sprintf("%v\t%v\t%v\t%v\t%v", i.Name, i.Platforms, i.Architectures, i.Distros, i.Channels)
 }

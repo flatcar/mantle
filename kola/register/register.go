@@ -56,6 +56,8 @@ type Test struct {
 	ExcludePlatforms []string // blacklist of platforms to ignore -- defaults to none
 	Distros          []string // whitelist of distributions to run test against -- defaults to all
 	ExcludeDistros   []string // blacklist of distributions to ignore -- defaults to none
+	Channels         []string // whitelist of channels to run test against -- defaults to all
+	ExcludeChannels  []string // blacklist of channels to ignore -- defaults to none
 	Architectures    []string // whitelist of machine architectures supported -- defaults to all
 	Flags            []Flag   // special-case options for this test
 
