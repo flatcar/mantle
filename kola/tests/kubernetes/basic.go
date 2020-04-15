@@ -28,7 +28,9 @@ import (
 
 // register a separate test for each version tag
 var basicTags = []string{
-	"v1.3.4_coreos.0",
+	"v1.14.10",
+	"v1.16.8",
+	"v1.18.0",
 }
 
 // regester each tag once per runtime

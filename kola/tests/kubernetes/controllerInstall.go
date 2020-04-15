@@ -93,37 +93,67 @@ function init_templates {
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
+        RKT_FLAGS=""
+        if [[ ${CONTAINER_RUNTIME} = "rkt" ]]; then
+            RKT_FLAGS="--rkt-path=/usr/bin/rkt --rkt-stage1-image=coreos.com/rkt/stage1-coreos "
+        fi
+        KUBE_EXEC=""
+        if [[ $K8S_VER > "v1.18" ]]; then
+            KUBE_EXEC="kubelet"
+        fi
         cat << EOF > $TEMPLATE
 [Service]
-Environment=KUBELET_VERSION=${K8S_VER}
-Environment=KUBELET_ACI=${HYPERKUBE_IMAGE_REPO}
-Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
+Environment=KUBELET_IMAGE_TAG=${K8S_VER}
+Environment=KUBELET_IMAGE_URL=docker://${HYPERKUBE_IMAGE_REPO}
+Environment="RKT_RUN_ARGS=--volume dns,kind=host,source=/etc/resolv.conf \
   --mount volume=dns,target=/etc/resolv.conf \
   --volume=rkt,kind=host,source=/opt/bin/host-rkt \
   --mount volume=rkt,target=/usr/bin/rkt \
   --volume var-lib-rkt,kind=host,source=/var/lib/rkt \
   --mount volume=var-lib-rkt,target=/var/lib/rkt \
   --volume=stage,kind=host,source=/tmp \
-  --mount volume=stage,target=/tmp"
+  --mount volume=stage,target=/tmp \
+  --insecure-options=image"
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-ExecStart=/usr/lib/flatcar/kubelet-wrapper \
-  --api-servers=http://127.0.0.1:8080 \
+ExecStart=/usr/lib/flatcar/kubelet-wrapper ${KUBE_EXEC} \
   --register-schedulable=false \
-  --network-plugin-dir=/etc/kubernetes/cni/net.d \
+  --kubeconfig=/etc/kubernetes/master-kubeconfig.yaml \
+  --cni-conf-dir=/etc/kubernetes/cni/net.d \
   --network-plugin=cni \
   --container-runtime=${CONTAINER_RUNTIME} \
-  --rkt-path=/usr/bin/rkt \
-  --rkt-stage1-image=coreos.com/rkt/stage1-coreos \
-  --allow-privileged=true \
-  --config=/etc/kubernetes/manifests \
-  --hostname-override=${ADVERTISE_IP} \
-  --cluster_dns=${DNS_SERVICE_IP} \
-  --cluster_domain=cluster.local
+  ${RKT_FLAGS} \
+  --pod-manifest-path=/etc/kubernetes/manifests \
+  --hostname-override=${ADVERTISE_IP}
 Restart=always
 RestartSec=10
+CPUAccounting=true
+MemoryAccounting=true
 
 [Install]
 WantedBy=multi-user.target
+EOF
+    fi
+
+    local TEMPLATE=/etc/kubernetes/master-kubeconfig.yaml
+    if [ ! -f $TEMPLATE ]; then
+        echo "TEMPLATE: $TEMPLATE"
+        mkdir -p $(dirname $TEMPLATE)
+        cat << EOF > $TEMPLATE
+kind: Config
+clusters:
+- name: local
+  cluster:
+    server: http://127.0.0.1:8080
+    clusterDNS: ${DNS_SERVICE_IP}
+    clusterDomain: cluster.local
+users:
+- name: kubelet
+contexts:
+- context:
+    cluster: local
+    user: kubelet
+  name: kubelet-context
+current-context: kubelet-context
 EOF
     fi
 
@@ -218,6 +248,11 @@ WantedBy=multi-user.target
 EOF
     fi
 
+    KUBE_PREFIX=""
+    if [[ $K8S_VER > "v1.16" ]]; then
+      KUBE_PREFIX="kube-"
+    fi
+
     local TEMPLATE=/etc/kubernetes/manifests/kube-proxy.yaml
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
@@ -237,7 +272,7 @@ spec:
     image: ${HYPERKUBE_IMAGE_REPO}:$K8S_VER
     command:
     - /hyperkube
-    - proxy
+    - ${KUBE_PREFIX}proxy
     - --master=http://127.0.0.1:8080
     securityContext:
       privileged: true
@@ -275,7 +310,7 @@ spec:
     image: ${HYPERKUBE_IMAGE_REPO}:$K8S_VER
     command:
     - /hyperkube
-    - apiserver
+    - ${KUBE_PREFIX}apiserver
     - --bind-address=0.0.0.0
     - --etcd-servers=${ETCD_ENDPOINTS}
     - --allow-privileged=true
@@ -335,7 +370,7 @@ spec:
     image: ${HYPERKUBE_IMAGE_REPO}:$K8S_VER
     command:
     - /hyperkube
-    - controller-manager
+    - ${KUBE_PREFIX}controller-manager
     - --master=http://127.0.0.1:8080
     - --leader-elect=true
     - --service-account-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
@@ -385,7 +420,7 @@ spec:
     image: ${HYPERKUBE_IMAGE_REPO}:$K8S_VER
     command:
     - /hyperkube
-    - scheduler
+    - ${KUBE_PREFIX}scheduler
     - --master=http://127.0.0.1:8080
     - --leader-elect=true
     resources:
@@ -910,6 +945,7 @@ EOF
         cat << EOF > $TEMPLATE
 {
     "name": "calico",
+    "cniVersion": "0.2.0",
     "type": "flannel",
     "delegate": {
         "type": "calico",
@@ -933,6 +969,7 @@ EOF
         cat << EOF > $TEMPLATE
 {
     "name": "podnet",
+    "cniVersion": "0.2.0",
     "type": "flannel",
     "delegate": {
         "isDefaultGateway": true

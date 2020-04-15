@@ -22,12 +22,16 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/coreos/pkg/capnslog"
+
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/tests/etcd"
 	"github.com/coreos/mantle/platform"
 	"github.com/coreos/mantle/platform/conf"
 	"github.com/coreos/mantle/util"
 )
+
+var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola/tests/kubernetes")
 
 // kCluster just keeps track of which machines are which in a
 // platform.TestCluster with kubernetes running.
@@ -49,7 +53,7 @@ func (cw clusterWrapper) Name() string {
 // Setup a multi-node cluster based on generic scrips from coreos-kubernetes repo.
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic
 func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kCluster {
-	// start single-node etcd
+	plog.Infof("Creating single-node etcd")
 	etcdNode, err := c.NewMachine(etcdConfig)
 	if err != nil {
 		c.Fatalf("error creating etcd: %v", err)
@@ -61,13 +65,14 @@ func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kC
 
 	// passing cloud-config has the side effect of populating `/etc/environment`,
 	// which the install script depends on
+	plog.Infof("Creating master node")
 	master, err := c.NewMachine(conf.CloudConfig(""))
 	if err != nil {
 		c.Fatalf("error creating master: %v", err)
 	}
 
 	options := map[string]string{
-		"HYPERKUBE_IMAGE_REPO": "quay.io/coreos/hyperkube",
+		"HYPERKUBE_IMAGE_REPO": "gcr.io/google-containers/hyperkube",
 		"MASTER_HOST":          master.PrivateIP(),
 		"ETCD_ENDPOINTS":       fmt.Sprintf("http://%v:2379", etcdNode.PrivateIP()),
 		"CONTROLLER_ENDPOINT":  fmt.Sprintf("https://%v:443", master.PrivateIP()),
@@ -76,35 +81,36 @@ func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kC
 		"CONTAINER_RUNTIME":    runtime,
 	}
 
-	// generate TLS assets on master
+	plog.Infof("Generating TLS assets on the master")
 	if err := generateMasterTLSAssets(c, master, options); err != nil {
 		c.Fatalf("error creating master tls: %v", err)
 	}
 
-	// create worker nodes
+	plog.Infof("Creating worker nodes")
 	workers, err := platform.NewMachines(clusterWrapper{&c}, conf.CloudConfig(""), nodes)
 	if err != nil {
 		c.Fatalf("error creating workers: %v", err)
 	}
 
 	// generate tls assets on workers by transfering ca from master
+	plog.Infof("Generating TLS assets on the workers")
 	if err := generateWorkerTLSAssets(c, master, workers); err != nil {
 		c.Fatalf("error creating worker tls: %v", err)
 	}
 
-	// configure nodes via generic install scripts
+	plog.Infof("Configuring nodes by running the install scripts")
 	runInstallScript(c, master, controllerInstallScript, options)
 
 	for _, worker := range workers {
 		runInstallScript(c, worker, workerInstallScript, options)
 	}
 
-	// configure kubectl
+	plog.Infof("Configuring kubectl on the master")
 	if err := configureKubectl(c, master, master.PrivateIP(), version); err != nil {
 		c.Fatalf("error configuring master kubectl: %v", err)
 	}
 
-	// check that all nodes appear in kubectl
+	plog.Infof("Waiting for all nodes to appear on kubectl")
 	f := func() error {
 		return nodeCheck(c, master, workers)
 	}
