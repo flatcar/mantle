@@ -48,12 +48,11 @@ func init() {
 			}
 
 			register.Register(&register.Test{
-				Name:            "google.kubernetes.basic." + r + "." + t,
-				Run:             f,
-				ClusterSize:     0,
-				Platforms:       []string{"gce"},
-				Distros:         []string{"cl"},
-				ExcludeChannels: []string{"alpha", "edge"},
+				Name:        "google.kubernetes.basic." + r + "." + t,
+				Run:         f,
+				ClusterSize: 0,
+				Platforms:   []string{"gce"},
+				Distros:     []string{"cl"},
 			})
 		}
 	}
