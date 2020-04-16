@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -43,6 +44,13 @@ var offServices = []string{
 	"rpcbind.socket",
 	"sssd.service",
 	"tcsd.service",
+}
+
+var symlinkMap = map[string]string{
+	"/etc/coreos":             "/etc/flatcar",
+	"/usr/bin/coreos-install": "/usr/bin/flatcar-install",
+	"/usr/lib/coreos":         "/usr/lib/flatcar",
+	"/usr/share/coreos":       "/usr/share/flatcar",
 }
 
 func init() {
@@ -251,29 +259,36 @@ func TestSymlinkResolvConf() error {
 }
 
 func TestSymlinkFlatcar() error {
-	coreosPath := "/usr/lib/coreos"
-	flatcarPath := "/usr/lib/flatcar"
+	testSymlink := func(coreosPath, flatcarPath string) error {
+		f, err := os.Lstat(coreosPath)
+		if err != nil {
+			return fmt.Errorf("unable to lstat on %s: %v", coreosPath, err)
+		}
+		if !IsLink(f) {
+			return fmt.Errorf("coreos path %s is not a symlink.", coreosPath)
+		}
+		resolved, err := os.Readlink(coreosPath)
+		if err != nil {
+			return fmt.Errorf("unable to resolve symlink %s.", f)
+		}
+		if resolved != filepath.Base(flatcarPath) {
+			return fmt.Errorf("resolved path %s does not point to %s", resolved, filepath.Base(flatcarPath))
+		}
+		fr, err := os.Lstat(flatcarPath)
+		if err != nil {
+			return fmt.Errorf("unable to stat on %s: %v", flatcarPath, err)
+		}
+		if !fr.Mode().IsDir() && !fr.Mode().IsRegular() {
+			return fmt.Errorf("path %s is not file or directory.", flatcarPath)
+		}
 
-	f, err := os.Lstat(coreosPath)
-	if err != nil {
-		return fmt.Errorf("unable to lstat on %s: %v", coreosPath, err)
+		return nil
 	}
-	if !IsLink(f) {
-		return fmt.Errorf("coreos path %s is not a symlink.", coreosPath)
-	}
-	resolved, err := os.Readlink(coreosPath)
-	if err != nil {
-		return fmt.Errorf("unable to resolve symlink %s.", f)
-	}
-	if resolved != "flatcar" {
-		return fmt.Errorf("resolved path %s does not point to flatcar", resolved)
-	}
-	fr, err := os.Lstat(flatcarPath)
-	if err != nil {
-		return fmt.Errorf("unable to stat on %s: %v", flatcarPath, err)
-	}
-	if !fr.Mode().IsDir() {
-		return fmt.Errorf("path %s is not a directory.", flatcarPath)
+
+	for cp, fp := range symlinkMap {
+		if err := testSymlink(cp, fp); err != nil {
+			return err
+		}
 	}
 
 	return nil
