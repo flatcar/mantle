@@ -28,7 +28,9 @@ import (
 
 // register a separate test for each version tag
 var basicTags = []string{
-	"v1.3.4_coreos.0",
+	"v1.14.10",
+	"v1.16.8",
+	"v1.18.0",
 }
 
 // regester each tag once per runtime
@@ -46,12 +48,11 @@ func init() {
 			}
 
 			register.Register(&register.Test{
-				Name:            "google.kubernetes.basic." + r + "." + t,
-				Run:             f,
-				ClusterSize:     0,
-				Platforms:       []string{"gce"},
-				Distros:         []string{"cl"},
-				ExcludeChannels: []string{"alpha", "edge"},
+				Name:        "google.kubernetes.basic." + r + "." + t,
+				Run:         f,
+				ClusterSize: 0,
+				Platforms:   []string{"gce"},
+				Distros:     []string{"cl"},
 			})
 		}
 	}
