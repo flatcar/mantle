@@ -15,11 +15,8 @@
 package docker
 
 import (
-	"fmt"
 	"regexp"
-	"strings"
 
-	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/platform"
@@ -40,7 +37,8 @@ storage:
         inline: yes
       mode: 0644
 `),
-		Distros: []string{"cl"},
+		Distros:         []string{"cl"},
+		ExcludeChannels: []string{"edge"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerTorcxFlagFileCloudConfig,
@@ -54,21 +52,12 @@ write_files:
 `),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
+		ExcludeChannels:  []string{"edge"},
 	})
 }
 
 func dockerTorcxFlagFile(c cluster.TestCluster) {
 	m := c.Machines()[0]
-
-	// Skip the test in case of Edge, e.g. "xxxx.99.z"
-	ver := strings.Split(string(c.MustSSH(m, "grep ^VERSION_ID= /etc/os-release")), "=")[1]
-	semver, err := parseCLVersion(ver)
-	if err != nil {
-		c.Fatalf("cannot parse Flatcar version: %v", err)
-	}
-	if semver.Minor == int64(99) {
-		c.Skipf("skipping tests for Edge %s", semver.String())
-	}
 
 	// flag=yes
 	checkTorcxDockerVersions(c, m, `^1\.12$`, `^1\.12\.`)
@@ -84,16 +73,6 @@ func dockerTorcxFlagFile(c cluster.TestCluster) {
 
 func dockerTorcxFlagFileCloudConfig(c cluster.TestCluster) {
 	m := c.Machines()[0]
-
-	// Skip the test in case of Edge, e.g. "xxxx.99.z"
-	ver := strings.Split(string(c.MustSSH(m, "grep ^VERSION_ID= /etc/os-release")), "=")[1]
-	semver, err := parseCLVersion(ver)
-	if err != nil {
-		c.Fatalf("cannot parse Flatcar version: %v", err)
-	}
-	if semver.Minor == int64(99) {
-		c.Skipf("skipping tests for Edge %s", semver.String())
-	}
 
 	// cloudinit runs after torcx
 	if err := m.Reboot(); err != nil {
@@ -114,13 +93,4 @@ func checkTorcxDockerVersions(c cluster.TestCluster, m platform.Machine, expecte
 	if !regexp.MustCompile(expectedVerRE).MatchString(ver) {
 		c.Errorf("version %s did not match %q", ver, expectedVerRE)
 	}
-}
-
-func parseCLVersion(input string) (*semver.Version, error) {
-	version, err := semver.NewVersion(input)
-	if err != nil {
-		return nil, fmt.Errorf("parsing os-release semver: %v", err)
-	}
-
-	return version, nil
 }
