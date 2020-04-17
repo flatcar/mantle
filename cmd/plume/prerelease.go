@@ -748,7 +748,7 @@ func awsPreRelease(ctx context.Context, client *http.Client, src *storage.Bucket
 		}
 	}
 
-	if selectedDistro == "cl" {
+	if selectedDistro == "cl" && gceJSONKeyFile != "none" {
 		if err := awsUploadAmiLists(ctx, src, spec, &amis); err != nil {
 			return fmt.Errorf("uploading AMI IDs: %v", err)
 		}
