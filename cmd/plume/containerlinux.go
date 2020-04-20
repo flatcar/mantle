@@ -77,6 +77,15 @@ var (
 				"cn-northwest-1",
 			},
 		},
+		"developer": awsPartitionSpec{
+			Name:         "AWS Developer",
+			Profile:      "default",
+			Bucket:       "flatcar-prod-ami-import-eu-central-1",
+			BucketRegion: "eu-central-1",
+			Regions: []string{
+				"eu-central-1",
+			},
+		},
 	}
 
 	specs = map[string]channelSpec{
@@ -129,6 +138,19 @@ var (
 				"publish",
 				"Flatcar Edge",
 				"The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+			),
+			AWS: newAWSSpec(),
+		},
+		"developer": channelSpec{
+			BaseURL:      "gs://flatcar-jenkins/developer/boards",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"developer",
+				"Flatcar Developer Channel",
+				"The Developer Channel is used for internal test builds.",
 			),
 			AWS: newAWSSpec(),
 		},
@@ -250,11 +272,15 @@ func ChannelSpec() channelSpec {
 		spec.AWS = awsSpec{}
 	}
 
+	// For the developer channel, use the developer partition
+	if specChannel == "developer" {
+		specAwsPartition = "developer"
+	}
+
 	awsPartition, awsPartitionOk := awsPartitions[specAwsPartition]
 	if !awsPartitionOk {
 		plog.Fatalf("Unknown AWS Partition: %s", specAwsPartition)
 	}
-
 	spec.AWS.Partitions = []awsPartitionSpec{awsPartition}
 
 	return spec
