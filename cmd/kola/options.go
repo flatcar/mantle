@@ -117,6 +117,7 @@ func init() {
 	sv(&kola.ESXOptions.Server, "esx-server", "", "ESX server")
 	sv(&kola.ESXOptions.Profile, "esx-profile", "", "ESX profile (default \"default\")")
 	sv(&kola.ESXOptions.BaseVMName, "esx-base-vm", "", "ESX base VM name")
+	sv(&kola.ESXOptions.OvaPath, "esx-ova-path", "", "ESX VM image to upload instead of using the base VM (build with: ./image_to_vm.sh --format=vmware_ova ...)")
 
 	// gce-specific options
 	sv(&kola.GCEOptions.Image, "gce-image", "projects/coreos-cloud/global/images/family/coreos-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
