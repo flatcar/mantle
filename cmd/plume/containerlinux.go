@@ -77,110 +77,110 @@ var (
 				"cn-northwest-1",
 			},
 		},
+		"developer": awsPartitionSpec{
+			Name:         "AWS Developer",
+			Profile:      "default",
+			Bucket:       "flatcar-prod-ami-import-eu-central-1",
+			BucketRegion: "eu-central-1",
+			Regions: []string{
+				"eu-central-1",
+			},
+		},
 	}
+
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
 			BaseURL:      "gs://flatcar-jenkins/alpha/boards",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
-			Azure: azureSpec{
-				Offer:             "Flatcar",
-				Image:             "flatcar_production_azure_image.vhd.bz2",
-				StorageAccount:    "flatcar",
-				ResourceGroup:     "flatcar",
-				Container:         "publish",
-				Environments:      azureEnvironments,
-				Label:             "Flatcar Alpha",
-				Description:       "The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
-				RecommendedVMSize: "Medium",
-				IconURI:           "coreos-globe-color-lg-100px.png",
-				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
-			AWS: awsSpec{
-				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Container Linux",
-				Prefix:          "flatcar_production_ami_",
-				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-			},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Alpha",
+				"The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+			),
+			AWS: newAWSSpec(),
 		},
 		"beta": channelSpec{
 			BaseURL:      "gs://flatcar-jenkins/beta/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
-			Azure: azureSpec{
-				Offer:             "Flatcar",
-				Image:             "flatcar_production_azure_image.vhd.bz2",
-				StorageAccount:    "flatcar",
-				ResourceGroup:     "flatcar",
-				Container:         "publish",
-				Environments:      azureEnvironments,
-				Label:             "Flatcar Beta",
-				Description:       "The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
-				RecommendedVMSize: "Medium",
-				IconURI:           "coreos-globe-color-lg-100px.png",
-				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
-			AWS: awsSpec{
-				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Container Linux",
-				Prefix:          "flatcar_production_ami_",
-				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-			},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Beta",
+				"The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
+			),
+			AWS: newAWSSpec(),
 		},
 		"stable": channelSpec{
 			BaseURL:      "gs://flatcar-jenkins/stable/boards",
 			Boards:       []string{"amd64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
-			Azure: azureSpec{
-				Offer:             "Flatcar",
-				Image:             "flatcar_production_azure_image.vhd.bz2",
-				StorageAccount:    "flatcar",
-				ResourceGroup:     "flatcar",
-				Container:         "publish",
-				Environments:      azureEnvironments,
-				Label:             "Flatcar Stable",
-				Description:       "The Stable channel should be used by production clusters. Versions of CoreOS Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
-				RecommendedVMSize: "Medium",
-				IconURI:           "coreos-globe-color-lg-100px.png",
-				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
-			AWS: awsSpec{
-				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Container Linux",
-				Prefix:          "flatcar_production_ami_",
-				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-			},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Stable",
+				"The Stable channel should be used by production clusters. Versions of CoreOS Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
+			),
+			AWS: newAWSSpec(),
 		},
 		"edge": channelSpec{
 			BaseURL:      "gs://flatcar-jenkins/edge/boards",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
-			Azure: azureSpec{
-				Offer:             "Flatcar",
-				Image:             "flatcar_production_azure_image.vhd.bz2",
-				StorageAccount:    "flatcar",
-				ResourceGroup:     "flatcar",
-				Container:         "publish",
-				Environments:      azureEnvironments,
-				Label:             "Flatcar Edge",
-				Description:       "The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
-				RecommendedVMSize: "Medium",
-				IconURI:           "coreos-globe-color-lg-100px.png",
-				SmallIconURI:      "coreos-globe-color-lg-45px.png",
-			},
-			AWS: awsSpec{
-				BaseName:        "Flatcar",
-				BaseDescription: "Flatcar Container Linux",
-				Prefix:          "flatcar_production_ami_",
-				Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
-			},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Edge",
+				"The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+			),
+			AWS: newAWSSpec(),
+		},
+		"developer": channelSpec{
+			BaseURL:      "gs://flatcar-jenkins/developer/boards",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"developer",
+				"Flatcar Developer Channel",
+				"The Developer Channel is used for internal test builds.",
+			),
+			AWS: newAWSSpec(),
 		},
 	}
 )
+
+func newAzureSpec(environments []azureEnvironmentSpec, container, label, description string) azureSpec {
+	return azureSpec{
+		Offer:             "Flatcar",
+		Image:             "flatcar_production_azure_image.vhd.bz2",
+		StorageAccount:    "flatcar",
+		ResourceGroup:     "flatcar",
+		Container:         container,
+		Environments:      environments,
+		Label:             label,
+		Description:       description,
+		RecommendedVMSize: "Medium",
+		IconURI:           "coreos-globe-color-lg-100px.png",
+		SmallIconURI:      "coreos-globe-color-lg-45px.png",
+	}
+}
+
+func newAWSSpec() awsSpec {
+	return awsSpec{
+		BaseName:        "Flatcar",
+		BaseDescription: "Flatcar Container Linux",
+		Prefix:          "flatcar_production_ami_",
+		Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
+	}
+}
 
 func AddSpecFlags(flags *pflag.FlagSet) {
 	board := sdk.DefaultBoard()
@@ -272,11 +272,15 @@ func ChannelSpec() channelSpec {
 		spec.AWS = awsSpec{}
 	}
 
+	// For the developer channel, use the developer partition
+	if specChannel == "developer" {
+		specAwsPartition = "developer"
+	}
+
 	awsPartition, awsPartitionOk := awsPartitions[specAwsPartition]
 	if !awsPartitionOk {
 		plog.Fatalf("Unknown AWS Partition: %s", specAwsPartition)
 	}
-
 	spec.AWS.Partitions = []awsPartitionSpec{awsPartition}
 
 	return spec
