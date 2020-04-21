@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/cli"
 	"github.com/coreos/mantle/platform/api/esx"
 	"github.com/coreos/pkg/capnslog"
@@ -39,6 +40,7 @@ var (
 func init() {
 	ESX.PersistentFlags().StringVar(&options.Server, "server", "", "ESX server")
 	ESX.PersistentFlags().StringVar(&options.Profile, "profile", "", "Profile")
+	ESX.PersistentFlags().StringVar(&options.ConfigPath, "esx-config-file", "", "ESX config file (default \"~/"+auth.ESXConfigPath+"\")")
 	cli.WrapPreRun(ESX, preflightCheck)
 }
 
