@@ -77,9 +77,10 @@ func init() {
 			"TLSServe":   TLSServe,
 			"TLSServeV3": TLSServeV3,
 		},
+		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// DO: https://github.com/coreos/bugs/issues/2205
 		// Packet & QEMU: https://github.com/coreos/ignition/issues/645
-		ExcludePlatforms: []string{"do", "packet", "qemu"},
+		ExcludePlatforms: []string{"esx", "do", "packet", "qemu"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
 	})
 }

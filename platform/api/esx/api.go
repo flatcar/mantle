@@ -51,11 +51,25 @@ type Options struct {
 	// Profile name
 	Profile string
 
-	Server     string
-	User       string
-	Password   string
-	BaseVMName string
-	OvaPath    string
+	Server                 string
+	User                   string
+	Password               string
+	BaseVMName             string
+	OvaPath                string
+	FirstStaticIp          string
+	FirstStaticIpPrivate   string
+	StaticIPs              int
+	StaticSubnetSize       int
+	StaticGatewayIp        string
+	StaticGatewayIpPrivate string
+}
+
+type IpPair struct {
+	Public     net.IP
+	Private    net.IP
+	PublicGw   net.IP
+	PrivateGw  net.IP
+	SubnetSize int
 }
 
 var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/api/esx")
@@ -314,7 +328,7 @@ func (a *API) CleanupDevice(name string) error {
 	return nil
 }
 
-func (a *API) CreateDevice(name string, conf *conf.Conf) (*ESXMachine, error) {
+func (a *API) CreateDevice(name string, conf *conf.Conf, ips *IpPair) (*ESXMachine, error) {
 	if a.options.BaseVMName == "" && a.options.OvaPath == "" {
 		return nil, fmt.Errorf("Base VM Name or VM image path must be supplied")
 	}
@@ -388,6 +402,75 @@ func (a *API) CreateDevice(name string, conf *conf.Conf) (*ESXMachine, error) {
 		if err != nil {
 			return nil, fmt.Errorf("setting guestinfo settings: %v", err)
 		}
+	}
+
+	if ips != nil {
+		err = a.updateGuestVariable(vm, "guestinfo.dns.server.0", "1.1.1.1")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.dns.server.1", "1.0.0.1")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.role", "public")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.name", "ens192")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.ip.0.address", fmt.Sprintf("%s/%d", ips.Public, ips.SubnetSize))
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.route.0.destination", "0.0.0.0/0")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.route.0.gateway", fmt.Sprintf("%s", ips.PublicGw))
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.ip.1.address", fmt.Sprintf("%s/%d", ips.Private, ips.SubnetSize))
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.route.1.destination", "10.0.0.0/8")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.0.route.1.gateway", fmt.Sprintf("%s", ips.PrivateGw))
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		// Begin of hack to propagate private IP to metadata because "role" is per interface, not address:
+		err = a.updateGuestVariable(vm, "guestinfo.interface.1.role", "private")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.1.name", "invalid")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.interface.1.ip.0.address", fmt.Sprintf("%s/%d", ips.Private, ips.SubnetSize))
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+		// End of hack
 	}
 
 	plog.Debugf("Adding serial port for VM")

@@ -118,6 +118,12 @@ func init() {
 	sv(&kola.ESXOptions.Profile, "esx-profile", "", "ESX profile (default \"default\")")
 	sv(&kola.ESXOptions.BaseVMName, "esx-base-vm", "", "ESX base VM name")
 	sv(&kola.ESXOptions.OvaPath, "esx-ova-path", "", "ESX VM image to upload instead of using the base VM (build with: ./image_to_vm.sh --format=vmware_ova ...)")
+	root.PersistentFlags().IntVarP(&kola.ESXOptions.StaticIPs, "esx-static-ips", "", 0, "Instead of DHCP, use this amount of static IP addresses")
+	sv(&kola.ESXOptions.StaticGatewayIp, "esx-gateway", "", "Public gateway (only needed for static IP addresses)")
+	sv(&kola.ESXOptions.StaticGatewayIpPrivate, "esx-gateway-private", "", "Private gateway (only needed for static IP addresses)")
+	sv(&kola.ESXOptions.FirstStaticIp, "esx-first-static-ip", "", "First available public IP (only needed for static IP addresses)")
+	sv(&kola.ESXOptions.FirstStaticIpPrivate, "esx-first-static-ip-private", "", "First available private IP (only needed for static IP addresses)")
+	root.PersistentFlags().IntVarP(&kola.ESXOptions.StaticSubnetSize, "esx-subnet-size", "", 0, "Subnet size (only needed for static IP addresses)")
 
 	// gce-specific options
 	sv(&kola.GCEOptions.Image, "gce-image", "projects/coreos-cloud/global/images/family/coreos-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
