@@ -55,6 +55,7 @@ type Options struct {
 	User       string
 	Password   string
 	BaseVMName string
+	OvaPath    string
 }
 
 var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/api/esx")
@@ -314,8 +315,8 @@ func (a *API) CleanupDevice(name string) error {
 }
 
 func (a *API) CreateDevice(name string, conf *conf.Conf) (*ESXMachine, error) {
-	if a.options.BaseVMName == "" {
-		return nil, fmt.Errorf("Base VM Name must be supplied")
+	if a.options.BaseVMName == "" && a.options.OvaPath == "" {
+		return nil, fmt.Errorf("Base VM Name or VM image path must be supplied")
 	}
 
 	userdata := base64.StdEncoding.EncodeToString(conf.Bytes())
@@ -325,57 +326,89 @@ func (a *API) CreateDevice(name string, conf *conf.Conf) (*ESXMachine, error) {
 		return nil, fmt.Errorf("couldn't get server defaults: %v", err)
 	}
 
-	baseVM, err := defaults.finder.VirtualMachine(a.ctx, a.options.BaseVMName)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't find base VM: %v", err)
-	}
-
 	folders, err := defaults.datacenter.Folders(a.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting datacenter folders: %v", err)
 	}
 	folder := folders.VmFolder
 
-	cloneSpec, err := a.buildCloneSpec(baseVM, folder, defaults.network, defaults.resourcePool, defaults.datastore, userdata)
-	if err != nil {
-		return nil, fmt.Errorf("failed building clone spec: %v", err)
+	var vm *object.VirtualMachine
+	if a.options.OvaPath != "" {
+		plog.Debugf("Uploading image from %q", a.options.OvaPath)
+		arch, cisr, err := a.buildCreateImportSpecRequest(name, a.options.OvaPath, defaults.finder, defaults.network, defaults.resourcePool, defaults.datastore)
+		if err != nil {
+			return nil, fmt.Errorf("building CreateImportSpecRequest: %v", err)
+		}
+
+		entity, err := a.uploadToResourcePool(arch, defaults.resourcePool, cisr, folder)
+		if err != nil {
+			return nil, fmt.Errorf("uploading disks to ResourcePool: %v", err)
+		}
+
+		plog.Debugf("Creating virtual machine from %q", a.options.OvaPath)
+		vm = object.NewVirtualMachine(a.client.Client, *entity)
+
+		plog.Debugf("Configuring userdata %q", userdata)
+		err = a.updateGuestVariable(vm, "guestinfo.ignition.config.data", userdata)
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo data variable: %v", err)
+		}
+
+		err = a.updateGuestVariable(vm, "guestinfo.ignition.config.data.encoding", "base64")
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo encoding variable: %v", err)
+		}
+	} else {
+		baseVM, err := defaults.finder.VirtualMachine(a.ctx, a.options.BaseVMName)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't find base VM: %v", err)
+		}
+
+		cloneSpec, err := a.buildCloneSpec(baseVM, folder, defaults.network, defaults.resourcePool, defaults.datastore, userdata)
+		if err != nil {
+			return nil, fmt.Errorf("failed building clone spec: %v", err)
+		}
+
+		task, err := baseVM.Clone(a.ctx, folder, name, *cloneSpec)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't clone base VM: %v", err)
+		}
+
+		err = task.Wait(a.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("clone base VM operation failed: %v", err)
+		}
+
+		vm, err = defaults.finder.VirtualMachine(a.ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't find cloned VM: %v", err)
+		}
+
+		err = a.updateOVFEnv(vm, userdata)
+		if err != nil {
+			return nil, fmt.Errorf("setting guestinfo settings: %v", err)
+		}
 	}
 
-	task, err := baseVM.Clone(a.ctx, folder, name, *cloneSpec)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't clone base VM: %v", err)
-	}
-
-	err = task.Wait(a.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("clone base VM operation failed: %v", err)
-	}
-
-	vm, err := defaults.finder.VirtualMachine(a.ctx, name)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't find cloned VM: %v", err)
-	}
-
+	plog.Debugf("Adding serial port for VM")
 	err = a.addSerialPort(vm)
 	if err != nil {
 		return nil, fmt.Errorf("adding serial port: %v", err)
 	}
 
-	err = a.updateOVFEnv(vm, userdata)
-	if err != nil {
-		return nil, fmt.Errorf("setting guestinfo settings: %v", err)
-	}
-
+	plog.Debugf("Starting VM")
 	err = a.startVM(vm)
 	if err != nil {
 		return nil, fmt.Errorf("starting vm: %v", err)
 	}
 
+	plog.Debugf("Getting machine")
 	mach, err := a.getMachine(vm)
 	if err != nil {
 		return nil, fmt.Errorf("getting machine info: %v", err)
 	}
 
+	plog.Debugf("Created device")
 	return mach, nil
 }
 
@@ -575,6 +608,25 @@ func networkMap(finder *find.Finder, e *ovf.Envelope) (p []types.OvfNetworkMappi
 	return
 }
 
+func (a *API) updateGuestVariable(vm *object.VirtualMachine, key, value string) error {
+	config := []types.BaseOptionValue{
+		&types.OptionValue{
+			Key:   key,
+			Value: value,
+		},
+	}
+
+	task, err := vm.Reconfigure(a.ctx, types.VirtualMachineConfigSpec{
+		ExtraConfig: config,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return task.Wait(a.ctx)
+}
+
 func (a *API) updateOVFEnv(vm *object.VirtualMachine, userdata string) error {
 	var property []types.VAppPropertySpec
 
@@ -585,7 +637,7 @@ func (a *API) updateOVFEnv(vm *object.VirtualMachine, userdata string) error {
 	}
 
 	for _, item := range mvm.Config.VAppConfig.(*types.VmConfigInfo).Property {
-		if item.Id == "guestinfo.coreos.config.data" {
+		if item.Id == "guestinfo.ignition.config.data" {
 			property = append(property, types.VAppPropertySpec{
 				ArrayUpdateSpec: types.ArrayUpdateSpec{
 					Operation: types.ArrayUpdateOperationEdit,
@@ -596,7 +648,7 @@ func (a *API) updateOVFEnv(vm *object.VirtualMachine, userdata string) error {
 					DefaultValue: userdata,
 				},
 			})
-		} else if item.Id == "guestinfo.coreos.config.data.encoding" {
+		} else if item.Id == "guestinfo.ignition.config.data.encoding" {
 			property = append(property, types.VAppPropertySpec{
 				ArrayUpdateSpec: types.ArrayUpdateSpec{
 					Operation: types.ArrayUpdateOperationEdit,
