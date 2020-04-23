@@ -40,7 +40,7 @@ var (
 	kolaArchitectures  = []string{"amd64"}
 	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
-	kolaChannels       = []string{"alpha", "beta", "stable", "edge"}
+	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "developer"}
 	kolaDefaultImages  = map[string]string{
 		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/flatcar_production_image.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_image.bin",
