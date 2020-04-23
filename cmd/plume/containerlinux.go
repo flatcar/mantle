@@ -80,10 +80,10 @@ var (
 		"developer": awsPartitionSpec{
 			Name:         "AWS Developer",
 			Profile:      "default",
-			Bucket:       "flatcar-prod-ami-import-eu-central-1",
-			BucketRegion: "eu-central-1",
+			Bucket:       "flatcar-developer-ami-import-us-west-2",
+			BucketRegion: "us-west-2",
 			Regions: []string{
-				"eu-central-1",
+				"us-west-2",
 			},
 		},
 	}
