@@ -365,6 +365,12 @@ func (a *API) CreateDevice(name string, conf *conf.Conf, ips *IpPair) (*ESXMachi
 	folder := folders.VmFolder
 
 	var vm *object.VirtualMachine
+	defer func() {
+		// Only works if err was not shadowed like "if { foo, err := bar }"
+		if err != nil && vm != nil {
+			_ = a.deleteDevice(vm)
+		}
+	}()
 	if a.options.OvaPath != "" {
 		plog.Debugf("Uploading image from %q", a.options.OvaPath)
 		arch, cisr, err := a.buildCreateImportSpecRequest(name, a.options.OvaPath, defaults.finder, defaults.network, defaults.resourcePool, defaults.datastore)
@@ -504,7 +510,8 @@ func (a *API) CreateDevice(name string, conf *conf.Conf, ips *IpPair) (*ESXMachi
 	}
 
 	plog.Debugf("Getting machine")
-	mach, err := a.getMachine(vm)
+	var mach *ESXMachine
+	mach, err = a.getMachine(vm)
 	if err != nil {
 		return nil, fmt.Errorf("getting machine info: %v", err)
 	}
