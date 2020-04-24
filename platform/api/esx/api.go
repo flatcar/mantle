@@ -156,6 +156,24 @@ func New(opts *Options) (*API, error) {
 		if opts.Password == "" {
 			opts.Password = profile.Password
 		}
+		if opts.StaticIPs == 0 {
+			opts.StaticIPs = profile.StaticIPs
+		}
+		if opts.FirstStaticIp == "" {
+			opts.FirstStaticIp = profile.FirstStaticIp
+		}
+		if opts.FirstStaticIpPrivate == "" {
+			opts.FirstStaticIpPrivate = profile.FirstStaticIpPrivate
+		}
+		if opts.StaticGatewayIp == "" {
+			opts.StaticGatewayIp = profile.StaticGatewayIp
+		}
+		if opts.StaticGatewayIpPrivate == "" {
+			opts.StaticGatewayIpPrivate = profile.StaticGatewayIpPrivate
+		}
+		if opts.StaticSubnetSize == 0 {
+			opts.StaticSubnetSize = profile.StaticSubnetSize
+		}
 	}
 
 	esxUrl := fmt.Sprintf("%s:%s@%s", url.QueryEscape(opts.User), url.QueryEscape(opts.Password), opts.Server)

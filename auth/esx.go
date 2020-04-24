@@ -27,9 +27,15 @@ const ESXConfigPath = ".config/esx.json"
 // ESXProfile represents a parsed ESX profile. This is a custom format
 // specific to Mantle.
 type ESXProfile struct {
-	Server   string `json:"server"`
-	User     string `json:"user"`
-	Password string `json:"password"`
+	Server                 string `json:"server"`
+	User                   string `json:"user"`
+	Password               string `json:"password"`
+	StaticIPs              int    `json:"static_ips,omitempty"`
+	FirstStaticIp          string `json:"first_static_ip,omitempty"`
+	FirstStaticIpPrivate   string `json:"first_static_ip_private,omitempty"`
+	StaticGatewayIp        string `json:"gateway,omitempty"`
+	StaticGatewayIpPrivate string `json:"gateway_private,omitempty"`
+	StaticSubnetSize       int    `json:"subnet_size,omitempty"`
 }
 
 // ReadESXConfig decodes a ESX config file, which is a custom format
