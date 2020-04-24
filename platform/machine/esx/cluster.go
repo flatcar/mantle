@@ -96,6 +96,10 @@ ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=$(ip addr show ens1
 
 	instance, err := ec.flight.api.CreateDevice(ec.vmname(), conf, ipPairMaybe)
 	if err != nil {
+		if ipPairMaybe != nil {
+			plog.Debugf("Setting static IP addresses %v and %v as available", (*ipPairMaybe).Public, (*ipPairMaybe).Private)
+			ec.flight.ips <- *ipPairMaybe
+		}
 		return nil, err
 	}
 
