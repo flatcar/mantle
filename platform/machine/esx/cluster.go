@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/coreos/mantle/platform"
+	"github.com/coreos/mantle/platform/api/esx"
 	"github.com/coreos/mantle/platform/conf"
 )
 
@@ -37,23 +38,63 @@ func (ec *cluster) vmname() string {
 
 func (ec *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
 	conf, err := ec.RenderUserData(userdata, map[string]string{
-		"$public_ipv4":  "${COREOS_ESX_IPV4_PUBLIC_0}",
-		"$private_ipv4": "${COREOS_ESX_IPV4_PRIVATE_0}",
+		"$public_ipv4":  "${COREOS_CUSTOM_PUBLIC_IPV4}",
+		"$private_ipv4": "${COREOS_CUSTOM_PRIVATE_IPV4}",
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	var ipPairMaybe *esx.IpPair
+	if ec.flight.staticIps {
+		plog.Debugf("Trying to get static IP addresses...")
+		ips := <-ec.flight.ips
+		ipPairMaybe = &ips
+		plog.Debugf("Got static IP addresses %v and %v", ips.Public, ips.Private)
+		networkdConfig := fmt.Sprintf(`[Match]
+Virtualization=vmware
+Name=ens192
+
+[Network]
+DHCP=no
+DNS=1.1.1.1
+DNS=1.0.0.1
+
+[Address]
+Address=%s/%d
+
+[Address]
+Address=%s/%d
+
+[Route]
+Destination=0.0.0.0/0
+Gateway=%s
+
+[Route]
+Destination=10.0.0.0/8
+Gateway=%s
+`, ips.Public, ips.SubnetSize, ips.Private, ips.SubnetSize, ips.PublicGw, ips.PrivateGw)
+		// If no Ignition config is given, Ignition will use the default.ign which activates cloud-init
+		// and cloud-init will use the guestinfo variables to setup the static IPs
+		if conf.IsIgnition() {
+			conf.AddFile("/etc/systemd/network/00-vmware.network", "root", networkdConfig, 0644)
+		}
+	}
+
+	// This assumes that private IPs are in the form of 10.x.x.x
 	conf.AddSystemdUnit("coreos-metadata.service", `[Unit]
 Description=VMware metadata agent
+After=nss-lookup.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 Environment=OUTPUT=/run/metadata/coreos
 ExecStart=/usr/bin/mkdir --parent /run/metadata
-ExecStart=/usr/bin/bash -c 'echo "COREOS_ESX_IPV4_PRIVATE_0=$(ip addr show ens192 | grep -Po "inet \K[\d.]+")\nCOREOS_ESX_IPV4_PUBLIC_0=$(ip addr show ens192 | grep -Po "inet \K[\d.]+")" > ${OUTPUT}'`, false)
+ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=$(ip addr show ens192 | grep "inet 10." | grep -Po "inet \K[\d.]+")\nCOREOS_CUSTOM_PUBLIC_IPV4=$(ip addr show ens192 | grep -v "inet 10." | grep -Po "inet \K[\d.]+")" > ${OUTPUT}'`, false)
 
-	instance, err := ec.flight.api.CreateDevice(ec.vmname(), conf)
+	instance, err := ec.flight.api.CreateDevice(ec.vmname(), conf, ipPairMaybe)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +102,7 @@ ExecStart=/usr/bin/bash -c 'echo "COREOS_ESX_IPV4_PRIVATE_0=$(ip addr show ens19
 	mach := &machine{
 		cluster: ec,
 		mach:    instance,
+		ipPair:  ipPairMaybe,
 	}
 
 	mach.dir = filepath.Join(ec.RuntimeConf().OutputDir, mach.ID())

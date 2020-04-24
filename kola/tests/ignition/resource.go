@@ -105,7 +105,8 @@ func init() {
 			"Serve": Serve,
 		},
 		// https://github.com/coreos/bugs/issues/2205
-		ExcludePlatforms: []string{"do", "qemu-unpriv"},
+		// ESX: Currently Ignition does not support static IPs during the initramfs
+		ExcludePlatforms: []string{"esx", "do", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
 	})
 	register.Register(&register.Test{
@@ -113,8 +114,9 @@ func init() {
 		Run:         resourceRemote,
 		ClusterSize: 1,
 		Flags:       []register.Flag{register.RequiresInternetAccess},
+		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
-		ExcludePlatforms: []string{"do"},
+		ExcludePlatforms: []string{"esx", "do"},
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "2.1.0"
@@ -238,8 +240,9 @@ func init() {
 		Run:         resourceS3Versioned,
 		ClusterSize: 1,
 		Flags:       []register.Flag{register.RequiresInternetAccess},
+		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
-		ExcludePlatforms: []string{"do"},
+		ExcludePlatforms: []string{"esx", "do"},
 		MinVersion:       semver.Version{Major: 1995},
 		UserData: conf.Ignition(`{
 		  "ignition": {

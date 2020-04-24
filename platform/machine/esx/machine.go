@@ -31,6 +31,7 @@ type machine struct {
 	dir     string
 	journal *platform.Journal
 	console string
+	ipPair  *esx.IpPair
 }
 
 func (em *machine) ID() string {
@@ -68,6 +69,11 @@ func (em *machine) Reboot() error {
 func (em *machine) Destroy() {
 	if err := em.cluster.flight.api.TerminateDevice(em.ID()); err != nil {
 		plog.Errorf("Error terminating device %v: %v", em.ID(), err)
+	}
+
+	if em.ipPair != nil {
+		plog.Debugf("Setting static IP addresses %v and %v as available", (*em.ipPair).Public, (*em.ipPair).Private)
+		em.cluster.flight.ips <- *em.ipPair
 	}
 
 	if em.journal != nil {

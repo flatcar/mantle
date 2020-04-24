@@ -437,6 +437,39 @@ func (c *Conf) addFileV3(path, filesystem, contents string, mode int) {
 	c.MergeV3(newConfig)
 }
 
+func (c *Conf) addFileV1(path, filesystem, contents string, mode int) {
+	file := v1types.File{
+		Path:     v1types.Path(path),
+		Contents: contents,
+		Mode:     v1types.FileMode(os.FileMode(mode)),
+	}
+	if len(c.ignitionV1.Storage.Filesystems) == 0 {
+		c.ignitionV1.Storage.Filesystems = []v1types.Filesystem{
+			v1types.Filesystem{
+				Files:  []v1types.File{file},
+				Create: nil,
+				Format: "ext4",
+				Device: "/dev/disk/by-partlabel/ROOT",
+			},
+		}
+	} else {
+		if c.ignitionV1.Storage.Filesystems[0].Device != "/dev/disk/by-partlabel/ROOT" {
+			panic(fmt.Errorf("test specified an unexpected filesystem with Ignition v1: %q", c.ignitionV1.Storage.Filesystems[0].Device))
+		}
+		c.ignitionV1.Storage.Filesystems[0].Files = append(c.ignitionV1.Storage.Filesystems[0].Files, file)
+
+	}
+}
+
+func (c *Conf) addFileCloudConfig(path, filesystem, contents string, mode int) {
+	c.cloudconfig.WriteFiles = append(c.cloudconfig.WriteFiles, cci.File{
+		Content:            contents,
+		Owner:              "root",
+		Path:               path,
+		RawFilePermissions: fmt.Sprintf("%#o", mode),
+	})
+}
+
 func (c *Conf) AddFile(path, filesystem, contents string, mode int) {
 	if c.ignitionV3 != nil {
 		c.addFileV3(path, filesystem, contents, mode)
@@ -448,8 +481,12 @@ func (c *Conf) AddFile(path, filesystem, contents string, mode int) {
 		c.addFileV22(path, filesystem, contents, mode)
 	} else if c.ignitionV23 != nil {
 		c.addFileV23(path, filesystem, contents, mode)
-	} else if c.ignitionV1 != nil || c.cloudconfig != nil {
-		panic("conf: AddFile does not support ignition v1 or cloudconfig")
+	} else if c.ignitionV1 != nil {
+		c.addFileV1(path, filesystem, contents, mode)
+	} else if c.cloudconfig != nil {
+		c.addFileCloudConfig(path, filesystem, contents, mode)
+	} else {
+		panic(fmt.Errorf("unimplemented case in AddFile"))
 	}
 }
 
