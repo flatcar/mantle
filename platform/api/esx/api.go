@@ -553,6 +553,25 @@ func (a *API) CreateBaseDevice(name, ovaPath string) error {
 	return nil
 }
 
+func (a *API) GetDevices(pattern string) ([]string, error) {
+	defaults, err := a.getServerDefaults()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get server defaults: %v", err)
+	}
+
+	vms, err := defaults.finder.VirtualMachineList(a.ctx, pattern)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't list VMs: %v", err)
+	}
+
+	// idea: add more filters with VirtualMachineRuntimeInfo
+	names := make([]string, len(vms))
+	for i, vm := range vms {
+		names[i] = vm.Name()
+	}
+	return names, nil
+}
+
 func (a *API) TerminateDevice(name string) error {
 	defaults, err := a.getServerDefaults()
 	if err != nil {
