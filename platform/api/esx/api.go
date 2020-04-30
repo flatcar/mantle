@@ -497,6 +497,12 @@ func (a *API) CreateDevice(name string, conf *conf.Conf, ips *IpPair) (*ESXMachi
 		// End of hack
 	}
 
+	plog.Debugf("Setting memory to 2 GiB")
+	err = a.setMemoryMB(vm, 2048)
+	if err != nil {
+		return nil, fmt.Errorf("setting memory: %v", err)
+	}
+
 	plog.Debugf("Adding serial port for VM")
 	err = a.addSerialPort(vm)
 	if err != nil {
@@ -733,6 +739,18 @@ func networkMap(finder *find.Finder, e *ovf.Envelope) (p []types.OvfNetworkMappi
 		}
 	}
 	return
+}
+
+func (a *API) setMemoryMB(vm *object.VirtualMachine, memoryMB int64) error {
+	task, err := vm.Reconfigure(a.ctx, types.VirtualMachineConfigSpec{
+		MemoryMB: memoryMB,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return task.Wait(a.ctx)
 }
 
 func (a *API) updateGuestVariable(vm *object.VirtualMachine, key, value string) error {
