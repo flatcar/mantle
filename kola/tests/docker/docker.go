@@ -242,8 +242,9 @@ func dockerBaseTests(c cluster.TestCluster) {
 }
 
 // using a simple container, exercise various docker options that set resource
-// limits. also acts as a regression test for
-// https://github.com/coreos/bugs/issues/1246.
+// limits and security options. also acts as a regression test for
+// https://github.com/coreos/bugs/issues/1246 and
+// https://github.com/flatcar-linux/Flatcar/issues/110
 func dockerResources(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
@@ -280,6 +281,8 @@ func dockerResources(c cluster.TestCluster) {
 		dCmd("--memory=50m --oom-kill-disable=true"),
 		dCmd("--memory-swappiness=50"),
 		dCmd("--shm-size=1m"),
+		dCmd("--security-opt=label=disable --security-opt=no-new-privileges"),
+		dCmd("--security-opt=no-new-privileges"),
 	} {
 		// lol closures
 		cmd := dockerCmd
