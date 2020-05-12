@@ -149,12 +149,13 @@ func (r *repo) projectBranches(p Project) ([]string, error) {
 	for _, val := range strings.Split(string(out), ",") {
 		ref := strings.TrimSpace(val)
 
-		if strings.HasPrefix(ref, "HEAD") || strings.HasPrefix(ref, "tag:") {
-			// Skip "tag: tagname", "HEAD", and "HEAD -> branchname"
+		if strings.HasPrefix(ref, "HEAD") || strings.HasPrefix(ref, "tag:") || strings.Contains(ref, "refs/tags/") {
+			// Skip "tag: tagname", "HEAD", "HEAD -> branchname", and "m/refs/tags/tagname"
 			continue
 		}
 
-		parts := strings.Split(ref, "/")
+		// Take away the origin, for example, "github/branch/name" is "branch/name"
+		parts := strings.SplitN(ref, "/", 2)
 		branches = append(branches, parts[len(parts)-1])
 	}
 
