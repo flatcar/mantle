@@ -260,7 +260,7 @@ func dockerResources(c cluster.TestCluster) {
 	wg := worker.NewWorkerGroup(ctx, 10)
 
 	// ref https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-	for _, dockerCmd := range []string{
+	cases := []string{
 		// must set memory when setting memory-swap
 		dCmd("--memory=50m --memory-swap=50m"),
 		dCmd("--memory-reservation=10m"),
@@ -282,8 +282,12 @@ func dockerResources(c cluster.TestCluster) {
 		dCmd("--memory-swappiness=50"),
 		dCmd("--shm-size=1m"),
 		dCmd("--security-opt=label=disable --security-opt=no-new-privileges"),
-		dCmd("--security-opt=no-new-privileges"),
-	} {
+	}
+	serverVersion := getDockerServerVersion(c, m)
+	if !strings.HasPrefix(serverVersion, "1.12") {
+		cases = append(cases, dCmd("--security-opt=no-new-privileges"))
+	}
+	for _, dockerCmd := range cases {
 		// lol closures
 		cmd := dockerCmd
 
