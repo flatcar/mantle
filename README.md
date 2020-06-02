@@ -38,7 +38,7 @@ Download a Container Linux image into `$PWD/.cache/images`.
 `cork download-image --platform=qemu`
 
 #### Building Container Linux with cork
-See [Modifying Container Linux](https://coreos.com/os/docs/latest/sdk-modifying-coreos.html) for
+See [Modifying Container Linux](https://docs.flatcar-linux.org/os/sdk-modifying-coreos/) for
 an example of using cork to build a Container Linux image.
 
 ### gangue
