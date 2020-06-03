@@ -3,6 +3,7 @@ module github.com/coreos/mantle
 go 1.12
 
 require (
+	cloud.google.com/go v0.34.0
 	github.com/Azure/azure-sdk-for-go v8.1.0-beta+incompatible
 	github.com/Azure/go-autorest v9.1.0+incompatible
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20161127050200-43293b8d7646
@@ -32,6 +33,7 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/googleapis/gax-go v1.0.3 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
