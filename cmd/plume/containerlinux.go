@@ -142,7 +142,7 @@ var (
 			AWS: newAWSSpec(),
 		},
 		"developer": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/developer/boards",
+			BaseURL:      "gs://flatcar-jenkins/developer/developer/boards",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
