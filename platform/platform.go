@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -356,7 +357,14 @@ func CheckMachine(ctx context.Context, m Machine) error {
 			return fmt.Errorf("systemctl: %s: %v: %s", out, err, stderr)
 		}
 		if len(out) > 0 {
-			return fmt.Errorf("some systemd units failed:\n%s", out)
+			unit := strings.Fields(string(out))
+			info := ""
+			if 0 < len(unit) {
+				j, _, _ := m.SSH(fmt.Sprintf("journalctl -b -u %s", unit[0]))
+				s, _, _ := m.SSH(fmt.Sprintf("systemctl status %s", unit[0]))
+				info = fmt.Sprintf("\nstatus: %s\njournal:%s", s, j)
+			}
+			return fmt.Errorf("some systemd units failed:\n%s%s", out, info)
 		}
 	}
 
