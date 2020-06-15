@@ -175,9 +175,17 @@ func locksmithTLS(c cluster.TestCluster) {
 	lCmd := "sudo locksmithctl --endpoint https://localhost:2379 --etcd-cafile /etc/ssl/certs/ca-etcd-cert.pem --etcd-certfile /etc/ssl/certs/locksmith-cert.pem --etcd-keyfile /etc/ssl/certs/locksmith-key.pem "
 
 	// First verify etcd has a valid TLS connection ready
-	output, err := c.SSH(m, "openssl s_client -showcerts -verify_return_error -verify_ip 127.0.0.1 -verify_hostname localhost -connect localhost:2379 -cert /etc/ssl/certs/locksmith-cert.pem -key /etc/ssl/certs/locksmith-key.pem 0</dev/null 2>&1")
-	if err != nil || !bytes.Contains(output, []byte("Verify return code: 0")) {
-		c.Fatalf("openssl s_client: %q: %v", output, err)
+	// Retry a few times in case the system clock is adjusted by a few seconds
+	// causing the certificate to be rejected during the first tries
+	retryClock := func() error {
+		output, err := c.SSH(m, "openssl s_client -showcerts -verify_return_error -verify_ip 127.0.0.1 -verify_hostname localhost -connect localhost:2379 -cert /etc/ssl/certs/locksmith-cert.pem -key /etc/ssl/certs/locksmith-key.pem 0</dev/null 2>&1")
+		if err != nil || !bytes.Contains(output, []byte("Verify return code: 0")) {
+			return fmt.Errorf("openssl s_client: %q: %v", output, err)
+		}
+		return nil
+	}
+	if err := util.Retry(5, 12*time.Second, retryClock); err != nil {
+		c.Fatal(err)
 	}
 
 	// Also verify locksmithctl understands the TLS connection
@@ -190,7 +198,7 @@ func locksmithTLS(c cluster.TestCluster) {
 	c.MustSSH(m, lCmd+"lock")
 
 	// Verify it is locked
-	output, err = c.SSH(m, lCmd+"status")
+	output, err := c.SSH(m, lCmd+"status")
 	if err != nil || !bytes.HasPrefix(output, []byte("Available: 0\nMax: 1")) {
 		c.Fatalf("locksmithctl status (locked): %q: %v", output, err)
 	}
