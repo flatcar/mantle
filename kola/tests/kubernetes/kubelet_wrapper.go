@@ -36,7 +36,7 @@ systemd:
     enable: true
     contents: |-
       [Service]
-      Type=oneshot
+      Type=simple
       Environment=KUBELET_IMAGE_TAG=` + hyperkubeTag + `
       # var-log and resolv were at various times either in the kubelet-wrapper
       # docs or recommended to people
@@ -49,6 +49,8 @@ systemd:
       # that rkt runs the kubelet successfully, we haven't hit this regression,
       # so just printing the version is enough.
       ExecStart=/usr/lib/flatcar/kubelet-wrapper --version
+      Restart=on-failure
+      RestartSec=2
       [Install]
       WantedBy=multi-user.target
 `),
