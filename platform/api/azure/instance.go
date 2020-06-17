@@ -205,15 +205,27 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 	// properties. Parse out the container & file name to use the GetBlob
 	// API call directly.
 	uri := []byte(*consoleURI)
-	containerPat := regexp.MustCompile(`bootdiagnostics-kola[a-z0-9\-]+`)
+	containerPat := regexp.MustCompile(`bootdiagnostics-[a-z0-9\-]+`)
 	container := string(containerPat.Find(uri))
-	namePat := regexp.MustCompile(`kola-[a-z0-9\-\.]+.serialconsole.log`)
+	if container == "" {
+		return nil, fmt.Errorf("could not find container name in URI: %q", *consoleURI)
+	}
+	namePat := regexp.MustCompile(`[a-z0-9\-\.]+.serialconsole.log`)
 	blobname := string(namePat.Find(uri))
+	if blobname == "" {
+		return nil, fmt.Errorf("could not find blob name in URI: %q", *consoleURI)
+	}
 
 	var data io.ReadCloser
 	err = util.Retry(6, 10*time.Second, func() error {
 		data, err = a.GetBlob(storageAccount, key, container, blobname)
-		return fmt.Errorf("could not get blob: %v", err)
+		if err != nil {
+			return fmt.Errorf("could not get blob for container %q, blobname %q: %v", container, blobname, err)
+		}
+		if data == nil {
+			return fmt.Errorf("empty data while getting blob for container %q, blobname %q", container, blobname)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
