@@ -83,6 +83,29 @@ func (a *API) BlobExists(storageaccount, storagekey, container, blob string) (bo
 	return bsc.BlobExists(container, blob)
 }
 
+func (a *API) ListBlobs(storageaccount, storagekey, container string, params storage.ListBlobsParameters) ([]storage.Blob, error) {
+	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating storage client: %v", err)
+	}
+
+	bsc := sc.GetBlobService()
+
+	resp, err := bsc.ListBlobs(container, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed listing blobs for %q: %v", container, err)
+	}
+	var res []storage.Blob
+	for _, blob := range resp.Blobs {
+		blob.Metadata, err = bsc.GetBlobMetadata(container, blob.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed getting blog metadata for %q: %v", blob.Name, err)
+		}
+		res = append(res, blob)
+	}
+	return res, nil
+}
+
 func (a *API) GetBlob(storageaccount, storagekey, container, name string) (io.ReadCloser, error) {
 	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
