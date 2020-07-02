@@ -147,7 +147,10 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		return true, nil
 	})
 	if err != nil {
-		a.TerminateInstance(name, resourceGroup)
+		_, _ = a.compClient.Delete(resourceGroup, name, nil)
+		_, _ = a.intClient.Delete(resourceGroup, *nic.Name, nil)
+		_, _ = a.ipClient.Delete(resourceGroup, *ip.Name, nil)
+		// TODO: remove disk which doesn't get removed automatically
 		return nil, fmt.Errorf("waiting for machine to become active: %v", err)
 	}
 
@@ -174,9 +177,20 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	}, nil
 }
 
-func (a *API) TerminateInstance(name, resourceGroup string) error {
-	_, err := a.compClient.Delete(resourceGroup, name, nil)
-	return err
+// TerminateInstance deletes a VM created by CreateInstance with the public IP address and
+// NIC created for it. Currently it does not delete the OS disk that is created (see TODO).
+func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
+	if _, err := a.compClient.Delete(resourceGroup, machine.ID, nil); err != nil {
+		return err
+	}
+	if _, err := a.intClient.Delete(resourceGroup, machine.InterfaceName, nil); err != nil {
+		return err
+	}
+	if _, err := a.ipClient.Delete(resourceGroup, machine.PublicIPName, nil); err != nil {
+		return err
+	}
+	// TODO: remove disk which doesn't get removed automatically
+	return nil
 }
 
 func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {

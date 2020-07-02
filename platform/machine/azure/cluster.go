@@ -83,10 +83,14 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	return mach, nil
 }
 
+// Destroy deletes the Resource Group if it was created for this cluster, but it doesn't
+// delete the Resource Group if the cluster runs in the Flight's image Resource Group
 func (ac *cluster) Destroy() {
 	ac.BaseCluster.Destroy()
-	if e := ac.flight.api.TerminateResourceGroup(ac.ResourceGroup); e != nil {
-		plog.Errorf("Deleting resource group %v: %v", ac.ResourceGroup, e)
+	if ac.ResourceGroup != ac.flight.ImageResourceGroup {
+		if e := ac.flight.api.TerminateResourceGroup(ac.ResourceGroup); e != nil {
+			plog.Errorf("Deleting resource group %v: %v", ac.ResourceGroup, e)
+		}
 	}
 	ac.flight.DelCluster(ac)
 }

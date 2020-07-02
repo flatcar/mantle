@@ -35,14 +35,18 @@ var (
 
 type flight struct {
 	*platform.BaseFlight
-	api                *azure.API
-	SSHKey             string
-	FakeSSHKey         string
-	ImageResourceGroup string
+	api                 *azure.API
+	SSHKey              string
+	FakeSSHKey          string
+	ImageResourceGroup  string
+	ImageStorageAccount string
 }
 
 // NewFlight creates an instance of a Flight suitable for spawning
-// instances on the Azure platform.
+// instances on the Azure platform. The flight creates a new Resource Group
+// if an image needs to be created from a blob URL or a local image file.
+// Clusters created in the Flight will reuse the image Resource Group or
+// create their own Resource Group if no image Resource Group exists.
 func NewFlight(opts *azure.Options) (platform.Flight, error) {
 	api, err := azure.New(opts)
 	if err != nil {
@@ -84,12 +88,17 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 			return nil, err
 		}
 
-		ImageStorageAccount, err := af.api.CreateStorageAccount(af.ImageResourceGroup)
+		af.ImageStorageAccount, err = af.api.CreateStorageAccount(af.ImageResourceGroup)
 		if err != nil {
 			return nil, err
 		}
 
-		kr, err := af.api.GetStorageServiceKeysARM(ImageStorageAccount, af.ImageResourceGroup)
+		_, err = af.api.PrepareNetworkResources(af.ImageResourceGroup)
+		if err != nil {
+			return nil, err
+		}
+
+		kr, err := af.api.GetStorageServiceKeysARM(af.ImageStorageAccount, af.ImageResourceGroup)
 		if err != nil {
 			return nil, fmt.Errorf("Fetching storage service keys failed: %v", err)
 		}
@@ -100,20 +109,20 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 
 		if opts.BlobURL != "" {
 			for _, k := range *kr.Keys {
-				if err := af.api.CopyBlob(ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
+				if err := af.api.CopyBlob(af.ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
 					return nil, fmt.Errorf("Copying blob failed: %v", err)
 				}
 				break
 			}
 		} else if opts.ImageFile != "" {
 			for _, k := range *kr.Keys {
-				if err := af.api.UploadBlob(ImageStorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
+				if err := af.api.UploadBlob(af.ImageStorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
 					return nil, fmt.Errorf("Uploading blob failed: %v", err)
 				}
 				break
 			}
 		}
-		targetBlobURL := af.api.UrlOfBlob(ImageStorageAccount, container, blobName).String()
+		targetBlobURL := af.api.UrlOfBlob(af.ImageStorageAccount, container, blobName).String()
 		img, err := af.api.CreateImage(imageName, af.ImageResourceGroup, targetBlobURL)
 		if err != nil {
 			return nil, fmt.Errorf("Couldn't create image: %v\n", err)
@@ -128,7 +137,9 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 }
 
 // NewCluster creates an instance of a Cluster suitable for spawning
-// instances on the Azure platform.
+// instances on the Azure platform. The cluster is created in the Flight's
+// Resource Group if it has one. Otherwise the cluster is created in a new
+// Resource Group that is deleted when the cluster is destroyed.
 func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, error) {
 	bc, err := platform.NewBaseCluster(af.BaseFlight, rconf)
 	if err != nil {
@@ -146,19 +157,25 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		ac.sshKey = af.FakeSSHKey
 	}
 
-	ac.ResourceGroup, err = af.api.CreateResourceGroup("kola-cluster")
-	if err != nil {
-		return nil, err
-	}
+	if af.ImageResourceGroup != "" && af.ImageStorageAccount != "" {
+		ac.ResourceGroup = af.ImageResourceGroup
+		ac.StorageAccount = af.ImageStorageAccount
 
-	ac.StorageAccount, err = af.api.CreateStorageAccount(ac.ResourceGroup)
-	if err != nil {
-		return nil, err
-	}
+	} else {
+		ac.ResourceGroup, err = af.api.CreateResourceGroup("kola-cluster")
+		if err != nil {
+			return nil, err
+		}
 
-	_, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
-	if err != nil {
-		return nil, err
+		ac.StorageAccount, err = af.api.CreateStorageAccount(ac.ResourceGroup)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	af.AddCluster(ac)

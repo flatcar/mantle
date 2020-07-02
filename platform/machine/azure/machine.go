@@ -93,7 +93,7 @@ func (am *machine) Destroy() {
 		plog.Warningf("Saving console for instance %v: %v", am.ID(), err)
 	}
 
-	if err := am.cluster.flight.api.TerminateInstance(am.ID(), am.ResourceGroup()); err != nil {
+	if err := am.cluster.flight.api.TerminateInstance(am.mach, am.ResourceGroup()); err != nil {
 		plog.Errorf("terminating instance: %v", err)
 	}
 
