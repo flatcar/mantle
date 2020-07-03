@@ -324,40 +324,6 @@ func uploadAzureBlob(spec *channelSpec, api *azure.API, storageKeys azurestorage
 	return nil
 }
 
-func createAzureImage(spec *channelSpec, api *azure.API, blobName, imageName string) error {
-	// If it exists already the API will behave as if it created it
-	plog.Printf("Creating OS image with name %q", imageName)
-
-	bloburl := api.UrlOfBlob(spec.Azure.StorageAccount, spec.Azure.Container, blobName).String()
-
-	img, err := api.CreateImage(imageName, spec.Azure.ResourceGroup, bloburl)
-	if err != nil {
-		return fmt.Errorf("Couldn't create image %q from %q: %T %v", imageName, bloburl, err, err)
-	}
-	if img.ID == nil {
-		return fmt.Errorf("Couldn't create image %q form %q: received nil image", imageName, bloburl)
-	}
-	return nil
-}
-
-func replicateAzureImage(spec *channelSpec, api *azure.API, imageName string) error {
-	plog.Printf("Fetching Azure Locations...")
-	locations, err := api.Locations()
-	if err != nil {
-		return err
-	}
-
-	plog.Printf("Replicating image to locations: %s", strings.Join(locations, ", "))
-
-	channelTitle := strings.Title(specChannel)
-
-	if err := api.ReplicateImage(imageName, spec.Azure.Offer, channelTitle, specVersion, locations...); err != nil {
-		return fmt.Errorf("image replication failed: %v", err)
-	}
-
-	return nil
-}
-
 type azureImageInfo struct {
 	ImageName string `json:"image"`
 }
