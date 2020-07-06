@@ -94,7 +94,7 @@ func (a *API) UploadObjectExt(r io.Reader, bucket, path string, force bool, poli
 }
 
 func (a *API) DeleteObject(bucket, path string) error {
-	plog.Infof("deleting s3://%v/%v", bucket, path)
+	plog.Infof("Deleting s3://%v/%v", bucket, path)
 	_, err := a.s3.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(path),
@@ -102,7 +102,7 @@ func (a *API) DeleteObject(bucket, path string) error {
 	if err != nil {
 		return fmt.Errorf("error deleting s3://%v/%v: %v", bucket, path, err)
 	}
-	return err
+	return nil
 }
 
 func (a *API) InitializeBucket(bucket string) error {

@@ -96,7 +96,7 @@ func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
 	}
 	if len(snapshotRes.Snapshots) == 1 {
 		snapshotID := *snapshotRes.Snapshots[0].SnapshotId
-		plog.Infof("found existing snapshot %v", snapshotID)
+		plog.Infof("Found existing snapshot %v", snapshotID)
 		return &Snapshot{
 			SnapshotID: snapshotID,
 		}, nil
@@ -370,6 +370,7 @@ func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string, otherRegions 
 		if err != nil {
 			return err
 		}
+		plog.Infof("Trying to deregister %s in %s", name, region)
 
 		err = aa.deregisterImageIfExists(name + "-hvm")
 		if err != nil {
@@ -389,7 +390,7 @@ func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string, otherRegions 
 			// on that snapshot
 			_, err := aa.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: &snapshot.SnapshotID})
 			if err != nil {
-				plog.Warningf("deleting snapshot %s: %v", snapshot.SnapshotID, err)
+				plog.Warningf("Failed to delete snapshot %s: %v", snapshot.SnapshotID, err)
 			} else {
 				plog.Infof("Deleted existing snapshot %s", snapshot.SnapshotID)
 			}
@@ -671,6 +672,23 @@ func (a *API) describeImage(imageID string) (*ec2.Image, error) {
 		return nil, fmt.Errorf("couldn't describe image %q: %v", imageID, err)
 	}
 	return describeRes.Images[0], nil
+}
+
+// GetImagesByTag returns all EC2 images with that tag
+func (a *API) GetImagesByTag(tag, value string) ([]*ec2.Image, error) {
+	describeRes, err := a.ec2.DescribeImages(&ec2.DescribeImagesInput{
+		Filters: []*ec2.Filter{
+			&ec2.Filter{
+				Name:   aws.String(fmt.Sprintf("tag:%s", tag)),
+				Values: aws.StringSlice([]string{value}),
+			},
+		},
+		Owners: aws.StringSlice([]string{"self"}),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("couldn't list images with tag %q:%q: %v", tag, value, err)
+	}
+	return describeRes.Images, nil
 }
 
 // Grant everyone launch permission on the specified image and create-volume
