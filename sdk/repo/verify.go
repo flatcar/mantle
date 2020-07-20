@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/coreos/pkg/capnslog"
@@ -135,7 +136,7 @@ func isSHA1(s string) bool {
 	return err == nil && len(b) == sha1.Size
 }
 
-func (r *repo) projectBranches(p Project) ([]string, error) {
+func (r *repo) projectBranches(p Project) (map[string]struct{}, error) {
 	git := exec.Command("git", "show", "-s", "--pretty=%D", "HEAD")
 	git.Dir = filepath.Join(r.root, p.Path)
 	git.Stderr = os.Stderr
@@ -144,7 +145,8 @@ func (r *repo) projectBranches(p Project) ([]string, error) {
 		return nil, err
 	}
 
-	var branches []string
+	var exists struct{}
+	branches := make(map[string]struct{})
 
 	for _, val := range strings.Split(string(out), ",") {
 		ref := strings.TrimSpace(val)
@@ -156,10 +158,40 @@ func (r *repo) projectBranches(p Project) ([]string, error) {
 
 		// Take away the origin, for example, "github/branch/name" is "branch/name"
 		parts := strings.SplitN(ref, "/", 2)
-		branches = append(branches, parts[len(parts)-1])
+		name := parts[len(parts)-1]
+		branches[name] = exists
 	}
 
 	return branches, nil
+}
+
+func (r *repo) projectTags(p Project) (map[string]struct{}, error) {
+	git := exec.Command("git", "show", "-s", "--pretty=%D", "HEAD")
+	git.Dir = filepath.Join(r.root, p.Path)
+	git.Stderr = os.Stderr
+	out, err := git.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var exists struct{}
+	// Extract tags from output like "HEAD, tag: v2051.99.1" or "HEAD -> flatcar-master, github/flatcar-master"
+	tags := make(map[string]struct{})
+
+	for _, val := range strings.Split(string(out), ",") {
+		ref := strings.TrimSpace(val)
+
+		if strings.HasPrefix(ref, "tag: ") {
+			tagName := strings.SplitN(ref, "tag: ", 2)[1]
+			tags[tagName] = exists
+		} else if strings.Contains(ref, "refs/tags/") {
+			// In case "m/refs/tags/tagname" exists besides "refs/tags/tagname", handle any prefix
+			tagName := strings.SplitN(ref, "refs/tags/", 2)[1]
+			tags[tagName] = exists
+		}
+	}
+
+	return tags, nil
 }
 
 func (r *repo) projectHEAD(p Project) (string, error) {
@@ -220,20 +252,22 @@ func VerifySync(name string) error {
 				return err
 			}
 
-			found := false
-
-			for _, branch := range branches {
-				branchRef := "refs/heads/" + branch
-
-				if branchRef == project.Revision {
-					found = true
-					break
-				}
+			revBranch := strings.SplitN(project.Revision, "refs/heads/", 2)[1]
+			if _, ok := branches[revBranch]; !ok {
+				plog.Errorf("Project dir %s at branches %q, expected %s",
+					project.Path, reflect.ValueOf(branches).MapKeys(), revBranch)
+				result = VerifyError
+			}
+		} else if strings.HasPrefix(project.Revision, "refs/tags/") {
+			tags, err := manifest.projectTags(project)
+			if err != nil {
+				return err
 			}
 
-			if !found {
-				plog.Errorf("Project dir %s at %q, expected %s",
-					project.Path, branches, project.Revision)
+			revTag := strings.SplitN(project.Revision, "refs/tags/", 2)[1]
+			if _, ok := tags[revTag]; !ok {
+				plog.Errorf("Project dir %s at tags %q, expected %s",
+					project.Path, reflect.ValueOf(tags).MapKeys(), revTag)
 				result = VerifyError
 			}
 		} else {
