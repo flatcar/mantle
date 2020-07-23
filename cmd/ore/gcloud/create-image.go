@@ -116,6 +116,7 @@ func runCreateImage(cmd *cobra.Command, args []string) {
 	_, pending, err := api.CreateImage(&gcloud.ImageSpec{
 		Name:        imageNameGCE,
 		SourceImage: storageSrc,
+		Family:      createImageFamily,
 	}, createImageForce)
 	if err == nil {
 		err = pending.Wait()
