@@ -224,6 +224,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 
 	unpackChroot(allowReplace)
 	updateRepo()
+	sdk.SetManifestSDKVersion(sdkVersion)
 }
 
 func unpackChroot(replace bool) {
@@ -352,6 +353,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 	}
 
 	updateRepo()
+	sdk.SetManifestSDKVersion(sdkVersion)
 
 	if err := sdk.Enter(chrootName, false, false, updateCommand...); err != nil {
 		plog.Fatalf("update_chroot failed: %v", err)

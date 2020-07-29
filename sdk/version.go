@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -87,6 +88,23 @@ func OSRelease(root string) (ver Versions, err error) {
 	defer f.Close()
 
 	return parseVersions(f, "")
+}
+
+func SetManifestSDKVersion(version string) error {
+	versionPath := filepath.Join(RepoRoot(), ".repo", "manifests", "version.txt")
+	originalContent, err := ioutil.ReadFile(versionPath)
+	if err != nil {
+		return err
+	}
+
+	re := regexp.MustCompile(`FLATCAR_SDK_VERSION=.*`)
+	newContent := re.ReplaceAll(originalContent, []byte("FLATCAR_SDK_VERSION="+version))
+	err = ioutil.WriteFile(versionPath, newContent, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func VersionsFromDir(dir string) (ver Versions, err error) {
