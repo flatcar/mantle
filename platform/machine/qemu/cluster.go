@@ -133,6 +133,8 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 		return nil, err
 	}
 
+	plog.Debugf("qemu PID (manual cleanup needed if --remove=false): %v", qm.qemu.Pid())
+
 	if err := platform.StartMachine(qm, qm.journal); err != nil {
 		qm.Destroy()
 		return nil, err

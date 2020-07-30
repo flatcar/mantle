@@ -187,6 +187,8 @@ func NewDnsmasq() (*Dnsmasq, error) {
 		return nil, err
 	}
 
+	plog.Debugf("dnsmasq PID (manual cleanup needed if --remove=false): %v", dm.dnsmasq.Pid())
+
 	var configTemplate *template.Template
 
 	if plog.LevelAt(capnslog.DEBUG) {

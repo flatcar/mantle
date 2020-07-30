@@ -118,6 +118,8 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 		return nil, err
 	}
 
+	plog.Debugf("qemu PID (manual cleanup needed if --remove=false): %v", qm.qemu.Pid())
+
 	pid := strconv.Itoa(qm.qemu.Pid())
 	err = util.Retry(6, 5*time.Second, func() error {
 		var err error
