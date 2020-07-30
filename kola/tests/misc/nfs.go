@@ -79,8 +79,6 @@ func testNFS(c cluster.TestCluster, nfsversion int, remotePath string) {
 		c.Fatalf("Cluster.NewMachine: %s", err)
 	}
 
-	defer m1.Destroy()
-
 	c.Log("NFS server booted.")
 
 	/* poke a file in /tmp */
@@ -125,8 +123,6 @@ systemd:
 	if err != nil {
 		c.Fatalf("Cluster.NewMachine: %s", err)
 	}
-
-	defer m2.Destroy()
 
 	c.Log("NFS client booted.")
 
