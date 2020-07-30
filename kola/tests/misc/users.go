@@ -56,6 +56,11 @@ func CheckUserShells(c cluster.TestCluster) {
 
 		username := userdata[0]
 		shell := userdata[6]
+		if shell == "/bin/sh" {
+			// gentent returns one entry for root with /bin/sh instead of /bin/bash
+			// but /bin/sh is anyway a symlink to /bin/bash
+			shell = "/bin/bash"
+		}
 		if shell != ValidUsers[username] && shell != "/sbin/nologin" {
 			badusers = append(badusers, user)
 		}
