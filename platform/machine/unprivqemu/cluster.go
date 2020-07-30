@@ -131,6 +131,8 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 		return nil, err
 	}
 
+	plog.Debugf("Localhost port for SSH connections: %q", qm.ip)
+
 	if err := platform.StartMachine(qm, qm.journal); err != nil {
 		qm.Destroy()
 		return nil, err
