@@ -118,7 +118,7 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 	fdnum += 1
 	extraFiles = append(extraFiles, tap.File)
 
-	plog.Debugf("NewMachine: %q", qmCmd)
+	plog.Debugf("NewMachine: %q, %q, %q", qmCmd, qm.IP(), qm.PrivateIP())
 
 	qm.qemu = qm.qc.NewCommand(qmCmd[0], qmCmd[1:]...)
 
