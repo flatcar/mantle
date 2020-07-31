@@ -75,7 +75,6 @@ func journalRemote(c cluster.TestCluster) {
 	if err != nil {
 		c.Fatalf("Cluster.NewMachine: %s", err)
 	}
-	defer gateway.Destroy()
 
 	// log a unique message on gatewayd machine
 	msg := "supercalifragilisticexpialidocious"
@@ -86,7 +85,6 @@ func journalRemote(c cluster.TestCluster) {
 	if err != nil {
 		c.Fatalf("Cluster.NewMachine: %s", err)
 	}
-	defer collector.Destroy()
 
 	// collect logs from gatewayd machine
 	cmd := fmt.Sprintf("sudo systemd-run --unit systemd-journal-remote-client /usr/lib/systemd/systemd-journal-remote --url http://%s:19531", gateway.PrivateIP())

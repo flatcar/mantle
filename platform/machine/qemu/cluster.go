@@ -118,7 +118,7 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 	fdnum += 1
 	extraFiles = append(extraFiles, tap.File)
 
-	plog.Debugf("NewMachine: %q", qmCmd)
+	plog.Debugf("NewMachine: %q, %q, %q", qmCmd, qm.IP(), qm.PrivateIP())
 
 	qm.qemu = qm.qc.NewCommand(qmCmd[0], qmCmd[1:]...)
 
@@ -132,6 +132,8 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 	if err = qm.qemu.Start(); err != nil {
 		return nil, err
 	}
+
+	plog.Debugf("qemu PID (manual cleanup needed if --remove=false): %v", qm.qemu.Pid())
 
 	if err := platform.StartMachine(qm, qm.journal); err != nil {
 		qm.Destroy()
