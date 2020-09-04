@@ -402,7 +402,7 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.3
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
