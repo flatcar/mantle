@@ -43,6 +43,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v0.0.0-20150519154555-21cb3784d9bd
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/packethost/packngo v0.2.1-0.20200224173249-1156d996f0d5
 	github.com/pborman/uuid v1.2.0
 	github.com/philhofer/fwd v1.0.0 // indirect
@@ -82,3 +83,5 @@ require (
 )
 
 replace google.golang.org/cloud => cloud.google.com/go v0.0.0-20190220171618-cbb15e60dc6d
+
+replace launchpad.net/gocheck => gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
