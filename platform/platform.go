@@ -328,16 +328,22 @@ func CheckMachine(ctx context.Context, m Machine) error {
 		}
 		out, stderr, err := m.SSH("systemctl is-system-running")
 		if !bytes.Contains([]byte("initializing starting running stopping"), out) {
-			return nil // stop retrying if the system went haywire
+			return nil // stop retrying if the system went haywire, e.g., "degraded"
 		}
+		jobs := ""
+		if bytes.Contains([]byte("starting"), out) {
+			startingOut, startingStderr, startingErr := m.SSH("systemctl list-jobs")
+			jobs = fmt.Sprintf(", systemctl list-jobs returned stdout: %q, stderr: %q, err: %v", startingOut, startingStderr, startingErr)
+		}
+		// For "running" the exit code is 0 thus err is nil but not for, e.g., "starting" where the exit code is 1
 		if err != nil {
-			return fmt.Errorf("could not check if machine is running: %s: %v: %s", out, err, stderr)
+			return fmt.Errorf("failure checking if machine is running: systemctl is-system-running returned stdout: %q, stderr: %q, err: %v%s", out, stderr, err, jobs)
 		}
 		return nil
 	}
 
 	if err := util.Retry(sshRetries, sshTimeout, sshChecker); err != nil {
-		return fmt.Errorf("ssh unreachable: %v", err)
+		return fmt.Errorf("ssh unreachable or system not ready: %v", err)
 	}
 
 	// ensure we're talking to a Container Linux system
