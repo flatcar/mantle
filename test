@@ -26,7 +26,7 @@ src=$(find . -name '*.go' -not -path "./vendor/*")
 
 echo "Building tests..."
 go test -mod=vendor -i "$@" $pkgs
-go install $pkgs
+go install -mod=vendor $pkgs
 
 echo "Running tests..."
 go test -mod=vendor -cover "$@" $pkgs
