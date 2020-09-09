@@ -45,6 +45,9 @@ func CopyProgress(level capnslog.LogLevel, prefix string, writer io.Writer, read
 		// ripped off from rkt, so another reason to add to capnslog
 		fmtBytesSize := 18
 		barSize := int64(80 - len(prefix) - fmtBytesSize)
+		if barSize < 8 {
+			barSize = 8
+		}
 		bar := ioprogress.DrawTextFormatBarForW(barSize, os.Stderr)
 		fmtfunc := func(progress, total int64) string {
 			if total < 0 {
