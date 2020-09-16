@@ -271,7 +271,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 
 	qmCmd = append(qmCmd,
 		"-bios", biosImage,
-		"-smp", "1",
+		"-smp", "4",
 		"-uuid", uuid,
 		"-display", "none",
 		"-chardev", "file,id=log,path="+consolePath,
