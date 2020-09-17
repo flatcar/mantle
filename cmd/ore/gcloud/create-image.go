@@ -40,6 +40,7 @@ var (
 	createImageVersion string
 	createImageRoot    string
 	createImageName    string
+	createImageLicense string
 	createImageForce   bool
 )
 
@@ -57,6 +58,9 @@ func init() {
 	cmdCreateImage.Flags().StringVar(&createImageName, "source-name",
 		"flatcar_production_gce.tar.gz",
 		"Storage image name")
+	cmdCreateImage.Flags().StringVar(&createImageLicense, "license",
+		"",
+		"GCE Image license name")
 	cmdCreateImage.Flags().BoolVar(&createImageForce, "force",
 		false, "overwrite existing GCE images without prompt")
 	GCloud.AddCommand(cmdCreateImage)
@@ -101,15 +105,20 @@ func runCreateImage(cmd *cobra.Command, args []string) {
 	// check if this file actually exists
 	if ok, err := fileQuery(storageAPI, bucket, imageNameGS); err != nil {
 		fmt.Fprintf(os.Stderr,
-			"Checking source image %s failed: %v\n", gsURL, err)
+			"Checking source image in bucket %s with name %s failed: %v\n", bucket, imageNameGS, err)
 		os.Exit(1)
 	} else if !ok {
 		fmt.Fprintf(os.Stderr,
-			"Source image %s does not exist\n", gsURL)
+			"No source image in bucket %s with name %s found\n", bucket, imageNameGS)
 		os.Exit(1)
 	}
 
 	fmt.Printf("Creating image in GCE: %v...\n", imageNameGCE)
+
+	var licenses []string
+	if createImageLicense != "" {
+		licenses = append(licenses, createImageLicense)
+	}
 
 	// create image on gce
 	storageSrc := fmt.Sprintf("https://storage.googleapis.com/%v/%v", bucket, imageNameGS)
@@ -117,6 +126,7 @@ func runCreateImage(cmd *cobra.Command, args []string) {
 		Name:        imageNameGCE,
 		SourceImage: storageSrc,
 		Family:      createImageFamily,
+		Licenses:    licenses,
 	}, createImageForce)
 	if err == nil {
 		err = pending.Wait()
