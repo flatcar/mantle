@@ -76,6 +76,7 @@ type channelSpec struct {
 	Destinations []storageSpec
 	GCE          gceSpec
 	Azure        azureSpec
+	AzurePremium azureSpec
 	AWS          awsSpec
 }
 

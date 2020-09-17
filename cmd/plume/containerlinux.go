@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -98,6 +99,14 @@ var (
 				azureEnvironments,
 				"publish",
 				"Flatcar Alpha",
+				"",
+				"The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+			),
+			AzurePremium: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Alpha",
+				"_premium",
 				"The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
 			),
 			AWS: newAWSSpec(),
@@ -111,6 +120,14 @@ var (
 				azureEnvironments,
 				"publish",
 				"Flatcar Beta",
+				"",
+				"The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
+			),
+			AzurePremium: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Beta",
+				"_premium",
 				"The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
 			),
 			AWS: newAWSSpec(),
@@ -124,6 +141,14 @@ var (
 				azureEnvironments,
 				"publish",
 				"Flatcar Stable",
+				"",
+				"The Stable channel should be used by production clusters. Versions of CoreOS Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
+			),
+			AzurePremium: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Stable",
+				"_premium",
 				"The Stable channel should be used by production clusters. Versions of CoreOS Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
 			),
 			AWS: newAWSSpec(),
@@ -137,6 +162,14 @@ var (
 				azureEnvironments,
 				"publish",
 				"Flatcar Edge",
+				"",
+				"The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
+			),
+			AzurePremium: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar Edge",
+				"_premium",
 				"The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
 			),
 			AWS: newAWSSpec(),
@@ -150,6 +183,14 @@ var (
 				azureEnvironments,
 				"developer",
 				"Flatcar Developer Channel",
+				"",
+				"The Developer Channel is used for internal test builds.",
+			),
+			AzurePremium: newAzureSpec(
+				azureEnvironments,
+				"developer",
+				"Flatcar Developer Channel",
+				"_premium",
 				"The Developer Channel is used for internal test builds.",
 			),
 			AWS: newAWSSpec(),
@@ -157,10 +198,10 @@ var (
 	}
 )
 
-func newAzureSpec(environments []azureEnvironmentSpec, container, label, description string) azureSpec {
+func newAzureSpec(environments []azureEnvironmentSpec, container, label, category string, description string) azureSpec {
 	return azureSpec{
 		Offer:             "Flatcar",
-		Image:             "flatcar_production_azure_image.vhd.bz2",
+		Image:             fmt.Sprintf("flatcar_production_azure%s_image.vhd.bz2", category),
 		StorageAccount:    "flatcar",
 		ResourceGroup:     "flatcar",
 		Container:         container,
