@@ -15,12 +15,13 @@
 package main
 
 type storageSpec struct {
-	BaseURL       string
-	Title         string // Replace the bucket name in index page titles
-	NamedPath     string // Copy to $BaseURL/$Board/$NamedPath
-	VersionPath   bool   // Copy to $BaseURL/$Board/$Version
-	DirectoryHTML bool
-	IndexHTML     bool
+	BaseURL        string
+	BasePrivateURL string
+	Title          string // Replace the bucket name in index page titles
+	NamedPath      string // Copy to $BaseURL/$Board/$NamedPath
+	VersionPath    bool   // Copy to $BaseURL/$Board/$Version
+	DirectoryHTML  bool
+	IndexHTML      bool
 }
 
 type gceSpec struct {
@@ -71,13 +72,14 @@ type awsSpec struct {
 }
 
 type channelSpec struct {
-	BaseURL      string // Copy from $BaseURL/$Board/$Version
-	Boards       []string
-	Destinations []storageSpec
-	GCE          gceSpec
-	Azure        azureSpec
-	AzurePremium azureSpec
-	AWS          awsSpec
+	BaseURL        string // Copy from $BaseURL/$Board/$Version
+	BasePrivateURL string
+	Boards         []string
+	Destinations   []storageSpec
+	GCE            gceSpec
+	Azure          azureSpec
+	AzurePremium   azureSpec
+	AWS            awsSpec
 }
 
 type fcosChannelSpec struct {

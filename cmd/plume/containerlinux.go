@@ -31,6 +31,7 @@ var (
 	specChannel       string
 	specVersion       string
 	specAwsPartition  string
+	specPrivateBucket bool
 	gceBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureBoards       = []string{"amd64-usr"}
 	awsBoards         = []string{"amd64-usr", "arm64-usr"}
@@ -91,10 +92,11 @@ var (
 
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/alpha/boards",
-			Boards:       []string{"amd64-usr", "arm64-usr"},
-			Destinations: []storageSpec{},
-			GCE:          gceSpec{},
+			BaseURL:        "gs://flatcar-jenkins/alpha/boards",
+			BasePrivateURL: "gs://flatcar-jenkins-private/alpha/boards",
+			Boards:         []string{"amd64-usr", "arm64-usr"},
+			Destinations:   []storageSpec{},
+			GCE:            gceSpec{},
 			Azure: newAzureSpec(
 				azureEnvironments,
 				"publish",
@@ -112,10 +114,11 @@ var (
 			AWS: newAWSSpec(),
 		},
 		"beta": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/beta/boards",
-			Boards:       []string{"amd64-usr"},
-			Destinations: []storageSpec{},
-			GCE:          gceSpec{},
+			BaseURL:        "gs://flatcar-jenkins/beta/boards",
+			BasePrivateURL: "gs://flatcar-jenkins-private/beta/boards",
+			Boards:         []string{"amd64-usr"},
+			Destinations:   []storageSpec{},
+			GCE:            gceSpec{},
 			Azure: newAzureSpec(
 				azureEnvironments,
 				"publish",
@@ -133,10 +136,11 @@ var (
 			AWS: newAWSSpec(),
 		},
 		"stable": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/stable/boards",
-			Boards:       []string{"amd64-usr"},
-			Destinations: []storageSpec{},
-			GCE:          gceSpec{},
+			BaseURL:        "gs://flatcar-jenkins/stable/boards",
+			BasePrivateURL: "gs://flatcar-jenkins-private/stable/boards",
+			Boards:         []string{"amd64-usr"},
+			Destinations:   []storageSpec{},
+			GCE:            gceSpec{},
 			Azure: newAzureSpec(
 				azureEnvironments,
 				"publish",
@@ -154,10 +158,11 @@ var (
 			AWS: newAWSSpec(),
 		},
 		"edge": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/edge/boards",
-			Boards:       []string{"amd64-usr", "arm64-usr"},
-			Destinations: []storageSpec{},
-			GCE:          gceSpec{},
+			BaseURL:        "gs://flatcar-jenkins/edge/boards",
+			BasePrivateURL: "gs://flatcar-jenkins-private/edge/boards",
+			Boards:         []string{"amd64-usr", "arm64-usr"},
+			Destinations:   []storageSpec{},
+			GCE:            gceSpec{},
 			Azure: newAzureSpec(
 				azureEnvironments,
 				"publish",
@@ -175,10 +180,11 @@ var (
 			AWS: newAWSSpec(),
 		},
 		"developer": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/developer/developer/boards",
-			Boards:       []string{"amd64-usr", "arm64-usr"},
-			Destinations: []storageSpec{},
-			GCE:          gceSpec{},
+			BaseURL:        "gs://flatcar-jenkins/developer/developer/boards",
+			BasePrivateURL: "gs://flatcar-jenkins-private/developer/developer/boards",
+			Boards:         []string{"amd64-usr", "arm64-usr"},
+			Destinations:   []storageSpec{},
+			GCE:            gceSpec{},
 			Azure: newAzureSpec(
 				azureEnvironments,
 				"developer",
@@ -236,6 +242,8 @@ func AddSpecFlags(flags *pflag.FlagSet) {
 		versions.VersionID, "release version")
 	flags.StringVarP(&specAwsPartition, "partition", "P",
 		awsPartition, "aws partition")
+	flags.BoolVarP(&specPrivateBucket, "private", "Z",
+		false, "Private GCE Bucket")
 }
 
 func AmiNameArchTag() string {
@@ -328,7 +336,12 @@ func ChannelSpec() channelSpec {
 }
 
 func (cs channelSpec) SourceURL() string {
-	u, err := url.Parse(cs.BaseURL)
+	baseURL := cs.BaseURL
+	if specPrivateBucket {
+		baseURL = cs.BasePrivateURL
+	}
+
+	u, err := url.Parse(baseURL)
 	if err != nil {
 		panic(err)
 	}
@@ -337,7 +350,12 @@ func (cs channelSpec) SourceURL() string {
 }
 
 func (ss storageSpec) ParentPrefixes() []string {
-	u, err := url.Parse(ss.BaseURL)
+	baseURL := ss.BaseURL
+	if specPrivateBucket {
+		baseURL = ss.BasePrivateURL
+	}
+
+	u, err := url.Parse(baseURL)
 	if err != nil {
 		panic(err)
 	}
@@ -345,7 +363,12 @@ func (ss storageSpec) ParentPrefixes() []string {
 }
 
 func (ss storageSpec) FinalPrefixes() []string {
-	u, err := url.Parse(ss.BaseURL)
+	baseURL := ss.BaseURL
+	if specPrivateBucket {
+		baseURL = ss.BasePrivateURL
+	}
+
+	u, err := url.Parse(baseURL)
 	if err != nil {
 		plog.Panic(err)
 	}
