@@ -104,7 +104,7 @@ func init() {
 	cmdPreRelease.Flags().BoolVar(&force, "force", false, "Replace existing images")
 	cmdPreRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdPreRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
-	cmdPreRelease.Flags().StringVar(&azureCategory, "azure-category", "", "Azure category (empty/premium)")
+	cmdPreRelease.Flags().StringVar(&azureCategory, "azure-category", "", "Azure category (empty/pro)")
 	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
 	cmdPreRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPreRelease.Flags().StringVar(&verifyKeyFile,
@@ -303,7 +303,7 @@ func getFedoraImageFile(client *http.Client, spec *channelSpec, src *storage.Buc
 
 func uploadAzureBlob(spec *channelSpec, api *azure.API, storageKeys azurestorage.AccountListKeysResult, vhdfile, container, blobName string) error {
 	specAzure := spec.Azure
-	if azureCategory == "premium" {
+	if azureCategory == "pro" {
 		specAzure = spec.AzurePremium
 	}
 
@@ -346,9 +346,9 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 	specAzure := spec.Azure
 	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
 
-	if azureCategory == "premium" {
+	if azureCategory == "pro" {
 		specAzure = spec.AzurePremium
-		blobName = fmt.Sprintf("flatcar-linux-premium-%s-%s.vhd", specVersion, specChannel)
+		blobName = fmt.Sprintf("flatcar-linux-pro-%s-%s.vhd", specVersion, specChannel)
 	}
 
 	if specAzure.StorageAccount == "" {
