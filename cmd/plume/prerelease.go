@@ -49,7 +49,8 @@ var (
 		RunE:  runPreRelease,
 	}
 
-	platforms = map[string]platform{
+	privateBucketSuffix = "private"
+	platforms           = map[string]platform{
 		"aws": platform{
 			displayName: "AWS",
 			handler:     awsPreRelease,
@@ -182,7 +183,8 @@ func runCLPreRelease(cmd *cobra.Command) error {
 	}
 
 	// Sanity check!
-	if vertxt := src.Object(src.Prefix() + "version.txt"); vertxt == nil {
+	vertxt := src.Object(src.Prefix() + "version.txt")
+	if !strings.Contains(spec.SourceURL(), privateBucketSuffix) && vertxt == nil {
 		verurl := src.URL().String() + "version.txt"
 		plog.Fatalf("File not found: %s", verurl)
 	}
