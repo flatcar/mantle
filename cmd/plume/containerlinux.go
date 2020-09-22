@@ -179,6 +179,28 @@ var (
 			),
 			AWS: newAWSSpec(),
 		},
+		"lts": channelSpec{
+			BaseURL:        "gs://flatcar-jenkins-private/lts/boards",
+			BasePrivateURL: "gs://flatcar-jenkins-private/lts/boards",
+			Boards:         []string{"amd64-usr"},
+			Destinations:   []storageSpec{},
+			GCE:            gceSpec{},
+			Azure: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar LTS",
+				"",
+				"The LTS channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Stable channel before being promoted.",
+			),
+			AzurePremium: newAzureSpec(
+				azureEnvironments,
+				"publish",
+				"Flatcar LTS",
+				"_pro",
+				"The LTS channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Stable channel before being promoted.",
+			),
+			AWS: newAWSSpec(),
+		},
 		"developer": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/developer/developer/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/developer/developer/boards",
