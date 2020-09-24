@@ -113,18 +113,23 @@ func MakeCLDiskTemplate(inputPath string) (output *os.File, result error) {
 
 	// wait for OEM block device
 	oemdev := loopdev + "p6"
-	err = util.Retry(1000, 5*time.Millisecond, func() error {
-		if _, err := os.Stat(oemdev); !os.IsNotExist(err) {
-			return nil
-		}
-		return fmt.Errorf("timed out waiting for device node; did you specify a qcow image by mistake?")
-	})
+	err = util.RetryConditional(1000, 5*time.Millisecond, os.IsNotExist,
+		func() error {
+			_, err := os.Stat(oemdev)
+			return err
+		})
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("timed out waiting for device node %s; did you specify a qcow image by mistake?", oemdev)
+		}
+		return nil, fmt.Errorf("failed to get loop device %s: %v", oemdev, err)
 	}
 
 	// mount OEM partition
-	if err := exec.Command("mount", oemdev, tmpdir).Run(); err != nil {
+	err = util.Retry(10, 100*time.Millisecond, func() error {
+		return exec.Command("mount", oemdev, tmpdir).Run()
+	})
+	if err != nil {
 		return nil, fmt.Errorf("mounting OEM partition %s on %s: %v", oemdev, tmpdir, err)
 	}
 	defer func() {

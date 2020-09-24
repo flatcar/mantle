@@ -46,14 +46,14 @@ type LocalFlight struct {
 func NewLocalFlight(opts *platform.Options, platformName platform.Name) (*LocalFlight, error) {
 	nshandle, err := ns.Create()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating new ns handle failed: %v", err)
 	}
 
 	nsdialer := network.NewNsDialer(nshandle)
 	bf, err := platform.NewBaseFlightWithDialer(opts, platformName, "", nsdialer)
 	if err != nil {
 		nshandle.Close()
-		return nil, err
+		return nil, fmt.Errorf("creating new base flight failed: %v", err)
 	}
 
 	lf := &LocalFlight{
@@ -68,28 +68,28 @@ func NewLocalFlight(opts *platform.Options, platformName platform.Name) (*LocalF
 	nsExit, err := ns.Enter(lf.nshandle)
 	if err != nil {
 		lf.Destroy()
-		return nil, err
+		return nil, fmt.Errorf("entering new ns failed: %v", err)
 	}
 	defer nsExit()
 
 	lf.Dnsmasq, err = NewDnsmasq()
 	if err != nil {
 		lf.Destroy()
-		return nil, err
+		return nil, fmt.Errorf("creating new dnsmasq failed: %v", err)
 	}
 	lf.AddDestructor(lf.Dnsmasq)
 
 	lf.SimpleEtcd, err = NewSimpleEtcd()
 	if err != nil {
 		lf.Destroy()
-		return nil, err
+		return nil, fmt.Errorf("creating new simple etcd failed: %v", err)
 	}
 	lf.AddDestructor(lf.SimpleEtcd)
 
 	lf.NTPServer, err = ntp.NewServer(":123")
 	if err != nil {
 		lf.Destroy()
-		return nil, err
+		return nil, fmt.Errorf("creating new ntp server failed: %v", err)
 	}
 	lf.AddCloser(lf.NTPServer)
 	go lf.NTPServer.Serve()

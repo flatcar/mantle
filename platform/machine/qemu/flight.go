@@ -61,7 +61,7 @@ var (
 func NewFlight(opts *Options) (platform.Flight, error) {
 	lf, err := local.NewLocalFlight(opts.Options, Platform)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating local flight failed: %v", err)
 	}
 
 	qf := &flight{
@@ -78,7 +78,7 @@ func NewFlight(opts *Options) (platform.Flight, error) {
 		info, err := util.GetImageInfo(opts.DiskImage)
 		if err != nil {
 			qf.Destroy()
-			return nil, err
+			return nil, fmt.Errorf("getting image info failed: %v", err)
 		}
 		if info.Format != "raw" {
 			// platform.MakeCLDiskTemplate() needs to be able to mount
@@ -92,7 +92,7 @@ func NewFlight(opts *Options) (platform.Flight, error) {
 		qf.diskImageFile, err = platform.MakeCLDiskTemplate(opts.DiskImage)
 		if err != nil {
 			qf.Destroy()
-			return nil, err
+			return nil, fmt.Errorf("creating disk image file failed: %v", err)
 		}
 		// The template file has already been deleted, ensuring that
 		// it will be cleaned up on exit.  Use a path to it that
