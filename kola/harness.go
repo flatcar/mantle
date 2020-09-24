@@ -356,7 +356,7 @@ func RunTests(patterns []string, channel, pltfrm, outputDir string, sshKeys *[]a
 
 	flight, err := NewFlight(pltfrm)
 	if err != nil {
-		plog.Fatalf("Flight failed: %v", err)
+		plog.Fatalf("creating flight for RunTests failed: %v", err)
 	}
 	(*flight.GetBaseFlight()).AdditionalSshKeys = sshKeys
 	if remove {
