@@ -163,7 +163,7 @@ func (a *API) CreateDroplet(ctx context.Context, name string, sshKeyID int, user
 			Size:              a.opts.Size,
 			Image:             a.image,
 			SSHKeys:           []godo.DropletCreateSSHKey{{ID: sshKeyID}},
-			IPv6:              true,
+			IPv6:              false,
 			PrivateNetworking: true,
 			UserData:          userdata,
 			Tags:              []string{"mantle"},
