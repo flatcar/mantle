@@ -93,6 +93,30 @@ func New(opts *Options) (*API, error) {
 	return a, nil
 }
 
+func (a *API) CreateImage(ctx context.Context, name, url string) (*godo.Image, error) {
+	imageCreateRequest := godo.CustomImageCreateRequest{
+		Name:         name,
+		Url:          url,
+		Region:       a.opts.Region,
+		Distribution: "CoreOS",
+	}
+	image, _, err := a.c.Images.Create(ctx, &imageCreateRequest)
+	if err != nil {
+		return nil, err
+	}
+	err = util.WaitUntilReady(10*time.Minute, 15*time.Second, func() (bool, error) {
+		image, _, err := a.c.Images.GetByID(ctx, image.ID)
+		if err != nil {
+			return false, err
+		}
+		return image.Status == "available", nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Failed waiting for image status (%v).", err)
+	}
+	return image, err
+}
+
 func (a *API) resolveImage(ctx context.Context, imageSpec string) (godo.DropletCreateImage, error) {
 	// try numeric image ID first
 	imageID, err := strconv.Atoi(imageSpec)
@@ -139,7 +163,7 @@ func (a *API) CreateDroplet(ctx context.Context, name string, sshKeyID int, user
 			Size:              a.opts.Size,
 			Image:             a.image,
 			SSHKeys:           []godo.DropletCreateSSHKey{{ID: sshKeyID}},
-			IPv6:              true,
+			IPv6:              false,
 			PrivateNetworking: true,
 			UserData:          userdata,
 			Tags:              []string{"mantle"},
