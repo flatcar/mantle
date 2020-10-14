@@ -53,10 +53,10 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	// maximal number of retries is reached or to print it at the beginning of the loop.
 	for retry := 0; retry <= 2; retry++ {
 		if err != nil {
-			plog.Infof("Retrying to provision a machine after error: %q", err)
+			plog.Warningf("Retrying to provision a machine after error: %q", err)
 			if pc.sshKeyID != "" {
 				err = os.Remove(consolePath)
-				if err != nil {
+				if err != nil && !os.IsNotExist(err) {
 					return nil, err
 				}
 			}
