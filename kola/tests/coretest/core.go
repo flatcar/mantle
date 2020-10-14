@@ -271,6 +271,8 @@ func TestSymlinkFlatcar() error {
 		if err != nil {
 			return fmt.Errorf("unable to resolve symlink %s.", f)
 		}
+		// Works for us but in general the canonical path should be resolved.
+		resolved = strings.TrimPrefix(resolved, "./")
 		if resolved != filepath.Base(flatcarPath) {
 			return fmt.Errorf("resolved path %s does not point to %s", resolved, filepath.Base(flatcarPath))
 		}
