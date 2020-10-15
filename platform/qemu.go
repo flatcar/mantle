@@ -281,6 +281,8 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		"-display", "none",
 		"-chardev", "file,id=log,path="+consolePath,
 		"-serial", "chardev:log",
+		"-object", "rng-random,filename=/dev/urandom,id=rng0",
+		"-device", "virtio-rng-pci,rng=rng0",
 	)
 
 	if isIgnition {
