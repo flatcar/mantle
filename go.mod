@@ -57,6 +57,7 @@ require (
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7 // indirect
 	github.com/prometheus/client_golang v0.9.2 // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761 // indirect
 	github.com/prometheus/procfs v0.0.2 // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
