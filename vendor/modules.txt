@@ -227,7 +227,7 @@ github.com/cpuguy83/go-md2man/md2man
 github.com/dgrijalva/jwt-go
 # github.com/digitalocean/godo v1.45.0
 github.com/digitalocean/godo
-# github.com/dimchansky/utfbom v1.1.0
+# github.com/dimchansky/utfbom v1.1.1
 github.com/dimchansky/utfbom
 # github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 github.com/godbus/dbus
