@@ -3,7 +3,7 @@ module github.com/coreos/mantle
 go 1.12
 
 require (
-	cloud.google.com/go v0.34.0
+	cloud.google.com/go/storage v1.9.0
 	github.com/Azure/azure-sdk-for-go v8.1.0-beta+incompatible
 	github.com/Azure/go-autorest v9.1.0+incompatible
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20161127050200-43293b8d7646
@@ -21,7 +21,7 @@ require (
 	github.com/coreos/go-semver v0.3.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/ignition v0.35.0
-	github.com/coreos/ignition/v2 v2.0.1
+	github.com/coreos/ignition/v2 v2.7.0
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 	github.com/coreos/pkg v0.0.0-20161026222926-447b7ec906e5
 	github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269 // indirect
@@ -29,13 +29,10 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/digitalocean/godo v1.45.0
 	github.com/dimchansky/utfbom v1.1.0 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
-	github.com/golang/protobuf v1.3.5
-	github.com/google/btree v1.0.0 // indirect
-	github.com/google/martian v2.1.0+incompatible // indirect
-	github.com/googleapis/gax-go v1.0.3 // indirect
+	github.com/golang/protobuf v1.4.2
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
@@ -51,7 +48,6 @@ require (
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7 // indirect
 	github.com/prometheus/client_golang v0.9.2 // indirect
-	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90 // indirect
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761 // indirect
 	github.com/prometheus/procfs v0.0.2 // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
@@ -69,15 +65,12 @@ require (
 	github.com/vmware/govmomi v0.22.2
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
 	go4.org v0.0.0-20180809161055-417644f6feb5 // indirect
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
+	golang.org/x/sys v0.0.0-20200610111108-226ff32320da
 	golang.org/x/text v0.3.3
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
-	google.golang.org/api v0.1.0
-	google.golang.org/genproto v0.0.0-20190611190212-a7e196e89fd3 // indirect
-	google.golang.org/grpc v1.19.1 // indirect
+	google.golang.org/api v0.26.0
 )
 
 replace google.golang.org/cloud => cloud.google.com/go v0.0.0-20190220171618-cbb15e60dc6d
