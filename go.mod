@@ -52,7 +52,6 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/packethost/packngo v0.5.0
 	github.com/pborman/uuid v1.2.1
-	github.com/philhofer/fwd v1.1.0 // indirect
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7 // indirect
 	github.com/prometheus/client_golang v0.9.2 // indirect
@@ -64,7 +63,7 @@ require (
 	github.com/spf13/cobra v0.0.0-20151124153217-1c44ec8d3f15
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1 // indirect
-	github.com/tinylib/msgp v1.1.0 // indirect
+	github.com/tinylib/msgp v1.1.4 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/ugorji/go v0.0.0-20171019201919-bdcc60b419d1 // indirect
 	github.com/ulikunitz/xz v0.5.4
