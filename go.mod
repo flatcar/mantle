@@ -10,7 +10,7 @@ require (
 	github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559 // indirect
 	github.com/ajeddeloh/yaml v0.0.0-20170912190910-6b94386aeefd // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
-	github.com/aws/aws-sdk-go v1.19.11
+	github.com/aws/aws-sdk-go v1.35.27
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/coreos/bbolt v1.3.1-coreos.6 // indirect
 	github.com/coreos/container-linux-config-transpiler v0.8.0
