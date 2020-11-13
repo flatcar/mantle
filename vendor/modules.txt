@@ -231,7 +231,7 @@ github.com/digitalocean/godo
 github.com/dimchansky/utfbom
 # github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 github.com/godbus/dbus
-# github.com/gogo/protobuf v1.2.1
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor

@@ -32,7 +32,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
-	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
 	github.com/gorilla/websocket v1.4.0 // indirect
