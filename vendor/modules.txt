@@ -375,7 +375,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# go4.org v0.0.0-20180809161055-417644f6feb5
+# go4.org v0.0.0-20200411211856-f5505b9728dd
 go4.org/errorutil
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/bcrypt
