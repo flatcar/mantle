@@ -43,7 +43,7 @@ github.com/Microsoft/azure-vhd-utils/vhdcore/reader
 github.com/Microsoft/azure-vhd-utils/vhdcore/validator
 github.com/Microsoft/azure-vhd-utils/vhdcore/vhdfile
 github.com/Microsoft/azure-vhd-utils/vhdcore/writer
-# github.com/ajeddeloh/go-json v0.0.0-20170920214419-6a2fe990e083
+# github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559
 github.com/ajeddeloh/go-json
 # github.com/ajeddeloh/yaml v0.0.0-20170912190910-6b94386aeefd
 github.com/ajeddeloh/yaml
