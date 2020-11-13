@@ -47,7 +47,7 @@ github.com/Microsoft/azure-vhd-utils/vhdcore/writer
 github.com/ajeddeloh/go-json
 # github.com/ajeddeloh/yaml v0.0.0-20170912190910-6b94386aeefd
 github.com/ajeddeloh/yaml
-# github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
+# github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 github.com/alecthomas/units
 # github.com/aws/aws-sdk-go v1.19.11
 github.com/aws/aws-sdk-go/aws
