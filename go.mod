@@ -33,7 +33,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
@@ -71,6 +71,7 @@ require (
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.26.0
+	google.golang.org/protobuf v1.25.0 // indirect
 )
 
 replace google.golang.org/cloud => cloud.google.com/go v0.0.0-20190220171618-cbb15e60dc6d
