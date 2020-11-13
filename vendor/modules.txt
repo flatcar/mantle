@@ -356,7 +356,7 @@ github.com/vmware/govmomi/vim25/progress
 github.com/vmware/govmomi/vim25/soap
 github.com/vmware/govmomi/vim25/types
 github.com/vmware/govmomi/vim25/xml
-# github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18
+# github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2
 github.com/xiang90/probing
 # go.opencensus.io v0.22.5
 go.opencensus.io

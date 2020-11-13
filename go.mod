@@ -71,7 +71,7 @@ require (
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
 	github.com/vmware/govmomi v0.23.1
-	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
+	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	go4.org v0.0.0-20180809161055-417644f6feb5 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
