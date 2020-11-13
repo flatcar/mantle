@@ -42,6 +42,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.6.2 // indirect
 	github.com/hashicorp/go-hclog v0.15.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.6.8 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
