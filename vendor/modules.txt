@@ -328,7 +328,7 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb
+# github.com/vincent-petithory/dataurl v0.0.0-20191104211930-d1553a71de50
 github.com/vincent-petithory/dataurl
 # github.com/vishvananda/netlink v0.0.0-20150217221648-2e9d285a7160
 github.com/vishvananda/netlink
