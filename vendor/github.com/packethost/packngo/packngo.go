@@ -22,12 +22,12 @@ import (
 )
 
 const (
-	packetTokenEnvVar = "PACKET_AUTH_TOKEN"
-	libraryVersion    = "0.1.0"
-	baseURL           = "https://api.packet.net/"
-	userAgent         = "packngo/" + libraryVersion
-	mediaType         = "application/json"
-	debugEnvVar       = "PACKNGO_DEBUG"
+	authTokenEnvVar = "PACKET_AUTH_TOKEN"
+	libraryVersion  = "0.5.0"
+	baseURL         = "https://api.equinix.com/metal/v1/"
+	userAgent       = "packngo/" + libraryVersion
+	mediaType       = "application/json"
+	debugEnvVar     = "PACKNGO_DEBUG"
 
 	headerRateLimit     = "X-RateLimit-Limit"
 	headerRateRemaining = "X-RateLimit-Remaining"
@@ -36,86 +36,225 @@ const (
 
 var redirectsErrorRe = regexp.MustCompile(`stopped after \d+ redirects\z`)
 
+// GetOptions are options common to Equinix Metal API GET requests
 type GetOptions struct {
-	Includes []string
-	Excludes []string
+	// Includes are a list of fields to expand in the request results.
+	//
+	// For resources that contain collections of other resources, the Equinix Metal API
+	// will only return the `Href` value of these resources by default. In
+	// nested API Go types, this will result in objects that have zero values in
+	// all fiends except their `Href` field. When an object's associated field
+	// name is "included", the returned fields will be Uumarshalled into the
+	// nested object. Field specifiers can use a dotted notation up to three
+	// references deep. (For example, "memberships.projects" can be used in
+	// ListUsers.)
+	Includes []string `url:"includes,omitempty"`
+
+	// Excludes reduce the size of the API response by removing nested objects
+	// that may be returned.
+	//
+	// The default behavior of the Equinix Metal API is to "exclude" fields, but some
+	// API endpoints have an "include" behavior on certain fields. Nested Go
+	// types unmarshalled into an "excluded" field will only have a values in
+	// their `Href` field.
+	Excludes []string `url:"excludes,omitempty"`
 }
 
-// ListOptions specifies optional global API parameters
+// GetOptions returns GetOptions from GetOptions (and is nil-receiver safe)
+func (g *GetOptions) GetOptions() *GetOptions {
+	getOpts := GetOptions{}
+	if g != nil {
+		getOpts.Includes = g.Includes
+		getOpts.Excludes = g.Excludes
+	}
+	return &getOpts
+}
+
+// ListOptions are options common to Equinix Metal API paginated GET requests
 type ListOptions struct {
-	// for paginated result sets, page of results to retrieve
+	// avoid embedding GetOptions (packngo-breaking-change) for now
+
+	// Includes are a list of fields to expand in the request results.
+	Includes []string `url:"includes,omitempty"`
+
+	// Excludes reduce the size of the API response by removing nested objects
+	// that may be returned.
+	Excludes []string `url:"excludes,omitempty"`
+
+	// Page is the page of results to retrieve for paginated result sets
 	Page int `url:"page,omitempty"`
-	// for paginated result sets, the number of results to return per page
-	PerPage  int `url:"per_page,omitempty"`
-	Includes []string
-	Excludes []string
+
+	// PerPage is the number of results to return per page for paginated result
+	// sets,
+	PerPage int `url:"per_page,omitempty"`
+
+	// Search is a special API query parameter that, for resources that support
+	// it, will filter results to those with any one of various fields matching
+	// the supplied keyword.  For example, a resource may have a defined search
+	// behavior matches either a name or a fingerprint field, while another
+	// resource may match entirely different fields.  Search is currently
+	// implemented for SSHKeys and uses an exact match.
+	Search string `url:"search,omitempty"`
 }
 
-func makeSureGetOptionsInclude(g *GetOptions, s string) *GetOptions {
+// GetOptions returns GetOptions from ListOptions (and is nil-receiver safe)
+func (l *ListOptions) GetOptions() *GetOptions {
+	getOpts := GetOptions{}
+	if l != nil {
+		getOpts.Includes = l.Includes
+		getOpts.Excludes = l.Excludes
+	}
+	return &getOpts
+}
+
+// SearchOptions are options common to API GET requests that include a
+// multi-field search filter. SearchOptions are used in List functions that are
+// known to support `search` but do not offer pagination.
+type SearchOptions struct {
+	// avoid embedding GetOptions (for similar behavior to ListOptions)
+
+	// Includes are a list of fields to expand in the request results.
+	Includes []string `url:"includes,omitempty"`
+
+	// Excludes reduce the size of the API response by removing nested objects
+	// that may be returned.
+	Excludes []string `url:"excludes,omitempty"`
+
+	// Search is a special API query parameter that, for resources that support
+	// it, will filter results to those with any one of various fields matching
+	// the supplied keyword.  For example, a resource may have a defined search
+	// behavior matches either a name or a fingerprint field, while another
+	// resource may match entirely different fields.  Search is currently
+	// implemented for SSHKeys and uses an exact match.
+	Search string `url:"search,omitempty"`
+}
+
+// GetOptions returns GetOptions from ListOptions (and is nil-receiver safe)
+func (s *SearchOptions) GetOptions() *GetOptions {
+	getOpts := GetOptions{}
+	if s != nil {
+		getOpts.Includes = s.Includes
+		getOpts.Excludes = s.Excludes
+	}
+	return &getOpts
+}
+
+// OptionsGetter provides GetOptions
+type OptionsGetter interface {
+	GetOptions() *GetOptions
+}
+
+// Including ensures that the variadic refs are included in a copy of the
+// options, resulting in expansion of the the referred sub-resources. Unknown
+// values within refs will be silently ignore by the API.
+func (g *GetOptions) Including(refs ...string) *GetOptions {
 	if g == nil {
-		return &GetOptions{Includes: []string{s}}
+		return &GetOptions{Includes: refs}
 	}
-	if !contains(g.Includes, s) {
-		g.Includes = append(g.Includes, s)
+	out := *g
+	for _, v := range refs {
+		if !contains(out.Includes, v) {
+			out.Includes = append(out.Includes, v)
+		}
 	}
-	return g
+	return &out
 }
 
-func makeSureListOptionsInclude(l *ListOptions, s string) *ListOptions {
+// Including ensures that the variadic refs are included in a copy of the
+// options, resulting in expansion of the the referred sub-resources. Unknown
+// values within refs will be silently ignore by the API.
+func (l *ListOptions) Including(refs ...string) *ListOptions {
 	if l == nil {
-		return &ListOptions{Includes: []string{s}}
+		return &ListOptions{Includes: refs}
 	}
-	if !contains(l.Includes, s) {
-		l.Includes = append(l.Includes, s)
+	out := *l
+	for _, v := range refs {
+		if !contains(out.Includes, v) {
+			out.Includes = append(out.Includes, v)
+		}
 	}
-	return l
+	return &out
 }
 
-func createGetOptionsURL(g *GetOptions) (url string) {
+// Including ensures that the variadic refs are included in a copy of the
+// options, resulting in expansion of the the referred sub-resources. Unknown
+// values within refs will be silently ignore by the API.
+func (s *SearchOptions) Including(refs ...string) *SearchOptions {
+	if s == nil {
+		return &SearchOptions{Includes: refs}
+	}
+	out := *s
+	for _, v := range refs {
+		if !contains(out.Includes, v) {
+			out.Includes = append(out.Includes, v)
+		}
+	}
+	return &out
+}
+
+type paramsReady interface {
+	Params() url.Values
+}
+
+// compile-time assertions that paramsReady is implemented
+var (
+	_ paramsReady = (*GetOptions)(nil)
+	_ paramsReady = (*ListOptions)(nil)
+	_ paramsReady = (*SearchOptions)(nil)
+)
+
+// urlQuery generates a URL query string ("?foo=bar") from any object that
+// implements the paramsReady interface
+func urlQuery(p paramsReady) string {
+	return p.Params().Encode()
+}
+
+// Params generates URL values from GetOptions fields
+func (g *GetOptions) Params() url.Values {
+	params := url.Values{}
 	if g == nil {
-		return ""
+		return params
 	}
 	if len(g.Includes) != 0 {
-		url += fmt.Sprintf("include=%s", strings.Join(g.Includes, ","))
+		params.Set("include", strings.Join(g.Includes, ","))
 	}
 	if len(g.Excludes) != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("exclude=%s", strings.Join(g.Excludes, ","))
+		params.Set("exclude", strings.Join(g.Excludes, ","))
 	}
-	return
 
+	return params
 }
 
-func createListOptionsURL(l *ListOptions) (url string) {
+// Params generates URL values from ListOptions fields
+func (l *ListOptions) Params() url.Values {
 	if l == nil {
-		return ""
+		return url.Values{}
 	}
-	if len(l.Includes) != 0 {
-		url += fmt.Sprintf("include=%s", strings.Join(l.Includes, ","))
-	}
-	if len(l.Excludes) != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("exclude=%s", strings.Join(l.Excludes, ","))
-	}
+	params := l.GetOptions().Params()
+
 	if l.Page != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("page=%d", l.Page)
+		params.Set("page", fmt.Sprintf("%d", l.Page))
 	}
-
 	if l.PerPage != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("per_page=%d", l.PerPage)
+		params.Set("per_page", fmt.Sprintf("%d", l.PerPage))
 	}
 
-	return
+	if l.Search != "" {
+		params.Set("search", l.Search)
+	}
+
+	return params
+}
+
+// Params generates a URL values from SearchOptions fields
+func (s *SearchOptions) Params() url.Values {
+	if s == nil {
+		return url.Values{}
+	}
+
+	params := s.GetOptions().Params()
+	params.Set("search", s.Search)
+	return params
 }
 
 // meta contains pagination information
@@ -181,7 +320,7 @@ type Client struct {
 
 	RateLimit Rate
 
-	// Packet Api Objects
+	// Equinix Metal Api Objects
 	APIKeys                APIKeyService
 	BGPConfig              BGPConfigService
 	BGPSessions            BGPSessionService
@@ -211,9 +350,24 @@ type Client struct {
 	Volumes                VolumeService
 }
 
+// requestDoer provides methods for making HTTP requests and receiving the
+// response, errors, and a structured result
+//
+// This interface is used in *ServiceOp as a mockable alternative to a full
+// Client object.
+type requestDoer interface {
+	NewRequest(method, path string, body interface{}) (*retryablehttp.Request, error)
+	Do(req *retryablehttp.Request, v interface{}) (*Response, error)
+	DoRequest(method, path string, body, v interface{}) (*Response, error)
+	DoRequestWithHeader(method string, headers map[string]string, path string, body, v interface{}) (*Response, error)
+}
+
 // NewRequest inits a new http request with the proper headers
 func (c *Client) NewRequest(method, path string, body interface{}) (*retryablehttp.Request, error) {
 	// relative path to append to the endpoint url, no leading slash please
+	if path[0] == '/' {
+		path = path[1:]
+	}
 	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err
@@ -242,7 +396,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*retryableht
 
 	req.Header.Add("Content-Type", mediaType)
 	req.Header.Add("Accept", mediaType)
-	req.Header.Add("User-Agent", userAgent)
+	req.Header.Add("User-Agent", c.UserAgent)
 	return req, nil
 }
 
@@ -271,7 +425,10 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error
 	if v != nil {
 		// if v implements the io.Writer interface, return the raw response
 		if w, ok := v.(io.Writer); ok {
-			io.Copy(w, resp.Body)
+			_, err = io.Copy(w, resp.Body)
+			if err != nil {
+				return &response, err
+			}
 		} else {
 			err = json.NewDecoder(resp.Body).Decode(v)
 			if err != nil {
@@ -337,9 +494,9 @@ func (c *Client) DoRequestWithHeader(method string, headers map[string]string, p
 
 // NewClient initializes and returns a Client
 func NewClient() (*Client, error) {
-	apiToken := os.Getenv(packetTokenEnvVar)
+	apiToken := os.Getenv(authTokenEnvVar)
 	if apiToken == "" {
-		return nil, fmt.Errorf("you must export %s", packetTokenEnvVar)
+		return nil, fmt.Errorf("you must export %s", authTokenEnvVar)
 	}
 	c := NewClientWithAuth("packngo lib", apiToken, nil)
 	return c, nil
@@ -347,7 +504,7 @@ func NewClient() (*Client, error) {
 }
 
 // NewClientWithAuth initializes and returns a Client, use this to get an API Client to operate on
-// N.B.: Packet's API certificate requires Go 1.5+ to successfully parse. If you are using
+// N.B.: Equinix Metal's API certificate requires Go 1.5+ to successfully parse. If you are using
 // an older version of Go, pass in a custom http.Client with a custom TLS configuration
 // that sets "InsecureSkipVerify" to "true"
 func NewClientWithAuth(consumerToken string, apiKey string, httpClient *retryablehttp.Client) *Client {
@@ -355,7 +512,8 @@ func NewClientWithAuth(consumerToken string, apiKey string, httpClient *retryabl
 	return client
 }
 
-func PacketRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+// RetryPolicy determines if the supplied http Response and error can be safely retried
+func RetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	// do not retry on context.Canceled or context.DeadlineExceeded
 	if ctx.Err() != nil {
 		return false, ctx.Err()
@@ -400,7 +558,7 @@ func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *retry
 		httpClient.RetryWaitMin = time.Second
 		httpClient.RetryWaitMax = 30 * time.Second
 		httpClient.RetryMax = 10
-		httpClient.CheckRetry = PacketRetryPolicy
+		httpClient.CheckRetry = RetryPolicy
 	}
 
 	u, err := url.Parse(apiBaseURL)
@@ -451,8 +609,15 @@ func checkResponse(r *http.Response) error {
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
 	// if the response has a body, populate the message in errorResponse
-	if err == nil && len(data) > 0 {
-		json.Unmarshal(data, errorResponse)
+	if err != nil {
+		return err
+	}
+
+	if len(data) > 0 {
+		err = json.Unmarshal(data, errorResponse)
+		if err != nil {
+			return err
+		}
 	}
 
 	return errorResponse

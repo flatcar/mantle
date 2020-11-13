@@ -3,6 +3,7 @@ package packngo
 import "fmt"
 
 var bgpSessionBasePath = "/bgp/sessions"
+var bgpNeighborsBasePath = "/bgp/neighbors"
 
 // BGPSessionService interface defines available BGP session methods
 type BGPSessionService interface {
@@ -21,7 +22,7 @@ type BGPSessionServiceOp struct {
 	client *Client
 }
 
-// BGPSession represents a Packet BGP Session
+// BGPSession represents an Equinix Metal BGP Session
 type BGPSession struct {
 	ID            string   `json:"id,omitempty"`
 	Status        string   `json:"status,omitempty"`
@@ -30,6 +31,30 @@ type BGPSession struct {
 	Device        Device   `json:"device,omitempty"`
 	Href          string   `json:"href,omitempty"`
 	DefaultRoute  *bool    `json:"default_route,omitempty"`
+}
+
+type bgpNeighborsRoot struct {
+	BGPNeighbors []BGPNeighbor `json:"bgp_neighbors"`
+}
+
+// BGPNeighor is struct for listing BGP neighbors of a device
+type BGPNeighbor struct {
+	AddressFamily int        `json:"address_family"`
+	CustomerAs    int        `json:"customer_as"`
+	CustomerIP    string     `json:"customer_ip"`
+	Md5Enabled    bool       `json:"md5_enabled"`
+	Md5Password   string     `json:"md5_password"`
+	Multihop      bool       `json:"multihop"`
+	PeerAs        int        `json:"peer_as"`
+	PeerIps       []string   `json:"peer_ips"`
+	RoutesIn      []BGPRoute `json:"routes_in"`
+	RoutesOut     []BGPRoute `json:"routes_out"`
+}
+
+// BGPRoute is a struct for Route in BGP neighbor listing
+type BGPRoute struct {
+	Route string `json:"route"`
+	Exact bool   `json:"exact"`
 }
 
 // CreateBGPSessionRequest struct
@@ -60,7 +85,7 @@ func (s *BGPSessionServiceOp) Delete(id string) (*Response, error) {
 
 // Get function
 func (s *BGPSessionServiceOp) Get(id string, getOpt *GetOptions) (session *BGPSession, response *Response, err error) {
-	params := createGetOptionsURL(getOpt)
+	params := urlQuery(getOpt)
 	path := fmt.Sprintf("%s/%s?%s", bgpSessionBasePath, id, params)
 	session = new(BGPSession)
 	response, err = s.client.DoRequest("GET", path, nil, session)
