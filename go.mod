@@ -59,7 +59,7 @@ require (
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761 // indirect
-	github.com/prometheus/procfs v0.0.2 // indirect
+	github.com/prometheus/procfs v0.2.0 // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/cobra v0.0.0-20151124153217-1c44ec8d3f15
