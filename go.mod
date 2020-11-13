@@ -34,6 +34,7 @@ require (
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.3
+	github.com/google/go-cmp v0.5.3 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
