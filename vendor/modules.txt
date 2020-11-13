@@ -170,6 +170,8 @@ github.com/coreos/etcd/store
 github.com/coreos/etcd/version
 github.com/coreos/etcd/wal
 github.com/coreos/etcd/wal/walpb
+# github.com/coreos/go-json v0.0.0-20170920214419-6a2fe990e083
+github.com/coreos/go-json
 # github.com/coreos/go-omaha v0.0.0-20180327202221-e409d983eb60
 github.com/coreos/go-omaha/omaha
 # github.com/coreos/go-semver v0.3.0
@@ -211,7 +213,7 @@ github.com/coreos/ioprogress
 # github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 github.com/coreos/pkg/capnslog
 github.com/coreos/pkg/multierror
-# github.com/coreos/vcontext v0.0.0-20190529201340-22b159166068
+# github.com/coreos/vcontext v0.0.0-20200225161404-ee043618d38d
 github.com/coreos/vcontext/json
 github.com/coreos/vcontext/path
 github.com/coreos/vcontext/report
