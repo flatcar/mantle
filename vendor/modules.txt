@@ -221,7 +221,7 @@ github.com/coreos/vcontext/tree
 github.com/coreos/vcontext/validate
 # github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269
 github.com/coreos/yaml
-# github.com/cpuguy83/go-md2man v1.0.4
+# github.com/cpuguy83/go-md2man v1.0.10
 github.com/cpuguy83/go-md2man/md2man
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
