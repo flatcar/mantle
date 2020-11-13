@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go v1.35.27
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/coreos/bbolt v1.3.1-coreos.6 // indirect
-	github.com/coreos/container-linux-config-transpiler v0.8.0
+	github.com/coreos/container-linux-config-transpiler v0.9.0
 	github.com/coreos/coreos-cloudinit v1.11.0
 	github.com/coreos/etcd v3.3.9+incompatible
 	github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
