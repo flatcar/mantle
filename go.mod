@@ -49,7 +49,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/kylelemons/godebug v0.0.0-20150519154555-21cb3784d9bd
+	github.com/kylelemons/godebug v1.1.0
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
 	github.com/packethost/packngo v0.2.1-0.20200224173249-1156d996f0d5
 	github.com/pborman/uuid v1.2.0
