@@ -287,7 +287,7 @@ github.com/jonboulle/clockwork
 github.com/jstemmer/go-junit-report
 github.com/jstemmer/go-junit-report/formatter
 github.com/jstemmer/go-junit-report/parser
-# github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
+# github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 github.com/kballard/go-shellquote
 # github.com/kylelemons/godebug v0.0.0-20150519154555-21cb3784d9bd
 github.com/kylelemons/godebug/diff
