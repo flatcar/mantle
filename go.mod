@@ -19,6 +19,7 @@ require (
 	github.com/coreos/etcd v3.3.9+incompatible
 	github.com/coreos/go-omaha v0.0.0-20180327202221-e409d983eb60
 	github.com/coreos/go-semver v0.3.0
+	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/ignition v0.31.0
 	github.com/coreos/ignition/v2 v2.0.1
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
