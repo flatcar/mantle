@@ -101,6 +101,8 @@ github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
+# github.com/blang/semver v3.5.1+incompatible
+github.com/blang/semver
 # github.com/coreos/bbolt v1.3.1-coreos.6
 github.com/coreos/bbolt
 # github.com/coreos/container-linux-config-transpiler v0.9.0
@@ -166,7 +168,7 @@ github.com/coreos/etcd/store
 github.com/coreos/etcd/version
 github.com/coreos/etcd/wal
 github.com/coreos/etcd/wal/walpb
-# github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
+# github.com/coreos/go-omaha v0.0.0-20180327202221-e409d983eb60
 github.com/coreos/go-omaha/omaha
 # github.com/coreos/go-semver v0.3.0
 github.com/coreos/go-semver/semver

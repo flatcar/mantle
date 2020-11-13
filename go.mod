@@ -12,11 +12,12 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/aws/aws-sdk-go v1.35.27
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/coreos/bbolt v1.3.1-coreos.6 // indirect
 	github.com/coreos/container-linux-config-transpiler v0.9.0
 	github.com/coreos/coreos-cloudinit v1.11.0
 	github.com/coreos/etcd v3.3.9+incompatible
-	github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
+	github.com/coreos/go-omaha v0.0.0-20180327202221-e409d983eb60
 	github.com/coreos/go-semver v0.3.0
 	github.com/coreos/ignition v0.31.0
 	github.com/coreos/ignition/v2 v2.0.1

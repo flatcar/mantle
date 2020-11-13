@@ -26,6 +26,8 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 h1:xJ4a3vCFaGF/jqvzLM
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
+github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
+github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/bbolt v1.3.1-coreos.6 h1:uTXKg9gY70s9jMAKdfljFQcuh4e/BXOM+V+d00KFj3A=
 github.com/coreos/bbolt v1.3.1-coreos.6/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
@@ -35,8 +37,8 @@ github.com/coreos/coreos-cloudinit v1.11.0 h1:qSLLJPaK4zavsL3ii02F2+v3P9I7JcaOW7
 github.com/coreos/coreos-cloudinit v1.11.0/go.mod h1:hV3swhSwq+bRX5apuk57gG+3fsQacgbrZVxjPTqo0zo=
 github.com/coreos/etcd v3.3.9+incompatible h1:iKSVPXGNGqroBx4+RmUXv8emeU7y+ucRZSzTYgzLZwM=
 github.com/coreos/etcd v3.3.9+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
-github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c h1:n9z1rkyYf+OGow4mvjFHhsLxS8wLnoD0SHqDeF2/en8=
-github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c/go.mod h1:IU76HHVFspEz6YCsXufWBCTPBPbL86JSct4XvXfZPMA=
+github.com/coreos/go-omaha v0.0.0-20180327202221-e409d983eb60 h1:i2/gIetlz/BaiHhCvXy0gQkktU1Bdp+fCfbrf1DCqgA=
+github.com/coreos/go-omaha v0.0.0-20180327202221-e409d983eb60/go.mod h1:IU76HHVFspEz6YCsXufWBCTPBPbL86JSct4XvXfZPMA=
 github.com/coreos/go-semver v0.3.0 h1:wkHLiw0WNATZnSG7epLsujiMCgPAc9xhjJ4tgnAxmfM=
 github.com/coreos/go-semver v0.3.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-systemd v0.0.0-20181031085051-9002847aa142 h1:3jFq2xL4ZajGK4aZY8jz+DAF0FHjI51BXjjSwCzS1Dk=
