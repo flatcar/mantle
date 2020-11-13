@@ -482,7 +482,7 @@ google.golang.org/api/storage/v1
 google.golang.org/api/transport/cert
 google.golang.org/api/transport/http
 google.golang.org/api/transport/http/internal/propagation
-# google.golang.org/appengine v1.6.6
+# google.golang.org/appengine v1.6.7
 google.golang.org/appengine
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/app_identity
