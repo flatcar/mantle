@@ -6,52 +6,28 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	"honnef.co/go/tools/lint"
+	"honnef.co/go/tools/code"
+	"honnef.co/go/tools/config"
+	"honnef.co/go/tools/edit"
+	"honnef.co/go/tools/internal/passes/buildir"
+	"honnef.co/go/tools/ir"
 	. "honnef.co/go/tools/lint/lintdsl"
-	"honnef.co/go/tools/ssa"
+	"honnef.co/go/tools/pattern"
+	"honnef.co/go/tools/report"
 
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/inspect"
+	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/go/types/typeutil"
 )
 
-type Checker struct {
-	CheckGenerated bool
-}
-
-func NewChecker() *Checker {
-	return &Checker{}
-}
-
-func (*Checker) Name() string              { return "stylecheck" }
-func (*Checker) Prefix() string            { return "ST" }
-func (c *Checker) Init(prog *lint.Program) {}
-
-func (c *Checker) Checks() []lint.Check {
-	return []lint.Check{
-		{ID: "ST1000", FilterGenerated: false, Fn: c.CheckPackageComment},
-		{ID: "ST1001", FilterGenerated: true, Fn: c.CheckDotImports},
-		// {ID: "ST1002", FilterGenerated: true, Fn: c.CheckBlankImports},
-		{ID: "ST1003", FilterGenerated: true, Fn: c.CheckNames},
-		// {ID: "ST1004", FilterGenerated: false, Fn: nil, 			  },
-		{ID: "ST1005", FilterGenerated: false, Fn: c.CheckErrorStrings},
-		{ID: "ST1006", FilterGenerated: false, Fn: c.CheckReceiverNames},
-		// {ID: "ST1007", FilterGenerated: true, Fn: c.CheckIncDec},
-		{ID: "ST1008", FilterGenerated: false, Fn: c.CheckErrorReturn},
-		// {ID: "ST1009", FilterGenerated: false, Fn: c.CheckUnexportedReturn},
-		// {ID: "ST1010", FilterGenerated: false, Fn: c.CheckContextFirstArg},
-		{ID: "ST1011", FilterGenerated: false, Fn: c.CheckTimeNames},
-		{ID: "ST1012", FilterGenerated: false, Fn: c.CheckErrorVarNames},
-		{ID: "ST1013", FilterGenerated: true, Fn: c.CheckHTTPStatusCodes},
-		{ID: "ST1015", FilterGenerated: true, Fn: c.CheckDefaultCaseOrder},
-		{ID: "ST1016", FilterGenerated: false, Fn: c.CheckReceiverNamesIdentical},
-	}
-}
-
-func (c *Checker) CheckPackageComment(j *lint.Job) {
+func CheckPackageComment(pass *analysis.Pass) (interface{}, error) {
 	// - At least one file in a non-main package should have a package comment
 	//
 	// - The comment should be of the form
@@ -60,61 +36,89 @@ func (c *Checker) CheckPackageComment(j *lint.Job) {
 	// which case they get appended. But that doesn't happen a lot in
 	// the real world.
 
-	for _, pkg := range j.Program.InitialPackages {
-		if pkg.Name == "main" {
+	if pass.Pkg.Name() == "main" {
+		return nil, nil
+	}
+	hasDocs := false
+	for _, f := range pass.Files {
+		if code.IsInTest(pass, f) {
 			continue
 		}
-		hasDocs := false
-		for _, f := range pkg.Syntax {
-			if IsInTest(j, f) {
+		if f.Doc != nil && len(f.Doc.List) > 0 {
+			hasDocs = true
+			prefix := "Package " + f.Name.Name + " "
+			if !strings.HasPrefix(strings.TrimSpace(f.Doc.Text()), prefix) {
+				report.Report(pass, f.Doc, fmt.Sprintf(`package comment should be of the form "%s..."`, prefix))
+			}
+			f.Doc.Text()
+		}
+	}
+
+	if !hasDocs {
+		for _, f := range pass.Files {
+			if code.IsInTest(pass, f) {
 				continue
 			}
-			if f.Doc != nil && len(f.Doc.List) > 0 {
-				hasDocs = true
-				prefix := "Package " + f.Name.Name + " "
-				if !strings.HasPrefix(strings.TrimSpace(f.Doc.Text()), prefix) {
-					j.Errorf(f.Doc, `package comment should be of the form "%s..."`, prefix)
-				}
-				f.Doc.Text()
-			}
+			report.Report(pass, f, "at least one file in a package should have a package comment", report.ShortRange())
 		}
+	}
+	return nil, nil
+}
 
-		if !hasDocs {
-			for _, f := range pkg.Syntax {
-				if IsInTest(j, f) {
-					continue
+func CheckDotImports(pass *analysis.Pass) (interface{}, error) {
+	for _, f := range pass.Files {
+	imports:
+		for _, imp := range f.Imports {
+			path := imp.Path.Value
+			path = path[1 : len(path)-1]
+			for _, w := range config.For(pass).DotImportWhitelist {
+				if w == path {
+					continue imports
 				}
-				j.Errorf(f, "at least one file in a package should have a package comment")
+			}
+
+			if imp.Name != nil && imp.Name.Name == "." && !code.IsInTest(pass, f) {
+				report.Report(pass, imp, "should not use dot imports", report.FilterGenerated())
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckDotImports(j *lint.Job) {
-	for _, pkg := range j.Program.InitialPackages {
-		for _, f := range pkg.Syntax {
-		imports:
-			for _, imp := range f.Imports {
-				path := imp.Path.Value
-				path = path[1 : len(path)-1]
-				for _, w := range pkg.Config.DotImportWhitelist {
-					if w == path {
-						continue imports
-					}
-				}
+func CheckDuplicatedImports(pass *analysis.Pass) (interface{}, error) {
+	for _, f := range pass.Files {
+		// Collect all imports by their import path
+		imports := make(map[string][]*ast.ImportSpec, len(f.Imports))
+		for _, imp := range f.Imports {
+			imports[imp.Path.Value] = append(imports[imp.Path.Value], imp)
+		}
 
-				if imp.Name != nil && imp.Name.Name == "." && !IsInTest(j, f) {
-					j.Errorf(imp, "should not use dot imports")
+		for path, value := range imports {
+			if path[1:len(path)-1] == "unsafe" {
+				// Don't flag unsafe. Cgo generated code imports
+				// unsafe using the blank identifier, and most
+				// user-written cgo code also imports unsafe
+				// explicitly.
+				continue
+			}
+			// If there's more than one import per path, we flag that
+			if len(value) > 1 {
+				s := fmt.Sprintf("package %s is being imported more than once", path)
+				opts := []report.Option{report.FilterGenerated()}
+				for _, imp := range value[1:] {
+					opts = append(opts, report.Related(imp, fmt.Sprintf("other import of %s", path)))
 				}
+				report.Report(pass, value[0], s, opts...)
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckBlankImports(j *lint.Job) {
-	fset := j.Program.Fset()
-	for _, f := range j.Program.Files {
-		if IsInMain(j, f) || IsInTest(j, f) {
+func CheckBlankImports(pass *analysis.Pass) (interface{}, error) {
+	fset := pass.Fset
+	for _, f := range pass.Files {
+		if code.IsMainLike(pass) || code.IsInTest(pass, f) {
 			continue
 		}
 
@@ -148,7 +152,7 @@ func (c *Checker) CheckBlankImports(j *lint.Job) {
 		for i, imp := range f.Imports {
 			pos := fset.Position(imp.Pos())
 
-			if !IsBlank(imp.Name) {
+			if !code.IsBlank(imp.Name) {
 				continue
 			}
 			// Only flag the first blank import in a group of imports,
@@ -157,33 +161,34 @@ func (c *Checker) CheckBlankImports(j *lint.Job) {
 			if i > 0 {
 				prev := f.Imports[i-1]
 				prevPos := fset.Position(prev.Pos())
-				if pos.Line-1 == prevPos.Line && IsBlank(prev.Name) {
+				if pos.Line-1 == prevPos.Line && code.IsBlank(prev.Name) {
 					continue
 				}
 			}
 
 			if imp.Doc == nil && imp.Comment == nil && !skip[imp] {
-				j.Errorf(imp, "a blank import should be only in a main or test package, or have a comment justifying it")
+				report.Report(pass, imp, "a blank import should be only in a main or test package, or have a comment justifying it")
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckIncDec(j *lint.Job) {
+func CheckIncDec(pass *analysis.Pass) (interface{}, error) {
 	// TODO(dh): this can be noisy for function bodies that look like this:
 	// 	x += 3
 	// 	...
 	// 	x += 2
 	// 	...
 	// 	x += 1
-	fn := func(node ast.Node) bool {
-		assign, ok := node.(*ast.AssignStmt)
-		if !ok || (assign.Tok != token.ADD_ASSIGN && assign.Tok != token.SUB_ASSIGN) {
-			return true
+	fn := func(node ast.Node) {
+		assign := node.(*ast.AssignStmt)
+		if assign.Tok != token.ADD_ASSIGN && assign.Tok != token.SUB_ASSIGN {
+			return
 		}
 		if (len(assign.Lhs) != 1 || len(assign.Rhs) != 1) ||
-			!IsIntLiteral(assign.Rhs[0], "1") {
-			return true
+			!code.IsIntLiteral(assign.Rhs[0], "1") {
+			return
 		}
 
 		suffix := ""
@@ -194,17 +199,15 @@ func (c *Checker) CheckIncDec(j *lint.Job) {
 			suffix = "--"
 		}
 
-		j.Errorf(assign, "should replace %s with %s%s", Render(j, assign), Render(j, assign.Lhs[0]), suffix)
-		return true
+		report.Report(pass, assign, fmt.Sprintf("should replace %s with %s%s", report.Render(pass, assign), report.Render(pass, assign.Lhs[0]), suffix))
 	}
-	for _, f := range j.Program.Files {
-		ast.Inspect(f, fn)
-	}
+	code.Preorder(pass, fn, (*ast.AssignStmt)(nil))
+	return nil, nil
 }
 
-func (c *Checker) CheckErrorReturn(j *lint.Job) {
+func CheckErrorReturn(pass *analysis.Pass) (interface{}, error) {
 fnLoop:
-	for _, fn := range j.Program.InitialFunctions {
+	for _, fn := range pass.ResultOf[buildir.Analyzer].(*buildir.IR).SrcFuncs {
 		sig := fn.Type().(*types.Signature)
 		rets := sig.Results()
 		if rets == nil || rets.Len() < 2 {
@@ -218,103 +221,110 @@ fnLoop:
 		}
 		for i := rets.Len() - 2; i >= 0; i-- {
 			if rets.At(i).Type() == types.Universe.Lookup("error").Type() {
-				j.Errorf(rets.At(i), "error should be returned as the last argument")
+				report.Report(pass, rets.At(i), "error should be returned as the last argument", report.ShortRange())
 				continue fnLoop
 			}
 		}
 	}
+	return nil, nil
 }
 
 // CheckUnexportedReturn checks that exported functions on exported
 // types do not return unexported types.
-func (c *Checker) CheckUnexportedReturn(j *lint.Job) {
-	for _, fn := range j.Program.InitialFunctions {
+func CheckUnexportedReturn(pass *analysis.Pass) (interface{}, error) {
+	for _, fn := range pass.ResultOf[buildir.Analyzer].(*buildir.IR).SrcFuncs {
 		if fn.Synthetic != "" || fn.Parent() != nil {
 			continue
 		}
-		if !ast.IsExported(fn.Name()) || IsInMain(j, fn) || IsInTest(j, fn) {
+		if !ast.IsExported(fn.Name()) || code.IsMain(pass) || code.IsInTest(pass, fn) {
 			continue
 		}
 		sig := fn.Type().(*types.Signature)
-		if sig.Recv() != nil && !ast.IsExported(Dereference(sig.Recv().Type()).(*types.Named).Obj().Name()) {
+		if sig.Recv() != nil && !ast.IsExported(code.Dereference(sig.Recv().Type()).(*types.Named).Obj().Name()) {
 			continue
 		}
 		res := sig.Results()
 		for i := 0; i < res.Len(); i++ {
-			if named, ok := DereferenceR(res.At(i).Type()).(*types.Named); ok &&
+			if named, ok := code.DereferenceR(res.At(i).Type()).(*types.Named); ok &&
 				!ast.IsExported(named.Obj().Name()) &&
 				named != types.Universe.Lookup("error").Type() {
-				j.Errorf(fn, "should not return unexported type")
+				report.Report(pass, fn, "should not return unexported type")
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckReceiverNames(j *lint.Job) {
-	for _, pkg := range j.Program.InitialPackages {
-		for _, m := range pkg.SSA.Members {
-			if T, ok := m.Object().(*types.TypeName); ok {
-				ms := typeutil.IntuitiveMethodSet(T.Type(), nil)
-				for _, sel := range ms {
-					fn := sel.Obj().(*types.Func)
-					recv := fn.Type().(*types.Signature).Recv()
-					if Dereference(recv.Type()) != T.Type() {
-						// skip embedded methods
-						continue
-					}
-					if recv.Name() == "self" || recv.Name() == "this" {
-						j.Errorf(recv, `receiver name should be a reflection of its identity; don't use generic names such as "this" or "self"`)
-					}
-					if recv.Name() == "_" {
-						j.Errorf(recv, "receiver name should not be an underscore, omit the name if it is unused")
-					}
+func CheckReceiverNames(pass *analysis.Pass) (interface{}, error) {
+	irpkg := pass.ResultOf[buildir.Analyzer].(*buildir.IR).Pkg
+	for _, m := range irpkg.Members {
+		if T, ok := m.Object().(*types.TypeName); ok && !T.IsAlias() {
+			ms := typeutil.IntuitiveMethodSet(T.Type(), nil)
+			for _, sel := range ms {
+				fn := sel.Obj().(*types.Func)
+				recv := fn.Type().(*types.Signature).Recv()
+				if code.Dereference(recv.Type()) != T.Type() {
+					// skip embedded methods
+					continue
+				}
+				if recv.Name() == "self" || recv.Name() == "this" {
+					report.Report(pass, recv, `receiver name should be a reflection of its identity; don't use generic names such as "this" or "self"`, report.FilterGenerated())
+				}
+				if recv.Name() == "_" {
+					report.Report(pass, recv, "receiver name should not be an underscore, omit the name if it is unused", report.FilterGenerated())
 				}
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckReceiverNamesIdentical(j *lint.Job) {
-	for _, pkg := range j.Program.InitialPackages {
-		for _, m := range pkg.SSA.Members {
-			names := map[string]int{}
+func CheckReceiverNamesIdentical(pass *analysis.Pass) (interface{}, error) {
+	irpkg := pass.ResultOf[buildir.Analyzer].(*buildir.IR).Pkg
+	for _, m := range irpkg.Members {
+		names := map[string]int{}
 
-			var firstFn *types.Func
-			if T, ok := m.Object().(*types.TypeName); ok {
-				ms := typeutil.IntuitiveMethodSet(T.Type(), nil)
-				for _, sel := range ms {
-					fn := sel.Obj().(*types.Func)
-					recv := fn.Type().(*types.Signature).Recv()
-					if Dereference(recv.Type()) != T.Type() {
-						// skip embedded methods
-						continue
-					}
-					if firstFn == nil {
-						firstFn = fn
-					}
-					if recv.Name() != "" && recv.Name() != "_" {
-						names[recv.Name()]++
-					}
+		var firstFn *types.Func
+		if T, ok := m.Object().(*types.TypeName); ok && !T.IsAlias() {
+			ms := typeutil.IntuitiveMethodSet(T.Type(), nil)
+			for _, sel := range ms {
+				fn := sel.Obj().(*types.Func)
+				recv := fn.Type().(*types.Signature).Recv()
+				if code.IsGenerated(pass, recv.Pos()) {
+					// Don't concern ourselves with methods in generated code
+					continue
 				}
-			}
-
-			if len(names) > 1 {
-				var seen []string
-				for name, count := range names {
-					seen = append(seen, fmt.Sprintf("%dx %q", count, name))
+				if code.Dereference(recv.Type()) != T.Type() {
+					// skip embedded methods
+					continue
 				}
-
-				j.Errorf(firstFn, "methods on the same type should have the same receiver name (seen %s)", strings.Join(seen, ", "))
+				if firstFn == nil {
+					firstFn = fn
+				}
+				if recv.Name() != "" && recv.Name() != "_" {
+					names[recv.Name()]++
+				}
 			}
 		}
+
+		if len(names) > 1 {
+			var seen []string
+			for name, count := range names {
+				seen = append(seen, fmt.Sprintf("%dx %q", count, name))
+			}
+			sort.Strings(seen)
+
+			report.Report(pass, firstFn, fmt.Sprintf("methods on the same type should have the same receiver name (seen %s)", strings.Join(seen, ", ")))
+		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckContextFirstArg(j *lint.Job) {
+func CheckContextFirstArg(pass *analysis.Pass) (interface{}, error) {
 	// TODO(dh): this check doesn't apply to test helpers. Example from the stdlib:
 	// 	func helperCommandContext(t *testing.T, ctx context.Context, s ...string) (cmd *exec.Cmd) {
 fnLoop:
-	for _, fn := range j.Program.InitialFunctions {
+	for _, fn := range pass.ResultOf[buildir.Analyzer].(*buildir.IR).SrcFuncs {
 		if fn.Synthetic != "" || fn.Parent() != nil {
 			continue
 		}
@@ -328,26 +338,29 @@ fnLoop:
 		for i := 1; i < params.Len(); i++ {
 			param := params.At(i)
 			if types.TypeString(param.Type(), nil) == "context.Context" {
-				j.Errorf(param, "context.Context should be the first argument of a function")
+				report.Report(pass, param, "context.Context should be the first argument of a function", report.ShortRange())
 				continue fnLoop
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckErrorStrings(j *lint.Job) {
-	fnNames := map[*ssa.Package]map[string]bool{}
-	for _, fn := range j.Program.InitialFunctions {
-		m := fnNames[fn.Package()]
-		if m == nil {
-			m = map[string]bool{}
-			fnNames[fn.Package()] = m
+func CheckErrorStrings(pass *analysis.Pass) (interface{}, error) {
+	objNames := map[*ir.Package]map[string]bool{}
+	irpkg := pass.ResultOf[buildir.Analyzer].(*buildir.IR).Pkg
+	objNames[irpkg] = map[string]bool{}
+	for _, m := range irpkg.Members {
+		if typ, ok := m.(*ir.Type); ok {
+			objNames[irpkg][typ.Name()] = true
 		}
-		m[fn.Name()] = true
+	}
+	for _, fn := range pass.ResultOf[buildir.Analyzer].(*buildir.IR).SrcFuncs {
+		objNames[fn.Package()][fn.Name()] = true
 	}
 
-	for _, fn := range j.Program.InitialFunctions {
-		if IsInTest(j, fn) {
+	for _, fn := range pass.ResultOf[buildir.Analyzer].(*buildir.IR).SrcFuncs {
+		if code.IsInTest(pass, fn) {
 			// We don't care about malformed error messages in tests;
 			// they're usually for direct human consumption, not part
 			// of an API
@@ -356,15 +369,15 @@ func (c *Checker) CheckErrorStrings(j *lint.Job) {
 		for _, block := range fn.Blocks {
 		instrLoop:
 			for _, ins := range block.Instrs {
-				call, ok := ins.(*ssa.Call)
+				call, ok := ins.(*ir.Call)
 				if !ok {
 					continue
 				}
-				if !IsCallTo(call.Common(), "errors.New") && !IsCallTo(call.Common(), "fmt.Errorf") {
+				if !code.IsCallToAny(call.Common(), "errors.New", "fmt.Errorf") {
 					continue
 				}
 
-				k, ok := call.Common().Args[0].(*ssa.Const)
+				k, ok := call.Common().Args[0].(*ir.Const)
 				if !ok {
 					continue
 				}
@@ -375,7 +388,7 @@ func (c *Checker) CheckErrorStrings(j *lint.Job) {
 				}
 				switch s[len(s)-1] {
 				case '.', ':', '!', '\n':
-					j.Errorf(call, "error strings should not end with punctuation or a newline")
+					report.Report(pass, call, "error strings should not end with punctuation or a newline")
 				}
 				idx := strings.IndexByte(s, ' ')
 				if idx == -1 {
@@ -397,9 +410,13 @@ func (c *Checker) CheckErrorStrings(j *lint.Job) {
 					}
 				}
 
+				if strings.ContainsRune(word, '(') {
+					// Might be a function call
+					continue instrLoop
+				}
 				word = strings.TrimRightFunc(word, func(r rune) bool { return unicode.IsPunct(r) })
-				if fnNames[fn.Package()][word] {
-					// Word is probably the name of a function in this package
+				if objNames[fn.Package()][word] {
+					// Word is probably the name of a function or type in this package
 					continue
 				}
 				// First word in error starts with a capital
@@ -409,13 +426,14 @@ func (c *Checker) CheckErrorStrings(j *lint.Job) {
 				//
 				// It could still be a proper noun, though.
 
-				j.Errorf(call, "error strings should not be capitalized")
+				report.Report(pass, call, "error strings should not be capitalized")
 			}
 		}
 	}
+	return nil, nil
 }
 
-func (c *Checker) CheckTimeNames(j *lint.Job) {
+func CheckTimeNames(pass *analysis.Pass) (interface{}, error) {
 	suffixes := []string{
 		"Sec", "Secs", "Seconds",
 		"Msec", "Msecs",
@@ -423,38 +441,52 @@ func (c *Checker) CheckTimeNames(j *lint.Job) {
 		"Usec", "Usecs", "Microseconds",
 		"MS", "Ms",
 	}
-	fn := func(T types.Type, names []*ast.Ident) {
-		if !IsType(T, "time.Duration") && !IsType(T, "*time.Duration") {
-			return
-		}
+	fn := func(names []*ast.Ident) {
 		for _, name := range names {
+			if _, ok := pass.TypesInfo.Defs[name]; !ok {
+				continue
+			}
+			T := pass.TypesInfo.TypeOf(name)
+			if !code.IsType(T, "time.Duration") && !code.IsType(T, "*time.Duration") {
+				continue
+			}
 			for _, suffix := range suffixes {
 				if strings.HasSuffix(name.Name, suffix) {
-					j.Errorf(name, "var %s is of type %v; don't use unit-specific suffix %q", name.Name, T, suffix)
+					report.Report(pass, name, fmt.Sprintf("var %s is of type %v; don't use unit-specific suffix %q", name.Name, T, suffix))
 					break
 				}
 			}
 		}
 	}
-	for _, f := range j.Program.Files {
-		ast.Inspect(f, func(node ast.Node) bool {
-			switch node := node.(type) {
-			case *ast.ValueSpec:
-				T := TypeOf(j, node.Type)
-				fn(T, node.Names)
-			case *ast.FieldList:
-				for _, field := range node.List {
-					T := TypeOf(j, field.Type)
-					fn(T, field.Names)
+
+	fn2 := func(node ast.Node) {
+		switch node := node.(type) {
+		case *ast.ValueSpec:
+			fn(node.Names)
+		case *ast.FieldList:
+			for _, field := range node.List {
+				fn(field.Names)
+			}
+		case *ast.AssignStmt:
+			if node.Tok != token.DEFINE {
+				break
+			}
+			var names []*ast.Ident
+			for _, lhs := range node.Lhs {
+				if lhs, ok := lhs.(*ast.Ident); ok {
+					names = append(names, lhs)
 				}
 			}
-			return true
-		})
+			fn(names)
+		}
 	}
+
+	code.Preorder(pass, fn2, (*ast.ValueSpec)(nil), (*ast.FieldList)(nil), (*ast.AssignStmt)(nil))
+	return nil, nil
 }
 
-func (c *Checker) CheckErrorVarNames(j *lint.Job) {
-	for _, f := range j.Program.Files {
+func CheckErrorVarNames(pass *analysis.Pass) (interface{}, error) {
+	for _, f := range pass.Files {
 		for _, decl := range f.Decls {
 			gen, ok := decl.(*ast.GenDecl)
 			if !ok || gen.Tok != token.VAR {
@@ -468,21 +500,27 @@ func (c *Checker) CheckErrorVarNames(j *lint.Job) {
 
 				for i, name := range spec.Names {
 					val := spec.Values[i]
-					if !IsCallToAST(j, val, "errors.New") && !IsCallToAST(j, val, "fmt.Errorf") {
+					if !code.IsCallToAnyAST(pass, val, "errors.New", "fmt.Errorf") {
 						continue
 					}
 
+					if pass.Pkg.Path() == "net/http" && strings.HasPrefix(name.Name, "http2err") {
+						// special case for internal variable names of
+						// bundled HTTP 2 code in net/http
+						continue
+					}
 					prefix := "err"
 					if name.IsExported() {
 						prefix = "Err"
 					}
 					if !strings.HasPrefix(name.Name, prefix) {
-						j.Errorf(name, "error var %s should have name of the form %sFoo", name.Name, prefix)
+						report.Report(pass, name, fmt.Sprintf("error var %s should have name of the form %sFoo", name.Name, prefix))
 					}
 				}
 			}
 		}
 	}
+	return nil, nil
 }
 
 var httpStatusCodes = map[int]string{
@@ -547,72 +585,334 @@ var httpStatusCodes = map[int]string{
 	511: "StatusNetworkAuthenticationRequired",
 }
 
-func (c *Checker) CheckHTTPStatusCodes(j *lint.Job) {
-	for _, pkg := range j.Program.InitialPackages {
-		whitelist := map[string]bool{}
-		for _, code := range pkg.Config.HTTPStatusCodeWhitelist {
-			whitelist[code] = true
-		}
-		fn := func(node ast.Node) bool {
-			call, ok := node.(*ast.CallExpr)
-			if !ok {
-				return true
-			}
-
-			var arg int
-			switch CallNameAST(j, call) {
-			case "net/http.Error":
-				arg = 2
-			case "net/http.Redirect":
-				arg = 3
-			case "net/http.StatusText":
-				arg = 0
-			case "net/http.RedirectHandler":
-				arg = 1
-			default:
-				return true
-			}
-			lit, ok := call.Args[arg].(*ast.BasicLit)
-			if !ok {
-				return true
-			}
-			if whitelist[lit.Value] {
-				return true
-			}
-
-			n, err := strconv.Atoi(lit.Value)
-			if err != nil {
-				return true
-			}
-			s, ok := httpStatusCodes[n]
-			if !ok {
-				return true
-			}
-			j.Errorf(lit, "should use constant http.%s instead of numeric literal %d", s, n)
-			return true
-		}
-		for _, f := range pkg.Syntax {
-			ast.Inspect(f, fn)
-		}
+func CheckHTTPStatusCodes(pass *analysis.Pass) (interface{}, error) {
+	whitelist := map[string]bool{}
+	for _, code := range config.For(pass).HTTPStatusCodeWhitelist {
+		whitelist[code] = true
 	}
+	fn := func(node ast.Node) {
+		call := node.(*ast.CallExpr)
+
+		var arg int
+		switch code.CallNameAST(pass, call) {
+		case "net/http.Error":
+			arg = 2
+		case "net/http.Redirect":
+			arg = 3
+		case "net/http.StatusText":
+			arg = 0
+		case "net/http.RedirectHandler":
+			arg = 1
+		default:
+			return
+		}
+		lit, ok := call.Args[arg].(*ast.BasicLit)
+		if !ok {
+			return
+		}
+		if whitelist[lit.Value] {
+			return
+		}
+
+		n, err := strconv.Atoi(lit.Value)
+		if err != nil {
+			return
+		}
+		s, ok := httpStatusCodes[n]
+		if !ok {
+			return
+		}
+		report.Report(pass, lit, fmt.Sprintf("should use constant http.%s instead of numeric literal %d", s, n),
+			report.FilterGenerated(),
+			report.Fixes(edit.Fix(fmt.Sprintf("use http.%s instead of %d", s, n), edit.ReplaceWithString(pass.Fset, lit, "http."+s))))
+	}
+	code.Preorder(pass, fn, (*ast.CallExpr)(nil))
+	return nil, nil
 }
 
-func (c *Checker) CheckDefaultCaseOrder(j *lint.Job) {
-	fn := func(node ast.Node) bool {
-		stmt, ok := node.(*ast.SwitchStmt)
-		if !ok {
-			return true
-		}
+func CheckDefaultCaseOrder(pass *analysis.Pass) (interface{}, error) {
+	fn := func(node ast.Node) {
+		stmt := node.(*ast.SwitchStmt)
 		list := stmt.Body.List
 		for i, c := range list {
 			if c.(*ast.CaseClause).List == nil && i != 0 && i != len(list)-1 {
-				j.Errorf(c, "default case should be first or last in switch statement")
+				report.Report(pass, c, "default case should be first or last in switch statement", report.FilterGenerated())
 				break
 			}
 		}
-		return true
 	}
-	for _, f := range j.Program.Files {
-		ast.Inspect(f, fn)
+	code.Preorder(pass, fn, (*ast.SwitchStmt)(nil))
+	return nil, nil
+}
+
+var (
+	checkYodaConditionsQ = pattern.MustParse(`(BinaryExpr left@(BasicLit _ _) tok@(Or "==" "!=") right@(Not (BasicLit _ _)))`)
+	checkYodaConditionsR = pattern.MustParse(`(BinaryExpr right tok left)`)
+)
+
+func CheckYodaConditions(pass *analysis.Pass) (interface{}, error) {
+	fn := func(node ast.Node) {
+		if _, edits, ok := MatchAndEdit(pass, checkYodaConditionsQ, checkYodaConditionsR, node); ok {
+			report.Report(pass, node, "don't use Yoda conditions",
+				report.FilterGenerated(),
+				report.Fixes(edit.Fix("un-Yoda-fy", edits...)))
+		}
 	}
+	code.Preorder(pass, fn, (*ast.BinaryExpr)(nil))
+	return nil, nil
+}
+
+func CheckInvisibleCharacters(pass *analysis.Pass) (interface{}, error) {
+	fn := func(node ast.Node) {
+		lit := node.(*ast.BasicLit)
+		if lit.Kind != token.STRING {
+			return
+		}
+
+		type invalid struct {
+			r   rune
+			off int
+		}
+		var invalids []invalid
+		hasFormat := false
+		hasControl := false
+		for off, r := range lit.Value {
+			if unicode.Is(unicode.Cf, r) {
+				invalids = append(invalids, invalid{r, off})
+				hasFormat = true
+			} else if unicode.Is(unicode.Cc, r) && r != '\n' && r != '\t' && r != '\r' {
+				invalids = append(invalids, invalid{r, off})
+				hasControl = true
+			}
+		}
+
+		switch len(invalids) {
+		case 0:
+			return
+		case 1:
+			var kind string
+			if hasFormat {
+				kind = "format"
+			} else if hasControl {
+				kind = "control"
+			} else {
+				panic("unreachable")
+			}
+
+			r := invalids[0]
+			msg := fmt.Sprintf("string literal contains the Unicode %s character %U, consider using the %q escape sequence instead", kind, r.r, r.r)
+
+			replacement := strconv.QuoteRune(r.r)
+			replacement = replacement[1 : len(replacement)-1]
+			edit := analysis.SuggestedFix{
+				Message: fmt.Sprintf("replace %s character %U with %q", kind, r.r, r.r),
+				TextEdits: []analysis.TextEdit{{
+					Pos:     lit.Pos() + token.Pos(r.off),
+					End:     lit.Pos() + token.Pos(r.off) + token.Pos(utf8.RuneLen(r.r)),
+					NewText: []byte(replacement),
+				}},
+			}
+			delete := analysis.SuggestedFix{
+				Message: fmt.Sprintf("delete %s character %U", kind, r),
+				TextEdits: []analysis.TextEdit{{
+					Pos: lit.Pos() + token.Pos(r.off),
+					End: lit.Pos() + token.Pos(r.off) + token.Pos(utf8.RuneLen(r.r)),
+				}},
+			}
+			report.Report(pass, lit, msg, report.Fixes(edit, delete))
+		default:
+			var kind string
+			if hasFormat && hasControl {
+				kind = "format and control"
+			} else if hasFormat {
+				kind = "format"
+			} else if hasControl {
+				kind = "control"
+			} else {
+				panic("unreachable")
+			}
+
+			msg := fmt.Sprintf("string literal contains Unicode %s characters, consider using escape sequences instead", kind)
+			var edits []analysis.TextEdit
+			var deletions []analysis.TextEdit
+			for _, r := range invalids {
+				replacement := strconv.QuoteRune(r.r)
+				replacement = replacement[1 : len(replacement)-1]
+				edits = append(edits, analysis.TextEdit{
+					Pos:     lit.Pos() + token.Pos(r.off),
+					End:     lit.Pos() + token.Pos(r.off) + token.Pos(utf8.RuneLen(r.r)),
+					NewText: []byte(replacement),
+				})
+				deletions = append(deletions, analysis.TextEdit{
+					Pos: lit.Pos() + token.Pos(r.off),
+					End: lit.Pos() + token.Pos(r.off) + token.Pos(utf8.RuneLen(r.r)),
+				})
+			}
+			edit := analysis.SuggestedFix{
+				Message:   fmt.Sprintf("replace all %s characters with escape sequences", kind),
+				TextEdits: edits,
+			}
+			delete := analysis.SuggestedFix{
+				Message:   fmt.Sprintf("delete all %s characters", kind),
+				TextEdits: deletions,
+			}
+			report.Report(pass, lit, msg, report.Fixes(edit, delete))
+		}
+	}
+	code.Preorder(pass, fn, (*ast.BasicLit)(nil))
+	return nil, nil
+}
+
+func CheckExportedFunctionDocs(pass *analysis.Pass) (interface{}, error) {
+	fn := func(node ast.Node) {
+		if code.IsInTest(pass, node) {
+			return
+		}
+
+		decl := node.(*ast.FuncDecl)
+		if decl.Doc == nil {
+			return
+		}
+		if !ast.IsExported(decl.Name.Name) {
+			return
+		}
+		kind := "function"
+		if decl.Recv != nil {
+			kind = "method"
+			switch T := decl.Recv.List[0].Type.(type) {
+			case *ast.StarExpr:
+				if !ast.IsExported(T.X.(*ast.Ident).Name) {
+					return
+				}
+			case *ast.Ident:
+				if !ast.IsExported(T.Name) {
+					return
+				}
+			default:
+				ExhaustiveTypeSwitch(T)
+			}
+		}
+		prefix := decl.Name.Name + " "
+		if !strings.HasPrefix(decl.Doc.Text(), prefix) {
+			report.Report(pass, decl.Doc, fmt.Sprintf(`comment on exported %s %s should be of the form "%s..."`, kind, decl.Name.Name, prefix), report.FilterGenerated())
+		}
+	}
+
+	code.Preorder(pass, fn, (*ast.FuncDecl)(nil))
+	return nil, nil
+}
+
+func CheckExportedTypeDocs(pass *analysis.Pass) (interface{}, error) {
+	var genDecl *ast.GenDecl
+	fn := func(node ast.Node, push bool) bool {
+		if !push {
+			genDecl = nil
+			return false
+		}
+		if code.IsInTest(pass, node) {
+			return false
+		}
+
+		switch node := node.(type) {
+		case *ast.GenDecl:
+			if node.Tok == token.IMPORT {
+				return false
+			}
+			genDecl = node
+			return true
+		case *ast.TypeSpec:
+			if !ast.IsExported(node.Name.Name) {
+				return false
+			}
+
+			doc := node.Doc
+			if doc == nil {
+				if len(genDecl.Specs) != 1 {
+					// more than one spec in the GenDecl, don't validate the
+					// docstring
+					return false
+				}
+				if genDecl.Lparen.IsValid() {
+					// 'type ( T )' is weird, don't guess the user's intention
+					return false
+				}
+				doc = genDecl.Doc
+				if doc == nil {
+					return false
+				}
+			}
+
+			s := doc.Text()
+			articles := [...]string{"A", "An", "The"}
+			for _, a := range articles {
+				if strings.HasPrefix(s, a+" ") {
+					s = s[len(a)+1:]
+					break
+				}
+			}
+			if !strings.HasPrefix(s, node.Name.Name+" ") {
+				report.Report(pass, doc, fmt.Sprintf(`comment on exported type %s should be of the form "%s ..." (with optional leading article)`, node.Name.Name, node.Name.Name), report.FilterGenerated())
+			}
+			return false
+		case *ast.FuncLit, *ast.FuncDecl:
+			return false
+		default:
+			ExhaustiveTypeSwitch(node)
+			return false
+		}
+	}
+
+	pass.ResultOf[inspect.Analyzer].(*inspector.Inspector).Nodes([]ast.Node{(*ast.GenDecl)(nil), (*ast.TypeSpec)(nil), (*ast.FuncLit)(nil), (*ast.FuncDecl)(nil)}, fn)
+	return nil, nil
+}
+
+func CheckExportedVarDocs(pass *analysis.Pass) (interface{}, error) {
+	var genDecl *ast.GenDecl
+	fn := func(node ast.Node, push bool) bool {
+		if !push {
+			genDecl = nil
+			return false
+		}
+		if code.IsInTest(pass, node) {
+			return false
+		}
+
+		switch node := node.(type) {
+		case *ast.GenDecl:
+			if node.Tok == token.IMPORT {
+				return false
+			}
+			genDecl = node
+			return true
+		case *ast.ValueSpec:
+			if genDecl.Lparen.IsValid() || len(node.Names) > 1 {
+				// Don't try to guess the user's intention
+				return false
+			}
+			name := node.Names[0].Name
+			if !ast.IsExported(name) {
+				return false
+			}
+			if genDecl.Doc == nil {
+				return false
+			}
+			prefix := name + " "
+			if !strings.HasPrefix(genDecl.Doc.Text(), prefix) {
+				kind := "var"
+				if genDecl.Tok == token.CONST {
+					kind = "const"
+				}
+				report.Report(pass, genDecl.Doc, fmt.Sprintf(`comment on exported %s %s should be of the form "%s..."`, kind, name, prefix), report.FilterGenerated())
+			}
+			return false
+		case *ast.FuncLit, *ast.FuncDecl:
+			return false
+		default:
+			ExhaustiveTypeSwitch(node)
+			return false
+		}
+	}
+
+	pass.ResultOf[inspect.Analyzer].(*inspector.Inspector).Nodes([]ast.Node{(*ast.GenDecl)(nil), (*ast.ValueSpec)(nil), (*ast.FuncLit)(nil), (*ast.FuncDecl)(nil)}, fn)
+	return nil, nil
 }
