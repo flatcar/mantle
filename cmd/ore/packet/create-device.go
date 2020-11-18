@@ -43,6 +43,8 @@ func init() {
 	cmdCreateDevice.Flags().StringVar(&options.Plan, "plan", "", "plan slug (default board-dependent, e.g. \"baremetal_0\")")
 	cmdCreateDevice.Flags().StringVar(&options.Board, "board", "amd64-usr", "Container Linux board")
 	cmdCreateDevice.Flags().StringVar(&options.InstallerImageBaseURL, "installer-image-base-url", "", "installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
+	cmdCreateDevice.Flags().StringVar(&options.InstallerImageKernelURL, "installer-image-kernel-url", "", "Packet installer image kernel URL, (default installer-image-base-url/flatcar_production_pxe.vmlinuz)")
+	cmdCreateDevice.Flags().StringVar(&options.InstallerImageCpioURL, "installer-image-cpio-url", "", "Packet installer image cpio URL, (default installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
 	cmdCreateDevice.Flags().StringVar(&options.ImageURL, "image-url", "", "image base URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
 	cmdCreateDevice.Flags().StringVar(&hostname, "hostname", "", "hostname to assign to device")
 	cmdCreateDevice.Flags().StringVar(&userDataPath, "userdata-file", "", "path to file containing userdata")
