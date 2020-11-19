@@ -25,6 +25,5 @@ _testmain.go
 *.prof
 *.swp
 
-# IDEs
+# idea
 .idea**/**
-.vscode

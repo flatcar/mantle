@@ -15,56 +15,16 @@
 package pretty
 
 import (
-	"bufio"
 	"bytes"
-	"fmt"
-	"io"
 	"strconv"
 	"strings"
 )
 
-// a formatter stores stateful formatting information as well as being
-// an io.Writer for simplicity.
-type formatter struct {
-	*bufio.Writer
-	*Config
-
-	// Self-referential structure tracking
-	tagNumbers map[int]int // tagNumbers[id] = <#n>
-}
-
-// newFormatter creates a new buffered formatter.  For the output to be written
-// to the given writer, this must be accompanied by a call to write (or Flush).
-func newFormatter(cfg *Config, w io.Writer) *formatter {
-	return &formatter{
-		Writer:     bufio.NewWriter(w),
-		Config:     cfg,
-		tagNumbers: make(map[int]int),
-	}
-}
-
-func (f *formatter) write(n node) {
-	defer f.Flush()
-	n.format(f, "")
-}
-
-func (f *formatter) tagFor(id int) int {
-	if tag, ok := f.tagNumbers[id]; ok {
-		return tag
-	}
-	if f.tagNumbers == nil {
-		return 0
-	}
-	tag := len(f.tagNumbers) + 1
-	f.tagNumbers[id] = tag
-	return tag
-}
-
 type node interface {
-	format(f *formatter, indent string)
+	WriteTo(w *bytes.Buffer, indent string, cfg *Config)
 }
 
-func (f *formatter) compactString(n node) string {
+func compactString(n node) string {
 	switch k := n.(type) {
 	case stringVal:
 		return string(k)
@@ -73,22 +33,20 @@ func (f *formatter) compactString(n node) string {
 	}
 
 	buf := new(bytes.Buffer)
-	f2 := newFormatter(&Config{Compact: true}, buf)
-	f2.tagNumbers = f.tagNumbers // reuse tagNumbers just in case
-	f2.write(n)
+	n.WriteTo(buf, "", &Config{Compact: true})
 	return buf.String()
 }
 
 type stringVal string
 
-func (str stringVal) format(f *formatter, indent string) {
-	f.WriteString(strconv.Quote(string(str)))
+func (str stringVal) WriteTo(w *bytes.Buffer, indent string, cfg *Config) {
+	w.WriteString(strconv.Quote(string(str)))
 }
 
 type rawVal string
 
-func (r rawVal) format(f *formatter, indent string) {
-	f.WriteString(string(r))
+func (r rawVal) WriteTo(w *bytes.Buffer, indent string, cfg *Config) {
+	w.WriteString(string(r))
 }
 
 type keyval struct {
@@ -98,126 +56,73 @@ type keyval struct {
 
 type keyvals []keyval
 
-func (l keyvals) format(f *formatter, indent string) {
-	f.WriteByte('{')
+func (l keyvals) Len() int           { return len(l) }
+func (l keyvals) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l keyvals) Less(i, j int) bool { return l[i].key < l[j].key }
 
-	switch {
-	case f.Compact:
-		// All on one line:
-		for i, kv := range l {
-			if i > 0 {
-				f.WriteByte(',')
-			}
-			f.WriteString(kv.key)
-			f.WriteByte(':')
-			kv.val.format(f, indent)
-		}
-	case f.Diffable:
-		f.WriteByte('\n')
-		inner := indent + " "
-		// Each value gets its own line:
-		for _, kv := range l {
-			f.WriteString(inner)
-			f.WriteString(kv.key)
-			f.WriteString(": ")
-			kv.val.format(f, inner)
-			f.WriteString(",\n")
-		}
-		f.WriteString(indent)
-	default:
-		keyWidth := 0
-		for _, kv := range l {
-			if kw := len(kv.key); kw > keyWidth {
-				keyWidth = kw
-			}
-		}
-		alignKey := indent + " "
-		alignValue := strings.Repeat(" ", keyWidth)
-		inner := alignKey + alignValue + "  "
-		// First and last line shared with bracket:
-		for i, kv := range l {
-			if i > 0 {
-				f.WriteString(",\n")
-				f.WriteString(alignKey)
-			}
-			f.WriteString(kv.key)
-			f.WriteString(": ")
-			f.WriteString(alignValue[len(kv.key):])
-			kv.val.format(f, inner)
+func (l keyvals) WriteTo(w *bytes.Buffer, indent string, cfg *Config) {
+	keyWidth := 0
+
+	for _, kv := range l {
+		if kw := len(kv.key); kw > keyWidth {
+			keyWidth = kw
 		}
 	}
+	padding := strings.Repeat(" ", keyWidth+1)
 
-	f.WriteByte('}')
+	inner := indent + "  " + padding
+	w.WriteByte('{')
+	for i, kv := range l {
+		if cfg.Compact {
+			w.WriteString(kv.key)
+			w.WriteByte(':')
+		} else {
+			if i > 0 || cfg.Diffable {
+				w.WriteString("\n ")
+				w.WriteString(indent)
+			}
+			w.WriteString(kv.key)
+			w.WriteByte(':')
+			w.WriteString(padding[len(kv.key):])
+		}
+		kv.val.WriteTo(w, inner, cfg)
+		if i+1 < len(l) || cfg.Diffable {
+			w.WriteByte(',')
+		}
+	}
+	if !cfg.Compact && cfg.Diffable && len(l) > 0 {
+		w.WriteString("\n")
+		w.WriteString(indent)
+	}
+	w.WriteByte('}')
 }
 
 type list []node
 
-func (l list) format(f *formatter, indent string) {
-	if max := f.ShortList; max > 0 {
-		short := f.compactString(l)
+func (l list) WriteTo(w *bytes.Buffer, indent string, cfg *Config) {
+	if max := cfg.ShortList; max > 0 {
+		short := compactString(l)
 		if len(short) <= max {
-			f.WriteString(short)
+			w.WriteString(short)
 			return
 		}
 	}
 
-	f.WriteByte('[')
-
-	switch {
-	case f.Compact:
-		// All on one line:
-		for i, v := range l {
-			if i > 0 {
-				f.WriteByte(',')
-			}
-			v.format(f, indent)
+	inner := indent + " "
+	w.WriteByte('[')
+	for i, v := range l {
+		if !cfg.Compact && (i > 0 || cfg.Diffable) {
+			w.WriteByte('\n')
+			w.WriteString(inner)
 		}
-	case f.Diffable:
-		f.WriteByte('\n')
-		inner := indent + " "
-		// Each value gets its own line:
-		for _, v := range l {
-			f.WriteString(inner)
-			v.format(f, inner)
-			f.WriteString(",\n")
-		}
-		f.WriteString(indent)
-	default:
-		inner := indent + " "
-		// First and last line shared with bracket:
-		for i, v := range l {
-			if i > 0 {
-				f.WriteString(",\n")
-				f.WriteString(inner)
-			}
-			v.format(f, inner)
+		v.WriteTo(w, inner, cfg)
+		if i+1 < len(l) || cfg.Diffable {
+			w.WriteByte(',')
 		}
 	}
-
-	f.WriteByte(']')
-}
-
-type ref struct {
-	id int
-}
-
-func (r ref) format(f *formatter, indent string) {
-	fmt.Fprintf(f, "<see #%d>", f.tagFor(r.id))
-}
-
-type target struct {
-	id    int
-	value node
-}
-
-func (t target) format(f *formatter, indent string) {
-	tag := fmt.Sprintf("<#%d> ", f.tagFor(t.id))
-	switch {
-	case f.Diffable, f.Compact:
-		// no indent changes
-	default:
-		indent += strings.Repeat(" ", len(tag))
+	if !cfg.Compact && cfg.Diffable && len(l) > 0 {
+		w.WriteByte('\n')
+		w.WriteString(indent)
 	}
-	f.WriteString(tag)
-	t.value.format(f, indent)
+	w.WriteByte(']')
 }

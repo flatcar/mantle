@@ -13,7 +13,7 @@ type facilityRoot struct {
 	Facilities []Facility `json:"facilities"`
 }
 
-// Facility represents an Equinix Metal facility
+// Facility represents a Packet facility
 type Facility struct {
 	ID       string   `json:"id"`
 	Name     string   `json:"name,omitempty"`
@@ -44,7 +44,7 @@ type FacilityServiceOp struct {
 // List returns all facilities
 func (s *FacilityServiceOp) List(listOpt *ListOptions) ([]Facility, *Response, error) {
 	root := new(facilityRoot)
-	params := urlQuery(listOpt)
+	params := createListOptionsURL(listOpt)
 	path := fmt.Sprintf("%s?%s", facilityBasePath, params)
 
 	resp, err := s.client.DoRequest("GET", path, nil, root)

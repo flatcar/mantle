@@ -1,6 +1,9 @@
 package pflag
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 // -- count Value
 type countValue int
@@ -11,13 +14,13 @@ func newCountValue(val int, p *int) *countValue {
 }
 
 func (i *countValue) Set(s string) error {
-	// "+1" means that no specific value was passed, so increment
-	if s == "+1" {
+	v, err := strconv.ParseInt(s, 0, 64)
+	// -1 means that no specific value was passed, so increment
+	if v == -1 {
 		*i = countValue(*i + 1)
-		return nil
+	} else {
+		*i = countValue(v)
 	}
-	v, err := strconv.ParseInt(s, 0, 0)
-	*i = countValue(v)
 	return err
 }
 
@@ -25,7 +28,7 @@ func (i *countValue) Type() string {
 	return "count"
 }
 
-func (i *countValue) String() string { return strconv.Itoa(int(*i)) }
+func (i *countValue) String() string { return fmt.Sprintf("%v", *i) }
 
 func countConv(sval string) (interface{}, error) {
 	i, err := strconv.Atoi(sval)
@@ -46,7 +49,7 @@ func (f *FlagSet) GetCount(name string) (int, error) {
 
 // CountVar defines a count flag with specified name, default value, and usage string.
 // The argument p points to an int variable in which to store the value of the flag.
-// A count flag will add 1 to its value every time it is found on the command line
+// A count flag will add 1 to its value evey time it is found on the command line
 func (f *FlagSet) CountVar(p *int, name string, usage string) {
 	f.CountVarP(p, name, "", usage)
 }
@@ -54,7 +57,7 @@ func (f *FlagSet) CountVar(p *int, name string, usage string) {
 // CountVarP is like CountVar only take a shorthand for the flag name.
 func (f *FlagSet) CountVarP(p *int, name, shorthand string, usage string) {
 	flag := f.VarPF(newCountValue(0, p), name, shorthand, usage)
-	flag.NoOptDefVal = "+1"
+	flag.NoOptDefVal = "-1"
 }
 
 // CountVar like CountVar only the flag is placed on the CommandLine instead of a given flag set
@@ -69,7 +72,7 @@ func CountVarP(p *int, name, shorthand string, usage string) {
 
 // Count defines a count flag with specified name, default value, and usage string.
 // The return value is the address of an int variable that stores the value of the flag.
-// A count flag will add 1 to its value every time it is found on the command line
+// A count flag will add 1 to its value evey time it is found on the command line
 func (f *FlagSet) Count(name string, usage string) *int {
 	p := new(int)
 	f.CountVarP(p, name, "", usage)
@@ -83,9 +86,7 @@ func (f *FlagSet) CountP(name, shorthand string, usage string) *int {
 	return p
 }
 
-// Count defines a count flag with specified name, default value, and usage string.
-// The return value is the address of an int variable that stores the value of the flag.
-// A count flag will add 1 to its value evey time it is found on the command line
+// Count like Count only the flag is placed on the CommandLine isntead of a given flag set
 func Count(name string, usage string) *int {
 	return CommandLine.CountP(name, "", usage)
 }

@@ -17,7 +17,7 @@ type usersRoot struct {
 	Meta  meta   `json:"meta"`
 }
 
-// User represents an Equinix Metal user
+// User represents a Packet user
 type User struct {
 	ID                    string  `json:"id"`
 	FirstName             string  `json:"first_name,omitempty"`
@@ -50,7 +50,7 @@ type UserServiceOp struct {
 
 // Get method gets a user by userID
 func (s *UserServiceOp) List(listOpt *ListOptions) (users []User, resp *Response, err error) {
-	params := urlQuery(listOpt)
+	params := createListOptionsURL(listOpt)
 	path := fmt.Sprintf("%s?%s", usersBasePath, params)
 
 	for {
@@ -87,7 +87,7 @@ func (s *UserServiceOp) Current() (*User, *Response, error) {
 }
 
 func (s *UserServiceOp) Get(userID string, getOpt *GetOptions) (*User, *Response, error) {
-	params := urlQuery(getOpt)
+	params := createGetOptionsURL(getOpt)
 	path := fmt.Sprintf("%s/%s?%s", usersBasePath, userID, params)
 	user := new(User)
 

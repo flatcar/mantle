@@ -37,7 +37,7 @@ type EmailServiceOp struct {
 
 // Get retrieves an email by id
 func (s *EmailServiceOp) Get(emailID string, getOpt *GetOptions) (*Email, *Response, error) {
-	params := urlQuery(getOpt)
+	params := createGetOptionsURL(getOpt)
 	path := fmt.Sprintf("%s/%s?%s", emailBasePath, emailID, params)
 	email := new(Email)
 
