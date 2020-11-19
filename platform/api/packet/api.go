@@ -92,6 +92,10 @@ type Options struct {
 	Board string
 	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current
 	InstallerImageBaseURL string
+	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_pxe.vmlinuz
+	InstallerImageKernelURL string
+	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_pxe_image.cpio.gz
+	InstallerImageCpioURL string
 	// e.g. https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2
 	ImageURL string
 
@@ -144,6 +148,12 @@ func New(opts *Options) (*API, error) {
 	}
 	if opts.InstallerImageBaseURL == "" {
 		opts.InstallerImageBaseURL = defaultInstallerImageBaseURL[opts.Board]
+	}
+	if opts.InstallerImageKernelURL == "" {
+		opts.InstallerImageKernelURL = strings.TrimRight(opts.InstallerImageBaseURL, "/") + "/flatcar_production_pxe.vmlinuz"
+	}
+	if opts.InstallerImageCpioURL == "" {
+		opts.InstallerImageCpioURL = strings.TrimRight(opts.InstallerImageBaseURL, "/") + "/flatcar_production_pxe_image.cpio.gz"
 	}
 	if opts.ImageURL == "" {
 		opts.ImageURL = defaultImageURL[opts.Board]
@@ -464,10 +474,9 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 
 func (a *API) ipxeScript(userdataURL string) string {
 	return fmt.Sprintf(`#!ipxe
-set base-url %s
-kernel ${base-url}/flatcar_production_pxe.vmlinuz initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 flatcar.oem.id=packet ignition.config.url=%s console=%s
-initrd ${base-url}/flatcar_production_pxe_image.cpio.gz
-boot`, strings.TrimRight(a.opts.InstallerImageBaseURL, "/"), userdataURL, linuxConsole[a.opts.Board])
+kernel %s initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 flatcar.oem.id=packet ignition.config.url=%s console=%s
+initrd %s
+boot`, a.opts.InstallerImageKernelURL, userdataURL, linuxConsole[a.opts.Board], a.opts.InstallerImageCpioURL)
 }
 
 // device creation seems a bit flaky, so try a few times
