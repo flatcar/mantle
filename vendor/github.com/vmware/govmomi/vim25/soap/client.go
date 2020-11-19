@@ -159,10 +159,6 @@ func NewClient(u *url.URL, insecure bool) *Client {
 	return &c
 }
 
-func (c *Client) DefaultTransport() *http.Transport {
-	return c.t
-}
-
 // NewServiceClient creates a NewClient with the given URL.Path and namespace.
 func (c *Client) NewServiceClient(path string, namespace string) *Client {
 	vc := c.URL()
@@ -177,7 +173,7 @@ func (c *Client) NewServiceClient(path string, namespace string) *Client {
 
 	client := NewClient(u, c.k)
 	client.Namespace = "urn:" + namespace
-	client.DefaultTransport().TLSClientConfig = c.DefaultTransport().TLSClientConfig
+	client.Transport.(*http.Transport).TLSClientConfig = c.Transport.(*http.Transport).TLSClientConfig
 	if cert := c.Certificate(); cert != nil {
 		client.SetCertificate(*cert)
 	}

@@ -19,6 +19,7 @@ package vim25
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"path"
@@ -27,12 +28,11 @@ import (
 	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
-	"github.com/vmware/govmomi/vim25/xml"
 )
 
 const (
 	Namespace = "vim25"
-	Version   = "7.0"
+	Version   = "6.7"
 	Path      = "/sdk"
 )
 
@@ -89,14 +89,9 @@ func NewClient(ctx context.Context, rt soap.RoundTripper) (*Client, error) {
 }
 
 // UseServiceVersion sets soap.Client.Version to the current version of the service endpoint via /sdk/vimServiceVersions.xml
-func (c *Client) UseServiceVersion(kind ...string) error {
-	ns := "vim"
-	if len(kind) != 0 {
-		ns = kind[0]
-	}
-
+func (c *Client) UseServiceVersion() error {
 	u := c.URL()
-	u.Path = path.Join(Path, ns+"ServiceVersions.xml")
+	u.Path = path.Join(Path, "vimServiceVersions.xml")
 
 	res, err := c.Get(u.String())
 	if err != nil {
@@ -108,12 +103,8 @@ func (c *Client) UseServiceVersion(kind ...string) error {
 	}
 
 	v := struct {
-		Namespace *string `xml:"namespace>name"`
-		Version   *string `xml:"namespace>version"`
-	}{
-		&c.Namespace,
-		&c.Version,
-	}
+		Version *string `xml:"namespace>version"`
+	}{&c.Version}
 
 	err = xml.NewDecoder(res.Body).Decode(&v)
 	_ = res.Body.Close()
@@ -178,11 +169,6 @@ func (c *Client) Valid() bool {
 	}
 
 	return true
-}
-
-// Path returns vim25.Path (see cache.Client)
-func (c *Client) Path() string {
-	return Path
 }
 
 // IsVC returns true if we are connected to a vCenter

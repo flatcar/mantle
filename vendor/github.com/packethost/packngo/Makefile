@@ -1,7 +1,6 @@
-IMG ?= golang:1.13
+IMG ?= golang:1.12
 
 # enable go modules, disabled CGO
-
 GOENV ?= GO111MODULE=on CGO_ENABLED=0
 export GO111MODULE=on
 export CGO_ENABLED=0
@@ -18,7 +17,7 @@ build:
 
 golangci-lint:
 ifeq (, $(shell which golangci-lint))
-	$(GO) go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
+	$(GO) go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.17.1
 endif
 
 golint:

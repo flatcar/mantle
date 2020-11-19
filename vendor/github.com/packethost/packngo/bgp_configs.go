@@ -8,7 +8,7 @@ var bgpConfigBasePath = "/bgp-config"
 type BGPConfigService interface {
 	Get(projectID string, getOpt *GetOptions) (*BGPConfig, *Response, error)
 	Create(projectID string, request CreateBGPConfigRequest) (*Response, error)
-	// Delete(configID string) (resp *Response, err error) TODO: Not in Equinix Metal API
+	// Delete(configID string) (resp *Response, err error) TODO: Not in Packet API
 }
 
 // BGPConfigServiceOp implements BgpConfigService
@@ -24,7 +24,7 @@ type CreateBGPConfigRequest struct {
 	UseCase        string `json:"use_case,omitempty"`
 }
 
-// BGPConfig represents an Equinix Metal BGP Config
+// BGPConfig represents a Packet BGP Config
 type BGPConfig struct {
 	ID             string       `json:"id,omitempty"`
 	Status         string       `json:"status,omitempty"`
@@ -54,7 +54,7 @@ func (s *BGPConfigServiceOp) Create(projectID string, request CreateBGPConfigReq
 
 // Get function
 func (s *BGPConfigServiceOp) Get(projectID string, getOpt *GetOptions) (bgpConfig *BGPConfig, resp *Response, err error) {
-	params := urlQuery(getOpt)
+	params := createGetOptionsURL(getOpt)
 
 	path := fmt.Sprintf("%s/%s%s?%s", projectBasePath, projectID, bgpConfigBasePath, params)
 
@@ -68,7 +68,7 @@ func (s *BGPConfigServiceOp) Get(projectID string, getOpt *GetOptions) (bgpConfi
 	return subset, resp, err
 }
 
-// Delete function TODO: this is not implemented in the Equinix Metal API
+// Delete function TODO: this is not implemented in the Packet API
 // func (s *BGPConfigServiceOp) Delete(configID string) (resp *Response, err error) {
 // 	path := fmt.Sprintf("%ss/%s", bgpConfigBasePath, configID)
 
