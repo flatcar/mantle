@@ -82,12 +82,6 @@ type channelSpec struct {
 	AWS            awsSpec
 }
 
-type fcosChannelSpec struct {
-	Bucket  string
-	Profile string
-	Region  string
-}
-
 type ReleaseMetadata struct {
 	Note     string          `json:"note"` // used to note to users not to consume the release metadata index
 	Releases []BuildMetadata `json:"releases"`
