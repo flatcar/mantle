@@ -108,7 +108,7 @@ func init() {
 	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
 	cmdPreRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPreRelease.Flags().StringVar(&verifyKeyFile,
-		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
+		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.")
 	cmdPreRelease.Flags().StringVar(&imageInfoFile, "write-image-list", "", "optional output file describing uploaded images")
 
 	AddSpecFlags(cmdPreRelease.Flags())
@@ -184,7 +184,7 @@ func runCLPreRelease(cmd *cobra.Command) error {
 	return nil
 }
 
-// getImageFile downloads a bzipped CoreOS image, verifies its signature,
+// getImageFile downloads a bzipped Flatcar image, verifies its signature,
 // decompresses it, and returns the decompressed path.
 func getImageFile(client *http.Client, spec *channelSpec, src *storage.Bucket, fileName string) (string, error) {
 	return getCLImageFile(client, src, fileName)
@@ -263,7 +263,7 @@ type azureImageInfo struct {
 	ImageName string `json:"image"`
 }
 
-// azurePreRelease runs everything necessary to prepare a CoreOS release for Azure.
+// azurePreRelease runs everything necessary to prepare a Flatcar release for Azure.
 //
 // This includes uploading the vhd image to Azure storage, creating an OS image from it,
 // and replicating that OS image.
@@ -584,7 +584,7 @@ func awsUploadAmiLists(ctx context.Context, bucket *storage.Bucket, spec *channe
 	return nil
 }
 
-// awsPreRelease runs everything necessary to prepare a CoreOS release for AWS.
+// awsPreRelease runs everything necessary to prepare a Flatcar release for AWS.
 //
 // This includes uploading the ami_vmdk image to an S3 bucket in each EC2
 // partition, creating HVM AMIs, and replicating the AMIs to each

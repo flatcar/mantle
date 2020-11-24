@@ -1,6 +1,6 @@
 # plume
 
-CoreOS release utility
+Flatcar release utility
 
 ## Testing
 
@@ -8,7 +8,7 @@ CoreOS release utility
 
 ```sh
 # Use same build ID for all boards
-export COREOS_BUILD_ID=$(date +%Y-%m-%d-%H%M)
+export FLATCAR_BUILD_ID=$(date +%Y-%m-%d-%H%M)
 KEYID="<keyid>"
 gpg2 --armor --export "$KEYID" > ~/keyfile
 for board in amd64-usr arm64-usr; do
@@ -25,10 +25,10 @@ done
 
 ```sh
 for board in amd64-usr arm64-usr; do
-    bin/plume pre-release -C user --verify-key ~/keyfile -B $board -V $version-$COREOS_BUILD_ID
+    bin/plume pre-release -C user --verify-key ~/keyfile -B $board -V $version-$FLATCAR_BUILD_ID
 done
 for board in amd64-usr arm64-usr; do
-    bin/plume release -C user -B $board -V <version>-$COREOS_BUILD_ID
+    bin/plume release -C user -B $board -V <version>-$FLATCAR_BUILD_ID
 done
 ```
 
@@ -36,6 +36,6 @@ done
 
 Delete:
 
-- Stuff uploaded into `gs://users.developer.core-os.net/$USER`
-- GCE image in `coreos-gce-testing`
-- AWS AMIs and snapshots in `us-west-1`, `us-west-2`, and `us-east-2`
+- Stuff uploaded into GCS
+- GCE image in `kinvolk-public`
+- AWS AMIs and snapshots

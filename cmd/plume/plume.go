@@ -29,7 +29,7 @@ var (
 	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "plume")
 	root = &cobra.Command{
 		Use:   "plume [command]",
-		Short: "The CoreOS release utility",
+		Short: "The Flatcar release utility",
 	}
 
 	gceJSONKeyFile string
