@@ -44,8 +44,8 @@ import (
 var (
 	cmdPreRelease = &cobra.Command{
 		Use:   "pre-release [options]",
-		Short: "Run pre-release steps for CoreOS",
-		Long:  "Runs pre-release steps for CoreOS, such as image uploading and OS image creation, and replication across regions.",
+		Short: "Run pre-release steps for Flatcar",
+		Long:  "Runs pre-release steps for Flatcar, such as image uploading and OS image creation, and replication across regions.",
 		RunE:  runPreRelease,
 	}
 
@@ -100,7 +100,7 @@ func init() {
 	sort.Sort(sort.StringSlice(platformList))
 
 	cmdPreRelease.Flags().StringSliceVar(&selectedPlatforms, "platform", platformList, "platform to pre-release")
-	cmdPreRelease.Flags().StringVar(&selectedDistro, "system", "cl", "system to pre-release")
+	cmdPreRelease.Flags().StringVar(&selectedDistro, "system", "cl", "DEPRECATED - system to pre-release")
 	cmdPreRelease.Flags().BoolVar(&force, "force", false, "Replace existing images")
 	cmdPreRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdPreRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
@@ -108,11 +108,10 @@ func init() {
 	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
 	cmdPreRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPreRelease.Flags().StringVar(&verifyKeyFile,
-		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
+		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.")
 	cmdPreRelease.Flags().StringVar(&imageInfoFile, "write-image-list", "", "optional output file describing uploaded images")
 
 	AddSpecFlags(cmdPreRelease.Flags())
-	AddFedoraSpecFlags(cmdPreRelease.Flags())
 	root.AddCommand(cmdPreRelease)
 }
 
@@ -127,40 +126,10 @@ func runPreRelease(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	switch selectedDistro {
-	case "cl":
-		if err := runCLPreRelease(cmd); err != nil {
-			return err
-		}
-	case "fedora":
-		if err := runFedoraPreRelease(cmd); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("Unknown distro %q", selectedDistro)
-	}
-	plog.Printf("Pre-release complete, run `plume release` to finish.")
-
-	return nil
-}
-
-func runFedoraPreRelease(cmd *cobra.Command) error {
-	spec, err := ChannelFedoraSpec()
-	if err != nil {
+	if err := runCLPreRelease(cmd); err != nil {
 		return err
 	}
-	ctx := context.Background()
-	client := http.Client{}
-
-	var imageInfo imageInfo
-
-	for _, platformName := range selectedPlatforms {
-		platform := platforms[platformName]
-		plog.Printf("Running %v pre-release...", platform.displayName)
-		if err := platform.handler(ctx, &client, nil, &spec, &imageInfo); err != nil {
-			return err
-		}
-	}
+	plog.Printf("Pre-release complete, run `plume release` to finish.")
 
 	return nil
 }
@@ -215,24 +184,10 @@ func runCLPreRelease(cmd *cobra.Command) error {
 	return nil
 }
 
-// getImageFile downloads a bzipped CoreOS image, verifies its signature,
+// getImageFile downloads a bzipped Flatcar image, verifies its signature,
 // decompresses it, and returns the decompressed path.
 func getImageFile(client *http.Client, spec *channelSpec, src *storage.Bucket, fileName string) (string, error) {
-	switch selectedDistro {
-	case "cl":
-		return getCLImageFile(client, src, fileName)
-	case "fedora":
-		return getFedoraImageFile(client, spec, src, fileName)
-	default:
-		return "", fmt.Errorf("Invalid system: %v", selectedDistro)
-	}
-}
-
-func getImageTypeURI() string {
-	if specImageType == "Cloud-Base" {
-		return "Cloud"
-	}
-	return specImageType
+	return getCLImageFile(client, src, fileName)
 }
 
 func getCLImageFile(client *http.Client, src *storage.Bucket, fileName string) (string, error) {
@@ -267,35 +222,6 @@ func getCLImageFile(client *http.Client, src *storage.Bucket, fileName string) (
 	// decompress it
 	plog.Printf("Decompressing %q...", bzipPath)
 	if err := util.Bunzip2File(imagePath, bzipPath); err != nil {
-		return "", err
-	}
-	return imagePath, nil
-}
-
-func getFedoraImageFile(client *http.Client, spec *channelSpec, src *storage.Bucket, fileName string) (string, error) {
-	cacheDir := filepath.Join(sdk.RepoCache(), "images", specChannel, specVersion)
-	rawxzPath := filepath.Join(cacheDir, fileName)
-	imagePath := strings.TrimSuffix(rawxzPath, ".xz")
-
-	if _, err := os.Stat(imagePath); err == nil {
-		plog.Printf("Reusing existing image %q", imagePath)
-		return imagePath, nil
-	}
-
-	rawxzURI, err := url.Parse(fmt.Sprintf("%v/%v/compose/%v/%v/images/%v", spec.BaseURL, specComposeID, getImageTypeURI(), specBoard, fileName))
-	if err != nil {
-		return "", err
-	}
-
-	plog.Printf("Downloading image %q to %q", rawxzURI, rawxzPath)
-
-	if err := sdk.UpdateFile(rawxzPath, rawxzURI.String(), client); err != nil {
-		return "", err
-	}
-
-	// decompress it
-	plog.Printf("Decompressing %q...", rawxzPath)
-	if err := util.XZ2File(imagePath, rawxzPath); err != nil {
 		return "", err
 	}
 	return imagePath, nil
@@ -337,7 +263,7 @@ type azureImageInfo struct {
 	ImageName string `json:"image"`
 }
 
-// azurePreRelease runs everything necessary to prepare a CoreOS release for Azure.
+// azurePreRelease runs everything necessary to prepare a Flatcar release for Azure.
 //
 // This includes uploading the vhd image to Azure storage, creating an OS image from it,
 // and replicating that OS image.
@@ -428,12 +354,8 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 func getSpecAWSImageMetadata(spec *channelSpec) (map[string]string, error) {
 	imageFileName := spec.AWS.Image
 	imageMetadata := imageMetadataAbstract{
-		Env:       specEnv,
-		Version:   specVersion,
-		Timestamp: specTimestamp,
-		Respin:    specRespin,
-		ImageType: specImageType,
-		Arch:      specBoard,
+		Version: specVersion,
+		Arch:    specBoard,
 	}
 	t := template.Must(template.New("filename").Parse(imageFileName))
 	buffer := &bytes.Buffer{}
@@ -442,14 +364,8 @@ func getSpecAWSImageMetadata(spec *channelSpec) (map[string]string, error) {
 	}
 	imageFileName = buffer.String()
 
-	var imageName string
-	switch selectedDistro {
-	case "cl":
-		imageName = fmt.Sprintf("%v-%v-%v%v", spec.AWS.BaseName, specChannel, specVersion, AmiNameArchTag())
-		imageName = regexp.MustCompile(`[^A-Za-z0-9()\\./_-]`).ReplaceAllLiteralString(imageName, "_")
-	case "fedora":
-		imageName = strings.TrimSuffix(imageFileName, ".raw.xz")
-	}
+	imageName := fmt.Sprintf("%v-%v-%v%v", spec.AWS.BaseName, specChannel, specVersion, AmiNameArchTag())
+	imageName = regexp.MustCompile(`[^A-Za-z0-9()\\./_-]`).ReplaceAllLiteralString(imageName, "_")
 
 	imageDescription := fmt.Sprintf("%v %v %v%v", spec.AWS.BaseDescription, specChannel, specVersion, strings.ReplaceAll(AmiNameArchTag(), "-", " "))
 
@@ -488,13 +404,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 	imageName := awsImageMetadata["imageName"]
 	imageDescription := awsImageMetadata["imageDescription"]
 
-	var s3ObjectPath string
-	switch selectedDistro {
-	case "cl":
-		s3ObjectPath = fmt.Sprintf("%s/%s/%s", specBoard, specVersion, strings.TrimSuffix(imageFileName, filepath.Ext(imageFileName)))
-	case "fedora":
-		s3ObjectPath = fmt.Sprintf("%s/%s/%s", specBoard, specVersion, strings.TrimSuffix(imageFileName, filepath.Ext(imageFileName)))
-	}
+	s3ObjectPath := fmt.Sprintf("%s/%s/%s", specBoard, specVersion, strings.TrimSuffix(imageFileName, filepath.Ext(imageFileName)))
 	s3ObjectURL := fmt.Sprintf("s3://%s/%s", part.Bucket, s3ObjectPath)
 
 	destRegions := make([]string, 0, len(part.Regions))
@@ -533,13 +443,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 
 		plog.Printf("Creating EBS snapshot...")
 
-		var format aws.EC2ImageFormat
-		switch selectedDistro {
-		case "cl":
-			format = aws.EC2ImageFormatVmdk
-		case "fedora":
-			format = aws.EC2ImageFormatRaw
-		}
+		format := aws.EC2ImageFormatVmdk
 
 		snapshot, err = api.CreateSnapshot(imageName, s3ObjectURL, format)
 		if err != nil {
@@ -567,24 +471,12 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 	}
 	resources := []string{snapshot.SnapshotID, hvmImageID}
 
-	switch selectedDistro {
-	case "cl":
-		err = api.CreateTags(resources, map[string]string{
-			"Channel": specChannel,
-			"Version": specVersion,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("couldn't tag images: %v", err)
-		}
-	case "fedora":
-		err = api.CreateTags(resources, map[string]string{
-			"Channel":   specChannel,
-			"Version":   specVersion,
-			"ComposeID": specComposeID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("couldn't tag images: %v", err)
-		}
+	err = api.CreateTags(resources, map[string]string{
+		"Channel": specChannel,
+		"Version": specVersion,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("couldn't tag images: %v", err)
 	}
 
 	postprocess := func(imageID string) (map[string]string, error) {
@@ -692,7 +584,7 @@ func awsUploadAmiLists(ctx context.Context, bucket *storage.Bucket, spec *channe
 	return nil
 }
 
-// awsPreRelease runs everything necessary to prepare a CoreOS release for AWS.
+// awsPreRelease runs everything necessary to prepare a Flatcar release for AWS.
 //
 // This includes uploading the ami_vmdk image to an S3 bucket in each EC2
 // partition, creating HVM AMIs, and replicating the AMIs to each
@@ -730,7 +622,7 @@ func awsPreRelease(ctx context.Context, client *http.Client, src *storage.Bucket
 		}
 	}
 
-	if selectedDistro == "cl" && gceJSONKeyFile != "none" {
+	if gceJSONKeyFile != "none" {
 		if err := awsUploadAmiLists(ctx, src, spec, &amis); err != nil {
 			return fmt.Errorf("uploading AMI IDs: %v", err)
 		}

@@ -15,18 +15,12 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/api/compute/v1"
@@ -43,72 +37,28 @@ var (
 	releaseDryRun bool
 	cmdRelease    = &cobra.Command{
 		Use:   "release [options]",
-		Short: "Publish a new CoreOS release.",
+		Short: "Publish a new Flatcar release.",
 		Run:   runRelease,
-		Long:  `Publish a new CoreOS release.`,
+		Long:  `Publish a new Flatcar release.`,
 	}
 )
 
 func init() {
 	cmdRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
-	cmdRelease.Flags().StringVar(&selectedDistro, "distro", "cl", "system to release")
+	cmdRelease.Flags().StringVar(&selectedDistro, "distro", "cl", "DEPRECATED - system to release")
 	cmdRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
 	cmdRelease.Flags().BoolVarP(&releaseDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
 	AddSpecFlags(cmdRelease.Flags())
-	AddFedoraSpecFlags(cmdRelease.Flags())
-	AddFcosSpecFlags(cmdRelease.Flags())
 	root.AddCommand(cmdRelease)
 }
 
 func runRelease(cmd *cobra.Command, args []string) {
-	switch selectedDistro {
-	case "cl":
-		if err := runCLRelease(cmd, args); err != nil {
-			plog.Fatal(err)
-		}
-	case "fcos":
-		if err := runFcosRelease(cmd, args); err != nil {
-			plog.Fatal(err)
-		}
-	default:
-		plog.Fatalf("Unknown distro %q:", selectedDistro)
+	if err := runCLRelease(cmd, args); err != nil {
+		plog.Fatal(err)
 	}
-}
-
-func runFcosRelease(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 {
-		plog.Fatal("No args accepted")
-	}
-
-	spec := FcosChannelSpec()
-	FcosValidateArguments()
-
-	doS3(&spec)
-
-	modifyReleaseMetadataIndex(&spec, specCommitId)
-
-	return nil
-}
-
-func runFedoraRelease(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 {
-		plog.Fatal("No args accepted")
-	}
-
-	spec, err := ChannelFedoraSpec()
-	if err != nil {
-		return err
-	}
-	ctx := context.Background()
-	client := &http.Client{}
-
-	// Make AWS images public.
-	doAWS(ctx, client, nil, &spec)
-
-	return nil
 }
 
 func runCLRelease(cmd *cobra.Command, args []string) error {
@@ -491,191 +441,4 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 			publish(imageName + "-hvm")
 		}
 	}
-}
-
-func doS3(spec *fcosChannelSpec) {
-	api, err := aws.New(&aws.Options{
-		CredentialsFile: awsCredentialsFile,
-		Profile:         spec.Profile,
-		Region:          spec.Region,
-	})
-	if err != nil {
-		plog.Fatalf("creating aws client: %v", err)
-	}
-
-	// Assumes the bucket layout defined inside of
-	// https://github.com/coreos/fedora-coreos-tracker/issues/189
-	err = api.UpdateBucketObjectsACL(spec.Bucket, filepath.Join("prod", "streams", specChannel, "builds", specVersion), specPolicy)
-	if err != nil {
-		plog.Fatalf("updating object ACLs: %v", err)
-	}
-}
-
-func modifyReleaseMetadataIndex(spec *fcosChannelSpec, commitId string) {
-	api, err := aws.New(&aws.Options{
-		CredentialsFile: awsCredentialsFile,
-		Profile:         spec.Profile,
-		Region:          spec.Region,
-	})
-	if err != nil {
-		plog.Fatalf("creating aws client: %v", err)
-	}
-
-	path := filepath.Join("prod", "streams", specChannel, "releases.json")
-	data, err := func() ([]byte, error) {
-		f, err := api.DownloadFile(spec.Bucket, path)
-		if err != nil {
-			if awsErr, ok := err.(awserr.Error); ok {
-				if awsErr.Code() == "NoSuchKey" {
-					return []byte("{}"), nil
-				}
-			}
-			return []byte{}, fmt.Errorf("downloading release metadata index: %v", err)
-		}
-		defer f.Close()
-		d, err := ioutil.ReadAll(f)
-		if err != nil {
-			return []byte{}, fmt.Errorf("reading release metadata index: %v", err)
-		}
-		return d, nil
-	}()
-	if err != nil {
-		plog.Fatal(err)
-	}
-
-	var m ReleaseMetadata
-	err = json.Unmarshal(data, &m)
-	if err != nil {
-		plog.Fatalf("unmarshaling release metadata json: %v", err)
-	}
-
-	releasePath := filepath.Join("prod", "streams", specChannel, "builds", specVersion, "release.json")
-	url, err := url.Parse(fmt.Sprintf("https://builds.coreos.fedoraproject.org/%s", releasePath))
-	if err != nil {
-		plog.Fatalf("creating metadata url: %v", err)
-	}
-
-	releaseFile, err := api.DownloadFile(spec.Bucket, releasePath)
-	if err != nil {
-		plog.Fatalf("downloading release metadata at %s: %v", releasePath, err)
-	}
-	defer releaseFile.Close()
-
-	releaseData, err := ioutil.ReadAll(releaseFile)
-	if err != nil {
-		plog.Fatalf("reading release metadata: %v", err)
-	}
-
-	var im IndividualReleaseMetadata
-	err = json.Unmarshal(releaseData, &im)
-	if err != nil {
-		plog.Fatalf("unmarshaling release metadata: %v", err)
-	}
-
-	var commits []Commit
-	for arch, vals := range im.Architectures {
-		commits = append(commits, Commit{
-			Architecture: arch,
-			Checksum:     vals.Commit,
-		})
-	}
-
-	newRel := BuildMetadata{
-		CommitHash: commits,
-		Version:    specVersion,
-		Endpoint:   url.String(),
-	}
-
-	for i, rel := range m.Releases {
-		if compareStaticReleaseInfo(rel, newRel) {
-			if i != (len(m.Releases) - 1) {
-				plog.Fatalf("build is already present and is not the latest release")
-			}
-
-			comp := compareCommits(rel.CommitHash, newRel.CommitHash)
-			if comp == 0 {
-				// the build is already the latest release, exit
-				return
-			} else if comp == -1 {
-				// the build is present and contains a subset of the new release data,
-				// pop the old entry and add the new version
-				m.Releases = m.Releases[:len(m.Releases)-1]
-				break
-			} else {
-				// the commit hash of the new build is not a superset of the current release
-				plog.Fatalf("build is present but commit hashes are not a superset of latest release")
-			}
-		}
-	}
-
-	for _, archs := range im.Architectures {
-		for name, media := range archs.Media {
-			if name == "aws" {
-				for region, ami := range media.Images {
-					aws_api, err := aws.New(&aws.Options{
-						CredentialsFile: awsCredentialsFile,
-						Profile:         specProfile,
-						Region:          region,
-					})
-					if err != nil {
-						plog.Fatalf("creating AWS API for modifying launch permissions: %v", err)
-					}
-
-					err = aws_api.PublishImage(ami.Image)
-					if err != nil {
-						plog.Fatalf("couldn't publish image in %v: %v", region, err)
-					}
-				}
-			}
-		}
-	}
-
-	m.Releases = append(m.Releases, newRel)
-
-	m.Metadata.LastModified = time.Now().UTC().Format("2006-01-02T15:04:05Z")
-	m.Note = "For use only by Fedora CoreOS internal tooling.  All other applications should obtain release info from stream metadata endpoints."
-	m.Stream = specChannel
-
-	out, err := json.Marshal(m)
-	if err != nil {
-		plog.Fatalf("marshalling release metadata json: %v", err)
-	}
-
-	// we don't want this to be cached for very long so that e.g. Cincinnati picks it up quickly
-	var releases_max_age = 60 * 5
-	err = api.UploadObjectExt(bytes.NewReader(out), spec.Bucket, path, true, specPolicy, aws.ContentTypeJSON, releases_max_age)
-	if err != nil {
-		plog.Fatalf("uploading release metadata json: %v", err)
-	}
-}
-
-func compareStaticReleaseInfo(a, b BuildMetadata) bool {
-	if a.Version != b.Version || a.Endpoint != b.Endpoint {
-		return false
-	}
-	return true
-}
-
-// returns -1 if a is a subset of b, 0 if equal, 1 if a is not a subset of b
-func compareCommits(a, b []Commit) int {
-	if len(a) > len(b) {
-		return 1
-	}
-	sameLength := len(a) == len(b)
-	for _, aHash := range a {
-		found := false
-		for _, bHash := range b {
-			if aHash.Architecture == bHash.Architecture && aHash.Checksum == bHash.Checksum {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return 1
-		}
-	}
-	if sameLength {
-		return 0
-	}
-	return -1
 }
