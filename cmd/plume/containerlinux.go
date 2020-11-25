@@ -90,116 +90,63 @@ var (
 		},
 	}
 
+	alpha_desc  = "The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing."
+	beta_desc   = "The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration."
+	stable_desc = "The Stable channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Beta and Alpha channels before being promoted."
+	edge_desc   = "The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing."
+	lts_desc    = "The LTS channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Stable channel before being promoted."
+	dev_desc    = "The Developer Channel is used for internal test builds."
+
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/alpha/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/alpha/boards",
 			Boards:         []string{"amd64-usr", "arm64-usr"},
 			Destinations:   []storageSpec{},
-			GCE:            gceSpec{},
-			Azure: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Alpha",
-				"",
-				"The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
-			),
-			AzurePremium: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Alpha",
-				"_pro",
-				"The Alpha channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
-			),
-			AWS: newAWSSpec(),
+			GCE:            newGceSpec("alpha", alpha_desc),
+			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Alpha", "", alpha_desc),
+			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Alpha", "_pro", alpha_desc),
+			AWS:            newAWSSpec(),
 		},
 		"beta": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/beta/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/beta/boards",
 			Boards:         []string{"amd64-usr"},
 			Destinations:   []storageSpec{},
-			GCE:            gceSpec{},
-			Azure: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Beta",
-				"",
-				"The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
-			),
-			AzurePremium: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Beta",
-				"_pro",
-				"The Beta channel consists of promoted Alpha releases. Mix a few beta machines into your production clusters to catch any bugs specific to your hardware or configuration.",
-			),
-			AWS: newAWSSpec(),
+			GCE:            newGceSpec("beta", beta_desc),
+			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "", beta_desc),
+			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "_pro", beta_desc),
+			AWS:            newAWSSpec(),
 		},
 		"stable": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/stable/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/stable/boards",
 			Boards:         []string{"amd64-usr"},
 			Destinations:   []storageSpec{},
-			GCE:            gceSpec{},
-			Azure: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Stable",
-				"",
-				"The Stable channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
-			),
-			AzurePremium: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Stable",
-				"_pro",
-				"The Stable channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Beta and Alpha channels before being promoted.",
-			),
-			AWS: newAWSSpec(),
+			GCE:            newGceSpec("stable", stable_desc),
+			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "", stable_desc),
+			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "_pro", stable_desc),
+			AWS:            newAWSSpec(),
 		},
 		"edge": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/edge/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/edge/boards",
 			Boards:         []string{"amd64-usr", "arm64-usr"},
 			Destinations:   []storageSpec{},
-			GCE:            gceSpec{},
-			Azure: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Edge",
-				"",
-				"The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
-			),
-			AzurePremium: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar Edge",
-				"_pro",
-				"The Edge channel closely tracks current development work and is released frequently. The newest versions of the Linux kernel, systemd, and other components will be available for testing.",
-			),
-			AWS: newAWSSpec(),
+			GCE:            newGceSpec("edge", edge_desc),
+			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Edge", "", edge_desc),
+			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Edge", "_pro", edge_desc),
+			AWS:            newAWSSpec(),
 		},
 		"lts": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins-private/lts/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/lts/boards",
 			Boards:         []string{"amd64-usr"},
 			Destinations:   []storageSpec{},
-			GCE:            gceSpec{},
-			Azure: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar LTS",
-				"",
-				"The LTS channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Stable channel before being promoted.",
-			),
-			AzurePremium: newAzureSpec(
-				azureEnvironments,
-				"publish",
-				"Flatcar LTS",
-				"_pro",
-				"The LTS channel should be used by production clusters. Versions of Flatcar Container Linux are battle-tested within the Stable channel before being promoted.",
-			),
-			AWS: newAWSSpec(),
+			GCE:            newGceSpec("lts", lts_desc),
+			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
+			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "_pro", lts_desc),
+			AWS:            newAWSSpec(),
 		},
 		"developer": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/developer/developer/boards",
@@ -207,24 +154,24 @@ var (
 			Boards:         []string{"amd64-usr", "arm64-usr"},
 			Destinations:   []storageSpec{},
 			GCE:            gceSpec{},
-			Azure: newAzureSpec(
-				azureEnvironments,
-				"developer",
-				"Flatcar Developer Channel",
-				"",
-				"The Developer Channel is used for internal test builds.",
-			),
-			AzurePremium: newAzureSpec(
-				azureEnvironments,
-				"developer",
-				"Flatcar Developer Channel",
-				"_pro",
-				"The Developer Channel is used for internal test builds.",
-			),
-			AWS: newAWSSpec(),
+			Azure:          newAzureSpec(azureEnvironments, "developer", "Flatcar Developer Channel", "", dev_desc),
+			AzurePremium:   newAzureSpec(azureEnvironments, "developer", "Flatcar Developer Channel", "_pro", dev_desc),
+			AWS:            newAWSSpec(),
 		},
 	}
 )
+
+func newGceSpec(channel, description string) gceSpec {
+	return gceSpec{
+		Project:     "kinvolk-public",
+		Family:      fmt.Sprintf("flatcar-%s", channel),
+		Description: description,
+		Licenses:    []string{"flatcar-container-linux"},
+		Image:       "flatcar_production_gce.tar.gz",
+		Publish:     "",
+		Limit:       10,
+	}
+}
 
 func newAzureSpec(environments []azureEnvironmentSpec, container, label, category string, description string) azureSpec {
 	return azureSpec{
