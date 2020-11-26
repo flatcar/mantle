@@ -41,6 +41,7 @@ var (
 		Run:   runRelease,
 		Long:  `Publish a new Flatcar release.`,
 	}
+	gceReleaseKey string
 )
 
 func init() {
@@ -49,6 +50,7 @@ func init() {
 	cmdRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
+	cmdRelease.Flags().StringVar(&gceReleaseKey, "gce-release-key", "", "GCE key file for releases")
 	cmdRelease.Flags().BoolVarP(&releaseDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
 	AddSpecFlags(cmdRelease.Flags())
@@ -198,17 +200,21 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		return
 	}
 
+	if gceReleaseKey == "" {
+		plog.Notice("No GCE Release key file defined, skipping.")
+		return
+	}
+
 	api, err := gcloud.New(&gcloud.Options{
 		Project:     spec.GCE.Project,
-		JSONKeyFile: gceJSONKeyFile,
+		JSONKeyFile: gceReleaseKey,
 	})
 	if err != nil {
 		plog.Fatalf("GCE client failed: %v", err)
 	}
 
-	nameVer := fmt.Sprintf("%s-%s-v", spec.GCE.Family, sanitizeVersion())
+	name := fmt.Sprintf("%s-%s", spec.GCE.Family, sanitizeVersion())
 	date := time.Now().UTC()
-	name := nameVer + date.Format("20060102")
 	desc := fmt.Sprintf("%s, %s, %s published on %s", spec.GCE.Description,
 		specVersion, specBoard, date.Format("2006-01-02"))
 
@@ -219,7 +225,7 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 
 	var conflicting, oldImages []*compute.Image
 	for _, image := range images {
-		if strings.HasPrefix(image.Name, nameVer) {
+		if strings.HasPrefix(image.Name, name) {
 			conflicting = append(conflicting, image)
 		} else {
 			oldImages = append(oldImages, image)
@@ -309,10 +315,6 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 	if spec.GCE.Limit > 0 && len(oldImages) > spec.GCE.Limit {
 		plog.Noticef("Pruning %d GCE images.", len(oldImages)-spec.GCE.Limit)
 		for _, old := range oldImages[spec.GCE.Limit:] {
-			if old.Name == "coreos-alpha-1122-0-0-v20160727" {
-				plog.Noticef("%v: not deleting: hardcoded solution to hardcoded problem", old.Name)
-				continue
-			}
 			plog.Noticef("Deleting old image %s", old.Name)
 			pending, err := api.DeleteImage(old.Name)
 			if err != nil {
