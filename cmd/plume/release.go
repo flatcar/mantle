@@ -282,6 +282,13 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		imageLink = gceUploadImage(spec, api, obj, name, desc)
 	}
 
+	// Released images should be public
+	fmt.Printf("Setting image to have public access: %v\n", name)
+	err = api.SetImagePublic(name)
+	if err != nil {
+		plog.Fatalf("Marking GCE image with public ACLs failed: %v", err)
+	}
+
 	if spec.GCE.Publish != "" {
 		obj := gs.Object{
 			Name:        src.Prefix() + spec.GCE.Publish,
