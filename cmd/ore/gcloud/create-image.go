@@ -42,6 +42,7 @@ var (
 	createImageName    string
 	createImageLicense string
 	createImageForce   bool
+	createImagePublic  bool
 )
 
 func init() {
@@ -63,6 +64,8 @@ func init() {
 		"GCE Image license name")
 	cmdCreateImage.Flags().BoolVar(&createImageForce, "force",
 		false, "overwrite existing GCE images without prompt")
+	cmdCreateImage.Flags().BoolVar(&createImagePublic, "public",
+		false, "Set public ACLs on image")
 	GCloud.AddCommand(cmdCreateImage)
 }
 
@@ -134,5 +137,15 @@ func runCreateImage(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Creating GCE image failed: %v\n", err)
 		os.Exit(1)
+	}
+
+	// If requested, set the image ACL to public
+	if createImagePublic {
+		fmt.Printf("Setting image to have public access: %v\n", imageNameGCE)
+		err = api.SetImagePublic(imageNameGCE)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Marking GCE image with public ACLs failed: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }

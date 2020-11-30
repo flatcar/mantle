@@ -42,6 +42,7 @@ var (
 	uploadBoard     string
 	uploadFile      string
 	uploadForce     bool
+	uploadPublic    bool
 )
 
 func init() {
@@ -53,6 +54,7 @@ func init() {
 		build+"/images/amd64-usr/latest/flatcar_production_gce.tar.gz",
 		"path_to_flatcar_image (build with: ./image_to_vm.sh --format=gce ...)")
 	cmdUpload.Flags().BoolVar(&uploadForce, "force", false, "overwrite existing GS and GCE images without prompt")
+	cmdUpload.Flags().BoolVar(&uploadPublic, "public", false, "Set public ACLs on image")
 	GCloud.AddCommand(cmdUpload)
 }
 
@@ -171,6 +173,16 @@ func runUpload(cmd *cobra.Command, args []string) {
 			fmt.Printf("Image %v sucessfully created in GCE\n", imageNameGCE)
 		default:
 			fmt.Println("Skipped GCE image creation")
+		}
+
+		// If requested, set the image ACL to public
+		if uploadPublic {
+			fmt.Printf("Setting image to have public access: %v\n", imageNameGCE)
+			err = api.SetImagePublic(imageNameGCE)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Marking GCE image with public ACLs failed: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 
