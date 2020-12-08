@@ -128,7 +128,7 @@ func BuildImageDir(board, version string) string {
 	return filepath.Join(BuildRoot(), "images", board, dir)
 }
 
-func RepoInit(chroot, url, branch, name string, useHostDNS bool) error {
+func RepoInit(chroot, url, manifestBranch, name, repoBranch string, useHostDNS bool) error {
 	return enterChroot(enter{
 		Chroot:     chroot,
 		CmdDir:     chrootRepoRoot,
@@ -136,8 +136,9 @@ func RepoInit(chroot, url, branch, name string, useHostDNS bool) error {
 		Cmd: []string{"--",
 			"repo", "init",
 			"--manifest-url", url,
-			"--manifest-branch", branch,
+			"--manifest-branch", manifestBranch,
 			"--manifest-name", name,
+			"--repo-branch", repoBranch,
 		}})
 }
 

@@ -28,6 +28,16 @@ import (
 
 const (
 	coreosManifestURL = "https://github.com/flatcar-linux/manifest.git"
+	// Set repoUpstreamBranch to "maint", until the upstream repo >= v2.10
+	// could be available in ordinary SDK environments. That is to avoid
+	// incompatibility issue of an old repo tool not being able to work with
+	// the default "stable" branch of the repo tool,
+	// https://gerrit.googlesource.com/git-repo/+/refs/heads/stable,
+	// which does not support python2 any more. OTOH its "maint" branch still
+	// supports python2. In the long term, we should update "dev-vcs/repo"
+	// in Flatcar SDK to v2.10 with python3, and set the default branch back
+	// to "stable".
+	repoUpstreamBranch = "maint"
 )
 
 var (
@@ -42,6 +52,7 @@ var (
 	manifestURL    string
 	manifestName   string
 	manifestBranch string
+	repoBranch     string
 	repoVerify     bool
 	sigVerify      bool
 
@@ -115,6 +126,8 @@ func init() {
 		"manifest-branch", "flatcar-master", "Manifest git repo branch")
 	creationFlags.StringVar(&manifestName,
 		"manifest-name", "default.xml", "Manifest file name")
+	creationFlags.StringVar(&repoBranch,
+		"repo-branch", repoUpstreamBranch, "Branch name to be used from the upstream git repo of repo tool")
 	creationFlags.BoolVar(&repoVerify,
 		"verify", false, "Check repo tree and release manifest match")
 	creationFlags.StringVar(&verifyKeyFile,
@@ -249,7 +262,7 @@ func unpackChroot(replace bool) {
 }
 
 func updateRepo() {
-	if err := sdk.RepoInit(chrootName, manifestURL, manifestBranch, manifestName, useHostDNS); err != nil {
+	if err := sdk.RepoInit(chrootName, manifestURL, manifestBranch, manifestName, repoBranch, useHostDNS); err != nil {
 		plog.Fatalf("repo init failed: %v", err)
 	}
 
