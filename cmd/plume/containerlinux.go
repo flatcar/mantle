@@ -144,7 +144,7 @@ var (
 			Boards:         []string{"amd64-usr"},
 			Destinations:   []storageSpec{},
 			GCE:            newGceSpec("lts", lts_desc),
-			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
+			Azure:          azureSpec{},
 			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "_pro", lts_desc),
 			AWS:            awsSpec{},
 		},
