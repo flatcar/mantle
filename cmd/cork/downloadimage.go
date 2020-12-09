@@ -81,6 +81,7 @@ func (platforms *platformList) Set(value string) error {
 	// Maps names of platforms to a list of file suffixes to download.
 	platformMap := map[string][]string{
 		"aws":       {"_ami_vmdk_image.vmdk.bz2"},
+		"aws_pro":   {"_ami_vmdk_pro_image.vmdk.bz2"},
 		"esx":       {"_vmware_ova.ova"},
 		"gce":       {"_gce.tar.gz"},
 		"qemu":      {"_image.bin.bz2"},
