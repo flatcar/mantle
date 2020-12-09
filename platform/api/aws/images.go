@@ -349,7 +349,7 @@ func (a *API) deregisterImageIfExists(name string) error {
 }
 
 // Remove all uploaded data associated with an AMI, also in other given regions.
-func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string, otherRegions []string) error {
+func (a *API) RemoveImage(amiName, imageName, s3BucketName, s3ObjectPath string, otherRegions []string) error {
 	err := a.DeleteObject(s3BucketName, s3ObjectPath)
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
@@ -370,18 +370,18 @@ func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string, otherRegions 
 		if err != nil {
 			return err
 		}
-		plog.Infof("Trying to deregister %s in %s", name, region)
+		plog.Infof("Trying to deregister %s in %s", amiName, region)
 
-		err = aa.deregisterImageIfExists(name + "-hvm")
+		err = aa.deregisterImageIfExists(amiName + "-hvm")
 		if err != nil {
 			return err
 		}
-		err = aa.deregisterImageIfExists(name)
+		err = aa.deregisterImageIfExists(amiName)
 		if err != nil {
 			return err
 		}
 
-		snapshot, err := aa.FindSnapshot(name)
+		snapshot, err := aa.FindSnapshot(imageName)
 		if err != nil {
 			return err
 		}
@@ -394,6 +394,8 @@ func (a *API) RemoveImage(name, s3BucketName, s3ObjectPath string, otherRegions 
 			} else {
 				plog.Infof("Deleted existing snapshot %s", snapshot.SnapshotID)
 			}
+		} else {
+			plog.Warningf("No snapshot was found")
 		}
 	}
 
