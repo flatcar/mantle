@@ -146,7 +146,7 @@ var (
 			GCE:            newGceSpec("lts", lts_desc),
 			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
 			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "_pro", lts_desc),
-			AWS:            newAWSSpec(),
+			AWS:            awsSpec{},
 		},
 		"developer": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/developer/developer/boards",
