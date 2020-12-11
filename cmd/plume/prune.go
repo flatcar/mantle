@@ -218,7 +218,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					// Remove -hvm from the name, as the snapshots don't include that.
 					imageName := strings.TrimSuffix(*image.Name, "-hvm")
 
-					err := api.RemoveImage(imageName, part.Bucket, s3ObjectPath, nil)
+					err := api.RemoveImage(imageName, imageName, part.Bucket, s3ObjectPath, nil)
 					if err != nil {
 						plog.Fatalf("couldn't prune image %v: %v", *image.Name, err)
 					}

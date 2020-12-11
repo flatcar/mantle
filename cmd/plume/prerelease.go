@@ -423,7 +423,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 	}
 
 	if force {
-		err := api.RemoveImage(imageName, part.Bucket, s3ObjectPath, destRegions)
+		err := api.RemoveImage(imageName, imageName, part.Bucket, s3ObjectPath, destRegions)
 		if err != nil {
 			return nil, err
 		}
