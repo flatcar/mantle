@@ -41,6 +41,7 @@ var (
 	downloadImageJSONKeyFile   string
 	downloadImageVerifyKeyFile string
 	downloadImageVerify        bool
+	downloadImageSanityCheck   bool
 	downloadImagePlatformList  platformList
 )
 
@@ -57,6 +58,7 @@ func init() {
 		"verify-key", "", "PGP public key to be used in verifing download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
 	downloadImageCmd.Flags().BoolVar(&downloadImageVerify,
 		"verify", true, "verify")
+	downloadImageCmd.Flags().BoolVar(&downloadImageSanityCheck, "sanity-check", true, "Check that version.txt exists")
 	downloadImageCmd.Flags().Var(&downloadImagePlatformList,
 		"platform", "Choose aws, esx, gce, qemu, or qemu_uefi. Multiple platforms can be specified by repeating the flag")
 
@@ -153,10 +155,12 @@ func runDownloadImage(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	versionFile := filepath.Join(downloadImageCacheDir, "version.txt")
-	versionURL := strings.TrimRight(downloadImageRoot, "/") + "/" + "version.txt"
-	if err := sdk.UpdateFile(versionFile, versionURL, client); err != nil {
-		plog.Fatalf("downloading version.txt: %v", err)
+	if downloadImageSanityCheck {
+		versionFile := filepath.Join(downloadImageCacheDir, "version.txt")
+		versionURL := strings.TrimRight(downloadImageRoot, "/") + "/" + "version.txt"
+		if err := sdk.UpdateFile(versionFile, versionURL, client); err != nil {
+			plog.Fatalf("downloading version.txt: %v", err)
+		}
 	}
 
 	for _, suffixes := range downloadImagePlatformList {
