@@ -136,6 +136,7 @@ func NetworkListeners(c cluster.TestCluster) {
 		{"udp", "68", "systemd-networkd"},  // dhcp6-client
 		{"udp", "546", "systemd-networkd"}, // bootpc
 		{"udp", "*", "systemd-timesyncd"},  // NTP client (random client ports)
+		{"tcp", "*", "containerd"},         // CNI streaming API
 	}
 	checkList := func() error {
 		return checkListeners(c, expectedListeners)
