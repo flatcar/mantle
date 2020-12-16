@@ -143,7 +143,7 @@ var (
 			BasePrivateURL: "gs://flatcar-jenkins-private/lts/boards",
 			Boards:         []string{"amd64-usr"},
 			Destinations:   []storageSpec{},
-			GCE:            newGceSpec("lts", lts_desc),
+			GCE:            gceSpec{},
 			Azure:          azureSpec{},
 			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "_pro", lts_desc),
 			AWS:            awsSpec{},
