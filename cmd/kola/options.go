@@ -36,11 +36,13 @@ var (
 	outputDir          string
 	kolaPlatform       string
 	kolaChannel        string
+	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
 	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
+	kolaOfferings      = []string{"basic", "pro"}
 	kolaDefaultImages  = map[string]string{
 		"amd64-usr": sdk.BuildRoot() + "/images/amd64-usr/latest/flatcar_production_image.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_image.bin",
@@ -67,6 +69,7 @@ func init() {
 	sv(&kola.TorcxManifestFile, "torcx-manifest", "", "Path to a torcx manifest that should be made available to tests")
 	root.PersistentFlags().StringVarP(&kolaPlatform, "platform", "p", "qemu", "VM platform: "+strings.Join(kolaPlatforms, ", "))
 	root.PersistentFlags().StringVarP(&kolaChannel, "channel", "", "stable", "Channel: "+strings.Join(kolaChannels, ", "))
+	root.PersistentFlags().StringVarP(&kolaOffering, "offering", "", "basic", "Offering: "+strings.Join(kolaOfferings, ", "))
 	root.PersistentFlags().StringVarP(&kola.Options.Distribution, "distro", "b", "cl", "Distribution: "+strings.Join(kolaDistros, ", "))
 	root.PersistentFlags().IntVarP(&kola.TestParallelism, "parallel", "j", 1, "number of tests to run in parallel")
 	sv(&kola.TAPFile, "tapfile", "", "file to write TAP results to")
@@ -184,6 +187,10 @@ func syncOptions() error {
 	}
 
 	if err := validateOption("channel", kolaChannel, kolaChannels); err != nil {
+		return err
+	}
+
+	if err := validateOption("offering", kolaOffering, kolaOfferings); err != nil {
 		return err
 	}
 
