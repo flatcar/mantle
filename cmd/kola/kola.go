@@ -312,7 +312,7 @@ func runList(cmd *cobra.Command, args []string) {
 		var w = tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
 
 		fmt.Fprintln(w, "Test Name\tPlatforms\tArchitectures\tDistributions\tChannels\tOfferings")
-		fmt.Fprintln(w, "\t")
+		fmt.Fprintln(w, "\t\t\t\t\t")
 		for _, item := range testlist {
 			fmt.Fprintf(w, "%v\n", item)
 		}
