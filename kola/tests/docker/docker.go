@@ -244,7 +244,7 @@ func dockerBaseTests(c cluster.TestCluster) {
 // using a simple container, exercise various docker options that set resource
 // limits and security options. also acts as a regression test for
 // https://github.com/coreos/bugs/issues/1246 and
-// https://github.com/flatcar-linux/Flatcar/issues/110
+// https://github.com/kinvolk/Flatcar/issues/110
 func dockerResources(c cluster.TestCluster) {
 	m := c.Machines()[0]
 

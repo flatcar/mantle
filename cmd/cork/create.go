@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	coreosManifestURL = "https://github.com/flatcar-linux/manifest.git"
+	coreosManifestURL = "https://github.com/kinvolk/manifest.git"
 	// Set repoUpstreamBranch to "maint", until the upstream repo >= v2.10
 	// could be available in ordinary SDK environments. That is to avoid
 	// incompatibility issue of an old repo tool not being able to work with

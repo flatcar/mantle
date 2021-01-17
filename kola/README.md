@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-1. Fork and clone the [`mantle` repository](https://github.com/flatcar-linux/mantle/)
+1. Fork and clone the [`mantle` repository](https://github.com/kinvolk/mantle/)
 2. Move into `kola/tests/` and look for the package your test would best fit
 3. Edit the file and add your test(s), ensuring that you register your new test(s) in the packages `init()`
 4. Commit, push, and PR your result
