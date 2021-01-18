@@ -188,7 +188,7 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 	return
 }
 
-func FilterTests(tests map[string]*register.Test, patterns []string, channel, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
+func FilterTests(tests map[string]*register.Test, patterns []string, channel, offering string, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
 
 	checkPlatforms := []string{pltfrm}
@@ -282,6 +282,10 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, pl
 			continue
 		}
 
+		if allowed, excluded := isAllowed(offering, t.Offerings, t.ExcludeOfferings); !allowed || excluded {
+			continue
+		}
+
 		r[name] = t
 	}
 
@@ -313,7 +317,7 @@ func versionOutsideRange(version, minVersion, endVersion semver.Version) bool {
 // register tests in their init() function.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. If it already exists it will be erased!
-func RunTests(patterns []string, channel, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
+func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
 	var versionStr string
 
 	// Avoid incurring cost of starting machine in getClusterSemver when
@@ -322,7 +326,7 @@ func RunTests(patterns []string, channel, pltfrm, outputDir string, sshKeys *[]a
 	// 2) glob is an exact match which means minVersion will be ignored
 	//    either way
 	// 3) the provided torcx flag is wrong
-	tests, err := FilterTests(register.Tests, patterns, channel, pltfrm, semver.Version{})
+	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, semver.Version{})
 	if err != nil {
 		plog.Fatal(err)
 	}
@@ -373,7 +377,7 @@ func RunTests(patterns []string, channel, pltfrm, outputDir string, sshKeys *[]a
 		versionStr = version.String()
 
 		// one more filter pass now that we know real version
-		tests, err = FilterTests(tests, patterns, channel, pltfrm, *version)
+		tests, err = FilterTests(tests, patterns, channel, offering, pltfrm, *version)
 		if err != nil {
 			plog.Fatal(err)
 		}
