@@ -38,7 +38,7 @@ storage:
       mode: 0644
 `),
 		Distros:         []string{"cl"},
-		ExcludeChannels: []string{"edge"},
+		ExcludeChannels: []string{"alpha", "edge"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerTorcxFlagFileCloudConfig,
@@ -52,7 +52,7 @@ write_files:
 `),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
-		ExcludeChannels:  []string{"edge"},
+		ExcludeChannels:  []string{"alpha", "edge"},
 	})
 }
 
