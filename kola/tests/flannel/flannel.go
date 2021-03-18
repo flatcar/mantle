@@ -94,13 +94,13 @@ func mach2bip(c cluster.TestCluster, m platform.Machine, ifname string) (string,
 }
 
 // ping sends icmp packets from machine a to b using the ping tool.
-func ping(c cluster.TestCluster, a, b platform.Machine, ifname string) {
-	srcip, err := mach2bip(c, a, ifname)
+func ping(c cluster.TestCluster, a, b platform.Machine, ifnameA, ifnameB string) {
+	srcip, err := mach2bip(c, a, ifnameA)
 	if err != nil {
 		c.Fatalf("failed to get docker bridge ip #1: %v", err)
 	}
 
-	dstip, err := mach2bip(c, b, ifname)
+	dstip, err := mach2bip(c, b, ifnameB)
 	if err != nil {
 		c.Fatalf("failed to get docker bridge ip #2: %v", err)
 	}
@@ -129,7 +129,9 @@ func udp(c cluster.TestCluster) {
 		c.Fatalf("cluster health: %v", err)
 	}
 
-	ping(c, machs[0], machs[2], "flannel0")
+	// ping the docker0 address .1/24 instead of the flannel0 address .0/32
+	// because it does not work after a flanneld restart
+	ping(c, machs[0], machs[2], "flannel0", "docker0")
 }
 
 // VXLAN tests that flannel can send packets using the vxlan backend.
@@ -141,5 +143,5 @@ func vxlan(c cluster.TestCluster) {
 		c.Fatalf("cluster health: %v", err)
 	}
 
-	ping(c, machs[0], machs[2], "flannel.1")
+	ping(c, machs[0], machs[2], "flannel.1", "flannel.1")
 }
