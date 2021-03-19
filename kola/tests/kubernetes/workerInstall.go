@@ -20,7 +20,7 @@ export HYPERKUBE_IMAGE_REPO={{.HYPERKUBE_IMAGE_REPO}}
 
 # The IP address of the cluster DNS service.
 # This must be the same DNS_SERVICE_IP used when configuring the controller nodes.
-export DNS_SERVICE_IP=10.3.0.10
+export DNS_SERVICE_IP=192.168.128.10
 
 # Whether to use Calico for Kubernetes network policy.
 export USE_CALICO=false

@@ -74,7 +74,7 @@ func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kC
 		"MASTER_HOST":          master.PrivateIP(),
 		"ETCD_ENDPOINTS":       fmt.Sprintf("http://%v:2379", etcdNode.PrivateIP()),
 		"CONTROLLER_ENDPOINT":  fmt.Sprintf("https://%v:443", master.PrivateIP()),
-		"K8S_SERVICE_IP":       "10.3.0.1",
+		"K8S_SERVICE_IP":       "192.168.128.1",
 		"K8S_VER":              version,
 		"CONTAINER_RUNTIME":    runtime,
 	}
