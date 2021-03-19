@@ -1,8 +1,6 @@
 package kubernetes
 
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic.
-// The only change besides paramaterizing the env vars was:
-// s/COREOS_PUBLIC_IP/COREOS_PRIVATE_IPV4 so this works on GCE.
 const controllerInstallScript = `#!/bin/bash
 set -e
 
@@ -54,7 +52,8 @@ function init_config {
     fi
 
     if [ -z $ADVERTISE_IP ]; then
-        export ADVERTISE_IP=$(awk -F= '/COREOS_PRIVATE_IPV4/ {print $2}' /etc/environment)
+        systemctl start coreos-metadata
+        export ADVERTISE_IP=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL)' | cut -d = -f 2)
     fi
 
     for REQ in "${REQUIRED[@]}"; do
