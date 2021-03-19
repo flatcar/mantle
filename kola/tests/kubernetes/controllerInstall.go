@@ -894,23 +894,13 @@ EOF
 EOF
     fi
 
-    local TEMPLATE=/etc/flannel/options.env
+    local TEMPLATE=/run/flannel/options.env
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
         cat << EOF > $TEMPLATE
 FLANNELD_IFACE=$ADVERTISE_IP
 FLANNELD_ETCD_ENDPOINTS=$ETCD_ENDPOINTS
-EOF
-    fi
-
-    local TEMPLATE=/etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf.conf
-    if [ ! -f $TEMPLATE ]; then
-        echo "TEMPLATE: $TEMPLATE"
-        mkdir -p $(dirname $TEMPLATE)
-        cat << EOF > $TEMPLATE
-[Service]
-ExecStartPre=/usr/bin/ln -sf /etc/flannel/options.env /run/flannel/options.env
 EOF
     fi
 
