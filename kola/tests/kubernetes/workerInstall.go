@@ -302,9 +302,6 @@ EOF
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
         cat << EOF > $TEMPLATE
-[Unit]
-Requires=flanneld.service
-After=flanneld.service
 [Service]
 EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
 EOF
