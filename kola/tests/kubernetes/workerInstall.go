@@ -1,8 +1,6 @@
 package kubernetes
 
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic.
-// The only change besides paramaterizing the env vars was:
-// s/COREOS_PUBLIC_IP/COREOS_PRIVATE_IPV4 so this works on GCE.
 const workerInstallScript = `#!/bin/bash
 set -e
 
@@ -22,7 +20,7 @@ export HYPERKUBE_IMAGE_REPO={{.HYPERKUBE_IMAGE_REPO}}
 
 # The IP address of the cluster DNS service.
 # This must be the same DNS_SERVICE_IP used when configuring the controller nodes.
-export DNS_SERVICE_IP=10.3.0.10
+export DNS_SERVICE_IP=192.168.128.10
 
 # Whether to use Calico for Kubernetes network policy.
 export USE_CALICO=false
@@ -43,7 +41,8 @@ function init_config {
     fi
 
     if [ -z $ADVERTISE_IP ]; then
-        export ADVERTISE_IP=$(awk -F= '/COREOS_PRIVATE_IPV4/ {print $2}' /etc/environment)
+        systemctl start coreos-metadata
+        export ADVERTISE_IP=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL)' | cut -d = -f 2)
     fi
 
     for REQ in "${REQUIRED[@]}"; do
@@ -277,7 +276,7 @@ spec:
 EOF
     fi
 
-    local TEMPLATE=/etc/flannel/options.env
+    local TEMPLATE=/run/flannel/options.env
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
@@ -287,24 +286,11 @@ FLANNELD_ETCD_ENDPOINTS=$ETCD_ENDPOINTS
 EOF
     fi
 
-    local TEMPLATE=/etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf.conf
-    if [ ! -f $TEMPLATE ]; then
-        echo "TEMPLATE: $TEMPLATE"
-        mkdir -p $(dirname $TEMPLATE)
-        cat << EOF > $TEMPLATE
-[Service]
-ExecStartPre=/usr/bin/ln -sf /etc/flannel/options.env /run/flannel/options.env
-EOF
-    fi
-
     local TEMPLATE=/etc/systemd/system/docker.service.d/40-flannel.conf
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
         cat << EOF > $TEMPLATE
-[Unit]
-Requires=flanneld.service
-After=flanneld.service
 [Service]
 EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
 EOF

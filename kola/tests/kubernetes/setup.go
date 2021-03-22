@@ -53,7 +53,7 @@ func (cw clusterWrapper) Name() string {
 // Setup a multi-node cluster based on generic scrips from coreos-kubernetes repo.
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic
 func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kCluster {
-	plog.Infof("Creating single-node etcd")
+	plog.Infof("Creating single-node etcd") // etcd is on a separate machine to ensures flannel works without a local etcd
 	etcdNode, err := c.NewMachine(etcdConfig)
 	if err != nil {
 		c.Fatalf("error creating etcd: %v", err)
@@ -63,10 +63,8 @@ func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kC
 		c.Fatalf("error checking etcd health: %v", err)
 	}
 
-	// passing cloud-config has the side effect of populating `/etc/environment`,
-	// which the install script depends on
 	plog.Infof("Creating master node")
-	master, err := c.NewMachine(conf.CloudConfig(""))
+	master, err := c.NewMachine(noLocalEtcdConfig)
 	if err != nil {
 		c.Fatalf("error creating master: %v", err)
 	}
@@ -76,7 +74,7 @@ func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kC
 		"MASTER_HOST":          master.PrivateIP(),
 		"ETCD_ENDPOINTS":       fmt.Sprintf("http://%v:2379", etcdNode.PrivateIP()),
 		"CONTROLLER_ENDPOINT":  fmt.Sprintf("https://%v:443", master.PrivateIP()),
-		"K8S_SERVICE_IP":       "10.3.0.1",
+		"K8S_SERVICE_IP":       "192.168.128.1",
 		"K8S_VER":              version,
 		"CONTAINER_RUNTIME":    runtime,
 	}
@@ -87,7 +85,7 @@ func setupCluster(c cluster.TestCluster, nodes int, version, runtime string) *kC
 	}
 
 	plog.Infof("Creating worker nodes")
-	workers, err := platform.NewMachines(clusterWrapper{&c}, conf.CloudConfig(""), nodes)
+	workers, err := platform.NewMachines(clusterWrapper{&c}, nil, nodes)
 	if err != nil {
 		c.Fatalf("error creating workers: %v", err)
 	}
@@ -330,6 +328,12 @@ systemd:
   units:
     - name: etcd-member.service
       enabled: true
+`)
+	noLocalEtcdConfig = conf.ContainerLinuxConfig(`
+systemd:
+  units:
+    - name: etcd-member.service
+      mask: true
 `)
 )
 

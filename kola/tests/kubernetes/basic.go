@@ -51,7 +51,7 @@ func init() {
 				Name:        "google.kubernetes.basic." + r + "." + t,
 				Run:         f,
 				ClusterSize: 0,
-				Platforms:   []string{"gce"},
+				Platforms:   []string{"gce", "do", "aws"}, // TODO: fix packet, esx
 				Distros:     []string{"cl"},
 			})
 		}
@@ -61,7 +61,8 @@ func init() {
 // Run basic smoke tests on cluster. Assumes master is machine index 1,
 // workers make up the rest.
 func CoreOSBasic(c cluster.TestCluster, version, runtime string) {
-	k := setupCluster(c, 2, version, runtime)
+	// only one worker node to run on VMware which has max 3 machines for one test currently (the other two are one for etcd and one controller)
+	k := setupCluster(c, 1, version, runtime)
 
 	// start nginx pod and curl endpoint
 	if err := nginxCheck(c, k.master, k.workers); err != nil {

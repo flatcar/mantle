@@ -1,8 +1,6 @@
 package kubernetes
 
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic.
-// The only change besides paramaterizing the env vars was:
-// s/COREOS_PUBLIC_IP/COREOS_PRIVATE_IPV4 so this works on GCE.
 const controllerInstallScript = `#!/bin/bash
 set -e
 
@@ -18,22 +16,22 @@ export HYPERKUBE_IMAGE_REPO={{.HYPERKUBE_IMAGE_REPO}}
 # The CIDR network to use for pod IPs.
 # Each pod launched in the cluster will be assigned an IP out of this range.
 # Each node will be configured such that these IPs will be routable using the flannel overlay network.
-export POD_NETWORK=10.2.0.0/16
+export POD_NETWORK=192.168.0.0/17
 
 # The CIDR network to use for service cluster IPs.
 # Each service will be assigned a cluster IP out of this range.
 # This must not overlap with any IP ranges assigned to the POD_NETWORK, or other existing network infrastructure.
 # Routing to these IPs is handled by a proxy service local to each node, and are not required to be routable between nodes.
-export SERVICE_IP_RANGE=10.3.0.0/24
+export SERVICE_IP_RANGE=192.168.128.0/24
 
 # The IP address of the Kubernetes API Service
 # If the SERVICE_IP_RANGE is changed above, this must be set to the first IP in that range.
-export K8S_SERVICE_IP=10.3.0.1
+export K8S_SERVICE_IP=192.168.128.1
 
 # The IP address of the cluster DNS service.
 # This IP must be in the range of the SERVICE_IP_RANGE and cannot be the first IP in the range.
 # This same IP must be configured on all worker nodes to enable DNS service discovery.
-export DNS_SERVICE_IP=10.3.0.10
+export DNS_SERVICE_IP=192.168.128.10
 
 # Whether to use Calico for Kubernetes network policy.
 export USE_CALICO=false
@@ -54,7 +52,8 @@ function init_config {
     fi
 
     if [ -z $ADVERTISE_IP ]; then
-        export ADVERTISE_IP=$(awk -F= '/COREOS_PRIVATE_IPV4/ {print $2}' /etc/environment)
+        systemctl start coreos-metadata
+        export ADVERTISE_IP=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL)' | cut -d = -f 2)
     fi
 
     for REQ in "${REQUIRED[@]}"; do
@@ -895,7 +894,7 @@ EOF
 EOF
     fi
 
-    local TEMPLATE=/etc/flannel/options.env
+    local TEMPLATE=/run/flannel/options.env
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
@@ -905,24 +904,11 @@ FLANNELD_ETCD_ENDPOINTS=$ETCD_ENDPOINTS
 EOF
     fi
 
-    local TEMPLATE=/etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf.conf
-    if [ ! -f $TEMPLATE ]; then
-        echo "TEMPLATE: $TEMPLATE"
-        mkdir -p $(dirname $TEMPLATE)
-        cat << EOF > $TEMPLATE
-[Service]
-ExecStartPre=/usr/bin/ln -sf /etc/flannel/options.env /run/flannel/options.env
-EOF
-    fi
-
     local TEMPLATE=/etc/systemd/system/docker.service.d/40-flannel.conf
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
         cat << EOF > $TEMPLATE
-[Unit]
-Requires=flanneld.service
-After=flanneld.service
 [Service]
 EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
 EOF
