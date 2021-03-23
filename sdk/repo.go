@@ -16,6 +16,7 @@ package sdk
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -164,4 +165,38 @@ func RepoSync(chroot string, force, useHostDNS bool) error {
 		Cmd:        args,
 		UseHostDNS: useHostDNS,
 	})
+}
+
+func ApplyPatch(chroot string, useHostDNS bool, repositoryPath, patchPath string) error {
+	fileName := filepath.Base(patchPath)
+	targetName := filepath.Join(repositoryPath, fileName) // Using a relative path
+
+	source, err := os.Open(patchPath)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(targetName)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+
+	if _, err := io.Copy(destination, source); err != nil {
+		return err
+	}
+
+	args := []string{"--", "git", "am", "-3", filepath.Join(chrootRepoRoot, targetName)}
+	err = enterChroot(enter{
+		Chroot:     chroot,
+		CmdDir:     filepath.Join(chrootRepoRoot, repositoryPath),
+		Cmd:        args,
+		UseHostDNS: useHostDNS,
+	})
+	if err != nil {
+		return err
+	}
+
+	return os.Remove(targetName)
 }

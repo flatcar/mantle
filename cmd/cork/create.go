@@ -74,6 +74,10 @@ var (
 
 	verifyKeyFile string
 
+	scriptsPatch string
+	portagePatch string
+	overlayPatch string
+
 	setupCmd = &cobra.Command{
 		Use:   "setup",
 		Short: "Setup the system for SDK use",
@@ -134,6 +138,12 @@ func init() {
 		"verify-key", "", "PGP public key to be used in verifing download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
 	creationFlags.BoolVar(&sigVerify,
 		"verify-signature", false, "Verify the manifest Git tag with GPG")
+	creationFlags.StringVar(&scriptsPatch,
+		"scripts-patch", "", "Path to a .patch file (can be a concatenation of multiple patches, e.g., from git format-patch -2) that is committed to the scripts repository after the manifest reference is checked out")
+	creationFlags.StringVar(&portagePatch,
+		"portage-patch", "", "Path to a .patch file (can be a concatenation of multiple patches, e.g., from git format-patch -2) that is committed to the portage repository after the manifest reference is checked out")
+	creationFlags.StringVar(&overlayPatch,
+		"overlay-patch", "", "Path to a .patch file (can be a concatenation of multiple patches, e.g., from git format-patch -2) that is committed to the overlay repository after the manifest reference is checked out")
 
 	root.AddCommand(setupCmd)
 
@@ -279,6 +289,22 @@ func updateRepo() {
 	if repoVerify {
 		if err := repo.VerifySync(manifestName); err != nil {
 			plog.Fatalf("Verify failed: %v", err)
+		}
+	}
+
+	if scriptsPatch != "" {
+		if err := sdk.ApplyPatch(chrootName, useHostDNS, "src/scripts", scriptsPatch); err != nil {
+			plog.Fatalf("Applying scripts patch failed: %v", err)
+		}
+	}
+	if portagePatch != "" {
+		if err := sdk.ApplyPatch(chrootName, useHostDNS, "src/third_party/portage-stable", portagePatch); err != nil {
+			plog.Fatalf("Applying portage patch failed: %v", err)
+		}
+	}
+	if overlayPatch != "" {
+		if err := sdk.ApplyPatch(chrootName, useHostDNS, "src/third_party/coreos-overlay", overlayPatch); err != nil {
+			plog.Fatalf("Applying overlay patch failed: %v", err)
 		}
 	}
 }
