@@ -187,7 +187,7 @@ func ApplyPatch(chroot string, useHostDNS bool, repositoryPath, patchPath string
 		return err
 	}
 
-	args := []string{"--", "git", "am", "-3", filepath.Join(chrootRepoRoot, targetName)}
+	args := []string{"GIT_COMMITTER_NAME=Flatcar Buildbot", "GIT_COMMITTER_EMAIL=buildbot@flatcar-linux.org", "--", "git", "am", "-3", filepath.Join(chrootRepoRoot, targetName)}
 	err = enterChroot(enter{
 		Chroot:     chroot,
 		CmdDir:     filepath.Join(chrootRepoRoot, repositoryPath),
