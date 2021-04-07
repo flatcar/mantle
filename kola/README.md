@@ -26,7 +26,7 @@ func init() {
         Run:         podmanNOOP,
         ClusterSize: 1,
         Name:        `podman.noop`,
-        Distros:     []string{"rhcos"},
+        Distros:     []string{"cl"},
     })
 <snip/>
 $ popd
@@ -35,13 +35,13 @@ $ ./build kola
 $ ./bin/kola list | grep podman
 podman.base                                     [all]                                   [all]   [rhcos]
 podman.network                                  [all]                                   [all]   [rhcos]
-podman.noop                                     [all]                                   [all]   [rhcos]
+podman.noop                                     [all]                                   [all]   [cl]
 podman.workflow                                 [all]                                   [all]   [rhcos]
 # Run your test and see what happens
-$ sudo ./bin/kola run -b rhcos --qemu-image `pwd`/rhcos-410.8.20190502.0-qemu.qcow2 podman.noop
+$ sudo ./bin/kola run -b cl --qemu-image ~/developer-2823.0.0+2021-04-06-1555-a1/flatcar_production_qemu_image.img podman.noop
 === RUN   podman.noop
---- PASS: podman.noop (21.08s)
-PASS, output in _kola_temp/qemu-2019-05-08-1535-16606
+--- PASS: podman.noop (19.96s)
+PASS, output in _kola_temp/qemu-2021-04-07-0924-2937
 # git add/commit/push...
 # Open PR to get the test added!
 ```
