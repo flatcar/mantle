@@ -1,3 +1,4 @@
+// Copyright 2021 Kinvolk GmbH
 // Copyright 2015 CoreOS, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +16,32 @@
 package local
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 	"text/template"
 
+	"github.com/coreos/go-iptables/iptables"
 	"github.com/coreos/pkg/capnslog"
 	"github.com/vishvananda/netlink"
+	"github.com/vishvananda/netns"
 
 	"github.com/coreos/mantle/system/exec"
+	"github.com/coreos/mantle/system/ns"
 	"github.com/coreos/mantle/util"
+)
+
+var (
+	// ErrIPClash is raised when a generated IP lives in an existing
+	// root network namespace
+	ErrIPClash = errors.New("IP lives in a host network")
+
+	// ErrIncorrectSeed is raised when the seed used to generate veth pair
+	// is in an incorrect format
+	ErrIncorrectSeed = errors.New("seed must be a positive 2 bytes value")
 )
 
 type Interface struct {
@@ -38,6 +56,11 @@ type Segment struct {
 	BridgeIf   *Interface
 	Interfaces []*Interface
 	nextIf     int
+	// Listener holds the unique TCP socket
+	// created to ensure uniqueness of IP
+	// it has to be closed once the kola instance
+	// has terminated
+	Listener net.Listener
 }
 
 type Dnsmasq struct {
@@ -66,8 +89,6 @@ leasefile-ro
 log-facility=-
 pid-file=
 
-no-resolv
-no-hosts
 enable-ra
 
 # point NTP at this host (0.0.0.0 and :: are special)
@@ -108,6 +129,87 @@ func newInterface(s byte, i uint16) *Interface {
 	}
 }
 
+// configureNAT creates and append a NAT rule
+// using the interface i as output
+func configureNAT(i string) error {
+	table, err := iptables.New()
+	if err != nil {
+		return fmt.Errorf("unable to get iptables: %w", err)
+	}
+
+	if err := table.AppendUnique("nat", "POSTROUTING", "-j", "MASQUERADE", "-o", i); err != nil {
+		return fmt.Errorf("unable to append rule: %w", err)
+	}
+
+	return nil
+}
+
+// generateVethPair creates and returns a map holding
+// a pair of veth based on a seed
+// where:
+// [0] is the network namespace veth
+// [1] is the host namespace veth
+// [2] is the next hop for adding route
+func generateVethPair(seed int, hostNetworks []*net.IPNet) ([]string, error) {
+	if seed < 0 || seed > 0xFFFF {
+		return nil, ErrIncorrectSeed
+	}
+
+	// we basically use each single bit of the seed
+	// to generate an unique IP range
+	host := 0b10101100000100000000000000000000 // 172.16.0.0/12
+
+	// 20 bits are free: 16 are used for the seed, 1 for the network
+	// we can shift 1-4 as needed to minimize clashes (and could insert 3 static bits)
+	seed <<= 4
+	host |= seed
+	ns := host | 1
+
+	hostIP := make(net.IP, 4)
+	nsIP := make(net.IP, 4)
+
+	binary.BigEndian.PutUint32(hostIP, uint32(host))
+	binary.BigEndian.PutUint32(nsIP, uint32(ns))
+
+	for _, network := range hostNetworks {
+		if network.Contains(hostIP) {
+			return nil, ErrIPClash
+		}
+	}
+
+	topology := make([]string, 3)
+	topology[0] = fmt.Sprintf("%s|%s", fmt.Sprintf("kola-%d%d%d", nsIP[1], nsIP[2], nsIP[3]), fmt.Sprintf("%s/31", nsIP.String()))
+	topology[1] = fmt.Sprintf("%s|%s", fmt.Sprintf("kola-%d%d%d", hostIP[1], hostIP[2], hostIP[3]), fmt.Sprintf("%s/31", hostIP.String()))
+	topology[2] = fmt.Sprintf("%s/32", hostIP.String())
+
+	return topology, nil
+}
+
+// setupLink creates a new network device, assigns it
+// an address and finally set it up
+func setupLink(l netlink.Link, addr string, add bool) error {
+	if add {
+		if err := netlink.LinkAdd(l); err != nil {
+			return fmt.Errorf("unable to add link: %w", err)
+		}
+	}
+
+	ad, err := netlink.ParseAddr(addr)
+	if err != nil {
+		return fmt.Errorf("unable to parse addr: %w", err)
+	}
+
+	if err := netlink.AddrAdd(l, ad); err != nil {
+		return fmt.Errorf("unable to add address: %w", err)
+	}
+
+	if err := netlink.LinkSetUp(l); err != nil {
+		return fmt.Errorf("unable to set link up: %w", err)
+	}
+
+	return nil
+}
+
 func newSegment(s byte) (*Segment, error) {
 	seg := &Segment{
 		BridgeName: fmt.Sprintf("br%d", s),
@@ -145,6 +247,176 @@ func newSegment(s byte) (*Segment, error) {
 
 	if err := netlink.LinkSetUp(&br); err != nil {
 		return nil, fmt.Errorf("LinkSetUp() failed: %v", err)
+	}
+
+	// we first create an unique virtual ethernet pair in the root network namespace
+	// we use linux network random port attribution to assert the uniqueness of the IP range in order to avoid IP
+	// range clashes
+	root, err := netns.GetFromPid(1)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get NS from PID 1: %w", err)
+	}
+
+	rootExit, err := ns.Enter(root)
+	if err != nil {
+		return nil, fmt.Errorf("unable to enter root namespace: %w", err)
+	}
+
+	var (
+		listener net.Listener
+		// isValid indicates whether or not the generated IP
+		// is valid - meaning no conflict with existing
+		// IP network
+		isValid bool
+		pair    []string
+	)
+
+	for !isValid {
+		listener, err = net.Listen("tcp", ":0")
+		if err != nil {
+			return nil, fmt.Errorf("unable to listen on random port: %w", err)
+		}
+
+		_, port, err := net.SplitHostPort(listener.Addr().String())
+		if err != nil {
+			return nil, fmt.Errorf("unable to split address: %w", err)
+		}
+
+		p, err := strconv.Atoi(port)
+		if err != nil {
+			return nil, fmt.Errorf("unable to convert port to int: %w", err)
+		}
+
+		ips := make([]*net.IPNet, 0)
+		links, err := netlink.LinkList()
+		if err != nil {
+			return nil, fmt.Errorf("unable to fetch network link list: %w", err)
+		}
+
+		for _, link := range links {
+			addresses, err := netlink.AddrList(link, netlink.FAMILY_V4)
+			if err != nil {
+				return nil, fmt.Errorf("unable to list addresses for device: %w", err)
+			}
+
+			for _, address := range addresses {
+				ips = append(ips, address.IPNet)
+			}
+		}
+
+		pair, err = generateVethPair(p, ips)
+		if err != nil {
+			if errors.Is(err, ErrIPClash) {
+				isValid = false
+				plog.Debugf("failed to use port %d as unique seed for the veth pair due to address clash, retrying", p)
+				if err := listener.Close(); err != nil {
+					return nil, fmt.Errorf("unable to close TCP listener: %w", err)
+				}
+				continue
+			} else {
+				return nil, fmt.Errorf("unable to generate veth pair: %w", err)
+			}
+		}
+
+		isValid = true
+	}
+
+	if err := rootExit(); err != nil {
+		return nil, fmt.Errorf("unable to exit root namespace: %w", err)
+	}
+
+	// keep the created listener for destroying later
+	seg.Listener = listener
+
+	peer0 := strings.Split(pair[0], "|")
+	peer1 := strings.Split(pair[1], "|")
+
+	attr := netlink.NewLinkAttrs()
+	attr.Name = peer0[0]
+	veth := &netlink.Veth{
+		PeerName:  peer1[0],
+		LinkAttrs: attr,
+	}
+	if err := setupLink(veth, peer0[1], true); err != nil {
+		return nil, fmt.Errorf("unable to set up link: %w", err)
+	}
+
+	peer, err := netlink.LinkByName(peer1[0])
+	if err != nil {
+		return nil, fmt.Errorf("unable to get link by name: %w", err)
+	}
+
+	// move to root network namespace
+	if err := netlink.LinkSetNsPid(peer, 1); err != nil {
+		return nil, fmt.Errorf("unable to set link into a new ns: %w\n", err)
+	}
+
+	gtw, _, err := net.ParseCIDR(pair[2])
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse CIDR address: %w", err)
+	}
+
+	_, dst, err := net.ParseCIDR("0.0.0.0/0")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse CIDR address: %w", err)
+	}
+
+	if err := netlink.RouteAdd(&netlink.Route{
+		Scope:     netlink.SCOPE_UNIVERSE,
+		Dst:       dst,
+		LinkIndex: veth.Attrs().Index,
+		Gw:        gtw,
+	}); err != nil {
+		return nil, fmt.Errorf("unable to add default route: %w", err)
+	}
+
+	if err := configureNAT(peer0[0]); err != nil {
+		return nil, fmt.Errorf("unable to configure NAT: %w", err)
+	}
+
+	root, err = netns.GetFromPid(1)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get NS from PID 1: %w", err)
+	}
+
+	rootExit, err = ns.Enter(root)
+	if err != nil {
+		return nil, fmt.Errorf("unable to enter root namespace: %w", err)
+	}
+
+	peer, err = netlink.LinkByName(peer1[0])
+	if err != nil {
+		return nil, fmt.Errorf("unable to get link by name: %w", err)
+	}
+
+	if err := setupLink(peer, peer1[1], false); err != nil {
+		return nil, fmt.Errorf("unable to set up link: %w", err)
+	}
+
+	// `ip route get 1.0.0.0` in order to get device to configure NAT on
+	d := net.IPv4(1, 0, 0, 0)
+
+	routes, err := netlink.RouteGet(d)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get routes: %w", err)
+	}
+
+	if len(routes) < 0 {
+		return nil, fmt.Errorf("at least one default route is required")
+	}
+
+	route := routes[0]
+	l, err := netlink.LinkByIndex(route.LinkIndex)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get link by index: %w", err)
+	}
+
+	if err := configureNAT(l.Attrs().Name); err != nil {
+		return nil, fmt.Errorf("unable to configure NAT: %w", err)
+	}
+
+	if err := rootExit(); err != nil {
+		return nil, fmt.Errorf("unable to exit root namespace: %w", err)
 	}
 
 	return seg, nil
@@ -226,5 +498,11 @@ func (dm *Dnsmasq) GetInterface(bridge string) (in *Interface) {
 func (dm *Dnsmasq) Destroy() {
 	if err := dm.dnsmasq.Kill(); err != nil {
 		plog.Errorf("Error killing dnsmasq: %v", err)
+	}
+
+	for _, seg := range dm.Segments {
+		if err := seg.Listener.Close(); err != nil {
+			plog.Errorf("unable to close segment listener: %v", err)
+		}
 	}
 }
