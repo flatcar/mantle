@@ -109,7 +109,6 @@ func init() {
 		Name:        "cl.internet",
 		Run:         InternetTests,
 		ClusterSize: 1,
-		Flags:       []register.Flag{register.RequiresInternetAccess},
 		NativeFuncs: map[string]func() error{
 			"UpdateEngine": TestUpdateEngine,
 			"DockerPing":   TestDockerPing,

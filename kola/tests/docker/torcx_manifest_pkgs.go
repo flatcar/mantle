@@ -33,7 +33,6 @@ func init() {
 		Run:         dockerTorcxManifestPkgs,
 		ClusterSize: 0,
 		Name:        "docker.torcx-manifest-pkgs",
-		Flags:       []register.Flag{register.RequiresInternetAccess}, // Downloads torcx packages
 		// https://github.com/coreos/bugs/issues/2205 for DO
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		ExcludePlatforms: []string{"esx", "do"},

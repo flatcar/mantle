@@ -63,7 +63,6 @@ func init() {
     ]
   }
 }`),
-		Flags:   []register.Flag{register.RequiresInternetAccess}, // fetching etcd requires networking
 		Distros: []string{"rhcos"},
 	})
 	register.Register(&register.Test{
@@ -121,7 +120,6 @@ func init() {
     ]
   }
 }`),
-		Flags:   []register.Flag{register.RequiresInternetAccess}, // fetching etcd requires networking
 		Distros: []string{"rhcos"},
 	})
 }

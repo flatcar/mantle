@@ -113,7 +113,6 @@ func init() {
 		Name:        "coreos.ignition.resource.remote",
 		Run:         resourceRemote,
 		ClusterSize: 1,
-		Flags:       []register.Flag{register.RequiresInternetAccess},
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
 		ExcludePlatforms: []string{"esx", "do"},
@@ -239,7 +238,6 @@ func init() {
 		Name:        "coreos.ignition.resource.s3.versioned",
 		Run:         resourceS3Versioned,
 		ClusterSize: 1,
-		Flags:       []register.Flag{register.RequiresInternetAccess},
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
 		ExcludePlatforms: []string{"esx", "do"},
