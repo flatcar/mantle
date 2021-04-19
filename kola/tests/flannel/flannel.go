@@ -63,7 +63,7 @@ func init() {
 		ClusterSize:      3,
 		Name:             "cl.flannel.udp",
 		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
+		ExcludePlatforms: []string{"qemu-unpriv"},
 		UserData:         flannelConf.Subst("$type", "udp"),
 	})
 
@@ -72,7 +72,7 @@ func init() {
 		ClusterSize:      3,
 		Name:             "cl.flannel.vxlan",
 		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
+		ExcludePlatforms: []string{"qemu-unpriv"},
 		UserData:         flannelConf.Subst("$type", "vxlan"),
 	})
 }

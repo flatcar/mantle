@@ -46,7 +46,7 @@ etcd:
   listen_peer_urls:            http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery`),
 		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
+		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.locksmith.reboot",

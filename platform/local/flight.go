@@ -50,7 +50,7 @@ func NewLocalFlight(opts *platform.Options, platformName platform.Name) (*LocalF
 	}
 
 	nsdialer := network.NewNsDialer(nshandle)
-	bf, err := platform.NewBaseFlightWithDialer(opts, platformName, "", nsdialer)
+	bf, err := platform.NewBaseFlightWithDialer(opts, platformName, "custom", nsdialer)
 	if err != nil {
 		nshandle.Close()
 		return nil, fmt.Errorf("creating new base flight failed: %v", err)
