@@ -59,14 +59,26 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 	ip := strings.Split(netif.DHCPv4[0].String(), "/")[0]
 
 	conf, err := qc.RenderUserData(userdata, map[string]string{
-		"$public_ipv4":  ip,
-		"$private_ipv4": ip,
+		"$public_ipv4":  "${COREOS_CUSTOM_PUBLIC_IPV4}",
+		"$private_ipv4": "${COREOS_CUSTOM_PRIVATE_IPV4}",
 	})
 	if err != nil {
 		qc.mu.Unlock()
 		return nil, err
 	}
 	qc.mu.Unlock()
+
+	conf.AddSystemdUnit("coreos-metadata.service", `[Unit]
+Description=QEMU metadata agent
+After=nss-lookup.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=OUTPUT=/run/metadata/coreos
+ExecStart=/usr/bin/mkdir --parent /run/metadata
+ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=`+ip+`\nCOREOS_CUSTOM_PUBLIC_IPV4=`+ip+`\n" > ${OUTPUT}'`, false)
 
 	var confPath string
 	if conf.IsIgnition() {
