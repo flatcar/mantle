@@ -89,6 +89,11 @@ leasefile-ro
 log-facility=-
 pid-file=
 
+# hardcode DNS servers to avoid using systemd-resolved on the unreachable 127.0.0.53
+dhcp-option=6,1.1.1.1,1.0.0.1,8.8.8.8
+no-resolv
+no-hosts
+
 enable-ra
 
 # point NTP at this host (0.0.0.0 and :: are special)
