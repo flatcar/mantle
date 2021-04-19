@@ -44,7 +44,6 @@ func init() {
 		Run:         podmanWorkflow,
 		ClusterSize: 1,
 		Name:        `podman.workflow`,
-		Flags:       []register.Flag{register.RequiresInternetAccess}, // For pulling nginx
 		Distros:     []string{"rhcos"},
 		FailFast:    true,
 	})

@@ -46,7 +46,6 @@ func init() {
 		Name:        "cl.rkt.etcd3",
 		Run:         rktEtcd,
 		ClusterSize: 1,
-		Flags:       []register.Flag{register.RequiresInternetAccess}, // etcdctl health-check requires networking
 		Distros:     []string{"cl"},
 		UserData:    config,
 	})

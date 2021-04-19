@@ -26,7 +26,6 @@ func init() {
 		Run:         dnfInstall,
 		ClusterSize: 1,
 		Name:        "cl.toolbox.dnf-install",
-		Flags:       []register.Flag{register.RequiresInternetAccess}, // Network access for toolbox
 		Distros:     []string{"cl"},
 	})
 }

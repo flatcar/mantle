@@ -180,17 +180,14 @@ func init() {
 		Run:         crioBaseTests,
 		ClusterSize: 1,
 		Name:        `crio.base`,
-		// crio pods require fetching a kubernetes pause image
-		Flags:      []register.Flag{register.RequiresInternetAccess},
-		Distros:    []string{"rhcos"},
-		UserData:   enableCrioIgn,
-		UserDataV3: enableCrioIgnV3,
+		Distros:     []string{"rhcos"},
+		UserData:    enableCrioIgn,
+		UserDataV3:  enableCrioIgnV3,
 	})
 	register.Register(&register.Test{
 		Run:         crioNetwork,
 		ClusterSize: 2,
 		Name:        "crio.network",
-		Flags:       []register.Flag{register.RequiresInternetAccess},
 		Distros:     []string{"rhcos"},
 		UserData:    enableCrioIgn,
 		UserDataV3:  enableCrioIgnV3,

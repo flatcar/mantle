@@ -1,3 +1,4 @@
+// Copyright 2021 Kinvolk GmbH
 // Copyright 2015 CoreOS, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -223,20 +224,6 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, of
 
 		// Check the test's min and end versions when running more than one test
 		if patternNotName && versionOutsideRange(version, t.MinVersion, t.EndVersion) {
-			continue
-		}
-
-		existsIn := func(item string, entries []string) bool {
-			for _, i := range entries {
-				if i == item {
-					return true
-				}
-			}
-			return false
-		}
-
-		if existsIn(pltfrm, register.PlatformsNoInternet) && t.HasFlag(register.RequiresInternetAccess) {
-			plog.Debugf("skipping test %s: Internet required but not supported by platform %s", t.Name, pltfrm)
 			continue
 		}
 

@@ -37,8 +37,8 @@ func init() {
   listen_peer_urls:            http://{PRIVATE_IPV4}:2380
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery`),
-		Flags:   []register.Flag{register.RequiresInternetAccess}, // etcd-member requires networking
-		Distros: []string{"cl"},
+		Distros:          []string{"cl"},
+		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	register.Register(&register.Test{
@@ -54,8 +54,7 @@ etcd:
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery
 `),
-		Flags:            []register.Flag{register.RequiresInternetAccess}, // etcd-member requires networking
-		ExcludePlatforms: []string{"esx"},                                  // etcd-member requires ct rendering
+		ExcludePlatforms: []string{"esx", "qemu", "qemu-unpriv"}, // etcd-member requires ct rendering
 		Distros:          []string{"cl"},
 	})
 
@@ -73,8 +72,8 @@ etcd:
   listen_peer_urls:            http://0.0.0.0:2380
   initial_advertise_peer_urls: http://127.0.0.1:2380
 `),
-		Flags:   []register.Flag{register.RequiresInternetAccess}, // networking to download etcd image
-		Distros: []string{"cl"},
+		Distros:          []string{"cl"},
+		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

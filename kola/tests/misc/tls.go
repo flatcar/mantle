@@ -34,8 +34,7 @@ func init() {
 		Run:            TestTLSFetchURLs,
 		ClusterSize:    1,
 		Name:           "coreos.tls.fetch-urls",
-		Flags:          []register.Flag{register.RequiresInternetAccess}, // Networking outside cluster required
-		ExcludeDistros: []string{"rhcos", "fcos"},                        // wget not included in *COS
+		ExcludeDistros: []string{"rhcos", "fcos"}, // wget not included in *COS
 	})
 }
 

@@ -111,7 +111,6 @@ func init() {
 }`),
 
 		Distros: []string{"fcos", "rhcos"},
-		Flags:   []register.Flag{register.RequiresInternetAccess}, // these need network to retrieve bits
 	})
 }
 

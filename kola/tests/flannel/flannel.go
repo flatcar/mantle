@@ -59,21 +59,21 @@ systemd:
 
 func init() {
 	register.Register(&register.Test{
-		Run:         udp,
-		ClusterSize: 3,
-		Name:        "cl.flannel.udp",
-		Flags:       []register.Flag{register.RequiresInternetAccess}, // requires networking between nodes
-		Distros:     []string{"cl"},
-		UserData:    flannelConf.Subst("$type", "udp"),
+		Run:              udp,
+		ClusterSize:      3,
+		Name:             "cl.flannel.udp",
+		Distros:          []string{"cl"},
+		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
+		UserData:         flannelConf.Subst("$type", "udp"),
 	})
 
 	register.Register(&register.Test{
-		Run:         vxlan,
-		ClusterSize: 3,
-		Name:        "cl.flannel.vxlan",
-		Flags:       []register.Flag{register.RequiresInternetAccess}, // requires networking between nodes
-		Distros:     []string{"cl"},
-		UserData:    flannelConf.Subst("$type", "vxlan"),
+		Run:              vxlan,
+		ClusterSize:      3,
+		Name:             "cl.flannel.vxlan",
+		Distros:          []string{"cl"},
+		ExcludePlatforms: []string{"qemu", "qemu-unpriv"},
+		UserData:         flannelConf.Subst("$type", "vxlan"),
 	})
 }
 
