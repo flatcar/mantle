@@ -25,7 +25,7 @@ export DNS_SERVICE_IP=192.168.128.10
 # Whether to use Calico for Kubernetes network policy.
 export USE_CALICO=false
 
-# Determines the container runtime for kubernetes to use. Accepts 'docker' or 'rkt'.
+# Determines the container runtime for kubernetes to use. Accepts 'docker'.
 export CONTAINER_RUNTIME={{.CONTAINER_RUNTIME}}
 
 # The above settings can optionally be overridden using an environment file:
@@ -58,10 +58,6 @@ function init_templates {
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
-        RKT_FLAGS=""
-        if [[ ${CONTAINER_RUNTIME} = "rkt" ]]; then
-            RKT_FLAGS="--rkt-path=/usr/bin/rkt --rkt-stage1-image=coreos.com/rkt/stage1-coreos "
-        fi
         KUBE_EXEC=""
         if [[ $K8S_VER > "v1.18" ]]; then
             KUBE_EXEC="kubelet"
@@ -70,21 +66,11 @@ function init_templates {
 [Service]
 Environment=KUBELET_IMAGE_TAG=${K8S_VER}
 Environment=KUBELET_IMAGE_URL=docker://${HYPERKUBE_IMAGE_REPO}
-Environment="RKT_RUN_ARGS=--volume dns,kind=host,source=/etc/resolv.conf \
-  --mount volume=dns,target=/etc/resolv.conf \
-  --volume=rkt,kind=host,source=/opt/bin/host-rkt \
-  --mount volume=rkt,target=/usr/bin/rkt \
-  --volume var-lib-rkt,kind=host,source=/var/lib/rkt \
-  --mount volume=var-lib-rkt,target=/var/lib/rkt \
-  --volume=stage,kind=host,source=/tmp \
-  --mount volume=stage,target=/tmp \
-  --insecure-options=image"
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
 ExecStart=/usr/lib/flatcar/kubelet-wrapper ${KUBE_EXEC} \
   --cni-conf-dir=/etc/kubernetes/cni/net.d \
   --network-plugin=cni \
   --container-runtime=${CONTAINER_RUNTIME} \
-  ${RKT_FLAGS} \
   --register-node=true \
   --pod-manifest-path=/etc/kubernetes/manifests \
   --hostname-override=${ADVERTISE_IP} \
@@ -98,64 +84,6 @@ MemoryAccounting=true
 
 [Install]
 WantedBy=multi-user.target
-EOF
-    fi
-
-    local TEMPLATE=/opt/bin/host-rkt
-    if [ ! -f $TEMPLATE ]; then
-        echo "TEMPLATE: $TEMPLATE"
-        mkdir -p $(dirname $TEMPLATE)
-        cat << EOF > $TEMPLATE
-#!/bin/sh
-# This is bind mounted into the kubelet rootfs and all rkt shell-outs go
-# through this rkt wrapper. It essentially enters the host mount namespace
-# (which it is already in) only for the purpose of breaking out of the chroot
-# before calling rkt. It makes things like rkt gc work and avoids bind mounting
-# in certain rkt filesystem dependancies into the kubelet rootfs. This can
-# eventually be obviated when the write-api stuff gets upstream and rkt gc is
-# through the api-server. Related issue:
-# https://github.com/coreos/rkt/issues/2878
-exec nsenter -m -u -i -n -p -t 1 -- /usr/bin/rkt "\$@"
-EOF
-    fi
-
-    local TEMPLATE=/etc/systemd/system/load-rkt-stage1.service
-    if [ ${CONTAINER_RUNTIME} = "rkt" ] && [ ! -f $TEMPLATE ]; then
-        echo "TEMPLATE: $TEMPLATE"
-        mkdir -p $(dirname $TEMPLATE)
-        cat << EOF > $TEMPLATE
-[Unit]
-Description=Load rkt stage1 images
-Documentation=http://github.com/coreos/rkt
-Requires=network-online.target
-After=network-online.target
-Before=rkt-api.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/rkt fetch /usr/lib/rkt/stage1-images/stage1-coreos.aci /usr/lib/rkt/stage1-images/stage1-fly.aci  --insecure-options=image
-
-[Install]
-RequiredBy=rkt-api.service
-EOF
-    fi
-
-    local TEMPLATE=/etc/systemd/system/rkt-api.service
-    if [ ${CONTAINER_RUNTIME} = "rkt" ] && [ ! -f $TEMPLATE ]; then
-        echo "TEMPLATE: $TEMPLATE"
-        mkdir -p $(dirname $TEMPLATE)
-        cat << EOF > $TEMPLATE
-[Unit]
-Before=kubelet.service
-
-[Service]
-ExecStart=/usr/bin/rkt api-service
-Restart=always
-RestartSec=10
-
-[Install]
-RequiredBy=kubelet.service
 EOF
     fi
 
@@ -234,8 +162,6 @@ kind: Pod
 metadata:
   name: kube-proxy
   namespace: kube-system
-  annotations:
-    rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
 spec:
   hostNetwork: true
   containers:
@@ -353,16 +279,9 @@ EOF
 init_config
 init_templates
 
-chmod +x /opt/bin/host-rkt
-
 systemctl stop update-engine; systemctl mask update-engine
 
 systemctl daemon-reload
-
-if [ $CONTAINER_RUNTIME = "rkt" ]; then
-        systemctl enable load-rkt-stage1
-        systemctl enable rkt-api
-fi
 
 systemctl enable flanneld; systemctl start flanneld
 systemctl enable kubelet; systemctl start kubelet
