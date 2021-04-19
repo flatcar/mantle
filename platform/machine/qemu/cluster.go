@@ -76,9 +76,11 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-Environment=OUTPUT=/run/metadata/coreos
+Environment=OUTPUT=/run/metadata/flatcar
 ExecStart=/usr/bin/mkdir --parent /run/metadata
-ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=`+ip+`\nCOREOS_CUSTOM_PUBLIC_IPV4=`+ip+`\n" > ${OUTPUT}'`, false)
+ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=`+ip+`\nCOREOS_CUSTOM_PUBLIC_IPV4=`+ip+`\n" > ${OUTPUT}'
+ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
+`, false)
 
 	var confPath string
 	if conf.IsIgnition() {
