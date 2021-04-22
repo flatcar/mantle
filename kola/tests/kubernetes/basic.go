@@ -1,3 +1,4 @@
+// Copyright 2021 Kinvolk GmbH
 // Copyright 2015 CoreOS, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,12 +69,6 @@ func CoreOSBasic(c cluster.TestCluster, version, runtime string) {
 	if err := nginxCheck(c, k.master, k.workers); err != nil {
 		c.Fatal(err)
 	}
-
-	// http://kubernetes.io/v1.0/docs/user-guide/secrets/ Also, ensures
-	// https://github.com/coreos/bugs/issues/447 does not re-occur.
-	if err := secretCheck(c, k.master, k.workers); err != nil {
-		c.Fatal(err)
-	}
 }
 
 func nodeCheck(c cluster.TestCluster, master platform.Machine, nodes []platform.Machine) error {
@@ -105,9 +100,18 @@ func nodeCheck(c cluster.TestCluster, master platform.Machine, nodes []platform.
 
 func nginxCheck(c cluster.TestCluster, master platform.Machine, nodes []platform.Machine) error {
 	pod := strings.NewReader(nginxPodYAML)
+	secret := strings.NewReader(secretYAML)
 	if err := platform.InstallFile(pod, master, "./nginx-pod.yaml"); err != nil {
 		return err
 	}
+	if err := platform.InstallFile(secret, master, "./secret.yaml"); err != nil {
+		return err
+	}
+
+	if _, err := c.SSH(master, "./kubectl create -f secret.yaml"); err != nil {
+		return err
+	}
+
 	if _, err := c.SSH(master, "./kubectl create -f nginx-pod.yaml"); err != nil {
 		return err
 	}
@@ -135,57 +139,7 @@ func nginxCheck(c cluster.TestCluster, master platform.Machine, nodes []platform
 	return nil
 }
 
-func secretCheck(c cluster.TestCluster, master platform.Machine, nodes []platform.Machine) error {
-	// create yaml files
-	secret := strings.NewReader(secretYAML)
-	pod := strings.NewReader(secretPodYAML)
-	if err := platform.InstallFile(secret, master, "./secret.yaml"); err != nil {
-		return err
-	}
-	if err := platform.InstallFile(pod, master, "./secret-pod.yaml"); err != nil {
-		return err
-	}
-
-	if _, err := c.SSH(master, "./kubectl create -f secret.yaml"); err != nil {
-		return err
-	}
-	_, err := c.SSH(master, "./kubectl describe secret test-secret")
-	if err != nil {
-		return err
-	}
-
-	b, err := c.SSH(master, "./kubectl create -f secret-pod.yaml")
-	if err != nil {
-		return err
-	}
-	expectedOutput := "value-1"
-	if strings.Contains(strings.TrimSpace(string(b)), expectedOutput) {
-		return fmt.Errorf("error detecting secret pod")
-	}
-
-	return nil
-}
-
 const (
-	secretPodYAML = `apiVersion: v1
-kind: Pod
-metadata:
-  name: secret-test-pod
-spec:
-  containers:
-    - name: test-container
-      image: kubernetes/mounttest:0.1
-      command: [ "/mt", "--file_content=/etc/secret-volume/data-1" ]
-      volumeMounts:
-          # name must match the volume name below
-          - name: secret-volume
-            mountPath: /etc/secret-volume
-  volumes:
-    - name: secret-volume
-      secret:
-        secretName: test-secret
-  restartPolicy: Never`
-
 	secretYAML = `apiVersion: v1
 kind: Secret
 metadata:
@@ -205,5 +159,13 @@ spec:
   - name: nginx
     image: nginx
     ports:
-    - containerPort: 80`
+    - containerPort: 80
+    volumeMounts:
+      # name must match the volume name below
+      - name: secret-volume
+        mountPath: /etc/secret-volume
+  volumes:
+    - name: secret-volume
+      secret:
+        secretName: test-secret`
 )
