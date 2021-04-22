@@ -52,7 +52,7 @@ func init() {
 				Name:        "google.kubernetes.basic." + r + "." + t,
 				Run:         f,
 				ClusterSize: 0,
-				Platforms:   []string{"gce", "do", "aws"}, // TODO: fix packet, esx
+				Platforms:   []string{"gce", "do", "aws", "qemu"}, // TODO: fix packet, esx
 				Distros:     []string{"cl"},
 			})
 		}
