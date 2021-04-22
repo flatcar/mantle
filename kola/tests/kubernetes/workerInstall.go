@@ -2,7 +2,11 @@ package kubernetes
 
 // https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/generic.
 const workerInstallScript = `#!/bin/bash
-set -e
+export CNI_VERSION="v0.9.1"
+
+# Download dir used to store the kubernetes
+# related components
+export DOWNLOAD_DIR=/opt/bin
 
 # List of etcd servers (http://ip:port), comma separated
 export ETCD_ENDPOINTS={{.ETCD_ENDPOINTS}}
@@ -58,16 +62,13 @@ function init_templates {
     if [ ! -f $TEMPLATE ]; then
         echo "TEMPLATE: $TEMPLATE"
         mkdir -p $(dirname $TEMPLATE)
-        KUBE_EXEC=""
-        if [[ $K8S_VER > "v1.18" ]]; then
-            KUBE_EXEC="kubelet"
-        fi
         cat << EOF > $TEMPLATE
 [Service]
-Environment=KUBELET_IMAGE_TAG=${K8S_VER}
-Environment=KUBELET_IMAGE_URL=docker://${HYPERKUBE_IMAGE_REPO}
+Requires=docker.service
+After=docker.service
+ExecStartPre=/usr/bin/docker pull ${HYPERKUBE_IMAGE_REPO}:${K8S_VER}
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-ExecStart=/usr/lib/flatcar/kubelet-wrapper ${KUBE_EXEC} \
+ExecStart=/opt/bin/kubelet \
   --cni-conf-dir=/etc/kubernetes/cni/net.d \
   --network-plugin=cni \
   --container-runtime=${CONTAINER_RUNTIME} \
@@ -76,7 +77,8 @@ ExecStart=/usr/lib/flatcar/kubelet-wrapper ${KUBE_EXEC} \
   --hostname-override=${ADVERTISE_IP} \
   --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
   --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
-  --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
+  --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
+  --volume-plugin-dir=/opt/libexec/kubernetes/kubelet-plugins/volume/exec/
 Restart=always
 RestartSec=10
 CPUAccounting=true
@@ -276,6 +278,13 @@ EOF
 
 }
 
+mkdir --parent /opt/cni/bin
+curl -sSL --remote-name-all https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kubelet
+curl -sSL "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-amd64-${CNI_VERSION}.tgz" | tar -C /opt/cni/bin -xz
+
+chmod +x kubelet
+mv kubelet $DOWNLOAD_DIR/
+
 init_config
 init_templates
 
@@ -283,8 +292,8 @@ systemctl stop update-engine; systemctl mask update-engine
 
 systemctl daemon-reload
 
-systemctl enable flanneld; systemctl start flanneld
-systemctl enable kubelet; systemctl start kubelet
+systemctl enable --now flanneld
+systemctl enable --now kubelet
 
 if [ $USE_CALICO = "true" ]; then
         systemctl enable calico-node; systemctl start calico-node
