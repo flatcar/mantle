@@ -51,10 +51,11 @@ func init() {
 	})
 
 	register.Register(&register.Test{
-		Name:        "rkt.base",
-		ClusterSize: 1,
-		Run:         rktBase,
-		Distros:     []string{"cl"},
+		Name:            "rkt.base",
+		ClusterSize:     1,
+		Run:             rktBase,
+		Distros:         []string{"cl"},
+		ExcludeChannels: []string{"alpha"},
 	})
 
 }
