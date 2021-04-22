@@ -515,31 +515,6 @@ EOF
                 "protocol": "TCP"
               }
             ]
-          },
-          {
-            "args": [
-              "-cmd=nslookup kubernetes.default.svc.cluster.local 127.0.0.1 >/dev/null",
-              "-port=8080",
-              "-quiet"
-            ],
-            "image": "gcr.io/google_containers/exechealthz-amd64:1.0",
-            "name": "healthz",
-            "ports": [
-              {
-                "containerPort": 8080,
-                "protocol": "TCP"
-              }
-            ],
-            "resources": {
-              "limits": {
-                "cpu": "10m",
-                "memory": "20Mi"
-              },
-              "requests": {
-                "cpu": "10m",
-                "memory": "20Mi"
-              }
-            }
           }
         ],
         "dnsPolicy": "Default"
