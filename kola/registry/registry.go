@@ -8,6 +8,7 @@ import (
 	_ "github.com/coreos/mantle/kola/tests/etcd"
 	_ "github.com/coreos/mantle/kola/tests/flannel"
 	_ "github.com/coreos/mantle/kola/tests/ignition"
+	_ "github.com/coreos/mantle/kola/tests/kubeadm"
 	_ "github.com/coreos/mantle/kola/tests/kubernetes"
 	_ "github.com/coreos/mantle/kola/tests/locksmith"
 	_ "github.com/coreos/mantle/kola/tests/metadata"
