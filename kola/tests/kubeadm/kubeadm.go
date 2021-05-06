@@ -65,9 +65,10 @@ systemd:
 
 func init() {
 	register.Register(&register.Test{
-		Name:    "kubeadm.base",
-		Distros: []string{"cl"},
-		Run:     kubeadmBaseTest,
+		Name:             "kubeadm.base",
+		Distros:          []string{"cl"},
+		ExcludePlatforms: []string{"esx"},
+		Run:              kubeadmBaseTest,
 	})
 }
 
