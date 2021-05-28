@@ -67,7 +67,7 @@ func init() {
 	register.Register(&register.Test{
 		Name:             "kubeadm.base",
 		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"esx", "azure"},
+		ExcludePlatforms: []string{"esx"},
 		Run:              kubeadmBaseTest,
 	})
 }
