@@ -57,7 +57,7 @@ function init_config {
 
     if [ -z $ADVERTISE_IP ]; then
         systemctl start coreos-metadata
-        export ADVERTISE_IP=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL)' | cut -d = -f 2)
+        export ADVERTISE_IP=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL|DYNAMIC)' | cut -d = -f 2)
     fi
 
     for REQ in "${REQUIRED[@]}"; do

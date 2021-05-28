@@ -378,7 +378,7 @@ cat << EOF > worker-config.yaml
 EOF
 
 systemctl start --quiet coreos-metadata
-ipv4=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL)' | cut -d = -f 2)
+ipv4=$(cat /run/metadata/flatcar | grep -v IPV6 | grep IP | grep -E '(PRIVATE|LOCAL|DYNAMIC)' | cut -d = -f 2)
 
 kubeadm join --config worker-config.yaml --node-name "${ipv4}"`
 )
