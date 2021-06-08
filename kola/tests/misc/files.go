@@ -181,6 +181,7 @@ func Blacklist(c cluster.TestCluster) {
 		"/sys",
 		"/var/lib/docker",
 		"/var/lib/rkt",
+		"/run",
 	}
 
 	blacklist := []string{
