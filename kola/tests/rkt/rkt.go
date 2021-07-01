@@ -43,11 +43,12 @@ var config = conf.Ignition(`{
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "cl.rkt.etcd3",
-		Run:         rktEtcd,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
-		UserData:    config,
+		Name:            "cl.rkt.etcd3",
+		Run:             rktEtcd,
+		ClusterSize:     1,
+		Distros:         []string{"cl"},
+		UserData:        config,
+		ExcludeChannels: []string{"alpha", "beta"},
 	})
 
 	register.Register(&register.Test{
@@ -55,7 +56,7 @@ func init() {
 		ClusterSize:     1,
 		Run:             rktBase,
 		Distros:         []string{"cl"},
-		ExcludeChannels: []string{"alpha"},
+		ExcludeChannels: []string{"alpha", "beta"},
 	})
 
 }
