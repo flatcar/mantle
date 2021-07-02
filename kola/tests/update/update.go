@@ -71,13 +71,13 @@ func Serve() error {
 func idle(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	out, err := c.SSH(m, "update_engine_client -update")
+	out, err := c.SSH(m, "update_engine_client -update 2>&1")
 	if err != nil {
 		c.Fatalf("unable to run update_engine_client -update: %v", err)
 	}
 
-	if string(out) == "Update cancelled -- remote version is not newer than the local one" {
-		c.Fatalf("update should be cancelled")
+	if !strings.Contains(string(out), "No update available") {
+		c.Fatalf("update should not be available")
 	}
 }
 
