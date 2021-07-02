@@ -42,6 +42,12 @@ func init() {
 		},
 		Distros: []string{"cl"},
 	})
+	register.Register(&register.Test{
+		Name:        "cl.update.idle",
+		Run:         idle,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+	})
 }
 
 func Serve() error {
@@ -57,6 +63,22 @@ func Serve() error {
 	}
 
 	return omahawrapper.Serve()
+}
+
+// assert that -update does not fail
+// when there is nothing to do
+// https://github.com/kinvolk/Flatcar/issues/356
+func idle(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	out, err := c.SSH(m, "update_engine_client -update")
+	if err != nil {
+		c.Fatalf("unable to run update_engine_client -update: %v", err)
+	}
+
+	if string(out) == "Update cancelled -- remote version is not newer than the local one" {
+		c.Fatalf("update should be cancelled")
+	}
 }
 
 func payload(c cluster.TestCluster) {
