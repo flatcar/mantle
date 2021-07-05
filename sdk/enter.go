@@ -142,10 +142,10 @@ func (e *enter) MountAPI() error {
 			return fmt.Errorf("Unexpected shm path: %s", shmPath)
 		}
 		newPath := filepath.Join(e.Chroot, shmPath)
-		if err := os.Mkdir(newPath, 01777); err != nil {
+		if err := os.Mkdir(newPath, 0777|os.ModeSticky); err != nil {
 			return err
 		}
-		if err := os.Chmod(newPath, 01777); err != nil {
+		if err := os.Chmod(newPath, 0777|os.ModeSticky); err != nil {
 			return err
 		}
 	} else {
