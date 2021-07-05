@@ -21,5 +21,5 @@ import (
 // IsSymlink checks if a path is a symbolic link.
 func IsSymlink(path string) bool {
 	st, err := os.Lstat(path)
-	return err != nil && st.Mode()&os.ModeSymlink == os.ModeSymlink
+	return err == nil && st.Mode()&os.ModeSymlink == os.ModeSymlink
 }
