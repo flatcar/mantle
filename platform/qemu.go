@@ -194,8 +194,12 @@ func setupDiskFromFile(imageFile string) (*os.File, error) {
 			return nil, err
 		}
 	}
+	imgInfo, err := util.GetImageInfo(backingFile)
+	if err != nil {
+		return nil, err
+	}
 
-	qcowOpts := fmt.Sprintf("backing_file=%s,lazy_refcounts=on", backingFile)
+	qcowOpts := fmt.Sprintf("backing_file=%s,backing_fmt=%s,lazy_refcounts=on", backingFile, imgInfo.Format)
 	return setupDisk("-o", qcowOpts)
 }
 
