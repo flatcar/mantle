@@ -87,6 +87,13 @@ func EnableSelinux(m Machine) error {
 	if err != nil {
 		return fmt.Errorf("Unable to enable SELinux: %s: %s", err, stderr)
 	}
+
+	// remove audit rules to get SELinux AVCs in the audit logs
+	_, stderr, err = m.SSH("sudo rm -rf /etc/audit/rules.d/{80-selinux.rules,99-default.rules}; sudo systemctl restart audit-rules")
+	if err != nil {
+		return fmt.Errorf("unable to enable SELinux audit logs: %s: %s", err, stderr)
+	}
+
 	return nil
 }
 
