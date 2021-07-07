@@ -73,8 +73,17 @@ func VerityCorruption(c cluster.TestCluster) {
 	// skip unless we are actually using verity
 	skipUnlessVerity(c, m)
 
+	out, err := c.SSH(m, "findmnt -n -o FSTYPE /usr")
+	if err != nil {
+		c.Fatalf("failed checking /usr filesystem: %s: %v", out, err)
+	}
+	if bytes.Equal(out, []byte("btrfs")) {
+		// finding the filesystem block for a file in btrfs is difficult, and we later can change this test to check for a kernel panic instead
+		c.Skip("test does not support btrfs yet")
+	}
+
 	// assert that dm shows verity is in use and the device is valid (V)
-	out := c.MustSSH(m, "sudo dmsetup --target verity status usr")
+	out = c.MustSSH(m, "sudo dmsetup --target verity status usr")
 
 	fields := strings.Fields(string(out))
 	if len(fields) != 4 {
