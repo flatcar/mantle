@@ -60,9 +60,8 @@ func VerityVerify(c cluster.TestCluster) {
 	// find /usr dev
 	usrdev := util.GetUsrDeviceNode(c, m)
 
-	// figure out partition size for hash dev offset
-	offset := c.MustSSH(m, "sudo e2size "+usrdev)
-	offset = bytes.TrimSpace(offset)
+	// figure out partition size for hash dev offset, fallback to the expected value in case e2size doesn't work
+	offset := c.MustSSH(m, "sudo e2size "+usrdev+" || echo 1065345024")
 
 	c.MustSSH(m, fmt.Sprintf("sudo veritysetup verify --verbose --hash-offset=%s %s %s %s", offset, usrdev, usrdev, hash))
 }
