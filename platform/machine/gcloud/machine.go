@@ -114,3 +114,7 @@ func (gm *machine) JournalOutput() string {
 	}
 	return string(data)
 }
+
+func (gm *machine) Board() string {
+	return gm.gc.flight.Options().Board
+}

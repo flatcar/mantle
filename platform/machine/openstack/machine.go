@@ -135,3 +135,7 @@ func (om *machine) JournalOutput() string {
 	}
 	return string(data)
 }
+
+func (om *machine) Board() string {
+	return om.cluster.flight.Options().Board
+}

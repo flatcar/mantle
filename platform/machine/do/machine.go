@@ -92,3 +92,7 @@ func (dm *machine) JournalOutput() string {
 	}
 	return string(data)
 }
+
+func (dm *machine) Board() string {
+	return dm.cluster.flight.Options().Board
+}
