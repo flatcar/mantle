@@ -80,6 +80,9 @@ type Machine interface {
 	// JournalOutput returns the machine's journal output if available,
 	// or an empty string.  Only expected to be valid after Destroy().
 	JournalOutput() string
+
+	// Board returns the machine's board
+	Board() string
 }
 
 // Cluster represents a cluster of machines within a single Flight.
@@ -158,6 +161,9 @@ type Options struct {
 	// When specified additional files & units will be automatically generated
 	// inside of RenderUserData
 	OSContainer string
+
+	// Board is the board used by the image
+	Board string
 }
 
 // RuntimeConfig contains cluster-specific configuration.
