@@ -20,6 +20,7 @@ import (
 
 	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/cli"
+	"github.com/coreos/mantle/platform"
 	"github.com/coreos/mantle/platform/api/gcloud"
 	"github.com/coreos/mantle/platform/api/packet"
 	"github.com/coreos/pkg/capnslog"
@@ -35,7 +36,7 @@ var (
 	}
 
 	API       *packet.API
-	options   packet.Options
+	options   = packet.Options{Options: &platform.Options{}}
 	gsOptions gcloud.Options
 )
 
@@ -49,6 +50,7 @@ func init() {
 	Packet.PersistentFlags().StringVar(&options.ApiKey, "api-key", "", "API key (overrides config file)")
 	Packet.PersistentFlags().StringVar(&options.Project, "project", "", "project UUID (overrides config file)")
 	cli.WrapPreRun(Packet, preflightCheck)
+
 }
 
 func preflightCheck(cmd *cobra.Command, args []string) error {

@@ -88,8 +88,6 @@ type Options struct {
 	Facility string
 	// Slug of the device type (e.g. "baremetal_0")
 	Plan string
-	// The Container Linux board name
-	Board string
 	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current
 	InstallerImageBaseURL string
 	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_pxe.vmlinuz
