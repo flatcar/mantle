@@ -20,6 +20,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"os"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -83,7 +84,7 @@ func Manhole(m Machine) error {
 
 // Enable SELinux on a machine (skip on machines without SELinux support)
 func EnableSelinux(m Machine) error {
-	_, stderr, err := m.SSH("if type -P setenforce; then sudo setenforce 1; fi")
+	_, stderr, err := m.SSH("sudo setenforce 1")
 	if err != nil {
 		return fmt.Errorf("Unable to enable SELinux: %s: %s", err, stderr)
 	}
@@ -129,7 +130,9 @@ func StartMachine(m Machine, j *Journal) error {
 	if err := CheckMachine(context.TODO(), m); err != nil {
 		return fmt.Errorf("machine %q failed basic checks: %v", m.ID(), err)
 	}
-	if !m.RuntimeConf().NoEnableSelinux {
+	// Exclude ARM64 because we don't embeed SELinux tools
+	arch := strings.SplitN(m.Board(), "-", 2)[0]
+	if arch != "arm64" && !m.RuntimeConf().NoEnableSelinux {
 		if err := EnableSelinux(m); err != nil {
 			return fmt.Errorf("machine %q failed to enable selinux: %v", m.ID(), err)
 		}

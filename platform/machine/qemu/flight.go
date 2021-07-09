@@ -34,7 +34,6 @@ const (
 type Options struct {
 	// DiskImage is the full path to the disk image to boot in QEMU.
 	DiskImage string
-	Board     string
 
 	// BIOSImage is name of the BIOS file to pass to QEMU.
 	// It can be a plain name, or a full path.

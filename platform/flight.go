@@ -108,3 +108,9 @@ func (bf *BaseFlight) Destroy() {
 		plog.Errorf("Error closing agent: %v", err)
 	}
 }
+
+// Options will return the base options for the current
+// flight
+func (bf *BaseFlight) Options() *Options {
+	return bf.baseopts
+}

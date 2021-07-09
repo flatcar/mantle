@@ -170,7 +170,18 @@ func init() {
 
 // Sync up the command line options if there is dependency
 func syncOptions() error {
-	kola.PacketOptions.Board = kola.QEMUOptions.Board
+	// sync `Board` option with other cloud provider
+	// it seems kola has a strong dependency to qemu and it has been
+	// build around that's why the `Board` is associated to `QEMU`
+	// but it can be helpful for other provider to get access to the Board in the runtime
+	board := kola.QEMUOptions.Board
+	kola.OpenStackOptions.Board = board
+	kola.GCEOptions.Board = board
+	kola.ESXOptions.Board = board
+	kola.DOOptions.Board = board
+	kola.AzureOptions.Board = board
+	kola.AWSOptions.Board = board
+	kola.PacketOptions.Board = board
 	kola.PacketOptions.GSOptions = &kola.GCEOptions
 
 	validateOption := func(name, item string, valid []string) error {

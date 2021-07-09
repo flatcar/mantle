@@ -127,3 +127,7 @@ func (em *machine) JournalOutput() string {
 	}
 	return string(data)
 }
+
+func (em *machine) Board() string {
+	return em.cluster.flight.Options().Board
+}

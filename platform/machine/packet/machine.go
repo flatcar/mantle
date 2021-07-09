@@ -108,3 +108,7 @@ func (pm *machine) JournalOutput() string {
 	}
 	return string(data)
 }
+
+func (pm *machine) Board() string {
+	return pm.cluster.flight.Options().Board
+}

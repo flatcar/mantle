@@ -97,3 +97,7 @@ func (m *machine) JournalOutput() string {
 	}
 	return string(data)
 }
+
+func (m *machine) Board() string {
+	return m.qc.flight.Options().Board
+}
