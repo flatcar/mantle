@@ -616,7 +616,7 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 func hasSecurityOptions(opts []string) bool {
 	for _, opt := range opts {
 		switch opt {
-		case "selinux", "seccomp":
+		case "selinux", "seccomp", "cgroupns":
 		default:
 			return false
 		}
