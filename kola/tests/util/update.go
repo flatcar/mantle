@@ -44,7 +44,7 @@ func GetUsrDeviceNode(c cluster.TestCluster, m platform.Machine) string {
 }
 
 func InvalidateUsrPartition(c cluster.TestCluster, m platform.Machine, partition string) {
-	if out, stderr, err := m.SSH(fmt.Sprintf("sudo coreos-setgoodroot && sudo wipefs /dev/disk/by-partlabel/%s", partition)); err != nil {
+	if out, stderr, err := m.SSH(fmt.Sprintf("sudo flatcar-setgoodroot && sudo wipefs /dev/disk/by-partlabel/%s", partition)); err != nil {
 		c.Fatalf("invalidating %s failed: %s: %v: %s", partition, out, err, stderr)
 	}
 }
