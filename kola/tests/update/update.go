@@ -153,7 +153,7 @@ func updateMachine(c cluster.TestCluster, m platform.Machine) {
 		c.Fatalf("Executing update_engine_client failed: %v: %v: %s", out, err, stderr)
 	}
 
-	err = util.WaitUntilReady(120*time.Second, 10*time.Second, func() (bool, error) {
+	err = util.WaitUntilReady(600*time.Second, 10*time.Second, func() (bool, error) {
 		envs, stderr, err := m.SSH("update_engine_client -status 2>/dev/null")
 		if err != nil {
 			return false, fmt.Errorf("checking status failed: %v: %s", err, stderr)
