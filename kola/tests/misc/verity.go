@@ -60,9 +60,8 @@ func VerityVerify(c cluster.TestCluster) {
 	// find /usr dev
 	usrdev := util.GetUsrDeviceNode(c, m)
 
-	// figure out partition size for hash dev offset
-	offset := c.MustSSH(m, "sudo e2size "+usrdev)
-	offset = bytes.TrimSpace(offset)
+	// figure out partition size for hash dev offset, fallback to the expected value in case e2size doesn't work
+	offset := c.MustSSH(m, "sudo e2size "+usrdev+" || echo 1065345024")
 
 	c.MustSSH(m, fmt.Sprintf("sudo veritysetup verify --verbose --hash-offset=%s %s %s %s", offset, usrdev, usrdev, hash))
 }
@@ -74,8 +73,17 @@ func VerityCorruption(c cluster.TestCluster) {
 	// skip unless we are actually using verity
 	skipUnlessVerity(c, m)
 
+	out, err := c.SSH(m, "findmnt -n -o FSTYPE /usr")
+	if err != nil {
+		c.Fatalf("failed checking /usr filesystem: %s: %v", out, err)
+	}
+	if bytes.Equal(out, []byte("btrfs")) {
+		// finding the filesystem block for a file in btrfs is difficult, and we later can change this test to check for a kernel panic instead
+		c.Skip("test does not support btrfs yet")
+	}
+
 	// assert that dm shows verity is in use and the device is valid (V)
-	out := c.MustSSH(m, "sudo dmsetup --target verity status usr")
+	out = c.MustSSH(m, "sudo dmsetup --target verity status usr")
 
 	fields := strings.Fields(string(out))
 	if len(fields) != 4 {
