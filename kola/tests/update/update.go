@@ -83,6 +83,16 @@ func payload(c cluster.TestCluster) {
 
 	tutil.InvalidateUsrPartition(c, m, "USR-A")
 
+	/*
+		in the case we previously downloaded and installed an **official** release, the
+		/usr/share/update_engine/update-payload-key.pub.pem will be changed to the official one.
+		In consequence, update-engine will fail to verify the update payload since this
+		one appears to be signed, in a test context, with a dev-key (generated from
+		the SDK.)
+		We configure again to inject the dev-pub-key to correctly verify the downloaded payload
+	*/
+	configureMachineForUpdate(c, m, addr)
+
 	updateMachine(c, m)
 
 	tutil.AssertBootedUsr(c, m, "USR-A")
