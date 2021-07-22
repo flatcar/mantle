@@ -48,7 +48,7 @@ func init() {
 		ClusterSize:     1,
 		Distros:         []string{"cl"},
 		UserData:        config,
-		ExcludeChannels: []string{"alpha", "beta"},
+		ExcludeChannels: []string{"alpha", "beta", "stable"},
 	})
 
 	register.Register(&register.Test{
@@ -56,7 +56,7 @@ func init() {
 		ClusterSize:     1,
 		Run:             rktBase,
 		Distros:         []string{"cl"},
-		ExcludeChannels: []string{"alpha", "beta"},
+		ExcludeChannels: []string{"alpha", "beta", "stable"},
 	})
 
 }
