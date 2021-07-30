@@ -29,10 +29,12 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Run:         Verity,
-		ClusterSize: 1,
-		Name:        "cl.verity",
-		Distros:     []string{"cl"},
+		Run:             Verity,
+		ClusterSize:     1,
+		Name:            "cl.verity",
+		Distros:         []string{"cl"},
+		Flags:           []register.Flag{register.NoKernelPanicCheck},
+		ExcludeChannels: []string{"beta", "stable"}, // can only be enabled for each channel immediately before the release
 	})
 }
 
@@ -73,17 +75,8 @@ func VerityCorruption(c cluster.TestCluster) {
 	// skip unless we are actually using verity
 	skipUnlessVerity(c, m)
 
-	out, err := c.SSH(m, "findmnt -n -o FSTYPE /usr")
-	if err != nil {
-		c.Fatalf("failed checking /usr filesystem: %s: %v", out, err)
-	}
-	if bytes.Equal(out, []byte("btrfs")) {
-		// finding the filesystem block for a file in btrfs is difficult, and we later can change this test to check for a kernel panic instead
-		c.Skip("test does not support btrfs yet")
-	}
-
 	// assert that dm shows verity is in use and the device is valid (V)
-	out = c.MustSSH(m, "sudo dmsetup --target verity status usr")
+	out := c.MustSSH(m, "sudo dmsetup --target verity status usr")
 
 	fields := strings.Fields(string(out))
 	if len(fields) != 4 {
@@ -94,41 +87,24 @@ func VerityCorruption(c cluster.TestCluster) {
 		c.Fatalf("dmsetup status usr reports verity is not valid!")
 	}
 
-	// corrupt a file on disk and flush disk caches.
-	// try setting NAME=Flatcar to NAME=LullzOS in /usr/lib/os-release
+	// corrupt disk and flush disk caches.
 
 	// get usr device, probably vda3
 	usrdev := util.GetUsrDeviceNode(c, m)
 
-	// poke bytes into /usr/lib/os-release
-	c.MustSSH(m, fmt.Sprintf(`echo NAME=LullzOS | sudo dd of=%s seek=$(expr $(sudo debugfs -R "blocks /lib/os-release" %s 2>/dev/null) \* 4096) bs=1 status=none`, usrdev, usrdev))
+	// write zero bytes to first 10 MB
+	c.MustSSH(m, fmt.Sprintf(`sudo dd if=/dev/zero of=%s bs=1M count=10 status=none`, usrdev))
 
-	// make sure we flush everything so cat has to go through to the device backing verity.
-	c.MustSSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches'")
-
-	// read the file back. if we can read it successfully, verity did not do its job.
-	out, stderr, err := m.SSH("cat /usr/lib/os-release")
+	// make sure we flush everything so the filesystem has to go through to the device backing verity before fetching a file from /usr
+	// (done in one execution because after flushing command itself runs the corruption could already be detected).
+	_, err := c.SSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches; cat /usr/lib/os-release'")
 	if err == nil {
-		c.Fatalf("verity did not prevent reading a corrupted file!")
+		c.Fatalf("verity did not prevent reading from a corrupted disk (expected kernel panic)!")
 	}
-	for _, line := range strings.Split(string(stderr), "\n") {
-		// cat is expected to fail on EIO; report other errors
-		if line != "cat: /usr/lib/os-release: Input/output error" {
-			c.Log(line)
-		}
+	if !strings.Contains(err.Error(), "wait: remote command exited without exit status or exit signal") {
+		c.Fatalf("expected 'wait: remote command exited without exit status or exit signal' error due to kernel panic, got %v", err)
 	}
-
-	// assert that dm shows verity device is now corrupted (C)
-	out = c.MustSSH(m, "sudo dmsetup --target verity status usr")
-
-	fields = strings.Fields(string(out))
-	if len(fields) != 4 {
-		c.Fatalf("failed checking dmsetup status of usr: not enough fields in output (got %d)", len(fields))
-	}
-
-	if fields[3] != "C" {
-		c.Fatalf("dmsetup status usr reports verity is valid after corruption!")
-	}
+	// machine will now reboot in a loop but never be reachable again because the only partition it has got corrupted
 }
 
 // get offset of verity hash within kernel

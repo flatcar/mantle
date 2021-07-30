@@ -51,7 +51,7 @@ func init() {
 		Run:         RecoverBadVerity,
 		ClusterSize: 1,
 		Name:        "cl.update.badverity",
-		Flags:       []register.Flag{register.NoEmergencyShellCheck},
+		Flags:       []register.Flag{register.NoEmergencyShellCheck, register.NoKernelPanicCheck},
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
 	})
@@ -106,6 +106,7 @@ func RecoverBadVerity(c cluster.TestCluster) {
 	c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/flatcar/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<0000000000000000000000000000000000000000000000000000000000000000", getKernelVerityHashOffset(c)))
 
 	prioritizeUsr(c, m, "USR-B")
+	// rebootWithEmergencyShellTimeout also covers the kernel panic timeout of 1 minute before reboot
 	rebootWithEmergencyShellTimeout(c, m)
 	util.AssertBootedUsr(c, m, "USR-A")
 }
