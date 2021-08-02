@@ -91,8 +91,9 @@ var (
 			skipFlag: &[]register.Flag{register.NoEmergencyShellCheck}[0],
 		},
 		{
-			desc:  "kernel panic",
-			match: regexp.MustCompile("Kernel panic - not syncing: (.*)"),
+			desc:     "kernel panic",
+			match:    regexp.MustCompile("Kernel panic - not syncing: (.*)"),
+			skipFlag: &[]register.Flag{register.NoKernelPanicCheck}[0],
 		},
 		{
 			desc:  "kernel oops",

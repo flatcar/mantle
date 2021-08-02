@@ -31,6 +31,7 @@ const (
 	NoSSHKeyInMetadata                // don't add SSH key to platform metadata
 	NoEmergencyShellCheck             // don't check console output for emergency shell invocation
 	NoEnableSelinux                   // don't enable selinux when starting or rebooting a machine
+	NoKernelPanicCheck                // don't check console output for kernel panic
 )
 
 // Test provides the main test abstraction for kola. The run function is
