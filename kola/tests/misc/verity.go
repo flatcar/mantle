@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/mantle/kola"
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
@@ -29,12 +30,12 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Run:             Verity,
-		ClusterSize:     1,
-		Name:            "cl.verity",
-		Distros:         []string{"cl"},
-		Flags:           []register.Flag{register.NoKernelPanicCheck},
-		ExcludeChannels: []string{"beta", "stable"}, // can only be enabled for each channel immediately before the release
+		Run:         Verity,
+		ClusterSize: 1,
+		Name:        "cl.verity",
+		Distros:     []string{"cl"},
+		Flags:       []register.Flag{register.NoKernelPanicCheck},
+		MinVersion:  semver.Version{Major: 2943},
 	})
 }
 

@@ -432,9 +432,25 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 
 	out, stderr, err := m.SSH("grep ^VERSION_ID= /etc/os-release")
 	if err != nil {
-		return nil, fmt.Errorf("parsing /etc/os-release: %v: %s", err, stderr)
+		return nil, fmt.Errorf("parsing /etc/os-release for VERSION_ID: %v: %s", err, stderr)
 	}
 	ver := strings.Split(string(out), "=")[1]
+
+	out, stderr, err = m.SSH("grep ^BUILD_ID= /etc/os-release | { grep -o 'dev-.*' || true ; } | cut -d - -f 2-  | rev | cut -d - -f 2- | rev")
+	if err != nil {
+		return nil, fmt.Errorf("parsing /etc/os-release for nightly branch in BUILD_ID: %v: %s", err, stderr)
+	}
+	branch := string(out)
+	if branch == "main" || branch == "flatcar-master" {
+		// "main" is a nightly build of the main branch,
+		// "flatcar-master" refers to the manifest branch where dev builds are started
+		ver = "999999.99.99"
+	} else if strings.HasPrefix(branch, "flatcar-") {
+		// flatcar-MAJOR is a nightly build of the release branch
+		major := strings.Split(branch, "-")[1]
+		ver = major + ".99.99"
+	}
+	plog.Noticef("Using %q as version to filter tests...", ver)
 
 	// TODO: add distro specific version handling
 	switch Options.Distribution {
