@@ -54,6 +54,14 @@ type simplifiedDockerInfo struct {
 
 func init() {
 	register.Register(&register.Test{
+		Run:           dockerSELinux,
+		ClusterSize:   1,
+		Name:          "docker.selinux",
+		Distros:       []string{"cl"},
+		Channels:      []string{"alpha", "beta"},
+		Architectures: []string{"amd64"},
+	})
+	register.Register(&register.Test{
 		Run:         dockerNetwork,
 		ClusterSize: 2,
 		Name:        "docker.network",
@@ -623,4 +631,50 @@ func hasSecurityOptions(opts []string) bool {
 	}
 
 	return true
+}
+
+// dockerSELinux tests SELinux for Docker by running a container
+// in enforce mode and in permissive mode with a non-labelled file
+// and a labelled file
+func dockerSELinux(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	var cmd string
+
+	cmd = `sudo mkdir /etc/misc && \
+docker run -v "/etc/misc:/opt" --rm busybox true`
+
+	// assert SELinux is in permissive mode
+	if err := c.MustSSH(m, "sudo setenforce 0"); err != nil {
+		c.Fatalf("unable to set permissive mode: %v", err)
+	}
+
+	// create a directory to share and run docker command
+	if err := c.MustSSH(m, cmd); err != nil {
+		c.Fatalf("unable to run docker command: %v", err)
+	}
+
+	// switch SELinux to enforcing mode
+	if err := c.MustSSH(m, "sudo setenforce 1"); err != nil {
+		c.Fatalf("unable to set enforcing mode: %v", err)
+	}
+
+	// run docker command to assert it fails because of wrong labeling
+	if _, err := c.SSH(m, `docker run -v "/etc/misc:/opt" --rm busybox sh -c "echo world > /opt/hello"`); err == nil {
+		c.Fatalf("command should raise a permission error")
+	}
+
+	// run docker command with correct relabel action (z)
+	if err := c.MustSSH(m, `docker run -v "/etc/misc:/opt:z" --rm busybox sh -c "echo world > /opt/hello"`); err != nil {
+		c.Fatalf("unable to run docker command: %v", err)
+	}
+
+	out, err := c.SSH(m, "cat /etc/misc/hello")
+	if err != nil {
+		c.Fatalf("unable display file content: %v", err)
+	}
+
+	if string(out) != "world" {
+		c.Fatal("/etc/misc/hello should holds 'world'")
+	}
 }
