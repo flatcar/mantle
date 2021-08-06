@@ -436,18 +436,22 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 	}
 	ver := strings.Split(string(out), "=")[1]
 
-	out, stderr, err = m.SSH("grep ^BUILD_ID= /etc/os-release | { grep -o 'dev-.*' || true ; } | cut -d - -f 2-  | rev | cut -d - -f 2- | rev")
+	out, stderr, err = m.SSH("grep ^BUILD_ID= /etc/os-release")
 	if err != nil {
-		return nil, fmt.Errorf("parsing /etc/os-release for nightly branch in BUILD_ID: %v: %s", err, stderr)
+		return nil, fmt.Errorf("parsing /etc/os-release for BUILD_ID: %v: %s", err, stderr)
 	}
-	branch := string(out)
-	if branch == "main" || branch == "flatcar-master" {
+	build_id := strings.Split(string(out), "=")[1]
+	if strings.HasPrefix(build_id, "dev-main-nightly-") || strings.HasPrefix(build_id, "dev-flatcar-master-") {
 		// "main" is a nightly build of the main branch,
 		// "flatcar-master" refers to the manifest branch where dev builds are started
 		ver = "999999.99.99"
-	} else if strings.HasPrefix(branch, "flatcar-") {
+	} else if strings.HasPrefix(build_id, "dev-flatcar-") {
 		// flatcar-MAJOR is a nightly build of the release branch
-		major := strings.Split(branch, "-")[1]
+		parts := strings.Split(build_id, "-")
+		major := parts[2]
+		if major == "lts" {
+			major = parts[3]
+		}
 		ver = major + ".99.99"
 	}
 	plog.Noticef("Using %q as version to filter tests...", ver)
