@@ -447,7 +447,11 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 		ver = "999999.99.99"
 	} else if strings.HasPrefix(branch, "flatcar-") {
 		// flatcar-MAJOR is a nightly build of the release branch
-		major := strings.Split(branch, "-")[1]
+		branchparts := strings.Split(branch, "-")
+		major := branchparts[1]
+		if major == "lts" {
+			major = branchparts[2]
+		}
 		ver = major + ".99.99"
 	}
 	plog.Noticef("Using %q as version to filter tests...", ver)
