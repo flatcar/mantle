@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	origExec "os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -125,11 +126,20 @@ func MakeCLDiskTemplate(inputPath string) (output *os.File, result error) {
 		return nil, fmt.Errorf("failed to get loop device %s: %v", oemdev, err)
 	}
 
-	// mount OEM partition
-	err = util.Retry(10, 100*time.Millisecond, func() error {
+	// mount OEM partition, wait for exclusive access to the file system in case some other process also mounted an identical OEM btrfs filesystem
+	err = util.RetryConditional(600, 1000*time.Millisecond, func(err error) bool {
+		if exitCode, ok := err.(*origExec.ExitError); ok && exitCode.ProcessState.ExitCode() == 32 {
+			plog.Noticef("waiting for exclusive access to the OEM btrfs filesystem")
+			return true
+		}
+		return false
+	}, func() error {
 		return exec.Command("mount", oemdev, tmpdir).Run()
 	})
 	if err != nil {
+		if exitCode, ok := err.(*origExec.ExitError); ok && exitCode.ProcessState.ExitCode() == 32 {
+			return nil, fmt.Errorf("timed out waiting to mount the OEM btrfs filesystem exclusively from %s on %s: %v", oemdev, tmpdir, err)
+		}
 		return nil, fmt.Errorf("mounting OEM partition %s on %s: %v", oemdev, tmpdir, err)
 	}
 	defer func() {
