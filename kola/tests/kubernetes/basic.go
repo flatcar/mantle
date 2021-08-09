@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/platform"
@@ -54,6 +55,8 @@ func init() {
 				ClusterSize: 0,
 				Platforms:   []string{"gce", "do", "aws", "qemu", "azure"}, // TODO: fix packet, esx
 				Distros:     []string{"cl"},
+				// incompatible with docker >=20.10
+				EndVersion: semver.Version{Major: 2956},
 			})
 		}
 	}

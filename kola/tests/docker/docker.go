@@ -26,6 +26,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/mantle/kola/cluster"
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/lang/worker"
@@ -76,6 +77,8 @@ func init() {
 		Name:          "docker.oldclient",
 		Architectures: []string{"amd64"},
 		Distros:       []string{"cl"},
+		// incompatible with docker >=20.10
+		EndVersion: semver.Version{Major: 2956},
 	})
 	register.Register(&register.Test{
 		Run:         dockerUserns,
