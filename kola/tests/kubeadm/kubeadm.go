@@ -76,12 +76,17 @@ systemd:
 
 func init() {
 	for _, CNI := range CNIs {
+		// we need to copy the value of `CNI` to pass it
+		// to the `Run` method, otherwise only the last
+		// value of `CNI` (`cilium`) will be used in the registered
+		// test
+		cni := CNI
 		register.Register(&register.Test{
-			Name:             fmt.Sprintf("kubeadm.%s.base", CNI),
+			Name:             fmt.Sprintf("kubeadm.%s.base", cni),
 			Distros:          []string{"cl"},
 			ExcludePlatforms: []string{"esx"},
 			Run: func(c cluster.TestCluster) {
-				kubeadmBaseTest(c, CNI)
+				kubeadmBaseTest(c, cni)
 			},
 		})
 	}
