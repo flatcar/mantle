@@ -97,8 +97,9 @@ func VerityCorruption(c cluster.TestCluster) {
 	c.MustSSH(m, fmt.Sprintf(`sudo dd if=/dev/zero of=%s bs=1M count=10 status=none`, usrdev))
 
 	// make sure we flush everything so the filesystem has to go through to the device backing verity before fetching a file from /usr
-	// (done in one execution because after flushing command itself runs the corruption could already be detected).
-	_, err := c.SSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches; cat /usr/lib/os-release'")
+	// (done in one execution because after flushing command itself runs the corruption could already be detected,
+	// we just need to give arm64 QEMU tests a few more chances to detect the corruption while one 'cat' execution is enough on amd64).
+	_, err := c.SSH(m, "sudo /bin/sh -c 'sync; echo -n 3 >/proc/sys/vm/drop_caches; cat /usr/lib/os-release; ls -R /usr'")
 	if err == nil {
 		c.Fatalf("verity did not prevent reading from a corrupted disk (expected kernel panic)!")
 	}
