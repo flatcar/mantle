@@ -154,10 +154,13 @@ func RepoVerifyTag(branch string) error {
 	return tag.Run()
 }
 
-func RepoSync(chroot string, force, useHostDNS bool) error {
+func RepoSync(chroot string, force, verbose, useHostDNS bool) error {
 	args := []string{"--", "repo", "sync", "--no-clone-bundle"}
 	if force {
 		args = append(args, "--force-sync")
+	}
+	if !verbose {
+		args = append(args, "--quiet")
 	}
 	return enterChroot(enter{
 		Chroot:     chroot,
