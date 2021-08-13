@@ -40,27 +40,35 @@ var (
 		"flannel",
 		"cilium",
 	}
-	// params are used to render script templates
-	// Release is the kubernetes release version we want to use
-	// ReleaseVersion is the version of the kubelet service and kubeadm dropin
-	// TODO: when a new version of kubernetes will be tested, it would be nice
-	// to have a map[string]Release with Release struct holding the parameter below
-	params = map[string]interface{}{
-		// TODO: it's actually the CLI version
-		// we should pass the CLI and cilium version
-		// https://github.com/cilium/cilium-cli/issues/118
-		"CiliumVersion":  "v0.8.3",
-		"CNIVersion":     "v0.8.7",
-		"CRIctlVersion":  "v1.17.0",
-		"ReleaseVersion": "v0.4.0",
-		"Release":        "v1.21.0",
-		"DownloadDir":    "/opt/bin",
-		"PodSubnet":      "192.168.0.0/17",
-		"KubeadmSum":     "0673408403a3474c868ae86109f11f9114bca7ddce204be0d169316fb3ce0edefa4b2a472ba9b8308e423e6b927d4098ac36296405570f444f39551fb1c4bbb4",
-		"KubeletSum":     "530689c0cc32ef1830f7ae26ac10995f815043d48a905141e23a34a5e61522c4ee2ff46953648c47c5592d7c2ffa40ce90469a697f36f68475b8da5abd73f9f5",
-		"CRIctlSum":      "e258f4607a89b8d44c700036e636dd42cc3e2ed27a3bb13beef736f80f64f10b7974c01259a66131d3f7b44ed0c61b1ca0ea91597c416a9c095c432de5112d44",
-		"CNISum":         "8f2cbee3b5f94d59f919054dccfe99a8e3db5473b553d91da8af4763e811138533e05df4dbeab16b3f774852b4184a7994968f5e036a3f531ad1ac4620d10ede",
-		"KubectlSum":     "9557d298146ef62ffbcf05b3591bf1ce74f345628370447a4f614b5f64e367b5bfa8e397cc4755da9ea38f1ba04c95c65c313e735550ffc3b03c197e936c3e11",
+	// testConfig holds params for various kubernetes releases
+	// and the nested params are used to render script templates
+	testConfig = map[string]map[string]interface{}{
+		"v1.22.0": map[string]interface{}{
+			"CiliumVersion":  "v0.8.3",
+			"CNIVersion":     "v0.8.7",
+			"CRIctlVersion":  "v1.17.0",
+			"ReleaseVersion": "v0.4.0",
+			"DownloadDir":    "/opt/bin",
+			"PodSubnet":      "192.168.0.0/17",
+			"KubeadmSum":     "339e13ad840cbeab906e416f321467ab6c91cc4b66e5ad4db6f8d41a974146cf8226727edbcf686854a0803246e316158f028de7e753197cdcd2d99a604afbfd",
+			"KubeletSum":     "1b5d530e62f0198aa7af09371ba799d135b54b9a4513981fa09b786ca5fdc98819345112b5c3a68834f6171e9b4438075cf7ec77c2c575b8e3c56b8eb15d2a86",
+			"CRIctlSum":      "e258f4607a89b8d44c700036e636dd42cc3e2ed27a3bb13beef736f80f64f10b7974c01259a66131d3f7b44ed0c61b1ca0ea91597c416a9c095c432de5112d44",
+			"CNISum":         "8f2cbee3b5f94d59f919054dccfe99a8e3db5473b553d91da8af4763e811138533e05df4dbeab16b3f774852b4184a7994968f5e036a3f531ad1ac4620d10ede",
+			"KubectlSum":     "a93b2ca067629cb1fe9cbf1af1a195c12126488ed321e3652200d4dbfee9a577865647b7ef6bb673e1bdf08f03108b5dcb4b05812a649a0de5c7c9efc1407810",
+		},
+		"v1.21.0": map[string]interface{}{
+			"CiliumVersion":  "v0.8.3",
+			"CNIVersion":     "v0.8.7",
+			"CRIctlVersion":  "v1.17.0",
+			"ReleaseVersion": "v0.4.0",
+			"DownloadDir":    "/opt/bin",
+			"PodSubnet":      "192.168.0.0/17",
+			"KubeadmSum":     "0673408403a3474c868ae86109f11f9114bca7ddce204be0d169316fb3ce0edefa4b2a472ba9b8308e423e6b927d4098ac36296405570f444f39551fb1c4bbb4",
+			"KubeletSum":     "530689c0cc32ef1830f7ae26ac10995f815043d48a905141e23a34a5e61522c4ee2ff46953648c47c5592d7c2ffa40ce90469a697f36f68475b8da5abd73f9f5",
+			"CRIctlSum":      "e258f4607a89b8d44c700036e636dd42cc3e2ed27a3bb13beef736f80f64f10b7974c01259a66131d3f7b44ed0c61b1ca0ea91597c416a9c095c432de5112d44",
+			"CNISum":         "8f2cbee3b5f94d59f919054dccfe99a8e3db5473b553d91da8af4763e811138533e05df4dbeab16b3f774852b4184a7994968f5e036a3f531ad1ac4620d10ede",
+			"KubectlSum":     "9557d298146ef62ffbcf05b3591bf1ce74f345628370447a4f614b5f64e367b5bfa8e397cc4755da9ea38f1ba04c95c65c313e735550ffc3b03c197e936c3e11",
+		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
@@ -75,29 +83,33 @@ systemd:
 )
 
 func init() {
-	for _, CNI := range CNIs {
-		// we need to copy the value of `CNI` to pass it
-		// to the `Run` method, otherwise only the last
-		// value of `CNI` (`cilium`) will be used in the registered
-		// test
-		cni := CNI
-		register.Register(&register.Test{
-			Name:             fmt.Sprintf("kubeadm.%s.base", cni),
-			Distros:          []string{"cl"},
-			ExcludePlatforms: []string{"esx"},
-			Run: func(c cluster.TestCluster) {
-				kubeadmBaseTest(c, cni)
-			},
-		})
+	for version, params := range testConfig {
+		for _, CNI := range CNIs {
+			// ugly but required to remove the reference between params and the params
+			// actually used by the test.
+			testParams := make(map[string]interface{})
+			for k, v := range params {
+				testParams[k] = v
+			}
+			testParams["CNI"] = CNI
+			testParams["Release"] = version
+
+			register.Register(&register.Test{
+				Name:             fmt.Sprintf("kubeadm.%s.%s.base", version, CNI),
+				Distros:          []string{"cl"},
+				ExcludePlatforms: []string{"esx"},
+				Run: func(c cluster.TestCluster) {
+					kubeadmBaseTest(c, testParams)
+				},
+			})
+		}
 	}
 }
 
 // kubeadmBaseTest asserts that the cluster is up and running
-func kubeadmBaseTest(c cluster.TestCluster, CNI string) {
-	board := kola.QEMUOptions.Board
-	params["Arch"] = strings.SplitN(board, "-", 2)[0]
-	params["CNI"] = CNI
-	kubectl, err := setup(c)
+func kubeadmBaseTest(c cluster.TestCluster, params map[string]interface{}) {
+	params["Arch"] = strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
+	kubectl, err := setup(c, params)
 	if err != nil {
 		c.Fatalf("unable to setup cluster: %v", err)
 	}
@@ -166,7 +178,7 @@ func render(s string, p map[string]interface{}, b bool) (*bytes.Buffer, error) {
 // cluster is composed by etcd node, worker and master node
 // it returns master node in order to have direct access on node
 // with kubectl installed and setup
-func setup(c cluster.TestCluster) (platform.Machine, error) {
+func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machine, error) {
 	plog.Infof("creating etcd node")
 
 	etcdNode, err := c.NewMachine(etcdConfig)

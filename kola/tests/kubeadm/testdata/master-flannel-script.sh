@@ -33,12 +33,22 @@ curl --retry-delay 1 \
     -sSL \
     "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf" |
     sed "s:/usr/bin:${DOWNLOAD_DIR}:g" > /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    
+
+
+# we get the node cgroup driver
+# in order to pass the params to the
+# kubelet config for both controller and worker
+cgroup=$(docker info | awk '/Cgroup Driver/ { print $3}')
+
 # we create the kubeadm config
 # plugin-volume-dir and flex-volume-plugin-dir are required since /usr is read-only mounted
 # etcd is also defined as external. The provided one has some issues with docker and selinux
 # (permission denied with /var/lib/etcd) so it can't boot properly
 cat << EOF > kubeadm-config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: ${cgroup}
+---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 nodeRegistration:
@@ -99,4 +109,8 @@ controlPlane:
 nodeRegistration:
   kubeletExtraArgs:
     volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: ${cgroup}
 EOF
