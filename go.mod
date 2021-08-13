@@ -35,7 +35,7 @@ require (
 	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/googleapis/gax-go v1.0.3 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
-	github.com/gorilla/websocket v1.4.0 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.6.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/tinylib/msgp v1.1.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/ugorji/go v0.0.0-20171019201919-bdcc60b419d1 // indirect
-	github.com/ulikunitz/xz v0.5.4
+	github.com/ulikunitz/xz v0.5.10
 	github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
