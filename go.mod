@@ -24,11 +24,12 @@ require (
 	github.com/coreos/pkg v0.0.0-20161026222926-447b7ec906e5
 	github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269 // indirect
 	github.com/cpuguy83/go-md2man v1.0.4 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/dgrijalva/jwt-go v0.0.0-00010101000000-000000000000 // indirect
 	github.com/digitalocean/godo v1.45.0
 	github.com/dimchansky/utfbom v1.1.0 // indirect
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/golang-jwt/jwt/v4 v4.0.0-20210803135101-2ebb50f957d6 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/protobuf v1.3.5
 	github.com/google/btree v1.0.0 // indirect
@@ -84,3 +85,5 @@ require (
 replace google.golang.org/cloud => cloud.google.com/go v0.0.0-20190220171618-cbb15e60dc6d
 
 replace launchpad.net/gocheck => gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
+
+replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.0.0
