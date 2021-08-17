@@ -31,7 +31,7 @@ type NsDialer struct {
 func NewNsDialer(ns netns.NsHandle) *NsDialer {
 	return &NsDialer{
 		RetryDialer: RetryDialer{
-			Dialer: net.Dialer{
+			Dialer: &net.Dialer{
 				Timeout:   DefaultTimeout,
 				KeepAlive: DefaultKeepAlive,
 			},

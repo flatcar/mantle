@@ -48,6 +48,7 @@ import (
 	"github.com/coreos/mantle/platform/machine/azure"
 	"github.com/coreos/mantle/platform/machine/do"
 	"github.com/coreos/mantle/platform/machine/esx"
+	"github.com/coreos/mantle/platform/machine/external"
 	"github.com/coreos/mantle/platform/machine/gcloud"
 	"github.com/coreos/mantle/platform/machine/openstack"
 	"github.com/coreos/mantle/platform/machine/packet"
@@ -64,6 +65,7 @@ var (
 	AzureOptions     = azureapi.Options{Options: &Options}     // glue to set platform options from main
 	DOOptions        = doapi.Options{Options: &Options}        // glue to set platform options from main
 	ESXOptions       = esxapi.Options{Options: &Options}       // glue to set platform options from main
+	ExternalOptions  = external.Options{Options: &Options}     // glue to set platform options from main
 	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
 	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
 	PacketOptions    = packetapi.Options{Options: &Options}    // glue to set platform options from main
@@ -174,6 +176,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = do.NewFlight(&DOOptions)
 	case "esx":
 		flight, err = esx.NewFlight(&ESXOptions)
+	case "external":
+		flight, err = external.NewFlight(&ExternalOptions)
 	case "gce":
 		flight, err = gcloud.NewFlight(&GCEOptions)
 	case "openstack":

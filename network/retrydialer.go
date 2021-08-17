@@ -33,14 +33,14 @@ const (
 // RetryDialer is intended to timeout quickly and retry connecting instead
 // of just failing. Particularly useful for waiting on a booting machine.
 type RetryDialer struct {
-	net.Dialer
+	Dialer
 	Retries int
 }
 
 // NewRetryDialer initializes a RetryDialer with reasonable default settings.
 func NewRetryDialer() *RetryDialer {
 	return &RetryDialer{
-		Dialer: net.Dialer{
+		Dialer: &net.Dialer{
 			Timeout:   DefaultTimeout,
 			KeepAlive: DefaultKeepAlive,
 		},
