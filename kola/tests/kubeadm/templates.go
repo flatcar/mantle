@@ -222,7 +222,7 @@ storage:
               spec:
                 containers:
                 - name: nginx
-                  image: nginx
+                  image: ghcr.io/kinvolk/nginx
                   ports:
                   - containerPort: 80`
 

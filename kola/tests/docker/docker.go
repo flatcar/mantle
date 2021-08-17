@@ -645,7 +645,7 @@ func dockerSELinux(c cluster.TestCluster) {
 	var cmd string
 
 	cmd = `sudo mkdir /etc/misc && \
-docker run -v "/etc/misc:/opt" --rm busybox true`
+docker run -v "/etc/misc:/opt" --rm ghcr.io/kinvolk/busybox true`
 
 	// assert SELinux is in permissive mode
 	if err := c.MustSSH(m, "sudo setenforce 0"); err != nil {
@@ -663,12 +663,12 @@ docker run -v "/etc/misc:/opt" --rm busybox true`
 	}
 
 	// run docker command to assert it fails because of wrong labeling
-	if _, err := c.SSH(m, `docker run -v "/etc/misc:/opt" --rm busybox sh -c "echo world > /opt/hello"`); err == nil {
+	if _, err := c.SSH(m, `docker run -v "/etc/misc:/opt" --rm ghcr.io/kinvolk/busybox sh -c "echo world > /opt/hello"`); err == nil {
 		c.Fatalf("command should raise a permission error")
 	}
 
 	// run docker command with correct relabel action (z)
-	if err := c.MustSSH(m, `docker run -v "/etc/misc:/opt:z" --rm busybox sh -c "echo world > /opt/hello"`); err != nil {
+	if err := c.MustSSH(m, `docker run -v "/etc/misc:/opt:z" --rm ghcr.io/kinvolk/busybox sh -c "echo world > /opt/hello"`); err != nil {
 		c.Fatalf("unable to run docker command: %v", err)
 	}
 
