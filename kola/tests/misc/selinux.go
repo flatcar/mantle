@@ -26,16 +26,18 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Run:         SelinuxEnforce,
-		ClusterSize: 1,
-		Name:        "coreos.selinux.enforce",
-		Distros:     []string{"cl", "fcos", "rhcos"},
+		Run:           SelinuxEnforce,
+		ClusterSize:   1,
+		Name:          "coreos.selinux.enforce",
+		Distros:       []string{"cl", "fcos", "rhcos"},
+		Architectures: []string{"amd64"},
 	})
 	register.Register(&register.Test{
-		Run:         SelinuxBoolean,
-		ClusterSize: 1,
-		Name:        "coreos.selinux.boolean",
-		Distros:     []string{"cl", "fcos", "rhcos"},
+		Run:           SelinuxBoolean,
+		ClusterSize:   1,
+		Name:          "coreos.selinux.boolean",
+		Distros:       []string{"cl", "fcos", "rhcos"},
+		Architectures: []string{"amd64"},
 	})
 	register.Register(&register.Test{
 		Run:         SelinuxBooleanPersist,
