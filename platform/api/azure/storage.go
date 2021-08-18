@@ -15,15 +15,16 @@
 package azure
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"net/url"
 	"path"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/arm/storage"
-	"github.com/Azure/azure-sdk-for-go/management"
-	"github.com/Azure/azure-sdk-for-go/management/storageservice"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management/storageservice"
+	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-01-01/storage"
 )
 
 var (
@@ -35,7 +36,7 @@ func (a *API) GetStorageServiceKeys(account string) (storageservice.GetStorageSe
 }
 
 func (a *API) GetStorageServiceKeysARM(account, resourceGroup string) (storage.AccountListKeysResult, error) {
-	return a.accClient.ListKeys(resourceGroup, account)
+	return a.accClient.ListKeys(context.TODO(), resourceGroup, account, storage.Kerb)
 }
 
 // https://msdn.microsoft.com/en-us/library/azure/jj157192.aspx
@@ -95,7 +96,7 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 		Kind:     "Storage",
 		Location: &a.opts.Location,
 	}
-	_, err := a.accClient.Create(resourceGroup, name, parameters, nil)
+	_, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)
 	if err != nil {
 		return "", fmt.Errorf("creating storage account: %v", err)
 	}

@@ -44,10 +44,10 @@ const pageBlobPageSize int64 = 2 * 1024 * 1024
 
 type BlobExistsError string
 
-func (a *API) ListStorageContainers(storageaccount, storagekey, prefix string) (storage.ContainerListResponse, error) {
+func (a *API) ListStorageContainers(storageaccount, storagekey, prefix string) (*storage.ContainerListResponse, error) {
 	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
-		return storage.ContainerListResponse{}, err
+		return nil, err
 	}
 
 	bsc := sc.GetBlobService()
@@ -64,8 +64,7 @@ func (a *API) TerminateStorageContainer(storageaccount, storagekey, name string)
 	}
 
 	bsc := sc.GetBlobService()
-
-	return bsc.DeleteContainer(name)
+	return bsc.GetContainerReference(name).Delete(nil)
 }
 
 func (be BlobExistsError) Error() string {
@@ -79,8 +78,8 @@ func (a *API) BlobExists(storageaccount, storagekey, container, blob string) (bo
 	}
 
 	bsc := sc.GetBlobService()
-
-	return bsc.BlobExists(container, blob)
+	cont := bsc.GetContainerReference(container)
+	return cont.GetBlobReference(blob).Exists()
 }
 
 func (a *API) ListBlobs(storageaccount, storagekey, container string, params storage.ListBlobsParameters) ([]storage.Blob, error) {
@@ -90,17 +89,20 @@ func (a *API) ListBlobs(storageaccount, storagekey, container string, params sto
 	}
 
 	bsc := sc.GetBlobService()
+	cont := bsc.GetContainerReference(container)
 
-	resp, err := bsc.ListBlobs(container, params)
+	resp, err := cont.ListBlobs(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed listing blobs for %q: %v", container, err)
 	}
 	var res []storage.Blob
 	for _, blob := range resp.Blobs {
-		blob.Metadata, err = bsc.GetBlobMetadata(container, blob.Name)
+		b := cont.GetBlobReference(blob.Name)
+		err = b.GetMetadata(nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed getting blog metadata for %q: %v", blob.Name, err)
 		}
+		blob.Metadata = b.Metadata
 		res = append(res, blob)
 	}
 	return res, nil
@@ -113,11 +115,12 @@ func (a *API) GetBlob(storageaccount, storagekey, container, name string) (io.Re
 	}
 
 	bsc := sc.GetBlobService()
-	if _, err = bsc.CreateContainerIfNotExists(container, storage.ContainerAccessTypePrivate); err != nil {
+	cont := bsc.GetContainerReference(container)
+	if _, err = cont.CreateIfNotExists(&storage.CreateContainerOptions{Access: storage.ContainerAccessTypePrivate}); err != nil {
 		return nil, err
 	}
 
-	return bsc.GetBlob(container, name)
+	return cont.GetBlobReference(name).Get(nil)
 }
 
 // UploadBlob uploads vhd to the given storage account, container, and blob name.
@@ -136,11 +139,12 @@ func (a *API) UploadBlob(storageaccount, storagekey, vhd, container, blob string
 	}
 
 	bsc := sc.GetBlobService()
-	if _, err = bsc.CreateContainerIfNotExists(container, storage.ContainerAccessTypePrivate); err != nil {
+	cont := bsc.GetContainerReference(container)
+	if _, err = cont.CreateIfNotExists(&storage.CreateContainerOptions{Access: storage.ContainerAccessTypePrivate}); err != nil {
 		return err
 	}
 
-	blobExists, err := bsc.BlobExists(container, blob)
+	blobExists, err := cont.GetBlobReference(blob).Exists()
 	if err != nil {
 		return err
 	}
@@ -244,11 +248,14 @@ func getLocalVHDMetaData(localVHDPath string) (*metadata.MetaData, error) {
 // the new page blob in bytes and parameter vhdMetaData is the custom metadata to be associacted with the page blob
 //
 func createBlob(client storage.BlobStorageClient, containerName, blobName string, size int64, vhdMetaData *metadata.MetaData) error {
-	if err := client.PutPageBlob(containerName, blobName, size, nil); err != nil {
+	blob := client.GetContainerReference(containerName).GetBlobReference(blobName)
+	blob.Properties.ContentLength = size
+	if err := blob.PutPageBlob(nil); err != nil {
 		return err
 	}
 	m, _ := vhdMetaData.ToMap()
-	if err := client.SetBlobMetadata(containerName, blobName, m, make(map[string]string)); err != nil {
+	blob.Metadata = m
+	if err := blob.SetMetadata(nil); err != nil {
 		return err
 	}
 
@@ -260,7 +267,8 @@ func createBlob(client storage.BlobStorageClient, containerName, blobName string
 // in which the page blob resides, parameter blobName is name for the page blob
 //
 func getAlreadyUploadedBlobRanges(client storage.BlobStorageClient, containerName, blobName string) ([]*common.IndexRange, error) {
-	existingRanges, err := client.GetPageRanges(containerName, blobName)
+	blob := client.GetContainerReference(containerName).GetBlobReference(blobName)
+	existingRanges, err := blob.GetPageRanges(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -276,11 +284,12 @@ func getAlreadyUploadedBlobRanges(client storage.BlobStorageClient, containerNam
 // in which the page blob resides, parameter blobName is name for the page blob
 //
 func getBlobMD5Hash(client storage.BlobStorageClient, containerName, blobName string) (string, error) {
-	properties, err := client.GetBlobProperties(containerName, blobName)
+	blob := client.GetContainerReference(containerName).GetBlobReference(blobName)
+	err := blob.GetProperties(nil)
 	if err != nil {
 		return "", err
 	}
-	return properties.ContentMD5, nil
+	return blob.Properties.ContentMD5, nil
 }
 
 func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (string, error) {
@@ -290,8 +299,11 @@ func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (stri
 	}
 
 	bsc := sc.GetBlobService()
-
-	return bsc.GetBlobSASURI(container, blob, time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC), "rl") // TODO: Migrate to new API version
+	b := bsc.GetContainerReference(container).GetBlobReference(blob)
+	blobSASOptions := storage.BlobSASOptions{}
+	blobSASOptions.Read = true
+	blobSASOptions.Expiry = time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC)
+	return b.GetSASURI(blobSASOptions) // TODO: Migrate to new API version
 }
 
 func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, sourceBlob string) error {
@@ -301,12 +313,12 @@ func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, source
 	}
 
 	bsc := sc.GetBlobService()
-
-	if _, err = bsc.CreateContainerIfNotExists(container, storage.ContainerAccessTypePrivate); err != nil {
+	cont := bsc.GetContainerReference(container)
+	if _, err = cont.CreateIfNotExists(&storage.CreateContainerOptions{Access: storage.ContainerAccessTypePrivate}); err != nil {
 		return err
 	}
-
-	return bsc.CopyBlob(container, targetBlob, sourceBlob)
+	dstBlob := cont.GetBlobReference(targetBlob)
+	return dstBlob.Copy(sourceBlob, nil)
 }
 
 func (a *API) DeleteBlob(storageaccount, storagekey, container, blob string) error {
@@ -316,6 +328,6 @@ func (a *API) DeleteBlob(storageaccount, storagekey, container, blob string) err
 	}
 
 	bsc := sc.GetBlobService()
-
-	return bsc.DeleteBlob(container, blob, nil)
+	cont := bsc.GetContainerReference(container)
+	return cont.GetBlobReference(blob).Delete(nil)
 }

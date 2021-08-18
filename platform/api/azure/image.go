@@ -16,13 +16,14 @@ package azure
 
 import (
 	"bufio"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
-	"github.com/Azure/azure-sdk-for-go/management"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
 )
 
 // OSImage struct for https://msdn.microsoft.com/en-us/library/azure/jj157192.aspx call.
@@ -72,24 +73,24 @@ func IsConflictError(err error) bool {
 }
 
 func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, error) {
-	_, err := a.imgClient.CreateOrUpdate(resourceGroup, name, compute.Image{
+	_, err := a.imgClient.CreateOrUpdate(context.TODO(), resourceGroup, name, compute.Image{
 		Name:     &name,
 		Location: &a.opts.Location,
 		ImageProperties: &compute.ImageProperties{
 			StorageProfile: &compute.ImageStorageProfile{
 				OsDisk: &compute.ImageOSDisk{
-					OsType:  compute.Linux,
-					OsState: compute.Generalized,
+					OsType:  compute.OperatingSystemTypesLinux,
+					OsState: compute.OperatingSystemStateTypesGeneralized,
 					BlobURI: &blobURI,
 				},
 			},
 		},
-	}, nil)
+	})
 	if err != nil {
 		return compute.Image{}, err
 	}
 
-	return a.imgClient.Get(resourceGroup, name, "")
+	return a.imgClient.Get(context.TODO(), resourceGroup, name, "")
 }
 
 // resolveImage is used to ensure that either a Version or DiskURI/BlobURL/ImageFile

@@ -28,7 +28,7 @@ import (
 	"sort"
 	"strings"
 
-	azurestorage "github.com/Azure/azure-sdk-for-go/arm/storage"
+	azurestorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-01-01/storage"
 	"github.com/Microsoft/azure-vhd-utils/vhdcore/validator"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"

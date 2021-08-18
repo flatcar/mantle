@@ -15,9 +15,10 @@
 package azure
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/arm/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-11-01/network"
 
 	"github.com/coreos/mantle/util"
 )
@@ -36,24 +37,24 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (network.Subnet, err
 }
 
 func (a *API) createVirtualNetwork(resourceGroup string) error {
-	_, err := a.netClient.CreateOrUpdate(resourceGroup, "kola-vn", network.VirtualNetwork{
+	_, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", network.VirtualNetwork{
 		Location: &a.opts.Location,
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
 				AddressPrefixes: &virtualNetworkPrefix,
 			},
 		},
-	}, nil)
+	})
 
 	return err
 }
 
 func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
-	_, err := a.subClient.CreateOrUpdate(resourceGroup, "kola-vn", "kola-subnet", network.Subnet{
+	_, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 			AddressPrefix: &subnetPrefix,
 		},
-	}, nil)
+	})
 	if err != nil {
 		return network.Subnet{}, err
 	}
@@ -62,20 +63,20 @@ func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
 }
 
 func (a *API) getSubnet(resourceGroup string) (network.Subnet, error) {
-	return a.subClient.Get(resourceGroup, "kola-vn", "kola-subnet", "")
+	return a.subClient.Get(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", "")
 }
 
 func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, error) {
 	name := randomName("ip")
 
-	_, err := a.ipClient.CreateOrUpdate(resourceGroup, name, network.PublicIPAddress{
+	_, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
 		Location: &a.opts.Location,
-	}, nil)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	ip, err := a.ipClient.Get(resourceGroup, name, "")
+	ip, err := a.ipClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, er
 }
 
 func (a *API) GetPublicIP(name, resourceGroup string) (string, error) {
-	ip, err := a.ipClient.Get(resourceGroup, name, "")
+	ip, err := a.ipClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return "", err
 	}
@@ -103,7 +104,7 @@ func (a *API) GetIPAddresses(name, publicIPName, resourceGroup string) (string, 
 		return "", "", err
 	}
 
-	nic, err := a.intClient.Get(resourceGroup, name, "")
+	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return "", "", err
 	}
@@ -119,7 +120,7 @@ func (a *API) GetIPAddresses(name, publicIPName, resourceGroup string) (string, 
 }
 
 func (a *API) GetPrivateIP(name, resourceGroup string) (string, error) {
-	nic, err := a.intClient.Get(resourceGroup, name, "")
+	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return "", err
 	}
@@ -132,7 +133,7 @@ func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, res
 	name := randomName("nic")
 	ipconf := randomName("nic-ipconf")
 
-	_, err := a.intClient.CreateOrUpdate(resourceGroup, name, network.Interface{
+	_, err := a.intClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.Interface{
 		Location: &a.opts.Location,
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
@@ -140,19 +141,19 @@ func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, res
 					Name: &ipconf,
 					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 						PublicIPAddress:           ip,
-						PrivateIPAllocationMethod: network.Dynamic,
+						PrivateIPAllocationMethod: network.IPAllocationMethodDynamic,
 						Subnet:                    subnet,
 					},
 				},
 			},
 			EnableAcceleratedNetworking: util.BoolToPtr(true),
 		},
-	}, nil)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	nic, err := a.intClient.Get(resourceGroup, name, "")
+	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return nil, err
 	}
