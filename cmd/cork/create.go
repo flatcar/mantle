@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/coreos/go-semver/semver"
+	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -282,7 +283,8 @@ func updateRepo() {
 		}
 	}
 
-	if err := sdk.RepoSync(chrootName, forceSync, useHostDNS); err != nil {
+	verbose := plog.LevelAt(capnslog.INFO)
+	if err := sdk.RepoSync(chrootName, forceSync, verbose, useHostDNS); err != nil {
 		plog.Fatalf("repo sync failed: %v", err)
 	}
 
