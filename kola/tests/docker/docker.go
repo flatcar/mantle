@@ -417,7 +417,6 @@ func dockerUserns(c cluster.TestCluster) {
 
 	genDockerContainer(c, m, "userns-test", []string{"echo", "sleep"})
 
-	c.MustSSH(m, `sudo setenforce 1`)
 	output := c.MustSSH(m, `docker run userns-test echo fj.fj`)
 	if !bytes.Equal(output, []byte("fj.fj")) {
 		c.Fatalf("expected fj.fj, got %s", string(output))
