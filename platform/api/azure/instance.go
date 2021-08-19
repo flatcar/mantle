@@ -129,6 +129,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	}
 
 	vmParams := a.getVMParameters(name, userdata, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), ip, nic)
+	plog.Infof("Creating Instance %s", name)
 
 	future, err := a.compClient.CreateOrUpdate(context.TODO(), resourceGroup, name, vmParams)
 	if err != nil {
@@ -142,6 +143,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	if err != nil {
 		return nil, err
 	}
+	plog.Infof("Instance %s created", name)
 
 	err = util.WaitUntilReady(5*time.Minute, 10*time.Second, func() (bool, error) {
 		vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, "")
@@ -155,6 +157,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 
 		return true, nil
 	})
+	plog.Infof("Instance %s ready", name)
 	if err != nil {
 		_, _ = a.compClient.Delete(context.TODO(), resourceGroup, name, nil)
 		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)

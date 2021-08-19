@@ -73,6 +73,7 @@ func IsConflictError(err error) bool {
 }
 
 func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, error) {
+	plog.Infof("Creating Image %s", name)
 	future, err := a.imgClient.CreateOrUpdate(context.TODO(), resourceGroup, name, compute.Image{
 		Name:     &name,
 		Location: &a.opts.Location,

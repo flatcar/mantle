@@ -31,6 +31,8 @@ import (
 	"github.com/coreos/mantle/platform/machine/qemu"
 	"github.com/coreos/mantle/sdk"
 	"github.com/coreos/mantle/sdk/omaha"
+
+	"github.com/coreos/pkg/capnslog"
 )
 
 var (
@@ -47,7 +49,6 @@ var (
 	spawnOmahaPackage   string
 	spawnShell          bool
 	spawnRemove         bool
-	spawnVerbose        bool
 	spawnMachineOptions string
 	spawnSetSSHKeys     bool
 	spawnSSHKeys        []string
@@ -60,7 +61,6 @@ func init() {
 	cmdSpawn.Flags().StringVar(&spawnOmahaPackage, "omaha-package", "", "add an update payload to the Omaha server, referenced by image version (e.g. 'latest')")
 	cmdSpawn.Flags().BoolVarP(&spawnShell, "shell", "s", true, "spawn a shell in an instance before exiting")
 	cmdSpawn.Flags().BoolVarP(&spawnRemove, "remove", "r", true, "remove instances after shell exits")
-	cmdSpawn.Flags().BoolVarP(&spawnVerbose, "verbose", "v", false, "output information about spawned instances")
 	cmdSpawn.Flags().StringVar(&spawnMachineOptions, "qemu-options", "", "experimental: path to QEMU machine options json")
 	cmdSpawn.Flags().BoolVarP(&spawnSetSSHKeys, "keys", "k", false, "add SSH keys from --key options")
 	cmdSpawn.Flags().StringSliceVar(&spawnSSHKeys, "key", nil, "path to SSH public key (default: SSH agent + ~/.ssh/id_{rsa,dsa,ecdsa,ed25519}.pub)")
@@ -79,7 +79,7 @@ func doSpawn(cmd *cobra.Command, args []string) error {
 
 	if spawnDetach {
 		spawnSetSSHKeys = true
-		spawnVerbose = true
+		capnslog.SetGlobalLogLevel(capnslog.INFO)
 		spawnShell = false
 		spawnRemove = false
 	}
@@ -161,9 +161,7 @@ func doSpawn(cmd *cobra.Command, args []string) error {
 	for i := 0; i < spawnNodeCount; i++ {
 		var mach platform.Machine
 		var err error
-		if spawnVerbose {
-			fmt.Println("Spawning machine...")
-		}
+		plog.Infof("Spawning machine...")
 		if kolaPlatform == "qemu" && spawnMachineOptions != "" {
 			var b []byte
 			b, err = ioutil.ReadFile(spawnMachineOptions)
@@ -190,9 +188,7 @@ func doSpawn(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		if spawnVerbose {
-			fmt.Printf("Machine %v spawned at %v\n", mach.ID(), mach.IP())
-		}
+		plog.Infof("Machine %v spawned at %v\n", mach.ID(), mach.IP())
 
 		someMach = mach
 	}

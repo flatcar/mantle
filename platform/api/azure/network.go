@@ -37,6 +37,7 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (network.Subnet, err
 }
 
 func (a *API) createVirtualNetwork(resourceGroup string) error {
+	plog.Infof("Creating VirtualNetwork %s", "kola-vn")
 	future, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", network.VirtualNetwork{
 		Location: &a.opts.Location,
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
@@ -57,6 +58,7 @@ func (a *API) createVirtualNetwork(resourceGroup string) error {
 }
 
 func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
+	plog.Infof("Creating Subnet %s", "kola-subnet")
 	future, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 			AddressPrefix: &subnetPrefix,
@@ -78,6 +80,7 @@ func (a *API) getSubnet(resourceGroup string) (network.Subnet, error) {
 
 func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, error) {
 	name := randomName("ip")
+	plog.Infof("Creating PublicIP %s", name)
 
 	future, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
 		Location: &a.opts.Location,
@@ -144,6 +147,7 @@ func (a *API) GetPrivateIP(name, resourceGroup string) (string, error) {
 func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, resourceGroup string) (*network.Interface, error) {
 	name := randomName("nic")
 	ipconf := randomName("nic-ipconf")
+	plog.Infof("Creating NIC %s", name)
 
 	future, err := a.intClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.Interface{
 		Location: &a.opts.Location,

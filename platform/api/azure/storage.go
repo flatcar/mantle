@@ -96,6 +96,7 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 		Kind:     "StorageV2",
 		Location: &a.opts.Location,
 	}
+	plog.Infof("Creating StorageAccount %s", name)
 	future, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)
 	if err != nil {
 		return "", fmt.Errorf("start creating storage account: %v", err)

@@ -109,9 +109,11 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 
 		if opts.BlobURL != "" {
 			for _, k := range *kr.Keys {
+				plog.Infof("Copying blob")
 				if err := af.api.CopyBlob(af.ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
 					return nil, fmt.Errorf("Copying blob failed: %v", err)
 				}
+				plog.Infof("Blob copy done")
 				break
 			}
 		} else if opts.ImageFile != "" {

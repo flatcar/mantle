@@ -29,7 +29,7 @@ func (a *API) CreateResourceGroup(prefix string) (string, error) {
 		"createdAt": util.StrToPtr(time.Now().Format(time.RFC3339)),
 		"createdBy": util.StrToPtr("mantle"),
 	}
-
+	plog.Infof("Creating ResourceGroup %s", name)
 	_, err := a.rgClient.CreateOrUpdate(context.TODO(), name, resources.Group{
 		Location: &a.opts.Location,
 		Tags:     tags,
