@@ -93,7 +93,7 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 		Sku: &storage.Sku{
 			Name: "Standard_LRS",
 		},
-		Kind:     "Storage",
+		Kind:     "StorageV2",
 		Location: &a.opts.Location,
 	}
 	future, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)
