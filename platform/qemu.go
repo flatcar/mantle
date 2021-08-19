@@ -266,7 +266,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"qemu-system-aarch64",
 			"-machine", "virt",
 			"-cpu", "cortex-a57",
-			"-m", "2048",
+			"-m", "2512",
 		}
 	case "arm64--amd64-usr":
 		qmBinary = "qemu-system-x86_64"
@@ -282,7 +282,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"qemu-system-aarch64",
 			"-machine", "virt,accel=kvm,gic-version=3",
 			"-cpu", "host",
-			"-m", "2048",
+			"-m", "2512",
 		}
 	default:
 		panic("host-guest combo not supported: " + combo)
