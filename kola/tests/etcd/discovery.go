@@ -114,6 +114,7 @@ func etcdMemberV2BackupRestore(c cluster.TestCluster) {
 	c.MustSSH(m, `
 	set -e
 
+	export ETCDCTL_API=2
 	prefix=$RANDOM
 	etcdctl set /$prefix/test magic
 	res="$(etcdctl get /$prefix/test)"
