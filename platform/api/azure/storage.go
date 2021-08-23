@@ -96,7 +96,15 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 		Kind:     "Storage",
 		Location: &a.opts.Location,
 	}
-	_, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)
+	future, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)
+	if err != nil {
+		return "", fmt.Errorf("start creating storage account: %v", err)
+	}
+	err = future.WaitForCompletionRef(context.TODO(), a.accClient.Client)
+	if err != nil {
+		return "", fmt.Errorf("finish creating storage account: %v", err)
+	}
+	_, err = future.Result(a.accClient)
 	if err != nil {
 		return "", fmt.Errorf("creating storage account: %v", err)
 	}

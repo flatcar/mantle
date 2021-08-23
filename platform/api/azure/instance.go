@@ -130,7 +130,15 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 
 	vmParams := a.getVMParameters(name, userdata, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), ip, nic)
 
-	_, err = a.compClient.CreateOrUpdate(context.TODO(), resourceGroup, name, vmParams)
+	future, err := a.compClient.CreateOrUpdate(context.TODO(), resourceGroup, name, vmParams)
+	if err != nil {
+		return nil, err
+	}
+	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
+	if err != nil {
+		return nil, err
+	}
+	_, err = future.Result(a.compClient)
 	if err != nil {
 		return nil, err
 	}
@@ -181,15 +189,45 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 // TerminateInstance deletes a VM created by CreateInstance with the public IP address and
 // NIC created for it. Currently it does not delete the OS disk that is created (see TODO).
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
-	if _, err := a.compClient.Delete(context.TODO(), resourceGroup, machine.ID, nil); err != nil {
+	future, err := a.compClient.Delete(context.TODO(), resourceGroup, machine.ID, nil)
+	if err != nil {
 		return err
 	}
-	if _, err := a.intClient.Delete(context.TODO(), resourceGroup, machine.InterfaceName); err != nil {
+	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
+	if err != nil {
 		return err
 	}
-	if _, err := a.ipClient.Delete(context.TODO(), resourceGroup, machine.PublicIPName); err != nil {
+	_, err = future.Result(a.compClient)
+	if err != nil {
 		return err
 	}
+
+	ifFuture, err := a.intClient.Delete(context.TODO(), resourceGroup, machine.InterfaceName)
+	if err != nil {
+		return err
+	}
+	err = ifFuture.WaitForCompletionRef(context.TODO(), a.intClient.Client)
+	if err != nil {
+		return err
+	}
+	_, err = ifFuture.Result(a.intClient)
+	if err != nil {
+		return err
+	}
+
+	ipFuture, err := a.ipClient.Delete(context.TODO(), resourceGroup, machine.PublicIPName)
+	if err != nil {
+		return err
+	}
+	err = ipFuture.WaitForCompletionRef(context.TODO(), a.ipClient.Client)
+	if err != nil {
+		return err
+	}
+	_, err = ipFuture.Result(a.ipClient)
+	if err != nil {
+		return err
+	}
+
 	// TODO: remove disk which doesn't get removed automatically
 	return nil
 }

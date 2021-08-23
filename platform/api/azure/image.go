@@ -73,10 +73,11 @@ func IsConflictError(err error) bool {
 }
 
 func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, error) {
-	_, err := a.imgClient.CreateOrUpdate(context.TODO(), resourceGroup, name, compute.Image{
+	future, err := a.imgClient.CreateOrUpdate(context.TODO(), resourceGroup, name, compute.Image{
 		Name:     &name,
 		Location: &a.opts.Location,
 		ImageProperties: &compute.ImageProperties{
+			HyperVGeneration: compute.HyperVGenerationTypesV1,
 			StorageProfile: &compute.ImageStorageProfile{
 				OsDisk: &compute.ImageOSDisk{
 					OsType:  compute.OperatingSystemTypesLinux,
@@ -89,8 +90,11 @@ func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, e
 	if err != nil {
 		return compute.Image{}, err
 	}
-
-	return a.imgClient.Get(context.TODO(), resourceGroup, name, "")
+	err = future.WaitForCompletionRef(context.TODO(), a.imgClient.Client)
+	if err != nil {
+		return compute.Image{}, err
+	}
+	return future.Result(a.imgClient)
 }
 
 // resolveImage is used to ensure that either a Version or DiskURI/BlobURL/ImageFile

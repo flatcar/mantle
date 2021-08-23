@@ -37,7 +37,7 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (network.Subnet, err
 }
 
 func (a *API) createVirtualNetwork(resourceGroup string) error {
-	_, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", network.VirtualNetwork{
+	future, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", network.VirtualNetwork{
 		Location: &a.opts.Location,
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
@@ -45,12 +45,19 @@ func (a *API) createVirtualNetwork(resourceGroup string) error {
 			},
 		},
 	})
-
+	if err != nil {
+		return err
+	}
+	err = future.WaitForCompletionRef(context.TODO(), a.netClient.Client)
+	if err != nil {
+		return err
+	}
+	_, err = future.Result(a.netClient)
 	return err
 }
 
 func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
-	_, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", network.Subnet{
+	future, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 			AddressPrefix: &subnetPrefix,
 		},
@@ -58,8 +65,11 @@ func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
 	if err != nil {
 		return network.Subnet{}, err
 	}
-
-	return a.getSubnet(resourceGroup)
+	err = future.WaitForCompletionRef(context.TODO(), a.subClient.Client)
+	if err != nil {
+		return network.Subnet{}, err
+	}
+	return future.Result(a.subClient)
 }
 
 func (a *API) getSubnet(resourceGroup string) (network.Subnet, error) {
@@ -69,18 +79,20 @@ func (a *API) getSubnet(resourceGroup string) (network.Subnet, error) {
 func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, error) {
 	name := randomName("ip")
 
-	_, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
+	future, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
 		Location: &a.opts.Location,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	ip, err := a.ipClient.Get(context.TODO(), resourceGroup, name, "")
+	err = future.WaitForCompletionRef(context.TODO(), a.ipClient.Client)
 	if err != nil {
 		return nil, err
 	}
-
+	ip, err := future.Result(a.ipClient)
+	if err != nil {
+		return nil, err
+	}
 	return &ip, nil
 }
 
@@ -133,7 +145,7 @@ func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, res
 	name := randomName("nic")
 	ipconf := randomName("nic-ipconf")
 
-	_, err := a.intClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.Interface{
+	future, err := a.intClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.Interface{
 		Location: &a.opts.Location,
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
@@ -152,11 +164,13 @@ func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, res
 	if err != nil {
 		return nil, err
 	}
-
-	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
+	err = future.WaitForCompletionRef(context.TODO(), a.intClient.Client)
 	if err != nil {
 		return nil, err
 	}
-
+	nic, err := future.Result(a.intClient)
+	if err != nil {
+		return nil, err
+	}
 	return &nic, nil
 }
