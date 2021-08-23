@@ -36,13 +36,16 @@ func GetClusterHealth(c cluster.TestCluster, m platform.Machine, csize int) erro
 	var b []byte
 
 	checker := func() error {
-		b, err := c.SSH(m, "etcdctl cluster-health")
+		// Fun hack: we need to redirect stderr to stdout because in 3.3.25, there is
+		// a mistake (?) where `health` command redirects to stderr
+		// More details https://github.com/etcd-io/etcd/commit/e48ad568b9e0ad9d3fbcecb82bf77998b19f6499
+		b, err := c.SSH(m, "ETCDCTL_API=3 etcdctl endpoint --cluster health 2>&1")
 		if err != nil {
 			return err
 		}
 
-		// repsonse should include "healthy" for each machine and for cluster
-		if strings.Count(string(b), "healthy") != (csize*2)+1 {
+		// response should include "healthy" for each machine
+		if strings.Count(string(b), "healthy") != csize {
 			return fmt.Errorf("unexpected etcdctl output")
 		}
 
