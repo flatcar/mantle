@@ -78,7 +78,7 @@ func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, e
 		Name:     &name,
 		Location: &a.opts.Location,
 		ImageProperties: &compute.ImageProperties{
-			HyperVGeneration: compute.HyperVGenerationTypesV1,
+			HyperVGeneration: compute.HyperVGenerationTypes(a.opts.HyperVGeneration),
 			StorageProfile: &compute.ImageStorageProfile{
 				OsDisk: &compute.ImageOSDisk{
 					OsType:  compute.OperatingSystemTypesLinux,
