@@ -108,9 +108,14 @@ func New(opts *Options) (*API, error) {
 		opts.StorageEndpointSuffix = subOpts.StorageEndpointSuffix
 	}
 
-	client, err := management.NewClientFromConfig(opts.SubscriptionID, opts.ManagementCertificate, conf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create azure client: %v", err)
+	var client management.Client
+	if opts.ManagementCertificate != nil {
+		client, err = management.NewClientFromConfig(opts.SubscriptionID, opts.ManagementCertificate, conf)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create azure client: %v", err)
+		}
+	} else {
+		client = management.NewAnonymousClient()
 	}
 
 	api := &API{
