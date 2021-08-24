@@ -74,6 +74,13 @@ By default, kola uses the `qemu` platform with the most recently built image
 (assuming it is run from within the SDK).
 
 #### kola run
+
+In order to provide internet access to QEMU instances; it's required to enable ipv4 forwarding on the host machine:
+
+```shell
+sudo sysctl -w net.ipv4.ip_forward=1
+```
+
 The run command invokes the main kola test harness. It
 runs any tests whose registered names matches a glob pattern.
 
