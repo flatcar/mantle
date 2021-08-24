@@ -80,21 +80,9 @@ etcd:
 func Discovery(c cluster.TestCluster) {
 	var err error
 
-	// NOTE(pb): this check makes the next code somewhat redundant
 	if err = GetClusterHealth(c, c.Machines()[0], len(c.Machines())); err != nil {
 		c.Fatalf("discovery failed cluster-health check: %v", err)
 	}
-
-	var keyMap map[string]string
-	keyMap, err = setKeys(c, 5)
-	if err != nil {
-		c.Fatalf("failed to set keys: %v", err)
-	}
-
-	if err = checkKeys(c, keyMap); err != nil {
-		c.Fatalf("failed to check keys: %v", err)
-	}
-
 }
 
 // etcdMemberV2BackupRestore tests that the basic etcdctl v2 operations (get,
