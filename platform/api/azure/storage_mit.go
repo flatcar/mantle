@@ -30,6 +30,7 @@ package azure
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
@@ -298,12 +299,31 @@ func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (stri
 		return "", err
 	}
 
+	// The SAS URI must use a container level token but target the blob.
+	// https://docs.microsoft.com/en-us/azure/marketplace/azure-vm-get-sas-uri
 	bsc := sc.GetBlobService()
-	b := bsc.GetContainerReference(container).GetBlobReference(blob)
-	blobSASOptions := storage.BlobSASOptions{}
-	blobSASOptions.Read = true
-	blobSASOptions.Expiry = time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC)
-	return b.GetSASURI(blobSASOptions) // TODO: Migrate to new API version
+	cont := bsc.GetContainerReference(container)
+	containerSASOptions := storage.ContainerSASOptions{}
+	containerSASOptions.Read = true
+	containerSASOptions.List = true
+	containerSASOptions.Expiry = time.Date(2099, time.December, 31, 23, 59, 59, 0, time.UTC)
+	containerSAS, err := cont.GetSASURI(containerSASOptions)
+	if err != nil {
+		return "", err
+	}
+	sasParts, err := url.Parse(containerSAS)
+	if err != nil {
+		return "", err
+	}
+	sas := sasParts.Query().Encode()
+
+	blobURLRaw := cont.GetBlobReference(blob).GetURL()
+	blobURL, err := url.Parse(blobURLRaw)
+	if err != nil {
+		return "", err
+	}
+	blobURL.RawQuery = sas
+	return blobURL.String(), nil
 }
 
 func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, sourceBlob string) error {
