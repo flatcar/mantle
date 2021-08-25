@@ -121,7 +121,7 @@ func etcdMemberV2BackupRestore(c cluster.TestCluster) {
 
 	backup_to="$(mktemp -d)"
 
-	sudo etcdctl backup --data-dir=/var/lib/etcd \
+	sudo --preserve-env=ETCDCTL_API etcdctl backup --data-dir=/var/lib/etcd \
 	               --backup-dir "${backup_to}"
 	
 	etcdctl rm /$prefix/test
