@@ -44,7 +44,16 @@ etcd:
   advertise_client_urls:       http://{PRIVATE_IPV4}:2379
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   listen_peer_urls:            http://{PRIVATE_IPV4}:2380
-  discovery:                   $discovery`),
+  discovery:                   $discovery
+systemd:
+  units:
+    - name: etcd-member.service
+      enabled: true
+      dropins:
+        - name: 10-enable-v2.conf
+          contents: |
+            [Service]
+            Environment=ETCD_ENABLE_V2=true`),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
@@ -70,7 +79,7 @@ etcd:
         "name": "etcd-member.service",
         "dropins": [{
           "name": "environment.conf",
-          "contents": "[Unit]\nAfter=certgen.service\nRequires=certgen.service\n[Service]\nEnvironment=ETCD_ADVERTISE_CLIENT_URLS=https://127.0.0.1:2379\nEnvironment=ETCD_LISTEN_CLIENT_URLS=https://127.0.0.1:2379\nEnvironment=ETCD_CERT_FILE=/etc/ssl/certs/etcd-cert.pem\nEnvironment=ETCD_KEY_FILE=/etc/ssl/certs/etcd-key.pem\nEnvironment=ETCD_TRUSTED_CA_FILE=/etc/ssl/certs/ca-locksmith-cert.pem\nEnvironment=ETCD_CLIENT_CERT_AUTH=true"
+          "contents": "[Unit]\nAfter=certgen.service\nRequires=certgen.service\n[Service]\nEnvironment=ETCD_ADVERTISE_CLIENT_URLS=https://127.0.0.1:2379\nEnvironment=ETCD_LISTEN_CLIENT_URLS=https://127.0.0.1:2379\nEnvironment=ETCD_CERT_FILE=/etc/ssl/certs/etcd-cert.pem\nEnvironment=ETCD_KEY_FILE=/etc/ssl/certs/etcd-key.pem\nEnvironment=ETCD_TRUSTED_CA_FILE=/etc/ssl/certs/ca-locksmith-cert.pem\nEnvironment=ETCD_CLIENT_CERT_AUTH=true\nEnvironment=ETCD_ENABLE_V2=true"
         }]
       },
       {
