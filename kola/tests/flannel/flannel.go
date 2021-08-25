@@ -74,6 +74,7 @@ func init() {
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		UserData:         flannelConf.Subst("$type", "udp"),
+		Architectures:    []string{"amd64"},
 	})
 
 	register.Register(&register.Test{
