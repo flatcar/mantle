@@ -48,7 +48,7 @@ func init() {
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
-  listen_client_urls:          http://0.0.0.0:4001,http://{PRIVATE_IPV4}:2379
+  listen_client_urls:          http://0.0.0.0:4001,http://0.0.0.0:2379
   advertise_client_urls:       http://{PRIVATE_IPV4}:2379
   listen_peer_urls:            http://0.0.0.0:2380
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
