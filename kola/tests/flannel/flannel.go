@@ -54,7 +54,16 @@ systemd:
         - name: 50-network-config.conf
           contents: |
             [Service]
-            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ \"Network\": \"10.254.0.0/16\", \"Backend\": {\"Type\": \"$type\"} }'`)
+            # to be changed when flannel will support etcd/V3
+            Environment=ETCDCTL_API=2
+            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ \"Network\": \"10.254.0.0/16\", \"Backend\": {\"Type\": \"$type\"} }'
+    - name: etcd-member.service
+      enabled: true
+      dropins:
+        - name: 10-enable-v2.conf
+          contents: |
+            [Service]
+            Environment=ETCD_ENABLE_V2=true`)
 )
 
 func init() {
