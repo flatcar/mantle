@@ -1,0 +1,127 @@
+systemd:
+  units:
+    - name: prepare-cni-plugins.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Unpack CNI plugins to /opt/cni/bin
+        ConditionPathExists=!/opt/cni/bin
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        Restart=on-failure
+        Environment=CNI_VERSION=v0.8.7
+        ExecStartPre=/usr/bin/mkdir --parents /opt/cni/bin
+        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/cni-plugins-linux-arm64-${CNI_VERSION}.tgz" --directory /opt/cni/bin --no-same-owner
+        ExecStart=/usr/bin/rm "/opt/cni-plugins-linux-arm64-${CNI_VERSION}.tgz"
+        [Install]
+        WantedBy=multi-user.target
+    - name: prepare-critools.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Unpack CRI tools to /opt/bin
+        ConditionPathExists=!/opt/bin/crictl
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        Restart=on-failure
+        Environment=CRICTL_VERSION=v1.17.0
+        Environment=DOWNLOAD_DIR=/opt/bin
+        ExecStartPre=/usr/bin/mkdir --parents "${DOWNLOAD_DIR}"
+        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/crictl-${CRICTL_VERSION}-linux-arm64.tar.gz" --directory "${DOWNLOAD_DIR}" --no-same-owner
+        ExecStart=/usr/bin/rm "/opt/crictl-${CRICTL_VERSION}-linux-arm64.tar.gz"
+        [Install]
+        WantedBy=multi-user.target
+storage:
+  files:
+    - path: /opt/cni-plugins-linux-arm64-v0.8.7.tgz
+      filesystem: root
+      mode: 0644
+      contents:
+        remote:
+          url: https://github.com/containernetworking/plugins/releases/download/v0.8.7/cni-plugins-linux-arm64-v0.8.7.tgz
+          verification:
+            hash:
+              function: sha512
+              sum: d1fcb37c727c6aa328e1f51d2a06c93a43dbdee2b7f495e12725e6d60db664d6068a1e6e26025df6c4996d9431921855c71df60c227e62bacbf5c9d213a21f8d
+    - path: /opt/crictl-v1.17.0-linux-arm64.tar.gz
+      filesystem: root
+      mode: 0644
+      contents:
+        remote:
+          url: https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.17.0/crictl-v1.17.0-linux-arm64.tar.gz
+          verification:
+            hash:
+              function: sha512
+              sum: 45ab5f2dccb6579b5d376c07dd8264dd714a56ead32744655e698f5919bb0e7934a88666cccfad9cedf30d5bb713394f359f5c6a50963da9a34ddb469dbee92a
+    - path: /opt/bin/kubeadm
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/arm64/kubeadm
+          verification:
+            hash:
+              function: sha512
+              sum: 96248c47e809f88675d932bd8479cc1c170abb958be204965812235fb0173e788a91c46760a274a43cc56af3de4133f8ea1f5daf4f431410dbba043836e775d5
+    - path: /opt/bin/kubelet
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/arm64/kubelet
+          verification:
+            hash:
+              function: sha512
+              sum: fc2a7e3ae6d44c0e384067f8e0bcd47b0db120d03d06cc8589c601f618792959ea894cf3325df8ab4902af23ded7fd875cf4fe718be0e67ad990a7559e4a8b1a
+    - path: /opt/bin/kubectl
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/arm64/kubectl
+          verification:
+            hash:
+              function: sha512
+              sum: b990b81d5a885a9d131aabcc3a5ca9c37dfaff701470f2beb896682a8643c7e0c833e479a26f21129b598ac981732bf52eecdbe73896fe0ff2d9c1ffd082d1fd
+
+    - path: /opt/bin/cilium.tar.gz
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: https://github.com/cilium/cilium-cli/releases/download/v0.8.3/cilium-linux-amd64.tar.gz
+
+    - path: /home/core/install.sh
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: "data:text/plain;base64,<no value>"
+    - path: /home/core/nginx.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: nginx-deployment
+            labels:
+              app: nginx
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: nginx
+            template:
+              metadata:
+                labels:
+                  app: nginx
+              spec:
+                containers:
+                - name: nginx
+                  image: ghcr.io/kinvolk/nginx
+                  ports:
+                  - containerPort: 80
