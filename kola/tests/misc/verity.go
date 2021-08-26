@@ -25,7 +25,6 @@ import (
 	"github.com/coreos/mantle/kola/register"
 	"github.com/coreos/mantle/kola/tests/util"
 	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/machine/qemu"
 )
 
 func init() {
@@ -111,8 +110,8 @@ func VerityCorruption(c cluster.TestCluster) {
 
 // get offset of verity hash within kernel
 func getKernelVerityHashOffset(c cluster.TestCluster) int {
-	// assume ARM64 is only on QEMU for now
-	if _, ok := c.Cluster.(*qemu.Cluster); ok && kola.QEMUOptions.Board == "arm64-usr" {
+	// the QEMUOptions.Board is also used by other platforms
+	if kola.QEMUOptions.Board == "arm64-usr" {
 		return 512
 	}
 	return 64
