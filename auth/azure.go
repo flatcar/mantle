@@ -99,11 +99,15 @@ func (ap *AzureProfile) AsOptions() []Options {
 	var o []Options
 
 	for _, sub := range ap.Subscriptions {
+		var cert []byte
+		if len(sub.ManagementCertificate.Key) > 0 || len(sub.ManagementCertificate.Cert) > 0 {
+			cert = bytes.Join([][]byte{[]byte(sub.ManagementCertificate.Key), []byte(sub.ManagementCertificate.Cert)}, []byte("\n"))
+		}
 		newo := Options{
 			SubscriptionName:      sub.Name,
 			SubscriptionID:        sub.ID,
 			ManagementURL:         sub.ManagementEndpointURL,
-			ManagementCertificate: bytes.Join([][]byte{[]byte(sub.ManagementCertificate.Key), []byte(sub.ManagementCertificate.Cert)}, []byte("\n")),
+			ManagementCertificate: cert,
 		}
 
 		// find the storage endpoint for the subscription

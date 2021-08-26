@@ -15,15 +15,16 @@
 package azure
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"net/url"
 	"path"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/arm/storage"
-	"github.com/Azure/azure-sdk-for-go/management"
-	"github.com/Azure/azure-sdk-for-go/management/storageservice"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management/storageservice"
+	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-01-01/storage"
 )
 
 var (
@@ -35,7 +36,7 @@ func (a *API) GetStorageServiceKeys(account string) (storageservice.GetStorageSe
 }
 
 func (a *API) GetStorageServiceKeysARM(account, resourceGroup string) (storage.AccountListKeysResult, error) {
-	return a.accClient.ListKeys(resourceGroup, account)
+	return a.accClient.ListKeys(context.TODO(), resourceGroup, account, storage.Kerb)
 }
 
 // https://msdn.microsoft.com/en-us/library/azure/jj157192.aspx
@@ -92,10 +93,19 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 		Sku: &storage.Sku{
 			Name: "Standard_LRS",
 		},
-		Kind:     "Storage",
+		Kind:     "StorageV2",
 		Location: &a.opts.Location,
 	}
-	_, err := a.accClient.Create(resourceGroup, name, parameters, nil)
+	plog.Infof("Creating StorageAccount %s", name)
+	future, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)
+	if err != nil {
+		return "", fmt.Errorf("start creating storage account: %v", err)
+	}
+	err = future.WaitForCompletionRef(context.TODO(), a.accClient.Client)
+	if err != nil {
+		return "", fmt.Errorf("finish creating storage account: %v", err)
+	}
+	_, err = future.Result(a.accClient)
 	if err != nil {
 		return "", fmt.Errorf("creating storage account: %v", err)
 	}

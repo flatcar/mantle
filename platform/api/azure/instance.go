@@ -15,6 +15,7 @@
 package azure
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -22,8 +23,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
-	"github.com/Azure/azure-sdk-for-go/arm/network"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-11-01/network"
 
 	"github.com/coreos/mantle/util"
 )
@@ -71,7 +72,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	return compute.VirtualMachine{
 		Name:     &name,
 		Location: &a.opts.Location,
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"createdBy": util.StrToPtr("mantle"),
 		},
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
@@ -81,7 +82,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			StorageProfile: &compute.StorageProfile{
 				ImageReference: imgRef,
 				OsDisk: &compute.OSDisk{
-					CreateOption: compute.FromImage,
+					CreateOption: compute.DiskCreateOptionTypesFromImage,
 				},
 			},
 			OsProfile: &osProfile,
@@ -128,14 +129,24 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	}
 
 	vmParams := a.getVMParameters(name, userdata, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), ip, nic)
+	plog.Infof("Creating Instance %s", name)
 
-	_, err = a.compClient.CreateOrUpdate(resourceGroup, name, vmParams, nil)
+	future, err := a.compClient.CreateOrUpdate(context.TODO(), resourceGroup, name, vmParams)
 	if err != nil {
 		return nil, err
 	}
+	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
+	if err != nil {
+		return nil, err
+	}
+	_, err = future.Result(a.compClient)
+	if err != nil {
+		return nil, err
+	}
+	plog.Infof("Instance %s created", name)
 
 	err = util.WaitUntilReady(5*time.Minute, 10*time.Second, func() (bool, error) {
-		vm, err := a.compClient.Get(resourceGroup, name, "")
+		vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, "")
 		if err != nil {
 			return false, err
 		}
@@ -146,15 +157,16 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 
 		return true, nil
 	})
+	plog.Infof("Instance %s ready", name)
 	if err != nil {
-		_, _ = a.compClient.Delete(resourceGroup, name, nil)
-		_, _ = a.intClient.Delete(resourceGroup, *nic.Name, nil)
-		_, _ = a.ipClient.Delete(resourceGroup, *ip.Name, nil)
+		_, _ = a.compClient.Delete(context.TODO(), resourceGroup, name, nil)
+		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)
+		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, *ip.Name)
 		// TODO: remove disk which doesn't get removed automatically
 		return nil, fmt.Errorf("waiting for machine to become active: %v", err)
 	}
 
-	vm, err := a.compClient.Get(resourceGroup, name, "")
+	vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return nil, err
 	}
@@ -180,15 +192,45 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 // TerminateInstance deletes a VM created by CreateInstance with the public IP address and
 // NIC created for it. Currently it does not delete the OS disk that is created (see TODO).
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
-	if _, err := a.compClient.Delete(resourceGroup, machine.ID, nil); err != nil {
+	future, err := a.compClient.Delete(context.TODO(), resourceGroup, machine.ID, nil)
+	if err != nil {
 		return err
 	}
-	if _, err := a.intClient.Delete(resourceGroup, machine.InterfaceName, nil); err != nil {
+	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
+	if err != nil {
 		return err
 	}
-	if _, err := a.ipClient.Delete(resourceGroup, machine.PublicIPName, nil); err != nil {
+	_, err = future.Result(a.compClient)
+	if err != nil {
 		return err
 	}
+
+	ifFuture, err := a.intClient.Delete(context.TODO(), resourceGroup, machine.InterfaceName)
+	if err != nil {
+		return err
+	}
+	err = ifFuture.WaitForCompletionRef(context.TODO(), a.intClient.Client)
+	if err != nil {
+		return err
+	}
+	_, err = ifFuture.Result(a.intClient)
+	if err != nil {
+		return err
+	}
+
+	ipFuture, err := a.ipClient.Delete(context.TODO(), resourceGroup, machine.PublicIPName)
+	if err != nil {
+		return err
+	}
+	err = ipFuture.WaitForCompletionRef(context.TODO(), a.ipClient.Client)
+	if err != nil {
+		return err
+	}
+	_, err = ipFuture.Result(a.ipClient)
+	if err != nil {
+		return err
+	}
+
 	// TODO: remove disk which doesn't get removed automatically
 	return nil
 }
@@ -205,7 +247,7 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 	k := *kr.Keys
 	key := *k[0].Value
 
-	vm, err := a.compClient.Get(resourceGroup, name, compute.InstanceView)
+	vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, compute.InstanceViewTypesInstanceView)
 	if err != nil {
 		return nil, fmt.Errorf("could not get VM: %v", err)
 	}

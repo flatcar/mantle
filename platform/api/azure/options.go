@@ -25,15 +25,16 @@ type Options struct {
 	AzureAuthLocation string
 	AzureSubscription string
 
-	BlobURL   string
-	ImageFile string
-	DiskURI   string
-	Publisher string
-	Offer     string
-	Sku       string
-	Version   string
-	Size      string
-	Location  string
+	BlobURL          string
+	ImageFile        string
+	DiskURI          string
+	Publisher        string
+	Offer            string
+	Sku              string
+	Version          string
+	Size             string
+	Location         string
+	HyperVGeneration string
 
 	SubscriptionName string
 	SubscriptionID   string

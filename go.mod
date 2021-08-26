@@ -1,12 +1,14 @@
 module github.com/coreos/mantle
 
-go 1.13
+go 1.16
 
 require (
 	cloud.google.com/go v0.34.0
-	github.com/Azure/azure-sdk-for-go v8.1.0-beta+incompatible
-	github.com/Azure/go-autorest v9.1.0+incompatible
-	github.com/Microsoft/azure-vhd-utils v0.0.0-20161127050200-43293b8d7646
+	github.com/Azure/azure-sdk-for-go v56.2.0+incompatible
+	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
+	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
+	github.com/Microsoft/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
 	github.com/ajeddeloh/yaml v0.0.0-20170912190910-6b94386aeefd // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/aws/aws-sdk-go v1.19.11
@@ -26,7 +28,7 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.4 // indirect
 	github.com/dgrijalva/jwt-go v0.0.0-00010101000000-000000000000 // indirect
 	github.com/digitalocean/godo v1.45.0
-	github.com/dimchansky/utfbom v1.1.0 // indirect
+	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.0.0-20210803135101-2ebb50f957d6 // indirect
@@ -69,10 +71,10 @@ require (
 	github.com/vmware/govmomi v0.22.2
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
 	go4.org v0.0.0-20180809161055-417644f6feb5 // indirect
-	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20210505214959-0714010a04ed
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210423082822-04245dca01da
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	golang.org/x/text v0.3.6
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/api v0.1.0
@@ -81,6 +83,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace github.com/Microsoft/azure-vhd-utils => github.com/kinvolk/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
 
 replace google.golang.org/cloud => cloud.google.com/go v0.0.0-20190220171618-cbb15e60dc6d
 

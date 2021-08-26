@@ -15,9 +15,10 @@
 package azure
 
 import (
+	"context"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 
 	"github.com/coreos/mantle/util"
 )
@@ -28,10 +29,10 @@ func (a *API) CreateResourceGroup(prefix string) (string, error) {
 		"createdAt": util.StrToPtr(time.Now().Format(time.RFC3339)),
 		"createdBy": util.StrToPtr("mantle"),
 	}
-
-	_, err := a.rgClient.CreateOrUpdate(name, resources.Group{
+	plog.Infof("Creating ResourceGroup %s", name)
+	_, err := a.rgClient.CreateOrUpdate(context.TODO(), name, resources.Group{
 		Location: &a.opts.Location,
-		Tags:     &tags,
+		Tags:     tags,
 	})
 	if err != nil {
 		return "", err
@@ -41,7 +42,7 @@ func (a *API) CreateResourceGroup(prefix string) (string, error) {
 }
 
 func (a *API) TerminateResourceGroup(name string) error {
-	resp, err := a.rgClient.CheckExistence(name)
+	resp, err := a.rgClient.CheckExistence(context.TODO(), name)
 	if err != nil {
 		return err
 	}
@@ -49,10 +50,24 @@ func (a *API) TerminateResourceGroup(name string) error {
 		return nil
 	}
 
-	_, err = a.rgClient.Delete(name, nil)
+	_, err = a.rgClient.Delete(context.TODO(), name)
 	return err
 }
 
 func (a *API) ListResourceGroups(filter string) (resources.GroupListResult, error) {
-	return a.rgClient.List(filter, nil)
+	iter, err := a.rgClient.ListComplete(context.TODO(), filter, nil)
+	if err != nil {
+		return resources.GroupListResult{}, err
+	}
+	var results resources.GroupListResult
+	arr := make([]resources.Group, 0)
+	results.Value = &arr
+
+	for ; iter.NotDone(); err = iter.NextWithContext(context.TODO()) {
+		if err != nil {
+			return resources.GroupListResult{}, err
+		}
+		arr = append(arr, iter.Value())
+	}
+	return results, err
 }

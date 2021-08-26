@@ -23,11 +23,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
-	"github.com/Azure/azure-sdk-for-go/arm/network"
-	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
-	armStorage "github.com/Azure/azure-sdk-for-go/arm/storage"
-	"github.com/Azure/azure-sdk-for-go/management"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-11-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
+	armStorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-01-01/storage"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/coreos/pkg/capnslog"
@@ -108,9 +108,14 @@ func New(opts *Options) (*API, error) {
 		opts.StorageEndpointSuffix = subOpts.StorageEndpointSuffix
 	}
 
-	client, err := management.NewClientFromConfig(opts.SubscriptionID, opts.ManagementCertificate, conf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create azure client: %v", err)
+	var client management.Client
+	if opts.ManagementCertificate != nil {
+		client, err = management.NewClientFromConfig(opts.SubscriptionID, opts.ManagementCertificate, conf)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create azure client: %v", err)
+		}
+	} else {
+		client = management.NewAnonymousClient()
 	}
 
 	api := &API{
@@ -127,40 +132,44 @@ func New(opts *Options) (*API, error) {
 }
 
 func (a *API) SetupClients() error {
-	auther, err := auth.GetClientSetup(resources.DefaultBaseURI)
+	auther, err := auth.NewAuthorizerFromFile(resources.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.rgClient = resources.NewGroupsClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	settings, err := auth.GetSettingsFromFile()
+	if err != nil {
+		return err
+	}
+	a.rgClient = resources.NewGroupsClient(settings.GetSubscriptionID())
 	a.rgClient.Authorizer = auther
 
-	auther, err = auth.GetClientSetup(compute.DefaultBaseURI)
+	auther, err = auth.NewAuthorizerFromFile(compute.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.imgClient = compute.NewImagesClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.imgClient = compute.NewImagesClient(settings.GetSubscriptionID())
 	a.imgClient.Authorizer = auther
-	a.compClient = compute.NewVirtualMachinesClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.compClient = compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
 	a.compClient.Authorizer = auther
 
-	auther, err = auth.GetClientSetup(network.DefaultBaseURI)
+	auther, err = auth.NewAuthorizerFromFile(network.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.netClient = network.NewVirtualNetworksClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.netClient = network.NewVirtualNetworksClient(settings.GetSubscriptionID())
 	a.netClient.Authorizer = auther
-	a.subClient = network.NewSubnetsClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.subClient = network.NewSubnetsClient(settings.GetSubscriptionID())
 	a.subClient.Authorizer = auther
-	a.ipClient = network.NewPublicIPAddressesClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.ipClient = network.NewPublicIPAddressesClient(settings.GetSubscriptionID())
 	a.ipClient.Authorizer = auther
-	a.intClient = network.NewInterfacesClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.intClient = network.NewInterfacesClient(settings.GetSubscriptionID())
 	a.intClient.Authorizer = auther
 
-	auther, err = auth.GetClientSetup(armStorage.DefaultBaseURI)
+	auther, err = auth.NewAuthorizerFromFile(armStorage.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.accClient = armStorage.NewAccountsClientWithBaseURI(auther.BaseURI, auther.SubscriptionID)
+	a.accClient = armStorage.NewAccountsClient(settings.GetSubscriptionID())
 	a.accClient.Authorizer = auther
 
 	return nil
@@ -186,7 +195,7 @@ func (a *API) GC(gracePeriod time.Duration) error {
 
 	for _, l := range *listGroups.Value {
 		if strings.HasPrefix(*l.Name, "kola-cluster") {
-			createdAt := *(*l.Tags)["createdAt"]
+			createdAt := *l.Tags["createdAt"]
 			timeCreated, err := time.Parse(time.RFC3339, createdAt)
 			if err != nil {
 				return fmt.Errorf("error parsing time: %v", err)

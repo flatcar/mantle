@@ -131,10 +131,7 @@ func pruneAzure(ctx context.Context, spec *channelSpec) {
 					continue
 				}
 				// Get the last modified date and only delete obsolete blobs
-				lastModifiedDate, err := time.Parse(time.RFC1123, blob.Properties.LastModified)
-				if err != nil {
-					plog.Warningf("Error converting last modified date (%v): %v", blob.Properties.LastModified, err)
-				}
+				lastModifiedDate := time.Time(blob.Properties.LastModified)
 				duration := now.Sub(lastModifiedDate)
 				daysOld := int(duration.Hours() / 24)
 				if daysOld < days {
