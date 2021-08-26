@@ -31,6 +31,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
@@ -338,6 +340,28 @@ func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, source
 		return err
 	}
 	dstBlob := cont.GetBlobReference(targetBlob)
+
+	azcopy, err := exec.LookPath("azcopy")
+	if err == nil {
+		sasOpts := storage.BlobSASOptions{}
+		sasOpts.Read = true
+		sasOpts.Write = true
+		sasOpts.Create = true
+		sasOpts.Expiry = time.Now().Add(15 * time.Minute)
+		dstSas, err := dstBlob.GetSASURI(sasOpts)
+		if err != nil {
+			return err
+		}
+		cmd := exec.Command(azcopy, "cp", "--blob-type=PageBlob", sourceBlob, dstSas)
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+		err = cmd.Run()
+		if err == nil {
+			return nil
+		}
+		// try the normal copy if azcopy failed
+	}
+
 	return dstBlob.Copy(sourceBlob, nil)
 }
 
