@@ -352,10 +352,13 @@ func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, source
 		if err != nil {
 			return err
 		}
-		cmd := exec.Command(azcopy, "cp", "--blob-type=PageBlob", sourceBlob, dstSas)
+		// log-level=NONE only affects the log file - stdout is unaffected
+		cmd := exec.Command(azcopy, "cp", "--blob-type=PageBlob", "--log-level=NONE", sourceBlob, dstSas)
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 		err = cmd.Run()
+		// azcopy leaves behind "plan" files in case a job needs to be retried
+		_ = exec.Command("azcopy", "jobs", "clean").Run()
 		if err == nil {
 			return nil
 		}
