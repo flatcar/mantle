@@ -39,7 +39,7 @@ var (
 	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
+	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "external", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings      = []string{"basic", "pro"}
@@ -129,6 +129,15 @@ func init() {
 	sv(&kola.ESXOptions.FirstStaticIpPrivate, "esx-first-static-ip-private", "", "First available private IP (only needed for static IP addresses)")
 	root.PersistentFlags().IntVarP(&kola.ESXOptions.StaticSubnetSize, "esx-subnet-size", "", 0, "Subnet size (only needed for static IP addresses)")
 
+	// external-specific options
+	sv(&kola.ExternalOptions.ManagementUser, "external-user", "", "External platform management SSH user")
+	sv(&kola.ExternalOptions.ManagementPassword, "external-password", "", "External platform management SSH password")
+	sv(&kola.ExternalOptions.ManagementHost, "external-host", "", "External platform management SSH host in the format HOST:PORT")
+	sv(&kola.ExternalOptions.ManagementSocks, "external-socks", "", "External platform management SSH via SOCKS5 proxy in the format HOST:PORT (optional)")
+	sv(&kola.ExternalOptions.ProvisioningCmds, "external-provisioning-cmds", "", "External platform provisioning commands ran on management SSH host. Has access to variable USERDATA with ignition config (can serve it via pxe http server for ignition.config.url or use as contents of FILE in 'flatcar-install -i FILE'). Note: It should mask sshd.(service|socket) for any booted PXE installer, and handle setting to boot from disk, as well as finding a free device and print its IP address as sole stdout content.")
+	sv(&kola.ExternalOptions.SerialConsoleCmd, "external-serial-console-cmd", "", "External platform serial console attach command ran on management SSH host. Has access to the variable IPADDR to identify the node.")
+	sv(&kola.ExternalOptions.DeprovisioningCmds, "external-deprovisioning-cmds", "", "External platform deprovisioning commands ran on management SSH host. Has access to the variable IPADDR to identify the node.")
+
 	// gce-specific options
 	sv(&kola.GCEOptions.Image, "gce-image", "projects/coreos-cloud/global/images/family/coreos-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
 	sv(&kola.GCEOptions.Project, "gce-project", "flatcar-212911", "GCE project name")
@@ -179,6 +188,7 @@ func syncOptions() error {
 	kola.OpenStackOptions.Board = board
 	kola.GCEOptions.Board = board
 	kola.ESXOptions.Board = board
+	kola.ExternalOptions.Board = board
 	kola.DOOptions.Board = board
 	kola.AzureOptions.Board = board
 	kola.AWSOptions.Board = board
