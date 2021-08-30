@@ -285,6 +285,8 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
+apiServer:
+  timeoutForControlPlane: 30m0s
 networking:
   podSubnet: {{ .PodSubnet }}
 controllerManager:
