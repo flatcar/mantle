@@ -20,7 +20,6 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"os"
-	"strings"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -130,9 +129,7 @@ func StartMachine(m Machine, j *Journal) error {
 	if err := CheckMachine(context.TODO(), m); err != nil {
 		return fmt.Errorf("machine %q failed basic checks: %v", m.ID(), err)
 	}
-	// Exclude ARM64 because we don't embeed SELinux tools
-	arch := strings.SplitN(m.Board(), "-", 2)[0]
-	if arch != "arm64" && !m.RuntimeConf().NoEnableSelinux {
+	if !m.RuntimeConf().NoEnableSelinux {
 		if err := EnableSelinux(m); err != nil {
 			return fmt.Errorf("machine %q failed to enable selinux: %v", m.ID(), err)
 		}
