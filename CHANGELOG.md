@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Security
 ### Added
 ### Changed
+- Enabled SELinux for ARM64 ([#222](https://github.com/kinvolk/mantle/pull/222/))
+
 ### Removed
 
 ## [0.16.0] - 30/08/2021
