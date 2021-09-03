@@ -55,12 +55,11 @@ type simplifiedDockerInfo struct {
 
 func init() {
 	register.Register(&register.Test{
-		Run:           dockerSELinux,
-		ClusterSize:   1,
-		Name:          "docker.selinux",
-		Distros:       []string{"cl"},
-		Channels:      []string{"alpha", "beta"},
-		Architectures: []string{"amd64"},
+		Run:         dockerSELinux,
+		ClusterSize: 1,
+		Name:        "docker.selinux",
+		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 2942},
 	})
 	register.Register(&register.Test{
 		Run:         dockerNetwork,
