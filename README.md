@@ -72,16 +72,60 @@ By default, kola uses the `qemu` platform with the most recently built image
 
 #### kola run
 
-In order to provide internet access to QEMU instances; it's required to enable ipv4 forwarding on the host machine:
+##### Getting started with QEMU
+
+The easiest way to get started with `kola` is to run a `qemu` test.
+
+***requirements***:
+ - IPv4 forwarding (to provide internet access to the instance): `sudo sysctl -w net.ipv4.ip_forward=1`
+ - `dnsmasq`, `go` and `iptables` installed and present in the `$PATH`
+ - `qemu-system-x86_64` and / or `qemu-system-aarch64` to respectively tests `amd64` and / or `arm64`
+
+From the pulled sources, `kola` and `kolet` must be compiled:
 
 ```shell
-sudo sysctl -w net.ipv4.ip_forward=1
+git clone https://github.com/kinvolk/mantle/
+cd mantle
+./buid kola kolet
 ```
 
-The run command invokes the main kola test harness. It
-runs any tests whose registered names matches a glob pattern.
+Finally, a Flatcar image must be available on the system:
+  - from a locally [built](https://kinvolk.io/docs/flatcar-container-linux/latest/reference/developer-guides/sdk-modifying-flatcar/) image
+  - from an official [release](https://kinvolk.io/flatcar-container-linux/releases/)
 
-`kola run <glob pattern>`
+###### Run tests for AMD64
+
+Example with the latest `alpha` release:
+```shell
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img.bz2
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img.bz2.sig
+gpg --verify ./flatcar_production_qemu_image.img.bz2.sig
+bzip2 -dk ./flatcar_production_qemu_image.img.bz2
+sudo ./bin/kola run --key ${HOME}/.ssd/id_rsa.pub -k -b cl -p qemu --board amd64-usr --qemu-image ./flatcar_production_qemu_image.img cl.locksmith.cluster
+```
+
+###### Run tests for ARM64
+Example with the latest `alpha` release:
+```shell
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2.sig
+gpg --verify ./flatcar_production_image.bin.bz2.sig
+bzip2 -dk ./flatcar_production_image.bin.bz2.sig
+
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
+gpg --verify ./flatcar_production_qemu_uefi_efi_code.fd.sig
+
+sudo ./bin/kola run --board arm64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu --qemu-image ./flatcar_production_image.bin --qemu-bios=./flatcar_production_qemu_uefi_efi_code.fd cl.etcd-member.discovery
+```
+
+_Note for both architectures_:
+- `sudo` is required because we need to create some `iptables` rules to provide QEMU Internet access
+- using `--remove=false -d`, it's possible to keep the instances running (even after the test) and identify the PID of QEMU instances to SSH into (running processes must be killed once the action done)
+- using `--key`, it's possible to SSH into the created instances - PID identification of the `qemu` instance is required:
+```shell
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="sudo nsenter -n -t <PID of the QEMU instance> nc %h %p" -p 22 core@<IP of the QEMU instance>
+```
 
 #### kola list
 The list command lists all of the available tests.
