@@ -60,7 +60,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .CNISum }}
+              sum: {{ index (index . .Arch) "CNISum" }}
     - path: /opt/crictl-{{ .CRIctlVersion }}-linux-{{ .Arch }}.tar.gz
       filesystem: root
       mode: 0644
@@ -70,7 +70,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .CRIctlSum }}
+              sum: {{ index (index . .Arch) "CRIctlSum" }}
     - path: {{ .DownloadDir }}/kubeadm
       filesystem: root
       mode: 0755
@@ -80,7 +80,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .KubeadmSum }}
+              sum: {{ index (index . .Arch) "KubeadmSum" }}
     - path: {{ .DownloadDir }}/kubelet
       filesystem: root
       mode: 0755
@@ -90,7 +90,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .KubeletSum }}
+              sum: {{ index (index . .Arch) "KubeletSum" }}
     - path: /home/core/install.sh
       filesystem: root
       mode: 0755
@@ -144,7 +144,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .CNISum }}
+              sum: {{ index (index . .Arch) "CNISum" }}
     - path: /opt/crictl-{{ .CRIctlVersion }}-linux-{{ .Arch }}.tar.gz
       filesystem: root
       mode: 0644
@@ -154,7 +154,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .CRIctlSum }}
+              sum: {{ index (index . .Arch) "CRIctlSum" }}
     - path: {{ .DownloadDir }}/kubeadm
       filesystem: root
       mode: 0755
@@ -164,7 +164,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .KubeadmSum }}
+              sum: {{ index (index . .Arch) "KubeadmSum" }}
     - path: {{ .DownloadDir }}/kubelet
       filesystem: root
       mode: 0755
@@ -174,7 +174,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .KubeletSum }}
+              sum: {{ index (index . .Arch) "KubeletSum" }}
     - path: {{ .DownloadDir }}/kubectl
       filesystem: root
       mode: 0755
@@ -184,7 +184,7 @@ storage:
           verification:
             hash:
               function: sha512
-              sum: {{ .KubectlSum }}
+              sum: {{ index (index . .Arch) "KubectlSum" }}
 {{ if eq .CNI "cilium" }}
     - path: {{ .DownloadDir }}/cilium.tar.gz
       filesystem: root
@@ -285,6 +285,8 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
+apiServer:
+  timeoutForControlPlane: 30m0s
 networking:
   podSubnet: {{ .PodSubnet }}
 controllerManager:
