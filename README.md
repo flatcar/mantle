@@ -58,10 +58,7 @@ it into the image from the SDK.
 Kola supports running tests on multiple platforms, currently QEMU, GCE,
 AWS, VMware VSphere, Packet, and OpenStack. In the future systemd-nspawn and other
 platforms may be added.
-Local platforms do not rely on access to the Internet as a design
-principle of kola, minimizing external dependencies. Any network
-services required get built directly into kola itself. Machines on cloud
-platforms do not have direct access to the kola so tests may depend on
+Machines on cloud platforms do not have direct access to the kola so tests may depend on
 Internet services such as discovery.etcd.io or quay.io instead.
 
 Kola outputs assorted logs and test data to `_kola_temp` for later
