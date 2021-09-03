@@ -6,12 +6,6 @@ properties([
     [$class: 'CopyArtifactPermissionProperty',
      projectNames: '*'],
 
-    parameters([
-        choice(name: 'GOARCH',
-               choices: "amd64\narm64",
-               description: 'target architecture for building binaries')
-    ]),
-
     pipelineTriggers([pollSCM('H/15 * * * *')])
 ])
 
@@ -21,16 +15,18 @@ node('amd64 && docker') {
     }
 
     stage('Build') {
-        sh "docker run --rm -e CGO_ENABLED=1 -e GOARCH=${params.GOARCH} -e GOCACHE=/usr/src/myapp/cache -u \"\$(id -u):\$(id -g)\" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v \"\$PWD\":/usr/src/myapp -w /usr/src/myapp golang:1.15 ./build"
+        sh "docker run --rm -e CGO_ENABLED=0 -e GOARCH=arm64 -e GOCACHE=/usr/src/myapp/cache -u \"\$(id -u):\$(id -g)\" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v \"\$PWD\":/usr/src/myapp -w /usr/src/myapp golang:1.16 ./build"
+        sh "mv bin bin.arm64"
+        sh "docker run --rm -e CGO_ENABLED=1 -e GOARCH=amd64 -e GOCACHE=/usr/src/myapp/cache -u \"\$(id -u):\$(id -g)\" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v \"\$PWD\":/usr/src/myapp -w /usr/src/myapp golang:1.16 ./build"
     }
 
     stage('Test') {
-        sh 'docker run --rm -e GOCACHE=/usr/src/myapp/cache -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:1.15 ./test'
+        sh 'docker run --rm -e GOCACHE=/usr/src/myapp/cache -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:1.16 ./test'
     }
 
     stage('Post-build') {
         if (env.JOB_BASE_NAME == "master-builder") {
-            archiveArtifacts artifacts: 'bin/**', fingerprint: true, onlyIfSuccessful: true
+            archiveArtifacts artifacts: 'bin/**, bin.arm64/**', fingerprint: true, onlyIfSuccessful: true
         }
     }
 }
