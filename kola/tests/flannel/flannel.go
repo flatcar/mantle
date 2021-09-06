@@ -31,11 +31,13 @@ import (
 
 var (
 	flannelConf = conf.ContainerLinuxConfig(`etcd:
+  version:                     3.5.0
   discovery:                   $discovery
   listen_client_urls:          http://0.0.0.0:2379
   advertise_client_urls:       http://{PRIVATE_IPV4}:2379
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   listen_peer_urls:            http://{PRIVATE_IPV4}:2380
+  enable_v2:                   true
 systemd:
   units:
     - name: flannel-docker-opts.service
@@ -56,14 +58,7 @@ systemd:
             [Service]
             # to be changed when flannel will support etcd/V3
             Environment=ETCDCTL_API=2
-            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ \"Network\": \"10.254.0.0/16\", \"Backend\": {\"Type\": \"$type\"} }'
-    - name: etcd-member.service
-      enabled: true
-      dropins:
-        - name: 10-enable-v2.conf
-          contents: |
-            [Service]
-            Environment=ETCD_ENABLE_V2=true`)
+            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ \"Network\": \"10.254.0.0/16\", \"Backend\": {\"Type\": \"$type\"} }'`)
 )
 
 func init() {
