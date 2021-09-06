@@ -48,20 +48,13 @@ func init() {
 		UserData: conf.ContainerLinuxConfig(`
 
 etcd:
+  version:                     3.5.0
   listen_client_urls:          http://0.0.0.0:4001,http://0.0.0.0:2379
   advertise_client_urls:       http://{PRIVATE_IPV4}:2379
   listen_peer_urls:            http://0.0.0.0:2380
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery
-systemd:
-  units:
-    - name: etcd-member.service
-      enabled: true
-      dropins:
-        - name: 10-enable-v2.conf
-          contents: |
-            [Service]
-            Environment=ETCD_ENABLE_V2=true`),
+  enable_v2:                   true`),
 		ExcludePlatforms: []string{"esx", "qemu-unpriv"}, // etcd-member requires ct rendering and networking
 		Distros:          []string{"cl"},
 	})
