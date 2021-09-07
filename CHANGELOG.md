@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Security
+- go: update github.com/gogo/protobuf to v1.3.2 ([#229](https://github.com/kinvolk/mantle/pull/229))
+
 ### Added
 - `kubeadm` proper support for ARM64 ([#217](https://github.com/kinvolk/mantle/pull/217))
 
