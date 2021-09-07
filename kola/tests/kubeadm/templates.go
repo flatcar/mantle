@@ -96,7 +96,15 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: "data:text/plain;base64,{{ .WorkerScript }}"`
+          url: "data:text/plain;base64,{{ .WorkerScript }}"
+    - path: /etc/docker/daemon.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "log-driver": "journald"
+          }`
 
 	masterConfig = `systemd:
   units:
@@ -185,6 +193,14 @@ storage:
             hash:
               function: sha512
               sum: {{ index (index . .Arch) "KubectlSum" }}
+    - path: /etc/docker/daemon.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "log-driver": "journald"
+          }
 {{ if eq .CNI "cilium" }}
     - path: {{ .DownloadDir }}/cilium.tar.gz
       filesystem: root

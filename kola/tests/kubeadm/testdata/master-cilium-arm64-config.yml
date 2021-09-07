@@ -85,6 +85,14 @@ storage:
             hash:
               function: sha512
               sum: b990b81d5a885a9d131aabcc3a5ca9c37dfaff701470f2beb896682a8643c7e0c833e479a26f21129b598ac981732bf52eecdbe73896fe0ff2d9c1ffd082d1fd
+    - path: /etc/docker/daemon.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "log-driver": "journald"
+          }
 
     - path: /opt/bin/cilium.tar.gz
       filesystem: root
