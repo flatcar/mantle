@@ -83,7 +83,7 @@ func TestRenderTemplate(t *testing.T) {
 				masterConfig,
 				map[string]interface{}{
 					"CNI":              "cilium",
-					"CiliumCLIVersion": "v0.8.3",
+					"CiliumCLIVersion": "v0.9.0",
 					"Endpoints":        []string{"http://1.2.3.4:2379"},
 					"Arch":             arch,
 					"CNIVersion":       "v0.8.7",
