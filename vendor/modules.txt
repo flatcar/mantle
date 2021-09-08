@@ -262,7 +262,7 @@ github.com/form3tech-oss/jwt-go
 github.com/godbus/dbus
 # github.com/gofrs/uuid v4.0.0+incompatible
 github.com/gofrs/uuid
-# github.com/gogo/protobuf v1.2.1
+# github.com/gogo/protobuf v1.3.2
 ## explicit
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
@@ -494,6 +494,9 @@ golang.org/x/exp/cmd/apidiff
 # golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961
 golang.org/x/lint
 golang.org/x/lint/golint
+# golang.org/x/mod v0.3.0
+golang.org/x/mod/module
+golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20210505214959-0714010a04ed
 ## explicit
 golang.org/x/net/context
@@ -537,7 +540,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20190226205152-f727befe758c
+# golang.org/x/tools v0.0.0-20210106214847-113979e3529a
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/buildutil
@@ -548,11 +551,19 @@ golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/go/loader
 golang.org/x/tools/go/packages
 golang.org/x/tools/go/types/typeutil
-golang.org/x/tools/imports
+golang.org/x/tools/internal/event
+golang.org/x/tools/internal/event/core
+golang.org/x/tools/internal/event/keys
+golang.org/x/tools/internal/event/label
 golang.org/x/tools/internal/fastwalk
+golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
-golang.org/x/tools/internal/module
-golang.org/x/tools/internal/semver
+golang.org/x/tools/internal/imports
+golang.org/x/tools/internal/packagesinternal
+golang.org/x/tools/internal/typesinternal
+# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
+golang.org/x/xerrors
+golang.org/x/xerrors/internal
 # google.golang.org/api v0.1.0
 ## explicit
 google.golang.org/api/compute/v1
