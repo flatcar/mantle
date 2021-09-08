@@ -207,7 +207,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://github.com/cilium/cilium-cli/releases/download/{{ .CiliumVersion }}/cilium-linux-{{ .Arch }}.tar.gz
+          url: https://github.com/cilium/cilium-cli/releases/download/{{ .CiliumCLIVersion }}/cilium-linux-{{ .Arch }}.tar.gz
 {{ end }}
     - path: /home/core/install.sh
       filesystem: root

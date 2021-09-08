@@ -44,12 +44,12 @@ var (
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
 		"v1.22.0": map[string]interface{}{
-			"CiliumVersion":  "v0.8.3",
-			"CNIVersion":     "v0.8.7",
-			"CRIctlVersion":  "v1.17.0",
-			"ReleaseVersion": "v0.4.0",
-			"DownloadDir":    "/opt/bin",
-			"PodSubnet":      "192.168.0.0/17",
+			"CiliumCLIVersion": "v0.9.0",
+			"CNIVersion":       "v0.8.7",
+			"CRIctlVersion":    "v1.17.0",
+			"ReleaseVersion":   "v0.4.0",
+			"DownloadDir":      "/opt/bin",
+			"PodSubnet":        "192.168.0.0/17",
 			"arm64": map[string]string{
 				"KubeadmSum": "bdc32d358eba328a16b515cb1b7b1fd76bb5951ed5c6e1ea845798f13e6415e040e5f150030bd446e6eb6096533136780aef263b2a9c38ba11536c4415212be0",
 				"KubeletSum": "39953c3dce3dd579b1601859681ee81825b3bc3fdf764a097b31c01277bc8afc23693599ec4c1065d8844e1fed91f5edea558b33648794f084fc495efe623f88",
@@ -66,12 +66,12 @@ var (
 			},
 		},
 		"v1.21.0": map[string]interface{}{
-			"CiliumVersion":  "v0.8.3",
-			"CNIVersion":     "v0.8.7",
-			"CRIctlVersion":  "v1.17.0",
-			"ReleaseVersion": "v0.4.0",
-			"DownloadDir":    "/opt/bin",
-			"PodSubnet":      "192.168.0.0/17",
+			"CiliumCLIVersion": "v0.9.0",
+			"CNIVersion":       "v0.8.7",
+			"CRIctlVersion":    "v1.17.0",
+			"ReleaseVersion":   "v0.4.0",
+			"DownloadDir":      "/opt/bin",
+			"PodSubnet":        "192.168.0.0/17",
 			"arm64": map[string]string{
 				"KubeadmSum": "96248c47e809f88675d932bd8479cc1c170abb958be204965812235fb0173e788a91c46760a274a43cc56af3de4133f8ea1f5daf4f431410dbba043836e775d5",
 				"KubeletSum": "fc2a7e3ae6d44c0e384067f8e0bcd47b0db120d03d06cc8589c601f618792959ea894cf3325df8ab4902af23ded7fd875cf4fe718be0e67ad990a7559e4a8b1a",
@@ -112,6 +112,12 @@ func init() {
 			testParams["CNI"] = CNI
 			testParams["Release"] = version
 
+			architectures := []string{"amd64"}
+
+			if CNI != "calico" {
+				architectures = append(architectures, "arm64")
+			}
+
 			register.Register(&register.Test{
 				Name:             fmt.Sprintf("kubeadm.%s.%s.base", version, CNI),
 				Distros:          []string{"cl"},
@@ -119,6 +125,7 @@ func init() {
 				Run: func(c cluster.TestCluster) {
 					kubeadmBaseTest(c, testParams)
 				},
+				Architectures: architectures,
 			})
 		}
 	}
