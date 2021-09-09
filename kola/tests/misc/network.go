@@ -162,7 +162,10 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 	// verify that the network service was started
 	found := false
 	for _, line := range lines {
-		if line == "Started Network Service." {
+		// Once systemd totally upgraded to > 248, we can safely remove the `line == "Started Network Service."` section.
+		// In v249, some services description have been updated.
+		// More details: https://github.com/systemd/systemd/commit/4fd3fc66396026f81fd5b27746f2faf8a9a7b9ee
+		if line == "Started Network Service." || line == "Started Network Configuration." {
 			found = true
 			break
 		}
