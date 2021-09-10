@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Bumped `CiliumCLI` version to pull `Cilium-1.10.4` ([#240](https://github.com/kinvolk/mantle/pull/230))
 
 ### Removed
+- Duplicated `etcd-member` in the `kubeadm.*` config ([#232](https://github.com/kinvolk/mantle/pull/232))
 
 ## [0.16.0] - 30/08/2021
 
