@@ -92,12 +92,7 @@ var (
 	etcdConfig = conf.ContainerLinuxConfig(`
 etcd:
   advertise_client_urls: http://{PRIVATE_IPV4}:2379
-  listen_client_urls: http://0.0.0.0:2379
-systemd:
-  units:
-    - name: etcd-member.service
-      enabled: true
-`)
+  listen_client_urls: http://0.0.0.0:2379`)
 )
 
 func init() {
