@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - `kubeadm` proper support for ARM64 ([#217](https://github.com/kinvolk/mantle/pull/217))
 - docker logs forwarding to `journald` for `kubeadm.*` tests ([#228](https://github.com/kinvolk/mantle/pull/228))
+- `OEM` ignitions tests ([#235](https://github.com/flatcar-linux/mantle/pull/235))
 
 ### Changed
 - Enabled SELinux for ARM64 ([#222](https://github.com/kinvolk/mantle/pull/222/))
