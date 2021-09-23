@@ -67,6 +67,10 @@ func init() {
 		Run:         wipeOEM,
 		MinVersion:  semver.Version{Major: 2983},
 		ClusterSize: 1,
+		// `wiping` the OEM file system does not allow the instance to boot on platforms
+		// different from QEMU.
+		// More details: https://github.com/flatcar-linux/Flatcar/issues/514.
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.ContainerLinuxConfig(`storage:
   filesystems:
      - name: oem
