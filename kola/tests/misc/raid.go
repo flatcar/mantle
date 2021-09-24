@@ -26,37 +26,68 @@ import (
 )
 
 var (
-	raidRootUserData = conf.ContainerLinuxConfig(`storage:
-  disks:
-    - device: "/dev/disk/by-id/virtio-secondary"
-      wipe_table: true
-      partitions:
-       - label: root1
-         number: 1
-         size: 256MiB
-         type_guid: be9067b9-ea49-4f15-b4f6-f36f8c9e1818
-       - label: root2
-         number: 2
-         size: 256MiB
-         type_guid: be9067b9-ea49-4f15-b4f6-f36f8c9e1818
-  raid:
-    - name: "rootarray"
-      level: "raid1"
-      devices:
-        - "/dev/disk/by-partlabel/root1"
-        - "/dev/disk/by-partlabel/root2"
-  filesystems:
-    - name: "ROOT"
-      mount:
-        device: "/dev/md/rootarray"
-        format: "ext4"
-        label: ROOT
-    - name: "NOT_ROOT"
-      mount:
-        device: "/dev/disk/by-id/virtio-primary-disk-part9"
-        format: "ext4"
-        label: wasteland
-        wipe_filesystem: true`)
+	raidRootUserData = conf.Ignition(`{
+  "ignition": {
+    "config": {},
+    "security": {
+      "tls": {}
+    },
+    "timeouts": {},
+    "version": "2.3.0"
+  },
+  "networkd": {},
+  "storage": {
+    "disks": [
+      {
+        "device": "/dev/disk/by-id/virtio-secondary",
+        "partitions": [
+          {
+            "label": "root1",
+            "number": 1,
+            "sizeMiB": 256,
+            "typeGuid": "be9067b9-ea49-4f15-b4f6-f36f8c9e1818"
+          },
+          {
+            "label": "root2",
+            "number": 2,
+            "sizeMiB": 256,
+            "typeGuid": "be9067b9-ea49-4f15-b4f6-f36f8c9e1818"
+          }
+        ],
+        "wipeTable": true
+      }
+    ],
+    "filesystems": [
+      {
+        "mount": {
+          "device": "/dev/md/rootarray",
+          "format": "ext4",
+          "label": "ROOT"
+        },
+        "name": "ROOT"
+      },
+      {
+        "mount": {
+          "device": "/dev/disk/by-id/virtio-primary-disk-part9",
+          "format": "ext4",
+          "label": "wasteland",
+          "wipeFilesystem": true
+        },
+        "name": "NOT_ROOT"
+      }
+    ],
+    "raid": [
+      {
+        "devices": [
+          "/dev/disk/by-partlabel/root1",
+          "/dev/disk/by-partlabel/root2"
+        ],
+        "level": "raid1",
+        "name": "rootarray"
+      }
+    ]
+  }
+}`)
 )
 
 func init() {
