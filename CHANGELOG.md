@@ -17,8 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Enabled `docker.selinux` test for ARM64 ([#225](https://github.com/kinvolk/mantle/pull/225))
 - Fixed `amd64` checksums for Kubernetes `v1.21.0` tests ([#226](https://github.com/kinvolk/mantle/pull/226))
 - Used `clc` to set `enable_v2` option ([#227](https://github.com/kinvolk/mantle/pull/227))
-- Bumped `CiliumCLI` version to pull `Cilium-1.10.4` ([#240](https://github.com/kinvolk/mantle/pull/230))
 - Used `ignition` instead of `clc` to provision instance in `raid` test ([#234](https://github.com/flatcar-linux/mantle/pull/234))
+- Bumped `CiliumCLI` version to pull `Cilium-1.10.4` ([#230](https://github.com/kinvolk/mantle/pull/230))
+- Certificate generation for `coreos.locksmith.tls` test ([#237](https://github.com/flatcar-linux/mantle/pull/237))
 
 ### Removed
 - Duplicated `etcd-member` in the `kubeadm.*` config ([#232](https://github.com/kinvolk/mantle/pull/232))
