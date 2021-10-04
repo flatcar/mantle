@@ -27,6 +27,7 @@ var (
 		Long:  "Download the current SDK tarball to a local cache.",
 		Run:   runDownload,
 	}
+	URL                   string
 	downloadUrl           string
 	downloadVersion       string
 	downloadVerifyKeyFile string
@@ -35,8 +36,10 @@ var (
 )
 
 func init() {
+	downloadCmd.Flags().StringVar(&URL,
+		"sdk-url", "mirror.release.flatcar-linux.net", "SDK URL")
 	downloadCmd.Flags().StringVar(&downloadUrl,
-		"sdk-url-path", "/flatcar-jenkins/sdk", "SDK URL path")
+		"sdk-url-path", "sdk", "SDK URL path")
 	downloadCmd.Flags().StringVar(&downloadVersion,
 		"sdk-version", "", "SDK version")
 	downloadCmd.Flags().StringVar(&downloadImageVerifyKeyFile,
@@ -56,7 +59,7 @@ func runDownload(cmd *cobra.Command, args []string) {
 	}
 
 	plog.Noticef("Downloading SDK version %s", downloadVersion)
-	if err := sdk.DownloadSDK(downloadUrl, downloadVersion, downloadVerifyKeyFile, downloadImageJSONKeyFile); err != nil {
+	if err := sdk.DownloadSDK(URL, downloadUrl, downloadVersion, downloadVerifyKeyFile, downloadImageJSONKeyFile); err != nil {
 		plog.Fatalf("Download failed: %v", err)
 	}
 }
