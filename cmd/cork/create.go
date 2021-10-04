@@ -122,7 +122,7 @@ func init() {
 
 	creationFlags = pflag.NewFlagSet("creation", pflag.ExitOnError)
 	creationFlags.StringVar(&sdkUrlPath,
-		"sdk-url-path", "/flatcar-jenkins/sdk", "SDK URL path")
+		"sdk-url-path", "/sdk", "SDK URL path")
 	creationFlags.StringVar(&sdkVersion,
 		"sdk-version", "", "SDK version. Defaults to the SDK version in version.txt")
 	creationFlags.StringVar(&manifestURL,

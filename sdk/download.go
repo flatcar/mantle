@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	urlHost = "storage.googleapis.com"
+	urlHost = "mirror.release.flatcar-linux.net"
 )
 
 var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "sdk")
