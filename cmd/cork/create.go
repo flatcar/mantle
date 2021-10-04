@@ -135,6 +135,8 @@ func init() {
 		"repo-branch", repoUpstreamBranch, "Branch name to be used from the upstream git repo of repo tool")
 	creationFlags.BoolVar(&repoVerify,
 		"verify", false, "Check repo tree and release manifest match")
+	creationFlags.StringVar(&downloadImageJSONKeyFile,
+		"json-key", "", "Google service account key for use with private buckets")
 	creationFlags.StringVar(&verifyKeyFile,
 		"verify-key", "", "PGP public key to be used in verifing download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
 	creationFlags.BoolVar(&sigVerify,
@@ -253,7 +255,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 
 func unpackChroot(replace bool) {
 	plog.Noticef("Downloading SDK version %s", sdkVersion)
-	if err := sdk.DownloadSDK(sdkUrlPath, sdkVersion, verifyKeyFile); err != nil {
+	if err := sdk.DownloadSDK(sdkUrlPath, sdkVersion, verifyKeyFile, downloadImageJSONKeyFile); err != nil {
 		plog.Fatalf("Download failed: %v", err)
 	}
 

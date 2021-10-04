@@ -30,6 +30,8 @@ var (
 	downloadUrl           string
 	downloadVersion       string
 	downloadVerifyKeyFile string
+	// downloadJSONKeyFile is used to access a private GCS bucket.
+	downloadJSONKeyFile string
 )
 
 func init() {
@@ -39,6 +41,8 @@ func init() {
 		"sdk-version", "", "SDK version")
 	downloadCmd.Flags().StringVar(&downloadImageVerifyKeyFile,
 		"verify-key", "", "PGP public key to be used in verifing download signatures.  Defaults to CoreOS Buildbot (0412 7D0B FABE C887 1FFB  2CCE 50E0 8855 93D2 DCB4)")
+	downloadCmd.Flags().StringVar(&downloadJSONKeyFile,
+		"json-key", "", "Google service account key for use with private buckets")
 	root.AddCommand(downloadCmd)
 }
 
@@ -52,7 +56,7 @@ func runDownload(cmd *cobra.Command, args []string) {
 	}
 
 	plog.Noticef("Downloading SDK version %s", downloadVersion)
-	if err := sdk.DownloadSDK(downloadUrl, downloadVersion, downloadVerifyKeyFile); err != nil {
+	if err := sdk.DownloadSDK(downloadUrl, downloadVersion, downloadVerifyKeyFile, downloadImageJSONKeyFile); err != nil {
 		plog.Fatalf("Download failed: %v", err)
 	}
 }
