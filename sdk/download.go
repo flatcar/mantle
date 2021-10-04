@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -29,6 +30,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"google.golang.org/api/storage/v1"
 
+	"github.com/coreos/mantle/auth"
 	"github.com/coreos/mantle/system"
 	"github.com/coreos/mantle/util"
 )
@@ -171,7 +173,6 @@ func downloadFile(file, url string, client *http.Client) error {
 }
 
 func DownloadSignedFile(file, url string, client *http.Client, verifyKeyFile string) error {
-
 	if _, err := os.Stat(file + ".sig"); err == nil {
 		if e := VerifyFile(file, verifyKeyFile); e == nil {
 			plog.Infof("Verified existing file: %s", file)
@@ -195,10 +196,21 @@ func DownloadSignedFile(file, url string, client *http.Client, verifyKeyFile str
 	return nil
 }
 
-func DownloadSDK(urlPath, version, verifyKeyFile string) error {
+func DownloadSDK(urlPath, version, verifyKeyFile, JSONKeyFile string) error {
 	tarFile := filepath.Join(RepoCache(), "sdks", TarballName(version))
 	tarURL := TarballURL(urlPath, version)
-	return DownloadSignedFile(tarFile, tarURL, nil, verifyKeyFile)
+
+	var client *http.Client = nil
+	if len(JSONKeyFile) != 0 {
+		b, err := ioutil.ReadFile(JSONKeyFile)
+		if err != nil {
+			return fmt.Errorf("reading key: %w", err)
+		}
+
+		client, err = auth.GoogleClientFromJSONKey(b, "https://www.googleapis.com/auth/devstorage.read_only")
+	}
+
+	return DownloadSignedFile(tarFile, tarURL, client, verifyKeyFile)
 }
 
 // false if both files do not exist
