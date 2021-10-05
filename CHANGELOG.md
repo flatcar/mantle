@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - docker logs forwarding to `journald` for `kubeadm.*` tests ([#228](https://github.com/kinvolk/mantle/pull/228))
 - `OEM` ignitions tests ([#235](https://github.com/flatcar-linux/mantle/pull/235))
 - `--json-key` to `cork/create` and `cork/download` subcommands ([#239](https://github.com/flatcar-linux/mantle/pull/239))
+- `--sdk-url` to allow passing a SDK location ([#240](https://github.com/flatcar-linux/mantle/pull/240))
 
 ### Changed
 - Enabled SELinux for ARM64 ([#222](https://github.com/kinvolk/mantle/pull/222/))
