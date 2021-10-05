@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Security
+### Added
+### Changed
+### Removed
+
+## [0.17.0] - 05/10/2021
+### Security
 - go: update github.com/gogo/protobuf to v1.3.2 ([#229](https://github.com/kinvolk/mantle/pull/229))
 
 ### Added
