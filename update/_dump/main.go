@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/coreos/mantle/update"
+	"github.com/flatcar-linux/mantle/update"
 )
 
 func main() {

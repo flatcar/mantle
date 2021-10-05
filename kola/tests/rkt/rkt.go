@@ -20,13 +20,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/mantle/kola"
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/platform/machine/qemu"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/kola"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/platform/machine/qemu"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 var config = conf.Ignition(`{

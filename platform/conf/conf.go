@@ -56,7 +56,7 @@ const (
 	kindScript
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/conf")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/conf")
 
 // UserData is an immutable, unvalidated configuration for a Container Linux
 // machine.

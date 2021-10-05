@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/coreos/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/system/exec"
 )
 
 func bunzip2(t *testing.T, z []byte) []byte {

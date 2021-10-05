@@ -21,12 +21,12 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/cli"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/cli"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "plume")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "plume")
 	root = &cobra.Command{
 		Use:   "plume [command]",
 		Short: "The Flatcar release utility",

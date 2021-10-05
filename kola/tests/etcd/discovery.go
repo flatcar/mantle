@@ -19,12 +19,12 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
-	"github.com/coreos/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/platform/conf"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola/tests/etcd")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/etcd")
 
 func init() {
 	register.Register(&register.Test{

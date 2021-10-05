@@ -26,11 +26,11 @@ import (
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 
-	"github.com/coreos/mantle/lang/destructor"
-	"github.com/coreos/mantle/network"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/system/exec"
-	"github.com/coreos/mantle/system/ns"
+	"github.com/flatcar-linux/mantle/lang/destructor"
+	"github.com/flatcar-linux/mantle/network"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/system/ns"
 )
 
 type LocalCluster struct {

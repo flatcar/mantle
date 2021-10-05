@@ -19,9 +19,9 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/local"
-	"github.com/coreos/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/local"
+	"github.com/flatcar-linux/mantle/system/exec"
 )
 
 type machine struct {

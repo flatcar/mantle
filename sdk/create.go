@@ -24,9 +24,9 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/system/exec"
-	"github.com/coreos/mantle/system/user"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/system/user"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 // Must run inside the SDK chroot, easiest to just assemble a script to do it

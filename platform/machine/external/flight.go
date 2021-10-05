@@ -19,8 +19,8 @@ import (
 	"golang.org/x/net/proxy"
 
 	ctplatform "github.com/coreos/container-linux-config-transpiler/config/platform"
-	"github.com/coreos/mantle/network"
-	"github.com/coreos/mantle/platform"
+	"github.com/flatcar-linux/mantle/network"
+	"github.com/flatcar-linux/mantle/platform"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/machine/external")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/external")
 )
 
 type flight struct {

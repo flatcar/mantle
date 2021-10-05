@@ -24,7 +24,7 @@ import (
 	"github.com/coreos/go-omaha/omaha"
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/sdk"
+	"github.com/flatcar-linux/mantle/sdk"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 	publicKey  = "/usr/share/update_engine/update-payload-key.pub.pem"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "sdk/omaha")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "sdk/omaha")
 
 func run(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)

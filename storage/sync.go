@@ -20,7 +20,7 @@ import (
 	"golang.org/x/net/context"
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/lang/worker"
+	"github.com/flatcar-linux/mantle/lang/worker"
 )
 
 // Filter is a type of function that returns true if an object should be

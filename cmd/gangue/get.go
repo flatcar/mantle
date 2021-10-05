@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/sdk"
+	"github.com/flatcar-linux/mantle/sdk"
 )
 
 var (

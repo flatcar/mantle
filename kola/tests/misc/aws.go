@@ -18,8 +18,8 @@ import (
 	"fmt"
 
 	"github.com/coreos/go-semver/semver"
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
 )
 
 func init() {

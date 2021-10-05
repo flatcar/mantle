@@ -22,8 +22,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/coreos/mantle/update"
-	"github.com/coreos/mantle/update/metadata"
+	"github.com/flatcar-linux/mantle/update"
+	"github.com/flatcar-linux/mantle/update/metadata"
 )
 
 type testGenerator struct {

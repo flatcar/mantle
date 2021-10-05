@@ -25,7 +25,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "targen")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "targen")
 
 type TarGen struct {
 	files    []string

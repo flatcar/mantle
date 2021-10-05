@@ -25,12 +25,12 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/platform"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/platform"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/api/gcloud")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/gcloud")
 )
 
 type Options struct {

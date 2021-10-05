@@ -17,8 +17,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/sdk"
-	"github.com/coreos/mantle/sdk/omaha"
+	"github.com/flatcar-linux/mantle/sdk"
+	"github.com/flatcar-linux/mantle/sdk/omaha"
 )
 
 var (

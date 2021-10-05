@@ -25,8 +25,8 @@ import (
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/platform/api/gcloud"
-	"github.com/coreos/mantle/sdk"
+	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	"github.com/flatcar-linux/mantle/sdk"
 )
 
 var (

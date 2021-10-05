@@ -24,12 +24,12 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
-	tutil "github.com/coreos/mantle/kola/tests/util"
-	"github.com/coreos/mantle/lang/worker"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
+	tutil "github.com/flatcar-linux/mantle/kola/tests/util"
+	"github.com/flatcar-linux/mantle/lang/worker"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 // init runs when the package is imported and takes care of registering tests

@@ -18,7 +18,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/coreos/mantle/lang/natsort"
+	"github.com/flatcar-linux/mantle/lang/natsort"
 )
 
 var (

@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/platform"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/platform"
 )
 
 // rpmOstreeDeployment represents some of the data of an rpm-ostree deployment

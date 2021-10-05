@@ -34,11 +34,11 @@ import (
 	"golang.org/x/net/context"
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/platform/api/aws"
-	"github.com/coreos/mantle/platform/api/azure"
-	"github.com/coreos/mantle/sdk"
-	"github.com/coreos/mantle/storage"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/platform/api/aws"
+	"github.com/flatcar-linux/mantle/platform/api/azure"
+	"github.com/flatcar-linux/mantle/sdk"
+	"github.com/flatcar-linux/mantle/storage"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 var (

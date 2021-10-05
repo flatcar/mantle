@@ -24,7 +24,7 @@ import (
 	"github.com/Microsoft/azure-vhd-utils/vhdcore/validator"
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/sdk"
+	"github.com/flatcar-linux/mantle/sdk"
 )
 
 var (

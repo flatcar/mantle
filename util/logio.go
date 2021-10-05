@@ -24,7 +24,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "util")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "util")
 
 // LogFrom reads lines from reader r and sends them to logger l.
 func LogFrom(l capnslog.LogLevel, r io.Reader) {

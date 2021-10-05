@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-ORG_PATH="github.com/coreos"
+ORG_PATH="github.com/flatcar-linux"
 PROJ="mantle"
 REPO_PATH="${ORG_PATH}/${PROJ}"
 

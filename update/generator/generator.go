@@ -23,9 +23,9 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/coreos/mantle/lang/destructor"
-	"github.com/coreos/mantle/update/metadata"
-	"github.com/coreos/mantle/update/signature"
+	"github.com/flatcar-linux/mantle/lang/destructor"
+	"github.com/flatcar-linux/mantle/update/metadata"
+	"github.com/flatcar-linux/mantle/update/signature"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "update/generator")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "update/generator")
 
 	// ErrProcedureExists indicates that a given procedure type has
 	// already been added to the Generator.

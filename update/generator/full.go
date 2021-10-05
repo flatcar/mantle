@@ -23,8 +23,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/coreos/mantle/system"
-	"github.com/coreos/mantle/update/metadata"
+	"github.com/flatcar-linux/mantle/system"
+	"github.com/flatcar-linux/mantle/update/metadata"
 )
 
 var (

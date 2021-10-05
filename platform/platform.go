@@ -27,8 +27,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
-	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform")
 )
 
 // Name is a unique identifier for a platform.

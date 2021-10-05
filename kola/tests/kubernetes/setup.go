@@ -24,14 +24,14 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/tests/etcd"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/tests/etcd"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/util"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola/tests/kubernetes")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/kubernetes")
 
 // kCluster just keeps track of which machines are which in a
 // platform.TestCluster with kubernetes running.

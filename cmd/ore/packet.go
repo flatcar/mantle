@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/coreos/mantle/cmd/ore/packet"
+	"github.com/flatcar-linux/mantle/cmd/ore/packet"
 )
 
 func init() {

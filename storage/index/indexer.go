@@ -24,7 +24,7 @@ import (
 	"golang.org/x/net/context"
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/storage"
+	"github.com/flatcar-linux/mantle/storage"
 )
 
 var (

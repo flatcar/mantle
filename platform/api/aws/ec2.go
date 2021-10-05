@@ -24,7 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 func (a *API) AddKey(name, key string) error {

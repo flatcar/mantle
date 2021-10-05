@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/platform/api/azure"
+	"github.com/flatcar-linux/mantle/platform/api/azure"
 )
 
 var (

@@ -22,11 +22,11 @@ import (
 	"github.com/coreos/go-omaha/omaha"
 	"github.com/vishvananda/netns"
 
-	"github.com/coreos/mantle/lang/destructor"
-	"github.com/coreos/mantle/network"
-	"github.com/coreos/mantle/network/ntp"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/system/ns"
+	"github.com/flatcar-linux/mantle/lang/destructor"
+	"github.com/flatcar-linux/mantle/network"
+	"github.com/flatcar-linux/mantle/network/ntp"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/system/ns"
 )
 
 const (

@@ -21,9 +21,9 @@ import (
 
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/api/gcloud"
-	"github.com/coreos/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	"github.com/flatcar-linux/mantle/platform/conf"
 )
 
 type cluster struct {

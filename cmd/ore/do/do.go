@@ -21,13 +21,13 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/cli"
-	"github.com/coreos/mantle/platform/api/do"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar-linux/mantle/platform/api/do"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "ore/do")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/do")
 
 	DO = &cobra.Command{
 		Use:   "do [command]",

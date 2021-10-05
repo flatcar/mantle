@@ -26,7 +26,7 @@ import (
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 
-	"github.com/coreos/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform"
 )
 
 const (

@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/coreos/mantle/update/metadata"
+	"github.com/flatcar-linux/mantle/update/metadata"
 )
 
 type Operation struct {

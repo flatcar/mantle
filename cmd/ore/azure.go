@@ -18,7 +18,7 @@
 package main
 
 import (
-	"github.com/coreos/mantle/cmd/ore/azure"
+	"github.com/flatcar-linux/mantle/cmd/ore/azure"
 )
 
 func init() {

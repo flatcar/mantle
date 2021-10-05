@@ -21,7 +21,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/coreos/mantle/update/metadata"
+	"github.com/flatcar-linux/mantle/update/metadata"
 )
 
 func NewInstallInfo(r io.ReadSeeker) (*metadata.InstallInfo, error) {

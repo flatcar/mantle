@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/coreos/mantle/update"
+	"github.com/flatcar-linux/mantle/update"
 )
 
 func main() {

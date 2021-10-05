@@ -6,7 +6,7 @@ matrix:
   allow_failures:
     - go: tip
 
-go_import_path: github.com/coreos/mantle
+go_import_path: github.com/flatcar-linux/mantle
 
 install:
   # './build' uses 'git describe' which needs tags
