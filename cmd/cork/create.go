@@ -47,8 +47,10 @@ var (
 	chrootName  string
 
 	// creation flags
-	creationFlags  *pflag.FlagSet
-	sdkUrlPath     string
+	creationFlags *pflag.FlagSet
+	sdkUrlPath    string
+	// sdkURL is the URL targetting the SDK.
+	sdkURL         string
 	sdkVersion     string
 	manifestURL    string
 	manifestName   string
@@ -122,7 +124,9 @@ func init() {
 
 	creationFlags = pflag.NewFlagSet("creation", pflag.ExitOnError)
 	creationFlags.StringVar(&sdkUrlPath,
-		"sdk-url-path", "/flatcar-jenkins/sdk", "SDK URL path")
+		"sdk-url-path", "sdk", "SDK URL path")
+	creationFlags.StringVar(&sdkURL,
+		"sdk-url", "mirror.release.flatcar-linux.net", "SDK URL (supported schema: gs, https)")
 	creationFlags.StringVar(&sdkVersion,
 		"sdk-version", "", "SDK version. Defaults to the SDK version in version.txt")
 	creationFlags.StringVar(&manifestURL,
@@ -255,7 +259,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 
 func unpackChroot(replace bool) {
 	plog.Noticef("Downloading SDK version %s", sdkVersion)
-	if err := sdk.DownloadSDK(sdkUrlPath, sdkVersion, verifyKeyFile, downloadImageJSONKeyFile); err != nil {
+	if err := sdk.DownloadSDK(sdkURL, sdkUrlPath, sdkVersion, verifyKeyFile, downloadImageJSONKeyFile); err != nil {
 		plog.Fatalf("Download failed: %v", err)
 	}
 

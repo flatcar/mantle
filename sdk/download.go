@@ -35,10 +35,6 @@ import (
 	"github.com/coreos/mantle/util"
 )
 
-const (
-	urlHost = "storage.googleapis.com"
-)
-
 var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "sdk")
 
 func TarballName(version string) string {
@@ -46,7 +42,7 @@ func TarballName(version string) string {
 	return fmt.Sprintf("flatcar-sdk-%s-%s.tar.bz2", arch, version)
 }
 
-func TarballURL(urlPath, version string) string {
+func TarballURL(urlHost, urlPath, version string) string {
 	arch := system.PortageArch()
 	p := path.Join(urlPath, arch, version, TarballName(version))
 	u := url.URL{Scheme: "https", Host: urlHost, Path: p}
@@ -196,9 +192,9 @@ func DownloadSignedFile(file, url string, client *http.Client, verifyKeyFile str
 	return nil
 }
 
-func DownloadSDK(urlPath, version, verifyKeyFile, JSONKeyFile string) error {
+func DownloadSDK(urlHost, urlPath, version, verifyKeyFile, JSONKeyFile string) error {
 	tarFile := filepath.Join(RepoCache(), "sdks", TarballName(version))
-	tarURL := TarballURL(urlPath, version)
+	tarURL := TarballURL(urlHost, urlPath, version)
 
 	var client *http.Client = nil
 	if len(JSONKeyFile) != 0 {
