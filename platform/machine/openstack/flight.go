@@ -18,8 +18,8 @@ import (
 	ctplatform "github.com/coreos/container-linux-config-transpiler/config/platform"
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/api/openstack"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/api/openstack"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/machine/openstack")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/openstack")
 )
 
 type flight struct {

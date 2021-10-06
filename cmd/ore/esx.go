@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/coreos/mantle/cmd/ore/esx"
+	"github.com/flatcar-linux/mantle/cmd/ore/esx"
 )
 
 func init() {

@@ -20,10 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
-	"github.com/coreos/mantle/kola/tests/util"
-	"github.com/coreos/mantle/platform"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/kola/tests/util"
+	"github.com/flatcar-linux/mantle/platform"
 )
 
 // the "basic" test is only supported on 'rhcos' for now because of how

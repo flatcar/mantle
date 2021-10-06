@@ -30,12 +30,12 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/system"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/system"
+	"github.com/flatcar-linux/mantle/util"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "sdk")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "sdk")
 
 func TarballName(version string) string {
 	arch := system.PortageArch()

@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/coreos/mantle/sdk"
-	"github.com/coreos/mantle/sdk/repo"
+	"github.com/flatcar-linux/mantle/sdk"
+	"github.com/flatcar-linux/mantle/sdk/repo"
 )
 
 const (

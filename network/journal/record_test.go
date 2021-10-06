@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/mantle/network/mockssh"
+	"github.com/flatcar-linux/mantle/network/mockssh"
 )
 
 const (

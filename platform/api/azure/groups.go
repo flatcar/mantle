@@ -20,7 +20,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 func (a *API) CreateResourceGroup(prefix string) (string, error) {

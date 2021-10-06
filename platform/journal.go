@@ -25,8 +25,8 @@ import (
 
 	"github.com/coreos/pkg/multierror"
 
-	"github.com/coreos/mantle/network/journal"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/network/journal"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 // Journal manages recording the journal of a Machine.

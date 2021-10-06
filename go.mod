@@ -1,4 +1,4 @@
-module github.com/coreos/mantle
+module github.com/flatcar-linux/mantle
 
 go 1.16
 

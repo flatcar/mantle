@@ -17,8 +17,8 @@ package index
 import (
 	"golang.org/x/net/context"
 
-	"github.com/coreos/mantle/lang/worker"
-	"github.com/coreos/mantle/storage"
+	"github.com/flatcar-linux/mantle/lang/worker"
+	"github.com/flatcar-linux/mantle/storage"
 )
 
 type IndexJob struct {

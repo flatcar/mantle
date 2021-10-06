@@ -23,13 +23,13 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/kola"
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
-	"github.com/coreos/mantle/kola/tests/etcd"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/kola"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/kola/tests/etcd"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 var (
@@ -88,7 +88,7 @@ var (
 			},
 		},
 	}
-	plog       = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola/tests/kubeadm")
+	plog       = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
 etcd:
   advertise_client_urls: http://{PRIVATE_IPV4}:2379

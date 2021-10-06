@@ -31,8 +31,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/mantle/harness/reporters"
-	"github.com/coreos/mantle/harness/testresult"
+	"github.com/flatcar-linux/mantle/harness/reporters"
+	"github.com/flatcar-linux/mantle/harness/testresult"
 )
 
 // H is a type passed to Test functions to manage test state and support formatted test logs.

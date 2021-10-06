@@ -23,13 +23,13 @@ import (
 
 	"github.com/coreos/go-omaha/omaha"
 
-	"github.com/coreos/mantle/kola"
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/kola/register"
-	tutil "github.com/coreos/mantle/kola/tests/util"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/local"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/kola"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/kola/register"
+	tutil "github.com/flatcar-linux/mantle/kola/tests/util"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/local"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 func init() {

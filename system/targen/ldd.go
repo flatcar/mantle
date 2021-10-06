@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coreos/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/system/exec"
 )
 
 // return a slice of strings that are the library dependencies of binary.

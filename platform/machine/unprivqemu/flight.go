@@ -19,8 +19,8 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/machine/qemu"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/machine/qemu"
 )
 
 const (
@@ -36,7 +36,7 @@ type flight struct {
 }
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/machine/qemu")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/qemu")
 )
 
 func NewFlight(opts *qemu.Options) (platform.Flight, error) {

@@ -18,17 +18,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/cli"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/api/gcloud"
-	"github.com/coreos/mantle/platform/api/packet"
 	"github.com/coreos/pkg/capnslog"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	"github.com/flatcar-linux/mantle/platform/api/packet"
 	"github.com/spf13/cobra"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "ore/packet")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/packet")
 
 	Packet = &cobra.Command{
 		Use:   "packet [command]",

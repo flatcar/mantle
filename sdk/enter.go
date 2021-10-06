@@ -25,9 +25,9 @@ import (
 	"syscall"
 	"text/template"
 
-	"github.com/coreos/mantle/system"
-	"github.com/coreos/mantle/system/exec"
-	"github.com/coreos/mantle/system/user"
+	"github.com/flatcar-linux/mantle/system"
+	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/system/user"
 )
 
 var (

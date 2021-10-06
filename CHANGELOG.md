@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Security
 ### Added
 ### Changed
+- Renamed the project name from `github.com/coreos/mantle` to `github.com/flatcar-linux/mantle` ([#241](https://github.com/flatcar-linux/mantle/pull/241))
+
 ### Removed
 
 ## [0.17.0] - 05/10/2021

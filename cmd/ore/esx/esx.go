@@ -18,15 +18,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/cli"
-	"github.com/coreos/mantle/platform/api/esx"
 	"github.com/coreos/pkg/capnslog"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar-linux/mantle/platform/api/esx"
 	"github.com/spf13/cobra"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "ore/esx")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/esx")
 
 	ESX = &cobra.Command{
 		Use:   "esx [command]",

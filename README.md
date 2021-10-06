@@ -172,7 +172,7 @@ kola package.  `Register(*Test)` is called per test. A kola `Test`
 struct requires a unique name, and a single function that is the entry
 point into the test. Additionally, userdata (such as a Container Linux
 Config) can be supplied. See the `Test` struct in
-[kola/register/register.go](https://github.com/coreos/mantle/tree/master/kola/register/register.go)
+[kola/register/register.go](https://github.com/flatcar-linux/mantle/tree/master/kola/register/register.go)
 for a complete list of options.
 
 #### kola test writing
@@ -185,7 +185,7 @@ give you access to a running cluster of Container Linux machines. A test writer
 can interact with these machines through this interface.
 
 To see test examples look under
-[kola/tests](https://github.com/coreos/mantle/tree/master/kola/tests) in the
+[kola/tests](https://github.com/flatcar-linux/mantle/tree/master/kola/tests) in the
 mantle codebase.
 
 For a quickstart see [kola/README.md](/kola/README.md).
@@ -203,7 +203,7 @@ a kola test using a `TestCluster`'s `RunNative` method. The function
 itself is then run natively on the specified running Container Linux instances.
 
 For more examples, look at the
-[coretest](https://github.com/coreos/mantle/tree/master/kola/tests/coretest)
+[coretest](https://github.com/flatcar-linux/mantle/tree/master/kola/tests/coretest)
 suite of tests under kola. These tests were ported into kola and make
 heavy use of the native code interface.
 

@@ -26,8 +26,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 type BaseCluster struct {

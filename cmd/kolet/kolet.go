@@ -20,15 +20,15 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/cli"
-	"github.com/coreos/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar-linux/mantle/kola/register"
 
 	// Register any tests that we may wish to execute in kolet.
-	_ "github.com/coreos/mantle/kola/registry"
+	_ "github.com/flatcar-linux/mantle/kola/registry"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "kolet")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kolet")
 
 	root = &cobra.Command{
 		Use:   "kolet run [test] [func]",

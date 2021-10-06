@@ -30,8 +30,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/mantle/harness/reporters"
-	"github.com/coreos/mantle/harness/testresult"
+	"github.com/flatcar-linux/mantle/harness/reporters"
+	"github.com/flatcar-linux/mantle/harness/testresult"
 )
 
 const (

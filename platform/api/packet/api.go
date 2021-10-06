@@ -32,12 +32,12 @@ import (
 	"golang.org/x/net/context"
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/auth"
-	"github.com/coreos/mantle/platform"
-	"github.com/coreos/mantle/platform/api/gcloud"
-	"github.com/coreos/mantle/platform/conf"
-	"github.com/coreos/mantle/storage"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/auth"
+	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/storage"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 const (
@@ -51,7 +51,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "platform/api/packet")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/packet")
 
 	defaultInstallerImageBaseURL = map[string]string{
 		// HTTPS causes iPXE to fail on a "permission denied" error
@@ -166,7 +166,7 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("connecting to Google Storage bucket: %v", err)
 	}
 
-	client := packngo.NewClientWithAuth("github.com/coreos/mantle", opts.ApiKey, nil)
+	client := packngo.NewClientWithAuth("github.com/flatcar-linux/mantle", opts.ApiKey, nil)
 
 	return &API{
 		c:      client,

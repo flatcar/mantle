@@ -219,4 +219,4 @@ formats can be added by creating a new struct which implements the
 reporter inside of the `harness: Options` object created in
 `kola/harness: RunTests`.
 
-[For example](https://github.com/coreos/mantle/blob/52407c3ae8cd0837511c665af2c7870393e024bb/kola/harness.go#L295-L297) this is how the JSON reporter is added.
+[For example](https://github.com/flatcar-linux/mantle/blob/52407c3ae8cd0837511c665af2c7870393e024bb/kola/harness.go#L295-L297) this is how the JSON reporter is added.

@@ -27,7 +27,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/coreos/mantle/update/metadata"
+	"github.com/flatcar-linux/mantle/update/metadata"
 )
 
 const (
@@ -75,7 +75,7 @@ bsy1Gm/UYLTc8+S3fq/xjg9RCjW9JMwavAwL6oVNNt7nyAXPfvSu
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "update/signature")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "update/signature")
 )
 
 func NewSignatureHash() hash.Hash {

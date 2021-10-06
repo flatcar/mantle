@@ -21,10 +21,10 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/coreos/mantle/network/neterror"
+	"github.com/flatcar-linux/mantle/network/neterror"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "network/ntp")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "network/ntp")
 
 // BUG(marineam): Since our clock source is UTC instead of TAI or some type of
 // monotonic clock, trying to use this server during a real leap second will

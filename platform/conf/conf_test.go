@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/coreos/mantle/network"
+	"github.com/flatcar-linux/mantle/network"
 )
 
 func TestConfCopyKey(t *testing.T) {

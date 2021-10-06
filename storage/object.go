@@ -22,8 +22,8 @@ import (
 
 	"google.golang.org/api/storage/v1"
 
-	"github.com/coreos/mantle/lang/natsort"
-	"github.com/coreos/mantle/lang/reader"
+	"github.com/flatcar-linux/mantle/lang/natsort"
+	"github.com/flatcar-linux/mantle/lang/reader"
 )
 
 // SortObjects orders Objects by Name using natural sorting.

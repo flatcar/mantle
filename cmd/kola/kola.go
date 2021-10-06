@@ -28,16 +28,16 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/mantle/cli"
-	"github.com/coreos/mantle/kola"
-	"github.com/coreos/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar-linux/mantle/kola"
+	"github.com/flatcar-linux/mantle/kola/register"
 
 	// register OS test suite
-	_ "github.com/coreos/mantle/kola/registry"
+	_ "github.com/flatcar-linux/mantle/kola/registry"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "kola")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola")
 
 	root = &cobra.Command{
 		Use:   "kola [command]",
@@ -98,7 +98,7 @@ func preRun(cmd *cobra.Command, args []string) {
 
 	// Packet uses storage, and storage talks too much.
 	if !plog.LevelAt(capnslog.INFO) {
-		mantleLogger := capnslog.MustRepoLogger("github.com/coreos/mantle")
+		mantleLogger := capnslog.MustRepoLogger("github.com/flatcar-linux/mantle")
 		mantleLogger.SetLogLevel(map[string]capnslog.LogLevel{
 			"storage": capnslog.WARNING,
 		})

@@ -28,8 +28,8 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 
-	"github.com/coreos/mantle/system/exec"
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 type MachineOptions struct {

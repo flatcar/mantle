@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/coreos/mantle/harness/testresult"
+	"github.com/flatcar-linux/mantle/harness/testresult"
 )
 
 type jsonReporter struct {

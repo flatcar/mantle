@@ -20,8 +20,8 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 
-	"github.com/coreos/mantle/kola/cluster"
-	"github.com/coreos/mantle/platform/conf"
+	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar-linux/mantle/platform/conf"
 )
 
 type Flag int

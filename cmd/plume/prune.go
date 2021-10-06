@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
-	"github.com/coreos/mantle/platform/api/aws"
-	"github.com/coreos/mantle/platform/api/azure"
+	"github.com/flatcar-linux/mantle/platform/api/aws"
+	"github.com/flatcar-linux/mantle/platform/api/azure"
 )
 
 var (

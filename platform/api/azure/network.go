@@ -20,7 +20,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-11-01/network"
 
-	"github.com/coreos/mantle/util"
+	"github.com/flatcar-linux/mantle/util"
 )
 
 var (

@@ -22,4 +22,4 @@ import (
 // Arbitrary limit on the number of concurrent remote API requests.
 const MaxConcurrentRequests = 12
 
-var plog = capnslog.NewPackageLogger("github.com/coreos/mantle", "storage")
+var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "storage")
