@@ -270,6 +270,17 @@ func VerifySync(name string) error {
 					project.Path, reflect.ValueOf(tags).MapKeys(), revTag)
 				result = VerifyError
 			}
+		} else if strings.HasPrefix(project.Revision, "refs/pull/") {
+			branches, err := manifest.projectBranches(project)
+			if err != nil {
+				return err
+			}
+			revBranch := strings.SplitN(project.Revision, "refs/", 2)[1]
+			if _, ok := branches[revBranch]; !ok {
+				plog.Errorf("Project dir %s at branches %q, expected %s",
+					project.Path, reflect.ValueOf(branches).MapKeys(), revBranch)
+				result = VerifyError
+			}
 		} else {
 			plog.Errorf("Cannot verify %s revision %s in %s",
 				project.Name, project.Revision, manifest.name)
