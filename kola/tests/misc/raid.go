@@ -189,10 +189,13 @@ type lsblkOutput struct {
 }
 
 type blockdevice struct {
-	Name       string        `json:"name"`
-	Type       string        `json:"type"`
-	Mountpoint *string       `json:"mountpoint"`
-	Children   []blockdevice `json:"children"`
+	Name       string  `json:"name"`
+	Type       string  `json:"type"`
+	Mountpoint *string `json:"mountpoint"`
+	// Mountpoints holds all mountpoints relevant for the device
+	// it aims to replace `Mountpoint` from util-linux-2.37.
+	Mountpoints []string      `json:"mountpoints"`
+	Children    []blockdevice `json:"children"`
 }
 
 // checkIfMountpointIsRaid will check if a given machine has a device of type
@@ -218,6 +221,13 @@ func checkIfMountpointIsRaid(c cluster.TestCluster, m platform.Machine, mountpoi
 // is found to be mounted at /.
 func checkIfMountpointIsRaidWalker(c cluster.TestCluster, bs []blockdevice, mountpoint string) bool {
 	for _, b := range bs {
+		// >= util-linux-2.37
+		for _, mnt := range b.Mountpoints {
+			if mnt == mountpoint && b.Type == "raid1" {
+				return true
+			}
+		}
+
 		if b.Mountpoint != nil && *b.Mountpoint == mountpoint {
 			if b.Type != "raid1" {
 				c.Fatalf("device %q is mounted at %q with type %q (was expecting raid1)", b.Name, mountpoint, b.Type)
