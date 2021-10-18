@@ -353,7 +353,7 @@ EOF
     kubectl apply -f calico.yaml
 {{ end }}
 {{ if eq .CNI "flannel" }}
-    curl -sSfL https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yml
+    curl -sSfL https://raw.githubusercontent.com/flannel-io/flannel/{{ .FlannelVersion }}/Documentation/kube-flannel.yml > kube-flannel.yml
     sed -i "s#10.244.0.0/16#{{ .PodSubnet }}#" kube-flannel.yml
     kubectl apply -f kube-flannel.yml
 {{ end }}

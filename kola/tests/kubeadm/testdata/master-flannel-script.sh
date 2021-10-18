@@ -84,7 +84,7 @@ EOF
 
 
 
-    curl -sSfL https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yml
+    curl -sSfL https://raw.githubusercontent.com/flannel-io/flannel/v0.14.0/Documentation/kube-flannel.yml > kube-flannel.yml
     sed -i "s#10.244.0.0/16#192.168.0.0/17#" kube-flannel.yml
     kubectl apply -f kube-flannel.yml
 

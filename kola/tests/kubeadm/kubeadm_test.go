@@ -54,6 +54,7 @@ func TestRenderTemplate(t *testing.T) {
 			res, err := render(
 				masterScript,
 				map[string]interface{}{
+					"FlannelVersion": "v0.14.0",
 					"CNI":            CNI,
 					"Endpoints":      []string{"http://1.2.3.4:2379"},
 					"Params":         "amd64",

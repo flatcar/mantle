@@ -44,6 +44,7 @@ var (
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
 		"v1.22.0": map[string]interface{}{
+			"FlannelVersion":   "v0.14.0",
 			"CiliumCLIVersion": "v0.9.0",
 			"CNIVersion":       "v0.8.7",
 			"CRIctlVersion":    "v1.17.0",
@@ -66,6 +67,7 @@ var (
 			},
 		},
 		"v1.21.0": map[string]interface{}{
+			"FlannelVersion":   "v0.14.0",
 			"CiliumCLIVersion": "v0.9.0",
 			"CNIVersion":       "v0.8.7",
 			"CRIctlVersion":    "v1.17.0",
