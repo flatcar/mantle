@@ -90,6 +90,58 @@ const (
   }
 }
 `
+
+	IgnitionConfigDataRaid = `{
+  "ignition": {
+    "config": {},
+    "security": {
+      "tls": {}
+    },
+    "timeouts": {},
+    "version": "2.3.0"
+  },
+  "networkd": {},
+  "storage": {
+    "disks": [
+      {
+        "device": "/dev/disk/by-partlabel/OEM-CONFIG"
+      },
+      {
+        "device": "/dev/disk/by-partlabel/USR-B"
+      }
+    ],
+    "filesystems": [
+      {
+        "name": "DATA",
+        "mount": {
+          "device": "/dev/md/DATA",
+          "format": "ext4",
+          "label": "DATA"
+        }
+      }
+    ],
+    "raid": [
+      {
+        "devices": [
+          "/dev/disk/by-partlabel/OEM-CONFIG",
+          "/dev/disk/by-partlabel/USR-B"
+        ],
+        "level": "{{ .RaidLevel }}",
+        "name": "DATA"
+      }
+    ]
+  },
+  "systemd": {
+    "units": [
+      {
+        "name": "var-lib-data.mount",
+        "enabled": true,
+        "contents": "[Mount]\nWhat=/dev/md/DATA\nWhere=/var/lib/data\nType=ext4\n\n[Install]\nWantedBy=local-fs.target"
+      }
+    ]
+  }
+}
+`
 )
 
 var (
@@ -119,36 +171,18 @@ func init() {
 		Name:        "cl.disk.raid.root",
 		Distros:     []string{"cl"},
 	})
+
+	// data with raid1
+	tmplDataRaid, _ := util.ExecTemplate(IgnitionConfigDataRaid, raidConfig{
+		RaidLevel: "raid1",
+	})
+
 	register.Register(&register.Test{
 		Run:         DataOnRaid,
 		ClusterSize: 1,
 		Name:        "cl.disk.raid.data",
-		UserData: conf.ContainerLinuxConfig(`storage:
-  raid:
-    - name: "DATA"
-      level: "raid1"
-      devices:
-        - "/dev/disk/by-partlabel/OEM-CONFIG"
-        - "/dev/disk/by-partlabel/USR-B"
-  filesystems:
-    - name: "DATA"
-      mount:
-        device: "/dev/md/DATA"
-        format: "ext4"
-        label: DATA
-systemd:
-  units:
-    - name: "var-lib-data.mount"
-      enable: true
-      contents: |
-          [Mount]
-          What=/dev/md/DATA
-          Where=/var/lib/data
-          Type=ext4
-          
-          [Install]
-          WantedBy=local-fs.target`),
-		Distros: []string{"cl"},
+		UserData:    conf.Ignition(tmplDataRaid),
+		Distros:     []string{"cl"},
 	})
 }
 
