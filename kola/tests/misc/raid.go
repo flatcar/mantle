@@ -146,6 +146,10 @@ const (
 
 var (
 	raidRootUserData *conf.UserData
+
+	raidTypes = map[string]interface{}{
+		"raid1": struct{}{},
+	}
 )
 
 type raidConfig struct {
@@ -273,14 +277,14 @@ func checkIfMountpointIsRaidWalker(c cluster.TestCluster, bs []blockdevice, moun
 	for _, b := range bs {
 		// >= util-linux-2.37
 		for _, mnt := range b.Mountpoints {
-			if mnt == mountpoint && b.Type == "raid1" {
+			if mnt == mountpoint && isValidRaidType(b.Type) {
 				return true
 			}
 		}
 
 		if b.Mountpoint != nil && *b.Mountpoint == mountpoint {
-			if b.Type != "raid1" {
-				c.Fatalf("device %q is mounted at %q with type %q (was expecting raid1)", b.Name, mountpoint, b.Type)
+			if !isValidRaidType(b.Type) {
+				c.Fatalf("invalid raid type, device %q is mounted at %q with type %q", b.Name, mountpoint, b.Type)
 			}
 			return true
 		}
@@ -288,6 +292,15 @@ func checkIfMountpointIsRaidWalker(c cluster.TestCluster, bs []blockdevice, moun
 		if foundRoot {
 			return true
 		}
+	}
+	return false
+}
+
+// isValidRaidType checks if the given type string is one of the possible
+// RAID types supported by the testsuite. For example, raid0 or raid1.
+func isValidRaidType(rType string) bool {
+	if _, ok := raidTypes[rType]; ok {
+		return true
 	}
 	return false
 }
