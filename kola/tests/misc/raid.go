@@ -19,14 +19,15 @@ import (
 
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/kola/tests/util"
 	"github.com/flatcar-linux/mantle/platform"
 	"github.com/flatcar-linux/mantle/platform/conf"
 	"github.com/flatcar-linux/mantle/platform/machine/qemu"
 	"github.com/flatcar-linux/mantle/platform/machine/unprivqemu"
 )
 
-var (
-	raidRootUserData = conf.Ignition(`{
+const (
+	IgnitionConfigRootRaid = `{
   "ignition": {
     "config": {},
     "security": {
@@ -82,15 +83,30 @@ var (
           "/dev/disk/by-partlabel/root1",
           "/dev/disk/by-partlabel/root2"
         ],
-        "level": "raid1",
+        "level": "{{ .RaidLevel }}",
         "name": "rootarray"
       }
     ]
   }
-}`)
+}
+`
 )
 
+var (
+	raidRootUserData *conf.UserData
+)
+
+type raidConfig struct {
+	RaidLevel string
+}
+
 func init() {
+	// root with raid1
+	tmplRootRaid, _ := util.ExecTemplate(IgnitionConfigRootRaid, raidConfig{
+		RaidLevel: "raid1",
+	})
+	raidRootUserData = conf.Ignition(tmplRootRaid)
+
 	register.Register(&register.Test{
 		// This test needs additional disks which is only supported on qemu since Ignition
 		// does not support deleting partitions without wiping the partition table and the
