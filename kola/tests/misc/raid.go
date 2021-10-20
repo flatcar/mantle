@@ -16,6 +16,7 @@ package misc
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
@@ -145,9 +146,8 @@ const (
 )
 
 var (
-	raidRootUserData *conf.UserData
-
 	raidTypes = map[string]interface{}{
+		"raid0": struct{}{},
 		"raid1": struct{}{},
 	}
 )
@@ -157,40 +157,61 @@ type raidConfig struct {
 }
 
 func init() {
-	// root with raid1
-	tmplRootRaid, _ := util.ExecTemplate(IgnitionConfigRootRaid, raidConfig{
-		RaidLevel: "raid1",
-	})
-	raidRootUserData = conf.Ignition(tmplRootRaid)
+	for raidLevel, _ := range raidTypes {
+		level := raidLevel
 
-	register.Register(&register.Test{
-		// This test needs additional disks which is only supported on qemu since Ignition
-		// does not support deleting partitions without wiping the partition table and the
-		// disk doesn't have room for new partitions.
-		// TODO(ajeddeloh): change this to delete partition 9 and replace it with 9 and 10
-		// once Ignition supports it.
-		Run:         RootOnRaid,
-		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
-		Name:        "cl.disk.raid.root",
-		Distros:     []string{"cl"},
-	})
+		// root partition
+		templRoot, err := util.ExecTemplate(IgnitionConfigRootRaid, raidConfig{
+			RaidLevel: level,
+		})
+		if err != nil {
+			fmt.Printf("fail to execute template for %s: %v\n", level, err)
+			return
+		}
+		userDataRoot := conf.Ignition(templRoot)
 
-	// data with raid1
-	tmplDataRaid, _ := util.ExecTemplate(IgnitionConfigDataRaid, raidConfig{
-		RaidLevel: "raid1",
-	})
+		runRootOnRaid := func(c cluster.TestCluster) {
+			RootOnRaid(c, userDataRoot)
+		}
 
-	register.Register(&register.Test{
-		Run:         DataOnRaid,
-		ClusterSize: 1,
-		Name:        "cl.disk.raid.data",
-		UserData:    conf.Ignition(tmplDataRaid),
-		Distros:     []string{"cl"},
-	})
+		register.Register(&register.Test{
+			// This test needs additional disks which is only supported on qemu since Ignition
+			// does not support deleting partitions without wiping the partition table and the
+			// disk doesn't have room for new partitions.
+			// TODO(ajeddeloh): change this to delete partition 9 and replace it with 9 and 10
+			// once Ignition supports it.
+			Run:         runRootOnRaid,
+			ClusterSize: 0,
+			Platforms:   []string{"qemu"},
+			Name:        fmt.Sprintf("cl.disk.%s.root", raidLevel),
+			Distros:     []string{"cl"},
+		})
+
+		// data partition
+		templData, err := util.ExecTemplate(IgnitionConfigDataRaid, raidConfig{
+			RaidLevel: level,
+		})
+		if err != nil {
+			fmt.Printf("fail to execute template for %s: %v\n", level, err)
+			return
+		}
+		userDataData := conf.Ignition(templData)
+
+		runDataOnRaid := func(c cluster.TestCluster) {
+			DataOnRaid(c, userDataData)
+		}
+
+		register.Register(&register.Test{
+			Run:         runDataOnRaid,
+			ClusterSize: 1,
+			Name:        fmt.Sprintf("cl.disk.%s.data", raidLevel),
+			UserData:    userDataData,
+			Distros:     []string{"cl"},
+		})
+	}
 }
 
-func RootOnRaid(c cluster.TestCluster) {
+func RootOnRaid(c cluster.TestCluster, userData *conf.UserData) {
 	var m platform.Machine
 	var err error
 	options := platform.MachineOptions{
@@ -203,9 +224,9 @@ func RootOnRaid(c cluster.TestCluster) {
 	// the golang compiler no longer checks that the individual types in the case have the
 	// NewMachineWithOptions function, but rather whether platform.Cluster does which fails
 	case *qemu.Cluster:
-		m, err = pc.NewMachineWithOptions(raidRootUserData, options)
+		m, err = pc.NewMachineWithOptions(userData, options)
 	case *unprivqemu.Cluster:
-		m, err = pc.NewMachineWithOptions(raidRootUserData, options)
+		m, err = pc.NewMachineWithOptions(userData, options)
 	default:
 		c.Fatal("unknown cluster type")
 	}
@@ -224,7 +245,7 @@ func RootOnRaid(c cluster.TestCluster) {
 	checkIfMountpointIsRaid(c, m, "/")
 }
 
-func DataOnRaid(c cluster.TestCluster) {
+func DataOnRaid(c cluster.TestCluster, userData *conf.UserData) {
 	m := c.Machines()[0]
 
 	checkIfMountpointIsRaid(c, m, "/var/lib/data")
