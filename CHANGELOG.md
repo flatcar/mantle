@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Security
 ### Added
+- kola: add raid0 tests for root and data devices ([#36](https://github.com/flatcar-linux/mantle/pull/36))
+
 ### Changed
-- `lbslk --json` output handling ([#244](https://github.com/flatcar-linux/mantle/pull/244))
+- `lsblk --json` output handling ([#244](https://github.com/flatcar-linux/mantle/pull/244))
 - Flannel version to 0.14.0 ([#245](https://github.com/flatcar-linux/mantle/pull/245))
 - Renamed the project name from `github.com/coreos/mantle` to `github.com/flatcar-linux/mantle` ([#241](https://github.com/flatcar-linux/mantle/pull/241))
 
