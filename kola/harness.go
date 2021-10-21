@@ -574,6 +574,9 @@ func architecture(pltfrm string) string {
 	if pltfrm == "packet" && PacketOptions.Board != "" {
 		nativeArch = boardToArch(PacketOptions.Board)
 	}
+	if pltfrm == "aws" && AWSOptions.Board != "" {
+		nativeArch = boardToArch(AWSOptions.Board)
+	}
 	return nativeArch
 }
 
