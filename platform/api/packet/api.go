@@ -466,7 +466,7 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 	}
 
 	// HTTPS causes iPXE to fail on a "permission denied" error
-	url := fmt.Sprintf("http://storage-download.googleapis.com/%v/%v", a.bucket.Name(), obj.Name)
+	url := fmt.Sprintf("http://bucket.release.flatcar-linux.net/%v/%v", a.bucket.Name(), obj.Name)
 	return obj.Name, url, nil
 }
 
