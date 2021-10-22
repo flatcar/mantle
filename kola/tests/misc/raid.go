@@ -16,17 +16,19 @@ package misc
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar-linux/mantle/kola/tests/util"
 	"github.com/flatcar-linux/mantle/platform"
 	"github.com/flatcar-linux/mantle/platform/conf"
 	"github.com/flatcar-linux/mantle/platform/machine/qemu"
 	"github.com/flatcar-linux/mantle/platform/machine/unprivqemu"
 )
 
-var (
-	raidRootUserData = conf.Ignition(`{
+const (
+	IgnitionConfigRootRaid = `{
   "ignition": {
     "config": {},
     "security": {
@@ -82,61 +84,134 @@ var (
           "/dev/disk/by-partlabel/root1",
           "/dev/disk/by-partlabel/root2"
         ],
-        "level": "raid1",
+        "level": "{{ .RaidLevel }}",
         "name": "rootarray"
       }
     ]
   }
-}`)
+}
+`
+
+	IgnitionConfigDataRaid = `{
+  "ignition": {
+    "config": {},
+    "security": {
+      "tls": {}
+    },
+    "timeouts": {},
+    "version": "2.3.0"
+  },
+  "networkd": {},
+  "storage": {
+    "disks": [
+      {
+        "device": "/dev/disk/by-partlabel/OEM-CONFIG"
+      },
+      {
+        "device": "/dev/disk/by-partlabel/USR-B"
+      }
+    ],
+    "filesystems": [
+      {
+        "name": "DATA",
+        "mount": {
+          "device": "/dev/md/DATA",
+          "format": "ext4",
+          "label": "DATA"
+        }
+      }
+    ],
+    "raid": [
+      {
+        "devices": [
+          "/dev/disk/by-partlabel/OEM-CONFIG",
+          "/dev/disk/by-partlabel/USR-B"
+        ],
+        "level": "{{ .RaidLevel }}",
+        "name": "DATA"
+      }
+    ]
+  },
+  "systemd": {
+    "units": [
+      {
+        "name": "var-lib-data.mount",
+        "enabled": true,
+        "contents": "[Mount]\nWhat=/dev/md/DATA\nWhere=/var/lib/data\nType=ext4\n\n[Install]\nWantedBy=local-fs.target"
+      }
+    ]
+  }
+}
+`
 )
 
-func init() {
-	register.Register(&register.Test{
-		// This test needs additional disks which is only supported on qemu since Ignition
-		// does not support deleting partitions without wiping the partition table and the
-		// disk doesn't have room for new partitions.
-		// TODO(ajeddeloh): change this to delete partition 9 and replace it with 9 and 10
-		// once Ignition supports it.
-		Run:         RootOnRaid,
-		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
-		Name:        "cl.disk.raid.root",
-		Distros:     []string{"cl"},
-	})
-	register.Register(&register.Test{
-		Run:         DataOnRaid,
-		ClusterSize: 1,
-		Name:        "cl.disk.raid.data",
-		UserData: conf.ContainerLinuxConfig(`storage:
-  raid:
-    - name: "DATA"
-      level: "raid1"
-      devices:
-        - "/dev/disk/by-partlabel/OEM-CONFIG"
-        - "/dev/disk/by-partlabel/USR-B"
-  filesystems:
-    - name: "DATA"
-      mount:
-        device: "/dev/md/DATA"
-        format: "ext4"
-        label: DATA
-systemd:
-  units:
-    - name: "var-lib-data.mount"
-      enable: true
-      contents: |
-          [Mount]
-          What=/dev/md/DATA
-          Where=/var/lib/data
-          Type=ext4
-          
-          [Install]
-          WantedBy=local-fs.target`),
-		Distros: []string{"cl"},
-	})
+var (
+	raidTypes = map[string]interface{}{
+		"raid0": struct{}{},
+		"raid1": struct{}{},
+	}
+)
+
+type raidConfig struct {
+	RaidLevel string
 }
 
-func RootOnRaid(c cluster.TestCluster) {
+func init() {
+	for raidLevel, _ := range raidTypes {
+		level := raidLevel
+
+		// root partition
+		templRoot, err := util.ExecTemplate(IgnitionConfigRootRaid, raidConfig{
+			RaidLevel: level,
+		})
+		if err != nil {
+			fmt.Printf("fail to execute template for %s: %v\n", level, err)
+			return
+		}
+		userDataRoot := conf.Ignition(templRoot)
+
+		runRootOnRaid := func(c cluster.TestCluster) {
+			RootOnRaid(c, userDataRoot)
+		}
+
+		register.Register(&register.Test{
+			// This test needs additional disks which is only supported on qemu since Ignition
+			// does not support deleting partitions without wiping the partition table and the
+			// disk doesn't have room for new partitions.
+			// TODO(ajeddeloh): change this to delete partition 9 and replace it with 9 and 10
+			// once Ignition supports it.
+			Run:         runRootOnRaid,
+			ClusterSize: 0,
+			Platforms:   []string{"qemu"},
+			Name:        fmt.Sprintf("cl.disk.%s.root", raidLevel),
+			Distros:     []string{"cl"},
+		})
+
+		// data partition
+		templData, err := util.ExecTemplate(IgnitionConfigDataRaid, raidConfig{
+			RaidLevel: level,
+		})
+		if err != nil {
+			fmt.Printf("fail to execute template for %s: %v\n", level, err)
+			return
+		}
+		userDataData := conf.Ignition(templData)
+
+		runDataOnRaid := func(c cluster.TestCluster) {
+			DataOnRaid(c, userDataData)
+		}
+
+		register.Register(&register.Test{
+			Run:         runDataOnRaid,
+			ClusterSize: 1,
+			Name:        fmt.Sprintf("cl.disk.%s.data", raidLevel),
+			UserData:    userDataData,
+			Distros:     []string{"cl"},
+		})
+	}
+}
+
+func RootOnRaid(c cluster.TestCluster, userData *conf.UserData) {
 	var m platform.Machine
 	var err error
 	options := platform.MachineOptions{
@@ -149,9 +224,9 @@ func RootOnRaid(c cluster.TestCluster) {
 	// the golang compiler no longer checks that the individual types in the case have the
 	// NewMachineWithOptions function, but rather whether platform.Cluster does which fails
 	case *qemu.Cluster:
-		m, err = pc.NewMachineWithOptions(raidRootUserData, options)
+		m, err = pc.NewMachineWithOptions(userData, options)
 	case *unprivqemu.Cluster:
-		m, err = pc.NewMachineWithOptions(raidRootUserData, options)
+		m, err = pc.NewMachineWithOptions(userData, options)
 	default:
 		c.Fatal("unknown cluster type")
 	}
@@ -170,7 +245,7 @@ func RootOnRaid(c cluster.TestCluster) {
 	checkIfMountpointIsRaid(c, m, "/")
 }
 
-func DataOnRaid(c cluster.TestCluster) {
+func DataOnRaid(c cluster.TestCluster, userData *conf.UserData) {
 	m := c.Machines()[0]
 
 	checkIfMountpointIsRaid(c, m, "/var/lib/data")
@@ -223,14 +298,14 @@ func checkIfMountpointIsRaidWalker(c cluster.TestCluster, bs []blockdevice, moun
 	for _, b := range bs {
 		// >= util-linux-2.37
 		for _, mnt := range b.Mountpoints {
-			if mnt == mountpoint && b.Type == "raid1" {
+			if mnt == mountpoint && isValidRaidType(b.Type) {
 				return true
 			}
 		}
 
 		if b.Mountpoint != nil && *b.Mountpoint == mountpoint {
-			if b.Type != "raid1" {
-				c.Fatalf("device %q is mounted at %q with type %q (was expecting raid1)", b.Name, mountpoint, b.Type)
+			if !isValidRaidType(b.Type) {
+				c.Fatalf("invalid raid type, device %q is mounted at %q with type %q", b.Name, mountpoint, b.Type)
 			}
 			return true
 		}
@@ -238,6 +313,15 @@ func checkIfMountpointIsRaidWalker(c cluster.TestCluster, bs []blockdevice, moun
 		if foundRoot {
 			return true
 		}
+	}
+	return false
+}
+
+// isValidRaidType checks if the given type string is one of the possible
+// RAID types supported by the testsuite. For example, raid0 or raid1.
+func isValidRaidType(rType string) bool {
+	if _, ok := raidTypes[rType]; ok {
+		return true
 	}
 	return false
 }
