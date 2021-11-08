@@ -111,7 +111,7 @@ var (
 		"beta": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/beta/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/beta/boards",
-			Boards:         []string{"amd64-usr"},
+			Boards:         []string{"amd64-usr", "arm64-usr"},
 			Destinations:   []storageSpec{},
 			GCE:            newGceSpec("beta", beta_desc),
 			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "", beta_desc),
