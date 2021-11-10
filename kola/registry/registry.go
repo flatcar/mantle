@@ -9,7 +9,6 @@ import (
 	_ "github.com/flatcar-linux/mantle/kola/tests/flannel"
 	_ "github.com/flatcar-linux/mantle/kola/tests/ignition"
 	_ "github.com/flatcar-linux/mantle/kola/tests/kubeadm"
-	_ "github.com/flatcar-linux/mantle/kola/tests/kubernetes"
 	_ "github.com/flatcar-linux/mantle/kola/tests/locksmith"
 	_ "github.com/flatcar-linux/mantle/kola/tests/metadata"
 	_ "github.com/flatcar-linux/mantle/kola/tests/misc"
