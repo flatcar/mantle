@@ -86,7 +86,7 @@ From the pulled sources, `kola` and `kolet` must be compiled:
 ```shell
 git clone https://github.com/kinvolk/mantle/
 cd mantle
-./buid kola kolet
+./build kola kolet
 ```
 
 Finally, a Flatcar image must be available on the system:
