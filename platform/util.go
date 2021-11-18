@@ -81,22 +81,6 @@ func Manhole(m Machine) error {
 	return nil
 }
 
-// Enable SELinux on a machine (skip on machines without SELinux support)
-func EnableSelinux(m Machine) error {
-	_, stderr, err := m.SSH("sudo setenforce 1")
-	if err != nil {
-		return fmt.Errorf("Unable to enable SELinux: %s: %s", err, stderr)
-	}
-
-	// remove audit rules to get SELinux AVCs in the audit logs
-	_, stderr, err = m.SSH("sudo rm -rf /etc/audit/rules.d/{80-selinux.rules,99-default.rules}; sudo systemctl restart audit-rules")
-	if err != nil {
-		return fmt.Errorf("unable to enable SELinux audit logs: %s: %s", err, stderr)
-	}
-
-	return nil
-}
-
 // Reboots a machine, stopping ssh first.
 // Afterwards run CheckMachine to verify the system is back and operational.
 func StartReboot(m Machine) error {
@@ -128,11 +112,6 @@ func StartMachine(m Machine, j *Journal) error {
 	}
 	if err := CheckMachine(context.TODO(), m); err != nil {
 		return fmt.Errorf("machine %q failed basic checks: %v", m.ID(), err)
-	}
-	if !m.RuntimeConf().NoEnableSelinux {
-		if err := EnableSelinux(m); err != nil {
-			return fmt.Errorf("machine %q failed to enable selinux: %v", m.ID(), err)
-		}
 	}
 	return nil
 }
