@@ -896,6 +896,10 @@ func (c *Conf) IsIgnition() bool {
 	return c.ignitionV1 != nil || c.ignitionV2 != nil || c.ignitionV21 != nil || c.ignitionV22 != nil || c.ignitionV23 != nil || c.ignitionV3 != nil
 }
 
+func (c *Conf) IsCloudInit() bool {
+	return c.cloudconfig != nil
+}
+
 func (c *Conf) IsEmpty() bool {
 	return !c.IsIgnition() && c.cloudconfig == nil && c.script == ""
 }
