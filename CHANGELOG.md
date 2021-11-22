@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `lsblk --json` output handling ([#244](https://github.com/flatcar-linux/mantle/pull/244))
 - Flannel version to 0.14.0 ([#245](https://github.com/flatcar-linux/mantle/pull/245))
 - Renamed the project name from `github.com/coreos/mantle` to `github.com/flatcar-linux/mantle` ([#241](https://github.com/flatcar-linux/mantle/pull/241))
-- Default server for AMD64 on Equinix Metal ([#256](https://github.com/flatcar-linux/mantle/pull/256))
+- Default server on Equinix Metal ([#256](https://github.com/flatcar-linux/mantle/pull/256), [#257](https://github.com/flatcar-linux/mantle/pull/257))
 
 ### Removed
 - Legacy Kola Kubernetes tests ([#250](https://github.com/flatcar-linux/mantle/pull/250))
