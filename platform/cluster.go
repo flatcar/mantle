@@ -173,7 +173,7 @@ func (bc *BaseCluster) RenderUserData(userdata *conf.UserData, ignitionVars map[
 		conf.CopyKeys(keys)
 	}
 
-	if !bc.rconf.NoEnableSelinux && (conf.IsIgnition() || conf.IsCloudInit()) {
+	if !bc.rconf.NoEnableSelinux {
 		selinuxConf := `# This file controls the state of SELinux on the system on boot.
 # SELINUX can take one of these three values:
 #	enforcing - SELinux security policy is enforced.
