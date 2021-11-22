@@ -81,7 +81,7 @@ func runCLRelease(cmd *cobra.Command, args []string) error {
 	}
 	src.WriteDryRun(releaseDryRun)
 
-	if err := src.Fetch(ctx); err != nil {
+	if err := src.Fetch(ctx); err != nil && !strings.HasPrefix(spec.SourceURL(), "http") {
 		plog.Fatal(err)
 	}
 

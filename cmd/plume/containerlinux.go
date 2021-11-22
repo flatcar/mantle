@@ -309,6 +309,9 @@ func (cs channelSpec) SourceURL() string {
 	if specPrivateBucket {
 		baseURL = cs.BasePrivateURL
 	}
+	if gceJSONKeyFile == "none" {
+		baseURL = strings.Replace(baseURL, "gs://", "https://bucket.release.flatcar-linux.net/", 1)
+	}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {

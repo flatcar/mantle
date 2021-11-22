@@ -37,7 +37,7 @@ func (b *Bucket) AddObject(obj *storage.Object) {
 }
 
 func TestBucketURL(t *testing.T) {
-	if _, err := FakeBucket("http://bucket/"); err != UnknownScheme {
+	if _, err := FakeBucket("sftp://bucket/"); err != UnknownScheme {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
