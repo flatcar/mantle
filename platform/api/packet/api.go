@@ -64,7 +64,7 @@ var (
 	}
 	defaultPlan = map[string]string{
 		"amd64-usr": "c3.small.x86",
-		"arm64-usr": "c2.large.arm",
+		"arm64-usr": "c3.large.arm",
 	}
 	linuxConsole = map[string]string{
 		"amd64-usr": "ttyS1,115200n8",
