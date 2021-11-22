@@ -63,7 +63,7 @@ var (
 		"arm64-usr": "https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_packet_image.bin.bz2",
 	}
 	defaultPlan = map[string]string{
-		"amd64-usr": "baremetal_0",
+		"amd64-usr": "c3.small.x86",
 		"arm64-usr": "c2.large.arm",
 	}
 	linuxConsole = map[string]string{
