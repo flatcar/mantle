@@ -147,7 +147,7 @@ func runCLPreRelease(cmd *cobra.Command) error {
 		plog.Fatal(err)
 	}
 
-	if err := src.Fetch(ctx); err != nil {
+	if err := src.Fetch(ctx); err != nil && !strings.HasPrefix(spec.SourceURL(), "http") {
 		plog.Fatal(err)
 	}
 

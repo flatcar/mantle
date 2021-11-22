@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	UnknownScheme = errors.New("storage: URL missing gs:// scheme")
+	UnknownScheme = errors.New("storage: URL missing gs:// or http(s):// scheme")
 	UnknownBucket = errors.New("storage: URL missing bucket name")
 )
 
@@ -38,6 +38,7 @@ type Bucket struct {
 	service *storage.Service
 	name    string
 	prefix  string
+	scheme  string
 
 	mu       sync.RWMutex
 	prefixes map[string]struct{}
@@ -59,7 +60,7 @@ func NewBucket(client *http.Client, bucketURL string) (*Bucket, error) {
 	if err != nil {
 		return nil, err
 	}
-	if parsedURL.Scheme != "gs" {
+	if parsedURL.Scheme != "gs" && parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return nil, UnknownScheme
 	}
 	if parsedURL.Host == "" {
@@ -70,6 +71,7 @@ func NewBucket(client *http.Client, bucketURL string) (*Bucket, error) {
 		service:  service,
 		name:     parsedURL.Host,
 		prefix:   FixPrefix(parsedURL.Path),
+		scheme:   parsedURL.Scheme,
 		prefixes: make(map[string]struct{}),
 		objects:  make(map[string]*storage.Object),
 	}, nil
@@ -84,7 +86,7 @@ func (b *Bucket) Prefix() string {
 }
 
 func (b *Bucket) URL() *url.URL {
-	return &url.URL{Scheme: "gs", Host: b.name, Path: b.prefix}
+	return &url.URL{Scheme: b.scheme, Host: b.name, Path: b.prefix}
 }
 
 func (b *Bucket) WriteAlways(always bool) {
@@ -96,6 +98,9 @@ func (b *Bucket) WriteDryRun(dryrun bool) {
 }
 
 func (b *Bucket) Object(objName string) *storage.Object {
+	if b.scheme == "http" || b.scheme == "https" {
+		return &storage.Object{}
+	}
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.objects[objName]
