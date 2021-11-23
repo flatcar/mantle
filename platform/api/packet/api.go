@@ -340,11 +340,11 @@ Description=Install Container Linux
 Requires=network-online.target
 After=network-online.target
 
-Requires=dev-sda.device
-After=dev-sda.device
-
 [Service]
 Type=oneshot
+Restart=on-failure
+RemainAfterExit=true
+RestartSec=3s
 # Prevent flatcar-install from validating cloud-config
 Environment=PATH=/root/bin:/usr/sbin:/usr/bin
 
