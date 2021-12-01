@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Removed
 - Legacy Kola Kubernetes tests ([#250](https://github.com/flatcar-linux/mantle/pull/250))
+- `rkt` kola tests ([#261](https://github.com/flatcar-linux/mantle/pull/261))
 
 ## [0.17.0] - 05/10/2021
 ### Security
