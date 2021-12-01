@@ -15,7 +15,6 @@ import (
 	_ "github.com/flatcar-linux/mantle/kola/tests/ostree"
 	_ "github.com/flatcar-linux/mantle/kola/tests/packages"
 	_ "github.com/flatcar-linux/mantle/kola/tests/podman"
-	_ "github.com/flatcar-linux/mantle/kola/tests/rkt"
 	_ "github.com/flatcar-linux/mantle/kola/tests/rpmostree"
 	_ "github.com/flatcar-linux/mantle/kola/tests/systemd"
 	_ "github.com/flatcar-linux/mantle/kola/tests/torcx"
