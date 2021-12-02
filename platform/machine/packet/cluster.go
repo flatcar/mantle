@@ -76,8 +76,16 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 			pcons = cons
 		}
 
-		// CreateDevice unconditionally closes console when done with it
-		device, err = pc.flight.api.CreateDevice(vmname, conf, pcons)
+		var id string
+		select {
+		case i := <-pc.flight.devicesPool:
+			id = i
+		default:
+			id = ""
+		}
+
+		// CreateOrUpdateDevice unconditionally closes console when done with it
+		device, err = pc.flight.api.CreateOrUpdateDevice(vmname, conf, pcons, id)
 		if err != nil {
 			continue // provisioning error
 		}
