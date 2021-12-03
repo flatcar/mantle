@@ -65,8 +65,18 @@ func (pm *machine) Reboot() error {
 }
 
 func (pm *machine) Destroy() {
-	if err := pm.cluster.flight.api.DeleteDevice(pm.ID()); err != nil {
-		plog.Errorf("Error terminating device %v: %v", pm.ID(), err)
+	// Instead of actually deleting the device.
+	// We add it to the devices pool in order to mark it
+	// as "ready to be used" by other tests.
+	id := pm.ID()
+	pm.cluster.flight.devicesPool <- id
+	plog.Infof("device %s added to the pool", id)
+
+	// The serial console SSH client needs to be manually closed in order to prevent program from
+	// freezing on `done` channel in the `Output()` console's method.
+	plog.Infof("closing %s serial console SSH client", id)
+	if err := pm.console.CloseSSH(); err != nil {
+		plog.Errorf("closing serial console SSH client: %v", err)
 	}
 
 	if pm.journal != nil {

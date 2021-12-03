@@ -35,6 +35,10 @@ type flight struct {
 	*platform.BaseFlight
 	api      *packet.API
 	sshKeyID string
+	// devicesPool holds the devices available
+	// to be recycled by EM in order to minimize the
+	// number of created devices.
+	devicesPool chan string
 }
 
 func NewFlight(opts *packet.Options) (platform.Flight, error) {
@@ -49,8 +53,9 @@ func NewFlight(opts *packet.Options) (platform.Flight, error) {
 	}
 
 	pf := &flight{
-		BaseFlight: bf,
-		api:        api,
+		BaseFlight:  bf,
+		api:         api,
+		devicesPool: make(chan string, 1000),
 	}
 
 	keys, err := pf.Keys()
@@ -90,6 +95,15 @@ func (pf *flight) Destroy() {
 	if pf.sshKeyID != "" {
 		if err := pf.api.DeleteKey(pf.sshKeyID); err != nil {
 			plog.Errorf("Error deleting key %v: %v", pf.sshKeyID, err)
+		}
+	}
+
+	// before delete the instances from the devices pool
+	// we close it in order to avoid deadlocks.
+	close(pf.devicesPool)
+	for id := range pf.devicesPool {
+		if err := pf.api.DeleteDevice(id); err != nil {
+			plog.Errorf("deleting device %s: %v", id, err)
 		}
 	}
 
