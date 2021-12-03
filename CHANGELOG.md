@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Security
+- go: Update golang.org/x/{text,crypto} ([#262](https://github.com/flatcar-linux/mantle/pull/262))
+
 ### Added
 - kola: add raid0 tests for root and data devices ([#36](https://github.com/flatcar-linux/mantle/pull/36))
 - kola: Update the EM options to use sv15 region, c3.small plan ([#248](https://github.com/flatcar-linux/mantle/pull/248))
