@@ -232,8 +232,8 @@ systemd:
 	})
 }
 
-// make a docker container out of binaries on the host
-func genDockerContainer(c cluster.TestCluster, m platform.Machine, name string, binnames []string) {
+// make a docker image out of binaries on the host
+func GenDockerImage(c cluster.TestCluster, m platform.Machine, name string, binnames []string) {
 	cmd := `tmpdir=$(mktemp -d); cd $tmpdir; echo -e "FROM scratch\nCOPY . /" > Dockerfile;
 	        b=$(which %s); libs=$(sudo ldd $b | grep -o /lib'[^ ]*' | sort -u);
 	        sudo rsync -av --relative --copy-links $b $libs ./;
@@ -258,7 +258,7 @@ func dockerBaseTests(c cluster.TestCluster) {
 func dockerResources(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	genDockerContainer(c, m, "sleep", []string{"sleep"})
+	GenDockerImage(c, m, "sleep", []string{"sleep"})
 
 	dockerFmt := "docker run --rm %s sleep sleep 0.2"
 
@@ -326,8 +326,8 @@ func dockerNetwork(c cluster.TestCluster) {
 
 	c.Log("creating ncat containers")
 
-	genDockerContainer(c, src, "ncat", []string{"ncat"})
-	genDockerContainer(c, dest, "ncat", []string{"ncat"})
+	GenDockerImage(c, src, "ncat", []string{"ncat"})
+	GenDockerImage(c, dest, "ncat", []string{"ncat"})
 
 	listener := func(ctx context.Context) error {
 		// Will block until a message is recieved
@@ -401,7 +401,7 @@ func dockerOldClient(c cluster.TestCluster) {
 	}
 	c.DropFile(oldclient)
 
-	genDockerContainer(c, m, "echo", []string{"echo"})
+	GenDockerImage(c, m, "echo", []string{"echo"})
 
 	output := c.MustSSH(m, "/home/core/docker-1.9.1 run echo echo 'IT WORKED'")
 
@@ -414,7 +414,7 @@ func dockerOldClient(c cluster.TestCluster) {
 func dockerUserns(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	genDockerContainer(c, m, "userns-test", []string{"echo", "sleep"})
+	GenDockerImage(c, m, "userns-test", []string{"echo", "sleep"})
 
 	output := c.MustSSH(m, `docker run userns-test echo fj.fj`)
 	if !bytes.Equal(output, []byte("fj.fj")) {
@@ -442,7 +442,7 @@ func dockerUserns(c cluster.TestCluster) {
 func dockerNetworksReliably(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	genDockerContainer(c, m, "ping", []string{"sh", "ping"})
+	GenDockerImage(c, m, "ping", []string{"sh", "ping"})
 
 	output := c.MustSSH(m, `for i in $(seq 1 100); do
 		echo -n "$i: "
@@ -467,7 +467,7 @@ func dockerNetworksReliably(c cluster.TestCluster) {
 func dockerUserNoCaps(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	genDockerContainer(c, m, "captest", []string{"capsh", "sh", "grep", "cat", "ls"})
+	GenDockerImage(c, m, "captest", []string{"capsh", "sh", "grep", "cat", "ls"})
 
 	output := c.MustSSH(m, `docker run --user 1000:1000 \
 		-v /root:/root \
