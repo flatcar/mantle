@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - plume: Enable arm64 board uploads for the Beta channel ([#249](https://github.com/flatcar-linux/mantle/pull/249))
 - plume: Restore anonymous access with `--gce-json-key none` ([#255](https://github.com/flatcar-linux/mantle/pull/255))
 - BPF test with DNS gadget from Inspektor Gadget ([#260](https://github.com/flatcar-linux/mantle/pull/260))
+- BPF execsnoop test ([#233](https://github.com/flatcar-linux/mantle/pull/233))
 
 ### Changed
 - `lsblk --json` output handling ([#244](https://github.com/flatcar-linux/mantle/pull/244))
