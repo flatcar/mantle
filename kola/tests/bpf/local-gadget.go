@@ -97,6 +97,9 @@ func init() {
 		Run:     localGadgetTest,
 		Name:    `bpf.local-gadget`,
 		Distros: []string{"cl"},
+		// ESX is excluded because initramfs has no network access
+		// so it's not able to download local-gadget binary.
+		ExcludePlatforms: []string{"esx"},
 		// required while SELinux policy is not correcly updated to support
 		// `bpf` and `perfmon` permission.
 		Flags: []register.Flag{register.NoEnableSelinux},
