@@ -40,6 +40,8 @@ func init() {
 		// required while SELinux policy is not correcly updated to support
 		// `bpf` and `perfmon` permission.
 		Flags: []register.Flag{register.NoEnableSelinux},
+		// exclude `arm64` while `quay.io/iovisor/bcc` does not have `arm64` support.
+		Architectures: []string{"amd64"},
 	})
 }
 
