@@ -15,8 +15,8 @@
 package network
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -30,7 +30,6 @@ import (
 const (
 	defaultPort = 22
 	defaultUser = "core"
-	rsaKeySize  = 2048
 )
 
 // Dialer is an interface for anything compatible with net.Dialer
@@ -52,13 +51,13 @@ type SSHAgent struct {
 // NewSSHAgent constructs a new SSHAgent using dialer to create ssh
 // connections.
 func NewSSHAgent(dialer Dialer) (*SSHAgent, error) {
-	key, err := rsa.GenerateKey(rand.Reader, rsaKeySize)
+	_, privkey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 
 	addedkey := agent.AddedKey{
-		PrivateKey: key,
+		PrivateKey: privkey,
 		Comment:    "core@default",
 	}
 
