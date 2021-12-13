@@ -121,7 +121,7 @@ var (
 		"stable": channelSpec{
 			BaseURL:        "gs://flatcar-jenkins/stable/boards",
 			BasePrivateURL: "gs://flatcar-jenkins-private/stable/boards",
-			Boards:         []string{"amd64-usr"},
+			Boards:         []string{"amd64-usr", "arm64-usr"},
 			Destinations:   []storageSpec{},
 			GCE:            newGceSpec("stable", stable_desc),
 			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "", stable_desc),
