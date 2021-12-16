@@ -26,6 +26,7 @@ type console struct {
 	f    *os.File
 	buf  bytes.Buffer
 	done chan interface{}
+	ssh  *ssh.Client
 }
 
 func (c *console) SSHClient(ip, user string) (*ssh.Client, error) {
