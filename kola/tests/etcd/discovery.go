@@ -16,8 +16,10 @@ package etcd
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/coreos/pkg/capnslog"
+	"github.com/pborman/uuid"
 
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
@@ -65,14 +67,14 @@ etcd:
 		// this lets it run on more platforms, and also faster
 		ClusterSize: 1,
 		Name:        "cl.etcd-member.etcdctlv3",
-		UserData: conf.ContainerLinuxConfig(`
-
+		UserData: conf.ContainerLinuxConfig(fmt.Sprintf(`
 etcd:
+  name:                        kola-etcd-member-%s
   listen_client_urls:          http://0.0.0.0:2379
   advertise_client_urls:       http://127.0.0.1:2379
   listen_peer_urls:            http://0.0.0.0:2380
   initial_advertise_peer_urls: http://127.0.0.1:2380
-`),
+`, uuid.New())),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
