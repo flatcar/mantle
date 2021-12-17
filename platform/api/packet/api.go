@@ -184,7 +184,7 @@ func (a *API) PreflightCheck() error {
 }
 
 // console is optional, and is closed on error or when the device is deleted.
-func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*packngo.Device, error) {
+func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Console, id string) (*packngo.Device, error) {
 	consoleStarted := false
 	defer func() {
 		if console != nil && !consoleStarted {
@@ -212,7 +212,7 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 	}
 	defer a.bucket.Delete(context.TODO(), ipxeScriptName)
 
-	device, err := a.createDevice(hostname, ipxeScriptURL)
+	device, err := a.createDevice(hostname, ipxeScriptURL, id)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create device: %v", err)
 	}
@@ -247,6 +247,15 @@ func (a *API) CreateDevice(hostname string, conf *conf.Conf, console Console) (*
 	if err != nil {
 		a.DeleteDevice(deviceID)
 		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
+	}
+
+	// TCP discard service has been reached so `flatcar-install` is done.
+	// We can deactivate `PXE` boot to avoid bootlooping.
+	alwaysPXE := false
+	if _, _, err = a.c.Devices.Update(deviceID, &packngo.DeviceUpdateRequest{
+		AlwaysPXE: &alwaysPXE,
+	}); err != nil {
+		return nil, fmt.Errorf("unable to deactivate PXE boot: %v", err)
 	}
 
 	plog.Debugf("Finished installation of device: %q", deviceID)
@@ -478,22 +487,58 @@ boot`, a.opts.InstallerImageKernelURL, userdataURL, linuxConsole[a.opts.Board], 
 }
 
 // device creation seems a bit flaky, so try a few times
-func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Device, err error) {
+func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device, error) {
+	var err error
+
+	// we force a PXE boot in order to fetch the
+	// new configuration and prevent to boot from a mis-installed Flatcar.
+	alwaysPXE := true
+
 	for tries := apiRetries; tries >= 0; tries-- {
-		var response *packngo.Response
-		device, response, err = a.c.Devices.Create(&packngo.DeviceCreateRequest{
-			ProjectID:     a.opts.Project,
-			Facility:      []string{a.opts.Facility},
-			Plan:          a.opts.Plan,
-			BillingCycle:  "hourly",
-			Hostname:      hostname,
-			OS:            "custom_ipxe",
-			IPXEScriptURL: ipxeScriptURL,
-			Tags:          []string{"mantle"},
-		})
-		if err == nil || response.StatusCode != 500 {
-			return
+		var (
+			device   *packngo.Device
+			response *packngo.Response
+		)
+
+		if id != "" {
+			plog.Infof("Recycling instance: %s", id)
+			device, response, err = a.c.Devices.Update(id, &packngo.DeviceUpdateRequest{
+				AlwaysPXE:     &alwaysPXE,
+				IPXEScriptURL: &ipxeScriptURL,
+				Hostname:      &hostname,
+			})
+			if err != nil {
+				err = fmt.Errorf("updating device: %w", err)
+				continue
+			}
+
+			// we reboot the instance to apply the changes.
+			response, err = a.c.Devices.Reboot(id)
+			if err != nil {
+				err = fmt.Errorf("rebooting device: %w", err)
+				continue
+			}
+
+			plog.Infof("device rebooted: %s", id)
+		} else {
+			plog.Infof("Recycling is not possible, creating a new instance")
+			device, response, err = a.c.Devices.Create(&packngo.DeviceCreateRequest{
+				ProjectID:     a.opts.Project,
+				Facility:      []string{a.opts.Facility},
+				Plan:          a.opts.Plan,
+				BillingCycle:  "hourly",
+				Hostname:      hostname,
+				OS:            "custom_ipxe",
+				IPXEScriptURL: ipxeScriptURL,
+				Tags:          []string{"mantle"},
+				AlwaysPXE:     alwaysPXE,
+			})
 		}
+
+		if err == nil || response.StatusCode != 500 {
+			return device, err
+		}
+
 		plog.Debugf("Retrying to create device after failure: %q %q %q \n", device, response, err)
 		if device != nil && device.ID != "" {
 			a.DeleteDevice(device.ID)
@@ -502,7 +547,8 @@ func (a *API) createDevice(hostname, ipxeScriptURL string) (device *packngo.Devi
 			time.Sleep(apiRetryInterval)
 		}
 	}
-	return
+
+	return nil, fmt.Errorf("reached maximum number of retries to create/update a device: %w", err)
 }
 
 func (a *API) startConsole(deviceID string, console Console) error {
@@ -544,6 +590,7 @@ func (a *API) startConsole(deviceID string, console Console) error {
 	}
 	go func() {
 		err := runner()
+
 		if err != nil {
 			ready <- err
 		}

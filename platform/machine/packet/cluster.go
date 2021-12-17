@@ -76,8 +76,16 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 			pcons = cons
 		}
 
-		// CreateDevice unconditionally closes console when done with it
-		device, err = pc.flight.api.CreateDevice(vmname, conf, pcons)
+		var id string
+		select {
+		case i := <-pc.flight.devicesPool:
+			id = i
+		default:
+			id = ""
+		}
+
+		// CreateOrUpdateDevice unconditionally closes console when done with it
+		device, err = pc.flight.api.CreateOrUpdateDevice(vmname, conf, pcons, id)
 		if err != nil {
 			continue // provisioning error
 		}
@@ -90,37 +98,40 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		mach.publicIP = pc.flight.api.GetDeviceAddress(device, 4, true)
 		mach.privateIP = pc.flight.api.GetDeviceAddress(device, 4, false)
 		if mach.publicIP == "" || mach.privateIP == "" {
-			mach.Destroy()
+			pc.flight.api.DeleteDevice(mach.ID())
 			err = fmt.Errorf("couldn't find IP addresses for device")
 			continue // provisioning error
 		}
 
+		// Warning: the assumption is that within one test a machine doesn't get reused
+		// (if a test would create, destroy and create a machine explicitly)
+		// otherwise the console file names will clash
 		dir := filepath.Join(pc.RuntimeConf().OutputDir, mach.ID())
 		if err = os.Mkdir(dir, 0777); err != nil {
-			mach.Destroy()
+			pc.flight.api.DeleteDevice(mach.ID())
 			return nil, err
 		}
 
 		if cons != nil {
 			if err = os.Rename(consolePath, filepath.Join(dir, "console.txt")); err != nil {
-				mach.Destroy()
+				pc.flight.api.DeleteDevice(mach.ID())
 				return nil, err
 			}
 		}
 
 		confPath := filepath.Join(dir, "user-data")
 		if err = conf.WriteFile(confPath); err != nil {
-			mach.Destroy()
+			pc.flight.api.DeleteDevice(mach.ID())
 			return nil, err
 		}
 
 		if mach.journal, err = platform.NewJournal(dir); err != nil {
-			mach.Destroy()
+			pc.flight.api.DeleteDevice(mach.ID())
 			return nil, err
 		}
 
 		if err = platform.StartMachine(mach, mach.journal); err != nil {
-			mach.Destroy()
+			pc.flight.api.DeleteDevice(mach.ID())
 			continue // provisioning error
 		}
 
