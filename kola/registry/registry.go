@@ -1,3 +1,6 @@
+// Copyright The Mantle Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package registry
 
 // Tests imported for registration side effects. These make up the OS test suite and is explicitly imported from the main package.
