@@ -75,8 +75,10 @@ func (pm *machine) Destroy() {
 	// The serial console SSH client needs to be manually closed in order to prevent program from
 	// freezing on `done` channel in the `Output()` console's method.
 	plog.Infof("closing %s serial console SSH client", id)
-	if err := pm.console.CloseSSH(); err != nil {
-		plog.Errorf("closing serial console SSH client: %v", err)
+	if pm.console != nil {
+		if err := pm.console.CloseSSH(); err != nil {
+			plog.Errorf("closing serial console SSH client: %v", err)
+		}
 	}
 
 	if pm.journal != nil {
