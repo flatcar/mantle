@@ -33,7 +33,7 @@ var (
 	specAwsPartition  string
 	specPrivateBucket bool
 	gceBoards         = []string{"amd64-usr", "arm64-usr"}
-	azureBoards       = []string{"amd64-usr"}
+	azureBoards       = []string{"amd64-usr", "arm64-usr"}
 	awsBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
 		azureEnvironmentSpec{
