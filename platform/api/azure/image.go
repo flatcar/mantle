@@ -98,6 +98,15 @@ type galleryParams struct {
 	HyperVGeneration    paramValue `json:"hyperVGeneration"`
 }
 
+func azureArchForBoard(board string) string {
+	switch board {
+	case "amd64-usr":
+		return "x64"
+	case "arm64-usr":
+		return "Arm64"
+	}
+	return ""
+}
 
 // CreateGalleryImage creates an Azure Compute Gallery with 1 image version referencing the blob as the disk
 func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI string) (string, error) {
@@ -115,7 +124,7 @@ func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI st
 		StorageAccountsName: paramValue{storageAccount},
 		VhdUri:              paramValue{blobURI},
 		Location:            paramValue{a.opts.Location},
-		Architecture:        paramValue{"x64"},
+		Architecture:        paramValue{azureArchForBoard(a.opts.Board)},
 		HyperVGeneration:    paramValue{a.opts.HyperVGeneration},
 	}
 	params := make(map[string]interface{})
