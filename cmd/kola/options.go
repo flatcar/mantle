@@ -107,6 +107,7 @@ func init() {
 	sv(&kola.AzureOptions.Location, "azure-location", "westus", "Azure location (default \"westus\"")
 	sv(&kola.AzureOptions.Size, "azure-size", "Standard_DS2_v2", "Azure machine size (default \"Standard_DS2_v2\")")
 	sv(&kola.AzureOptions.HyperVGeneration, "azure-hyper-v-generation", "V1", "Azure Hyper-V Generation (\"V1\" or \"V2\")")
+	bv(&kola.AzureOptions.UseGallery, "azure-use-gallery", false, "Use gallery image instead of managed image")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")

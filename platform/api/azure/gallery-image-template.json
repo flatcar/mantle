@@ -1,0 +1,122 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "galleries_name": {
+      "type": "string",
+      "defaultValue": "kolaSIG"
+    },
+    "image_name": {
+      "type": "string",
+      "defaultValue": "Flatcar"
+    },
+    "image_version": {
+      "type": "string",
+      "defaultValue": "1.0.0"
+    },
+    "storageAccounts_name": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "vhd_uri": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "hyperVGeneration": {
+      "type": "string",
+      "defaultValue": "V2",
+      "allowedValues": [
+        "V1",
+        "V2"
+      ]
+    },
+    "architecture": {
+      "type": "string",
+      "defaultValue": "x64",
+      "allowedValues": [
+        "x64",
+        "Arm64"
+      ]
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2021-07-01",
+      "location": "[parameters('location')]",
+      "name": "[parameters('galleries_name')]",
+      "properties": {
+        "identifier": {}
+      },
+      "type": "Microsoft.Compute/galleries"
+    },
+    {
+      "apiVersion": "2021-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
+      ],
+      "location": "[parameters('location')]",
+      "name": "[concat(parameters('galleries_name'), '/', parameters('image_name'))]",
+      "properties": {
+        "hyperVGeneration": "[parameters('hyperVGeneration')]",
+        "architecture": "[parameters('architecture')]",
+        "identifier": {
+          "offer": "Flatcar",
+          "publisher": "kola",
+          "sku": "dev"
+        },
+        "osState": "Generalized",
+        "osType": "Linux",
+        "recommended": {
+          "memory": {
+            "max": 32,
+            "min": 1
+          },
+          "vCPUs": {
+            "max": 16,
+            "min": 1
+          }
+        }
+      },
+      "type": "Microsoft.Compute/galleries/images"
+    },
+    {
+      "apiVersion": "2021-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/galleries/images', parameters('galleries_name'), parameters('image_name'))]",
+        "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
+      ],
+      "location": "[parameters('location')]",
+      "name": "[concat(parameters('galleries_name'), '/', parameters('image_name'), '/', parameters('image_version'))]",
+      "properties": {
+        "publishingProfile": {
+          "excludeFromLatest": false,
+          "replicaCount": 1,
+          "replicationMode": "Shallow",
+          "storageAccountType": "Standard_LRS",
+          "targetRegions": [
+            {
+              "name": "[parameters('location')]",
+              "regionalReplicaCount": 1,
+              "storageAccountType": "Standard_LRS"
+            }
+          ]
+        },
+        "storageProfile": {
+          "osDiskImage": {
+            "hostCaching": "ReadOnly",
+            "source": {
+              "id": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_name'))]",
+              "uri": "[parameters('vhd_uri')]"
+            }
+          }
+        }
+      },
+      "type": "Microsoft.Compute/galleries/images/versions"
+    }
+  ],
+  "variables": {}
+}
