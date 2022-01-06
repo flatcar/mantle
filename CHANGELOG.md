@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - BPF execsnoop test ([#233](https://github.com/flatcar-linux/mantle/pull/233))
 - plume: Enable arm64 board uploads for the Stable channel ([#266](https://github.com/flatcar-linux/mantle/pull/266))
 - A way to reuse Equinix Metal devices during tests ([#268](https://github.com/flatcar-linux/mantle/pull/268))
+- plume: Enable arm64 board uploads for Azure ([#270](https://github.com/flatcar-linux/mantle/pull/270))
+- kola: Support for using gallery images on Azure ([#270](https://github.com/flatcar-linux/mantle/pull/270))
 
 ### Changed
 - `lsblk --json` output handling ([#244](https://github.com/flatcar-linux/mantle/pull/244))
