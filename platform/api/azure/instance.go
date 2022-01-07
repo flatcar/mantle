@@ -83,6 +83,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 				ImageReference: imgRef,
 				OsDisk: &compute.OSDisk{
 					CreateOption: compute.DiskCreateOptionTypesFromImage,
+					DeleteOption: compute.DiskDeleteOptionTypesDelete,
 				},
 			},
 			OsProfile: &osProfile,
@@ -91,7 +92,8 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 					{
 						ID: nic.ID,
 						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-							Primary: util.BoolToPtr(true),
+							Primary:      util.BoolToPtr(true),
+							DeleteOption: compute.DeleteOptionsDelete,
 						},
 					},
 				},
@@ -162,7 +164,6 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		_, _ = a.compClient.Delete(context.TODO(), resourceGroup, name, nil)
 		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)
 		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, *ip.Name)
-		// TODO: remove disk which doesn't get removed automatically
 		return nil, fmt.Errorf("waiting for machine to become active: %v", err)
 	}
 
@@ -189,8 +190,8 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	}, nil
 }
 
-// TerminateInstance deletes a VM created by CreateInstance with the public IP address and
-// NIC created for it. Currently it does not delete the OS disk that is created (see TODO).
+// TerminateInstance deletes a VM created by CreateInstance. Public IP, NIC and
+// OS disk are deleted automatically together with the VM.
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	future, err := a.compClient.Delete(context.TODO(), resourceGroup, machine.ID, nil)
 	if err != nil {
@@ -204,34 +205,6 @@ func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	if err != nil {
 		return err
 	}
-
-	ifFuture, err := a.intClient.Delete(context.TODO(), resourceGroup, machine.InterfaceName)
-	if err != nil {
-		return err
-	}
-	err = ifFuture.WaitForCompletionRef(context.TODO(), a.intClient.Client)
-	if err != nil {
-		return err
-	}
-	_, err = ifFuture.Result(a.intClient)
-	if err != nil {
-		return err
-	}
-
-	ipFuture, err := a.ipClient.Delete(context.TODO(), resourceGroup, machine.PublicIPName)
-	if err != nil {
-		return err
-	}
-	err = ipFuture.WaitForCompletionRef(context.TODO(), a.ipClient.Client)
-	if err != nil {
-		return err
-	}
-	_, err = ipFuture.Result(a.ipClient)
-	if err != nil {
-		return err
-	}
-
-	// TODO: remove disk which doesn't get removed automatically
 	return nil
 }
 
