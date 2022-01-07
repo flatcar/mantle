@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-11-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 
 	"github.com/flatcar-linux/mantle/util"
 )
@@ -84,6 +84,9 @@ func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, er
 
 	future, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
 		Location: &a.opts.Location,
+		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+			DeleteOption: network.DeleteOptionsDelete,
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -95,6 +98,9 @@ func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, er
 	ip, err := future.Result(a.ipClient)
 	if err != nil {
 		return nil, err
+	}
+	ip.PublicIPAddressPropertiesFormat = &network.PublicIPAddressPropertiesFormat{
+		DeleteOption: network.DeleteOptionsDelete,
 	}
 	return &ip, nil
 }
