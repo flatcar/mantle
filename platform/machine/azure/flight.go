@@ -125,14 +125,25 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 			}
 		}
 		targetBlobURL := af.api.UrlOfBlob(af.ImageStorageAccount, container, blobName).String()
-		img, err := af.api.CreateImage(imageName, af.ImageResourceGroup, targetBlobURL)
-		if err != nil {
-			return nil, fmt.Errorf("Couldn't create image: %v\n", err)
+		var imgID string
+		if opts.UseGallery {
+			imgID, err = af.api.CreateGalleryImage(imageName, af.ImageResourceGroup, af.ImageStorageAccount, targetBlobURL)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't create gallery image: %w", err)
+			}
+			plog.Infof("Created gallery image: %v\n", imgID)
+		} else {
+			img, err := af.api.CreateImage(imageName, af.ImageResourceGroup, targetBlobURL)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't create image: %w", err)
+			}
+			if img.ID == nil {
+				return nil, fmt.Errorf("received nil image")
+			}
+			imgID = *img.ID
 		}
-		if img.ID == nil {
-			return nil, fmt.Errorf("received nil image\n")
-		}
-		opts.DiskURI = *img.ID
+
+		opts.DiskURI = imgID
 	}
 
 	return af, nil

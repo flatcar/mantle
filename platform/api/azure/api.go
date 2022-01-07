@@ -42,6 +42,7 @@ var (
 type API struct {
 	client     management.Client
 	rgClient   resources.GroupsClient
+	depClient  resources.DeploymentsClient
 	imgClient  compute.ImagesClient
 	compClient compute.VirtualMachinesClient
 	netClient  network.VirtualNetworksClient
@@ -143,6 +144,9 @@ func (a *API) SetupClients() error {
 	a.rgClient = resources.NewGroupsClient(settings.GetSubscriptionID())
 	a.rgClient.Authorizer = auther
 
+	a.depClient = resources.NewDeploymentsClient(settings.GetSubscriptionID())
+	a.depClient.Authorizer = auther
+
 	auther, err = auth.NewAuthorizerFromFile(compute.DefaultBaseURI)
 	if err != nil {
 		return err
@@ -175,10 +179,13 @@ func (a *API) SetupClients() error {
 	return nil
 }
 
-func randomName(prefix string) string {
+func randomNameEx(prefix, separator string) string {
 	b := make([]byte, 5)
 	rand.Read(b)
-	return fmt.Sprintf("%s-%x", prefix, b)
+	return fmt.Sprintf("%s%s%x", prefix, separator, b)
+}
+func randomName(prefix string) string {
+	return randomNameEx(prefix, "-")
 }
 
 func (a *API) GetOpts() *Options {

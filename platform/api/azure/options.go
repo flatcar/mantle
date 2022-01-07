@@ -35,6 +35,7 @@ type Options struct {
 	Size             string
 	Location         string
 	HyperVGeneration string
+	UseGallery       bool
 
 	SubscriptionName string
 	SubscriptionID   string

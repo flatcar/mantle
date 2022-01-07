@@ -17,6 +17,8 @@ package azure
 import (
 	"bufio"
 	"context"
+	_ "embed"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -24,6 +26,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 )
 
 // OSImage struct for https://msdn.microsoft.com/en-us/library/azure/jj157192.aspx call.
@@ -72,6 +75,92 @@ func IsConflictError(err error) bool {
 	return ok && azerr.Code == "ConflictError"
 }
 
+//go:embed gallery-image-template.json
+var galleryImageTemplate []byte
+
+const (
+	deploymentName    = "kolagalleryimage"
+	galleryNamePrefix = "kolaSIG"
+	imageVersion      = "0.0.0"
+)
+
+type paramValue struct {
+	Value string `json:"value"`
+}
+type galleryParams struct {
+	GalleriesName       paramValue `json:"galleries_name"`
+	ImageName           paramValue `json:"image_name"`
+	ImageVersion        paramValue `json:"image_version"`
+	StorageAccountsName paramValue `json:"storageAccounts_name"`
+	VhdUri              paramValue `json:"vhd_uri"`
+	Location            paramValue `json:"location"`
+	Architecture        paramValue `json:"architecture"`
+	HyperVGeneration    paramValue `json:"hyperVGeneration"`
+}
+
+func azureArchForBoard(board string) string {
+	switch board {
+	case "amd64-usr":
+		return "x64"
+	case "arm64-usr":
+		return "Arm64"
+	}
+	return ""
+}
+
+// CreateGalleryImage creates an Azure Compute Gallery with 1 image version referencing the blob as the disk
+func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI string) (string, error) {
+	plog.Infof("Creating Gallery Image %s", name)
+	galleryName := randomNameEx(galleryNamePrefix, "")
+	template := make(map[string]interface{})
+	err := json.Unmarshal(galleryImageTemplate, &template)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal gallery template: %w", err)
+	}
+	galleryParams := galleryParams{
+		GalleriesName:       paramValue{galleryName},
+		ImageName:           paramValue{name},
+		ImageVersion:        paramValue{imageVersion},
+		StorageAccountsName: paramValue{storageAccount},
+		VhdUri:              paramValue{blobURI},
+		Location:            paramValue{a.opts.Location},
+		Architecture:        paramValue{azureArchForBoard(a.opts.Board)},
+		HyperVGeneration:    paramValue{a.opts.HyperVGeneration},
+	}
+	params := make(map[string]interface{})
+	paramsData, err := json.Marshal(&galleryParams)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal gallery params: %w", err)
+	}
+	err = json.Unmarshal(paramsData, &params)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal gallery params: %w", err)
+	}
+
+	future, err := a.depClient.CreateOrUpdate(context.TODO(),
+		resourceGroup,
+		deploymentName,
+		resources.Deployment{
+			Properties: &resources.DeploymentProperties{
+				Template:   template,
+				Parameters: params,
+				Mode:       resources.DeploymentModeIncremental,
+			},
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+	err = future.WaitForCompletionRef(context.TODO(), a.depClient.Client)
+	if err != nil {
+		return "", err
+	}
+	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s",
+		a.opts.SubscriptionID, resourceGroup, galleryName, name, imageVersion)
+	return id, nil
+}
+
+// CreateImage creates a managed image referencing the blob as the disk
 func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, error) {
 	plog.Infof("Creating Image %s", name)
 	future, err := a.imgClient.CreateOrUpdate(context.TODO(), resourceGroup, name, compute.Image{
