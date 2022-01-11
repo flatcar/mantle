@@ -353,7 +353,7 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 		return
 	}
 
-	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
+	blobName := AzureBlobName()
 
 	for _, environment := range spec.Azure.Environments {
 		api, err := azure.New(&azure.Options{
@@ -387,6 +387,14 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 
 		var url string
 		for _, key := range *storageKey.Keys {
+			blobExists, err := api.BlobExists(spec.Azure.StorageAccount, *key.Value, container, blobName)
+			if err != nil {
+				continue
+			}
+			if !blobExists {
+				plog.Notice("Blob does not exist, skipping.")
+				return
+			}
 			url, err = api.SignBlob(spec.Azure.StorageAccount, *key.Value, container, blobName)
 			if err == nil {
 				break

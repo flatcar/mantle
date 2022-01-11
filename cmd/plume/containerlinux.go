@@ -227,6 +227,17 @@ func AmiNameArchTag() string {
 	}
 }
 
+func AzureBlobName() string {
+	archTag := ""
+	switch specBoard {
+	case "amd64-usr":
+		archTag = "amd64"
+	case "arm64-usr":
+		archTag = "arm64"
+	}
+	return fmt.Sprintf("flatcar-linux-%s-%s-%s.vhd", specVersion, specChannel, archTag)
+}
+
 func ChannelSpec() channelSpec {
 	if specBoard == "" {
 		plog.Fatal("--board is required")
