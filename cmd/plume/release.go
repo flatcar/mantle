@@ -387,6 +387,14 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 
 		var url string
 		for _, key := range *storageKey.Keys {
+			blobExists, err := api.BlobExists(spec.Azure.StorageAccount, *key.Value, container, blobName)
+			if err != nil {
+				continue
+			}
+			if !blobExists {
+				plog.Notice("Blob does not exist, skipping.")
+				return
+			}
 			url, err = api.SignBlob(spec.Azure.StorageAccount, *key.Value, container, blobName)
 			if err == nil {
 				break
