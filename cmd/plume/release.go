@@ -353,7 +353,7 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 		return
 	}
 
-	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
+	blobName := AzureBlobName()
 
 	for _, environment := range spec.Azure.Environments {
 		api, err := azure.New(&azure.Options{

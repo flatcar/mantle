@@ -270,7 +270,7 @@ type azureImageInfo struct {
 func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Bucket, spec *channelSpec, imageInfo *imageInfo) error {
 
 	specAzure := spec.Azure
-	blobName := fmt.Sprintf("flatcar-linux-%s-%s.vhd", specVersion, specChannel)
+	blobName := AzureBlobName()
 
 	if azureCategory == "pro" {
 		specAzure = spec.AzurePremium
