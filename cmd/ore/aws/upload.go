@@ -148,6 +148,10 @@ func runUpload(cmd *cobra.Command, args []string) error {
 			os.Exit(1)
 		}
 		imageName = ver.Version
+		// Follow plume's AmiNameArchTag convention by only having a suffix for the arm64 image
+		if uploadBoard == "arm64-usr" {
+			imageName += "-arm64"
+		}
 	}
 
 	if uploadDiskSizeInspect {
