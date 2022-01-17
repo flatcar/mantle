@@ -132,12 +132,6 @@ func init() {
 			testParams["CNI"] = CNI
 			testParams["Release"] = version
 
-			architectures := []string{"amd64"}
-
-			if CNI != "calico" {
-				architectures = append(architectures, "arm64")
-			}
-
 			register.Register(&register.Test{
 				Name:             fmt.Sprintf("kubeadm.%s.%s.base", version, CNI),
 				Distros:          []string{"cl"},
@@ -145,7 +139,6 @@ func init() {
 				Run: func(c cluster.TestCluster) {
 					kubeadmBaseTest(c, testParams)
 				},
-				Architectures: architectures,
 			})
 		}
 	}
