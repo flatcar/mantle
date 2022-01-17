@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - plume: Add new AWS regions, af-south-1, ap-southeast-3, eu-south-1 ([#274](https://github.com/flatcar-linux/mantle/pull/274))
 - kubernetes test for release 1.23.0 ([#275](https://github.com/flatcar-linux/mantle/pull/275))
+- arm64 kubeadm test for `calico` CNI ([#278](https://github.com/flatcar-linux/mantle/pull/278))
 
 ## [0.18.0] - 12/01/2022
 ### Security
