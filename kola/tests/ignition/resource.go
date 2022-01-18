@@ -27,7 +27,7 @@ import (
 	"github.com/flatcar-linux/mantle/kola/register"
 	"github.com/flatcar-linux/mantle/platform"
 	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/platform/machine/packet"
+	"github.com/flatcar-linux/mantle/platform/machine/equinixmetal"
 )
 
 var (
@@ -300,7 +300,7 @@ func resourceLocal(c cluster.TestCluster) {
 	c.MustSSH(server, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Serve", c.H.Name()))
 
 	ip := server.PrivateIP()
-	if c.Platform() == packet.Platform {
+	if c.Platform() == equinixmetal.Platform {
 		// private IP not configured in the initramfs
 		ip = server.IP()
 	}

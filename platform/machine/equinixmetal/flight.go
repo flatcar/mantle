@@ -13,27 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package packet
+package equinixmetal
 
 import (
 	"github.com/coreos/pkg/capnslog"
 
 	ctplatform "github.com/coreos/container-linux-config-transpiler/config/platform"
 	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/packet"
+	"github.com/flatcar-linux/mantle/platform/api/equinixmetal"
 )
 
 const (
-	Platform platform.Name = "packet"
+	Platform platform.Name = "equinixmetal"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/packet")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/equinixmetal")
 )
 
 type flight struct {
 	*platform.BaseFlight
-	api      *packet.API
+	api      *equinixmetal.API
 	sshKeyID string
 	// devicesPool holds the devices available
 	// to be recycled by EM in order to minimize the
@@ -41,8 +41,8 @@ type flight struct {
 	devicesPool chan string
 }
 
-func NewFlight(opts *packet.Options) (platform.Flight, error) {
-	api, err := packet.New(opts)
+func NewFlight(opts *equinixmetal.Options) (platform.Flight, error) {
+	api, err := equinixmetal.New(opts)
 	if err != nil {
 		return nil, err
 	}

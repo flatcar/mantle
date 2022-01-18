@@ -96,7 +96,7 @@ func preRun(cmd *cobra.Command, args []string) {
 		os.Exit(3)
 	}
 
-	// Packet uses storage, and storage talks too much.
+	// EquinixMetal uses storage, and storage talks too much.
 	if !plog.LevelAt(capnslog.INFO) {
 		mantleLogger := capnslog.MustRepoLogger("github.com/flatcar-linux/mantle")
 		mantleLogger.SetLogLevel(map[string]capnslog.LogLevel{
@@ -188,7 +188,7 @@ func writeProps() error {
 		Image  string `json:"image"`
 		Flavor string `json:"flavor"`
 	}
-	type Packet struct {
+	type EquinixMetal struct {
 		Facility              string `json:"facility"`
 		Plan                  string `json:"plan"`
 		InstallerImageBaseURL string `json:"installer"`
@@ -199,20 +199,20 @@ func writeProps() error {
 		Mangled bool   `json:"mangled"`
 	}
 	return enc.Encode(&struct {
-		Cmdline         []string  `json:"cmdline"`
-		Platform        string    `json:"platform"`
-		Distro          string    `json:"distro"`
-		IgnitionVersion string    `json:"ignitionversion"`
-		Board           string    `json:"board"`
-		OSContainer     string    `json:"oscontainer"`
-		AWS             AWS       `json:"aws"`
-		Azure           Azure     `json:"azure"`
-		DO              DO        `json:"do"`
-		ESX             ESX       `json:"esx"`
-		GCE             GCE       `json:"gce"`
-		OpenStack       OpenStack `json:"openstack"`
-		Packet          Packet    `json:"packet"`
-		QEMU            QEMU      `json:"qemu"`
+		Cmdline         []string     `json:"cmdline"`
+		Platform        string       `json:"platform"`
+		Distro          string       `json:"distro"`
+		IgnitionVersion string       `json:"ignitionversion"`
+		Board           string       `json:"board"`
+		OSContainer     string       `json:"oscontainer"`
+		AWS             AWS          `json:"aws"`
+		Azure           Azure        `json:"azure"`
+		DO              DO           `json:"do"`
+		ESX             ESX          `json:"esx"`
+		GCE             GCE          `json:"gce"`
+		OpenStack       OpenStack    `json:"openstack"`
+		EquinixMetal    EquinixMetal `json:"equinixmetal"`
+		QEMU            QEMU         `json:"qemu"`
 	}{
 		Cmdline:         os.Args,
 		Platform:        kolaPlatform,
@@ -254,11 +254,11 @@ func writeProps() error {
 			Image:  kola.OpenStackOptions.Image,
 			Flavor: kola.OpenStackOptions.Flavor,
 		},
-		Packet: Packet{
-			Facility:              kola.PacketOptions.Facility,
-			Plan:                  kola.PacketOptions.Plan,
-			InstallerImageBaseURL: kola.PacketOptions.InstallerImageBaseURL,
-			ImageURL:              kola.PacketOptions.ImageURL,
+		EquinixMetal: EquinixMetal{
+			Facility:              kola.EquinixMetalOptions.Facility,
+			Plan:                  kola.EquinixMetalOptions.Plan,
+			InstallerImageBaseURL: kola.EquinixMetalOptions.InstallerImageBaseURL,
+			ImageURL:              kola.EquinixMetalOptions.ImageURL,
 		},
 		QEMU: QEMU{
 			Image:   kola.QEMUOptions.DiskImage,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package packet
+package equinixmetal
 
 import (
 	"fmt"
@@ -22,21 +22,26 @@ import (
 )
 
 var (
-	cmdListKeys = &cobra.Command{
-		Use:   "list-keys",
-		Short: "List Packet SSH keys",
-		RunE:  runListKeys,
+	cmdDeleteKeys = &cobra.Command{
+		Use:   "delete-keys <key>...",
+		Short: "Delete EquinixMetal SSH keys",
+		RunE:  runDeleteKeys,
 	}
 )
 
 func init() {
-	Packet.AddCommand(cmdListKeys)
+	EquinixMetal.AddCommand(cmdDeleteKeys)
 }
 
-func runListKeys(cmd *cobra.Command, args []string) error {
-	if len(args) != 0 {
-		fmt.Fprintf(os.Stderr, "Unrecognized args in packet list-keys cmd: %v\n", args)
+func runDeleteKeys(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "Specify at least one key.\n")
 		os.Exit(2)
+	}
+
+	labels := map[string]bool{}
+	for _, arg := range args {
+		labels[arg] = true
 	}
 
 	keys, err := API.ListKeys()
@@ -45,8 +50,22 @@ func runListKeys(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
+	exit := 0
 	for _, key := range keys {
-		fmt.Println(key.Label)
+		if labels[key.Label] {
+			if err := API.DeleteKey(key.ID); err != nil {
+				fmt.Fprintf(os.Stderr, "Couldn't delete key: %v\n", key.Label)
+				exit = 1
+			}
+			delete(labels, key.Label)
+		}
 	}
+
+	for label := range labels {
+		fmt.Fprintf(os.Stderr, "No such key: %v\n", label)
+		exit = 1
+	}
+
+	os.Exit(exit)
 	return nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package packet
+package equinixmetal
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 var (
 	cmdGC = &cobra.Command{
 		Use:   "gc",
-		Short: "GC resources in Packet",
+		Short: "GC resources in EquinixMetal",
 		Long:  `Delete devices created over the given duration ago.`,
 		RunE:  runGC,
 	}
@@ -34,13 +34,13 @@ var (
 )
 
 func init() {
-	Packet.AddCommand(cmdGC)
+	EquinixMetal.AddCommand(cmdGC)
 	cmdGC.Flags().DurationVar(&gcDuration, "duration", 5*time.Hour, "how old resources must be before they're considered garbage")
 }
 
 func runGC(cmd *cobra.Command, args []string) error {
 	if len(args) != 0 {
-		fmt.Fprintf(os.Stderr, "Unrecognized args in packet gc cmd: %v\n", args)
+		fmt.Fprintf(os.Stderr, "Unrecognized args in equinixmetal gc cmd: %v\n", args)
 		os.Exit(2)
 	}
 

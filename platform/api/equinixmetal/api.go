@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package packet
+package equinixmetal
 
 import (
 	"bytes"
@@ -51,7 +51,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/packet")
+	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/equinixmetal")
 
 	defaultInstallerImageBaseURL = map[string]string{
 		// HTTPS causes iPXE to fail on a "permission denied" error
@@ -75,7 +75,7 @@ var (
 type Options struct {
 	*platform.Options
 
-	// Config file. Defaults to $HOME/.config/packet.json.
+	// Config file. Defaults to $HOME/.config/equinixmetal.json.
 	ConfigPath string
 	// Profile name
 	Profile string
@@ -84,7 +84,7 @@ type Options struct {
 	// Project UUID (overrides config profile)
 	Project string
 
-	// Packet location code
+	// EquinixMetal location code
 	Facility string
 	// Slug of the device type (e.g. "baremetal_0")
 	Plan string
@@ -117,9 +117,9 @@ type Console interface {
 
 func New(opts *Options) (*API, error) {
 	if opts.ApiKey == "" || opts.Project == "" {
-		profiles, err := auth.ReadPacketConfig(opts.ConfigPath)
+		profiles, err := auth.ReadEquinixMetalConfig(opts.ConfigPath)
 		if err != nil {
-			return nil, fmt.Errorf("couldn't read Packet config: %v", err)
+			return nil, fmt.Errorf("couldn't read EquinixMetal config: %v", err)
 		}
 
 		if opts.Profile == "" {
@@ -198,7 +198,7 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 	}
 
 	// The Ignition config can't go in userdata via coreos.config.url=https://metadata.packet.net/userdata because Ignition supplies an Accept header that metadata.packet.net finds 406 Not Acceptable.
-	// It can't go in userdata via coreos.oem.id=packet because the Packet OEM expects unit files in /usr/share/oem which the PXE image doesn't have.
+	// It can't go in userdata via coreos.oem.id=packet because the EquinixMetal OEM expects unit files in /usr/share/oem which the PXE image doesn't have.
 	userdataName, userdataURL, err := a.uploadObject(hostname, "application/vnd.coreos.ignition+json", []byte(userdata))
 	if err != nil {
 		return nil, err
@@ -314,7 +314,7 @@ func (a *API) wrapUserData(conf *conf.Conf) (string, error) {
 		// from enabling oem-cloudinit.service, which is unordered
 		// with respect to the cloud-config installed by the -c
 		// option. Otherwise it might override settings in the
-		// cloud-config with defaults obtained from the Packet
+		// cloud-config with defaults obtained from the EquinixMetal
 		// metadata endpoint.
 		userDataOption = "-i /noop.ign -c"
 	}
@@ -557,7 +557,7 @@ func (a *API) startConsole(deviceID string, console Console) error {
 	runner := func() error {
 		defer console.Close()
 
-		client, err := console.SSHClient("sos."+a.opts.Facility+".packet.net", deviceID)
+		client, err := console.SSHClient("sos."+a.opts.Facility+".platformequinix.com", deviceID)
 		if err != nil {
 			return fmt.Errorf("couldn't create SSH client for %s console: %v", deviceID, err)
 		}

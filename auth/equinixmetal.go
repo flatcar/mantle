@@ -22,26 +22,26 @@ import (
 	"path/filepath"
 )
 
-const PacketConfigPath = ".config/packet.json"
+const EquinixMetalConfigPath = ".config/equinixmetal.json"
 
-// PacketProfile represents a parsed Packet profile. This is a custom format
+// EquinixMetalProfile represents a parsed EquinixMetal profile. This is a custom format
 // specific to Mantle.
-type PacketProfile struct {
+type EquinixMetalProfile struct {
 	ApiKey  string `json:"api_key"`
 	Project string `json:"project"`
 }
 
-// ReadPacketConfig decodes a Packet config file, which is a custom format
+// ReadEquinixMetalConfig decodes a EquinixMetal config file, which is a custom format
 // used by Mantle to hold API keys.
 //
-// If path is empty, $HOME/.config/packet.json is read.
-func ReadPacketConfig(path string) (map[string]PacketProfile, error) {
+// If path is empty, $HOME/.config/equinixmetal.json is read.
+func ReadEquinixMetalConfig(path string) (map[string]EquinixMetalProfile, error) {
 	if path == "" {
 		user, err := user.Current()
 		if err != nil {
 			return nil, err
 		}
-		path = filepath.Join(user.HomeDir, PacketConfigPath)
+		path = filepath.Join(user.HomeDir, EquinixMetalConfigPath)
 	}
 
 	f, err := os.Open(path)
@@ -50,12 +50,12 @@ func ReadPacketConfig(path string) (map[string]PacketProfile, error) {
 	}
 	defer f.Close()
 
-	var profiles map[string]PacketProfile
+	var profiles map[string]EquinixMetalProfile
 	if err := json.NewDecoder(f).Decode(&profiles); err != nil {
 		return nil, err
 	}
 	if len(profiles) == 0 {
-		return nil, fmt.Errorf("Packet config %q contains no profiles", path)
+		return nil, fmt.Errorf("EquinixMetal config %q contains no profiles", path)
 	}
 
 	return profiles, nil

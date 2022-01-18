@@ -15,9 +15,9 @@
 package main
 
 import (
-	"github.com/flatcar-linux/mantle/cmd/ore/packet"
+	"github.com/flatcar-linux/mantle/cmd/ore/equinixmetal"
 )
 
 func init() {
-	root.AddCommand(packet.Packet)
+	root.AddCommand(equinixmetal.EquinixMetal)
 }
