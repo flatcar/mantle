@@ -21,8 +21,9 @@ var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/equinixmetal")
 
 	EquinixMetal = &cobra.Command{
-		Use:   "equinixmetal [command]",
-		Short: "EquinixMetal machine utilities",
+		Use:     "equinixmetal [command]",
+		Aliases: []string{"packet"},
+		Short:   "EquinixMetal machine utilities",
 	}
 
 	API       *equinixmetal.API
