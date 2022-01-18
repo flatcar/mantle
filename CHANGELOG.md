@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Security
+- go: Update golang.org/x/net ([#279](https://github.com/flatcar-linux/mantle/pull/279))
+
 ### Added
 - plume: Add new AWS regions, af-south-1, ap-southeast-3, eu-south-1 ([#274](https://github.com/flatcar-linux/mantle/pull/274))
 - kubernetes test for release 1.23.0 ([#275](https://github.com/flatcar-linux/mantle/pull/275))
