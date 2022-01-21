@@ -28,7 +28,7 @@ import (
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
 	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/platform/machine/packet"
+	"github.com/flatcar-linux/mantle/platform/machine/equinixmetal"
 )
 
 var (
@@ -79,8 +79,8 @@ func init() {
 		},
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// DO: https://github.com/coreos/bugs/issues/2205
-		// Packet & QEMU: https://github.com/coreos/ignition/issues/645
-		ExcludePlatforms: []string{"esx", "do", "packet"},
+		// EquinixMetal & QEMU: https://github.com/coreos/ignition/issues/645
+		ExcludePlatforms: []string{"esx", "do", "equinixmetal"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
 	})
 }
@@ -89,7 +89,7 @@ func securityTLS(c cluster.TestCluster) {
 	server := c.Machines()[0]
 
 	ip := server.PrivateIP()
-	if c.Platform() == packet.Platform {
+	if c.Platform() == equinixmetal.Platform {
 		// private IP not configured in the initramfs
 		ip = server.IP()
 	}

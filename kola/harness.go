@@ -39,19 +39,19 @@ import (
 	awsapi "github.com/flatcar-linux/mantle/platform/api/aws"
 	azureapi "github.com/flatcar-linux/mantle/platform/api/azure"
 	doapi "github.com/flatcar-linux/mantle/platform/api/do"
+	equinixmetalapi "github.com/flatcar-linux/mantle/platform/api/equinixmetal"
 	esxapi "github.com/flatcar-linux/mantle/platform/api/esx"
 	gcloudapi "github.com/flatcar-linux/mantle/platform/api/gcloud"
 	openstackapi "github.com/flatcar-linux/mantle/platform/api/openstack"
-	packetapi "github.com/flatcar-linux/mantle/platform/api/packet"
 	"github.com/flatcar-linux/mantle/platform/conf"
 	"github.com/flatcar-linux/mantle/platform/machine/aws"
 	"github.com/flatcar-linux/mantle/platform/machine/azure"
 	"github.com/flatcar-linux/mantle/platform/machine/do"
+	"github.com/flatcar-linux/mantle/platform/machine/equinixmetal"
 	"github.com/flatcar-linux/mantle/platform/machine/esx"
 	"github.com/flatcar-linux/mantle/platform/machine/external"
 	"github.com/flatcar-linux/mantle/platform/machine/gcloud"
 	"github.com/flatcar-linux/mantle/platform/machine/openstack"
-	"github.com/flatcar-linux/mantle/platform/machine/packet"
 	"github.com/flatcar-linux/mantle/platform/machine/qemu"
 	"github.com/flatcar-linux/mantle/platform/machine/unprivqemu"
 	"github.com/flatcar-linux/mantle/system"
@@ -60,16 +60,16 @@ import (
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola")
 
-	Options          = platform.Options{}
-	AWSOptions       = awsapi.Options{Options: &Options}       // glue to set platform options from main
-	AzureOptions     = azureapi.Options{Options: &Options}     // glue to set platform options from main
-	DOOptions        = doapi.Options{Options: &Options}        // glue to set platform options from main
-	ESXOptions       = esxapi.Options{Options: &Options}       // glue to set platform options from main
-	ExternalOptions  = external.Options{Options: &Options}     // glue to set platform options from main
-	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
-	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
-	PacketOptions    = packetapi.Options{Options: &Options}    // glue to set platform options from main
-	QEMUOptions      = qemu.Options{Options: &Options}         // glue to set platform options from main
+	Options             = platform.Options{}
+	AWSOptions          = awsapi.Options{Options: &Options}          // glue to set platform options from main
+	AzureOptions        = azureapi.Options{Options: &Options}        // glue to set platform options from main
+	DOOptions           = doapi.Options{Options: &Options}           // glue to set platform options from main
+	ESXOptions          = esxapi.Options{Options: &Options}          // glue to set platform options from main
+	ExternalOptions     = external.Options{Options: &Options}        // glue to set platform options from main
+	GCEOptions          = gcloudapi.Options{Options: &Options}       // glue to set platform options from main
+	OpenStackOptions    = openstackapi.Options{Options: &Options}    // glue to set platform options from main
+	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
+	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
 
 	TestParallelism   int    //glue var to set test parallelism from main
 	TAPFile           string // if not "", write TAP results here
@@ -110,7 +110,7 @@ var (
 			match: regexp.MustCompile("rejecting I/O to offline device"),
 		},
 		{
-			// Failure to set up Packet networking in initramfs,
+			// Failure to set up EquinixMetal networking in initramfs,
 			// perhaps due to unresponsive metadata server
 			desc:  "coreos-metadata failure to set up initramfs network",
 			match: regexp.MustCompile("Failed to start CoreOS Static Network Agent"),
@@ -182,8 +182,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = gcloud.NewFlight(&GCEOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
-	case "packet":
-		flight, err = packet.NewFlight(&PacketOptions)
+	case "equinixmetal":
+		flight, err = equinixmetal.NewFlight(&EquinixMetalOptions)
 	case "qemu":
 		flight, err = qemu.NewFlight(&QEMUOptions)
 	case "qemu-unpriv":
@@ -571,8 +571,8 @@ func architecture(pltfrm string) string {
 	if pltfrm == "qemu" && QEMUOptions.Board != "" {
 		nativeArch = boardToArch(QEMUOptions.Board)
 	}
-	if pltfrm == "packet" && PacketOptions.Board != "" {
-		nativeArch = boardToArch(PacketOptions.Board)
+	if pltfrm == "equinixmetal" && EquinixMetalOptions.Board != "" {
+		nativeArch = boardToArch(EquinixMetalOptions.Board)
 	}
 	if pltfrm == "aws" && AWSOptions.Board != "" {
 		nativeArch = boardToArch(AWSOptions.Board)

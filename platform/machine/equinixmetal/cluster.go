@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package packet
+package equinixmetal
 
 import (
 	"crypto/rand"
@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/packet"
+	"github.com/flatcar-linux/mantle/platform/api/equinixmetal"
 	"github.com/flatcar-linux/mantle/platform/conf"
 
 	"github.com/packethost/packngo"
@@ -46,7 +46,7 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	// Stream the console somewhere temporary until we have a machine ID
 	consolePath := filepath.Join(pc.RuntimeConf().OutputDir, "console-"+vmname+".txt")
 	var cons *console
-	var pcons packet.Console // need a nil interface value if unused
+	var pcons equinixmetal.Console // need a nil interface value if unused
 	var device *packngo.Device
 	// Do not shadow assignments to err (i.e., use a, err := something) in the for loop
 	// because the "continue" case needs to access the previous error to return it when the
@@ -62,7 +62,7 @@ func (pc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 			}
 		}
 		if pc.sshKeyID != "" {
-			// We can only read the console if Packet has our SSH key
+			// We can only read the console if EquinixMetal has our SSH key
 			var f *os.File
 			f, err = os.OpenFile(consolePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
 			if err != nil {

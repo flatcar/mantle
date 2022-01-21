@@ -39,7 +39,7 @@ var (
 	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "external", "gce", "openstack", "packet", "qemu", "qemu-unpriv"}
+	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "external", "gce", "openstack", "equinixmetal", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings      = []string{"basic", "pro"}
@@ -159,18 +159,42 @@ func init() {
 	sv(&kola.OpenStackOptions.Domain, "openstack-domain", "", "OpenStack domain ID")
 	sv(&kola.OpenStackOptions.FloatingIPPool, "openstack-floating-ip-pool", "", "OpenStack floating IP pool for Compute v2 networking")
 
-	// packet-specific options
-	sv(&kola.PacketOptions.ConfigPath, "packet-config-file", "", "Packet config file (default \"~/"+auth.PacketConfigPath+"\")")
-	sv(&kola.PacketOptions.Profile, "packet-profile", "", "Packet profile (default \"default\")")
-	sv(&kola.PacketOptions.ApiKey, "packet-api-key", "", "Packet API key (overrides config file)")
-	sv(&kola.PacketOptions.Project, "packet-project", "", "Packet project UUID (overrides config file)")
-	sv(&kola.PacketOptions.Facility, "packet-facility", "sv15", "Packet facility code")
-	sv(&kola.PacketOptions.Plan, "packet-plan", "c3.small.x86", "Packet plan slug (default board-dependent, e.g. \"baremetal_0\")")
-	sv(&kola.PacketOptions.InstallerImageBaseURL, "packet-installer-image-base-url", "", "Packet installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
-	sv(&kola.PacketOptions.InstallerImageKernelURL, "packet-installer-image-kernel-url", "", "Packet installer image kernel URL, (default packet-installer-image-base-url/flatcar_production_pxe.vmlinuz)")
-	sv(&kola.PacketOptions.InstallerImageCpioURL, "packet-installer-image-cpio-url", "", "Packet installer image cpio URL, (default packet-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
-	sv(&kola.PacketOptions.ImageURL, "packet-image-url", "", "Packet image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
-	sv(&kola.PacketOptions.StorageURL, "packet-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
+	// packet-specific options (kept for compatiblity but marked as deprecated)
+	sv(&kola.EquinixMetalOptions.ConfigPath, "packet-config-file", "", "Packet config file (default \"~/"+auth.EquinixMetalConfigPath+"\")")
+	sv(&kola.EquinixMetalOptions.Profile, "packet-profile", "", "Packet profile (default \"default\")")
+	sv(&kola.EquinixMetalOptions.ApiKey, "packet-api-key", "", "Packet API key (overrides config file)")
+	sv(&kola.EquinixMetalOptions.Project, "packet-project", "", "Packet project UUID (overrides config file)")
+	sv(&kola.EquinixMetalOptions.Facility, "packet-facility", "sv15", "Packet facility code")
+	sv(&kola.EquinixMetalOptions.Plan, "packet-plan", "c3.small.x86", "Packet plan slug (default board-dependent, e.g. \"baremetal_0\")")
+	sv(&kola.EquinixMetalOptions.InstallerImageBaseURL, "packet-installer-image-base-url", "", "Packet installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
+	sv(&kola.EquinixMetalOptions.InstallerImageKernelURL, "packet-installer-image-kernel-url", "", "Packet installer image kernel URL, (default packet-installer-image-base-url/flatcar_production_pxe.vmlinuz)")
+	sv(&kola.EquinixMetalOptions.InstallerImageCpioURL, "packet-installer-image-cpio-url", "", "Packet installer image cpio URL, (default packet-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
+	sv(&kola.EquinixMetalOptions.ImageURL, "packet-image-url", "", "Packet image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
+	sv(&kola.EquinixMetalOptions.StorageURL, "packet-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
+	root.PersistentFlags().MarkDeprecated("packet-config-file", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-profile", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-api-key", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-project", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-facility", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-plan", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-installer-image-base-url", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-installer-image-kernel-url", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-installer-image-cpio-url", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-image-url", "packet options are deprecated, please update to equinixmetal options")
+	root.PersistentFlags().MarkDeprecated("packet-storage-url", "packet options are deprecated, please update to equinixmetal options")
+
+	// equinixmetal-specific options
+	sv(&kola.EquinixMetalOptions.ConfigPath, "equinixmetal-config-file", "", "EquinixMetal config file (default \"~/"+auth.EquinixMetalConfigPath+"\")")
+	sv(&kola.EquinixMetalOptions.Profile, "equinixmetal-profile", "", "EquinixMetal profile (default \"default\")")
+	sv(&kola.EquinixMetalOptions.ApiKey, "equinixmetal-api-key", "", "EquinixMetal API key (overrides config file)")
+	sv(&kola.EquinixMetalOptions.Project, "equinixmetal-project", "", "EquinixMetal project UUID (overrides config file)")
+	sv(&kola.EquinixMetalOptions.Facility, "equinixmetal-facility", "sv15", "EquinixMetal facility code")
+	sv(&kola.EquinixMetalOptions.Plan, "equinixmetal-plan", "c3.small.x86", "EquinixMetal plan slug (default board-dependent, e.g. \"baremetal_0\")")
+	sv(&kola.EquinixMetalOptions.InstallerImageBaseURL, "equinixmetal-installer-image-base-url", "", "EquinixMetal installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
+	sv(&kola.EquinixMetalOptions.InstallerImageKernelURL, "equinixmetal-installer-image-kernel-url", "", "EquinixMetal installer image kernel URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe.vmlinuz)")
+	sv(&kola.EquinixMetalOptions.InstallerImageCpioURL, "equinixmetal-installer-image-cpio-url", "", "EquinixMetal installer image cpio URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
+	sv(&kola.EquinixMetalOptions.ImageURL, "equinixmetal-image-url", "", "EquinixMetal image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
+	sv(&kola.EquinixMetalOptions.StorageURL, "equinixmetal-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
 
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
@@ -193,8 +217,8 @@ func syncOptions() error {
 	kola.DOOptions.Board = board
 	kola.AzureOptions.Board = board
 	kola.AWSOptions.Board = board
-	kola.PacketOptions.Board = board
-	kola.PacketOptions.GSOptions = &kola.GCEOptions
+	kola.EquinixMetalOptions.Board = board
+	kola.EquinixMetalOptions.GSOptions = &kola.GCEOptions
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
@@ -203,6 +227,11 @@ func syncOptions() error {
 			}
 		}
 		return fmt.Errorf("unsupported %v %q", name, item)
+	}
+
+	if kolaPlatform == "packet" {
+		fmt.Println("packet platform is deprecated, updating to equinixmetal")
+		kolaPlatform = "equinixmetal"
 	}
 
 	if err := validateOption("platform", kolaPlatform, kolaPlatforms); err != nil {
