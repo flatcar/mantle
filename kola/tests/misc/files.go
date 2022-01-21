@@ -77,6 +77,7 @@ func DeadLinks(c cluster.TestCluster) {
 		"/dev",
 		"/proc",
 		"/run/systemd",
+		"/run/udev/links",
 		"/run/udev/watch",
 		"/sys",
 		"/var/lib/docker",
