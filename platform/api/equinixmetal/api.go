@@ -102,6 +102,8 @@ type Options struct {
 	// Google Storage base URL for temporary uploads
 	// e.g. gs://users.developer.core-os.net/bovik/mantle
 	StorageURL string
+	// Metro is where you want your server to live.
+	Metro string
 }
 
 type API struct {
@@ -522,6 +524,12 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 			plog.Infof("device rebooted: %s", id)
 		} else {
 			plog.Infof("Recycling is not possible, creating a new instance")
+			// if the Metro is set, we set the Facility to empty string in order
+			// to not conflict with Metro value.
+			if a.opts.Metro != "" {
+				a.opts.Facility = ""
+			}
+
 			device, response, err = a.c.Devices.Create(&packngo.DeviceCreateRequest{
 				ProjectID:     a.opts.Project,
 				Facility:      []string{a.opts.Facility},
@@ -532,6 +540,7 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 				IPXEScriptURL: ipxeScriptURL,
 				Tags:          []string{"mantle"},
 				AlwaysPXE:     alwaysPXE,
+				Metro:         a.opts.Metro,
 			})
 		}
 

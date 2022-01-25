@@ -195,6 +195,7 @@ func init() {
 	sv(&kola.EquinixMetalOptions.InstallerImageCpioURL, "equinixmetal-installer-image-cpio-url", "", "EquinixMetal installer image cpio URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
 	sv(&kola.EquinixMetalOptions.ImageURL, "equinixmetal-image-url", "", "EquinixMetal image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
 	sv(&kola.EquinixMetalOptions.StorageURL, "equinixmetal-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
+	sv(&kola.EquinixMetalOptions.Metro, "equinixmetal-metro", "", "the Metro where you want your server to live")
 
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
