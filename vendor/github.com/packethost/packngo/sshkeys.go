@@ -1,6 +1,9 @@
 package packngo
 
-import "fmt"
+import (
+	"fmt"
+	"path"
+)
 
 const (
 	sshKeyBasePath = "/ssh-keys"
@@ -74,8 +77,12 @@ func (s *SSHKeyServiceOp) list(url string) ([]SSHKey, *Response, error) {
 }
 
 // ProjectList lists ssh keys of a project
+// Deprecated: Use ProjectServiceOp.ListSSHKeys
 func (s *SSHKeyServiceOp) ProjectList(projectID string) ([]SSHKey, *Response, error) {
-	return s.list(fmt.Sprintf("%s/%s%s", projectBasePath, projectID, sshKeyBasePath))
+	if validateErr := ValidateUUID(projectID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	return s.list(path.Join(projectBasePath, projectID, sshKeyBasePath))
 
 }
 
@@ -85,12 +92,15 @@ func (s *SSHKeyServiceOp) List() ([]SSHKey, *Response, error) {
 }
 
 // Get returns an ssh key by id
-func (s *SSHKeyServiceOp) Get(sshKeyID string, getOpt *GetOptions) (*SSHKey, *Response, error) {
-	params := createGetOptionsURL(getOpt)
-	path := fmt.Sprintf("%s/%s?%s", sshKeyBasePath, sshKeyID, params)
+func (s *SSHKeyServiceOp) Get(sshKeyID string, opts *GetOptions) (*SSHKey, *Response, error) {
+	if validateErr := ValidateUUID(sshKeyID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(sshKeyBasePath, sshKeyID)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	sshKey := new(SSHKey)
 
-	resp, err := s.client.DoRequest("GET", path, nil, sshKey)
+	resp, err := s.client.DoRequest("GET", apiPathQuery, nil, sshKey)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -100,13 +110,13 @@ func (s *SSHKeyServiceOp) Get(sshKeyID string, getOpt *GetOptions) (*SSHKey, *Re
 
 // Create creates a new ssh key
 func (s *SSHKeyServiceOp) Create(createRequest *SSHKeyCreateRequest) (*SSHKey, *Response, error) {
-	path := sshKeyBasePath
+	urlPath := sshKeyBasePath
 	if createRequest.ProjectID != "" {
-		path = fmt.Sprintf("%s/%s%s", projectBasePath, createRequest.ProjectID, sshKeyBasePath)
+		urlPath = path.Join(projectBasePath, createRequest.ProjectID, sshKeyBasePath)
 	}
 	sshKey := new(SSHKey)
 
-	resp, err := s.client.DoRequest("POST", path, createRequest, sshKey)
+	resp, err := s.client.DoRequest("POST", urlPath, createRequest, sshKey)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -116,14 +126,17 @@ func (s *SSHKeyServiceOp) Create(createRequest *SSHKeyCreateRequest) (*SSHKey, *
 
 // Update updates an ssh key
 func (s *SSHKeyServiceOp) Update(id string, updateRequest *SSHKeyUpdateRequest) (*SSHKey, *Response, error) {
+	if validateErr := ValidateUUID(id); validateErr != nil {
+		return nil, nil, validateErr
+	}
 	if updateRequest.Label == nil && updateRequest.Key == nil {
 		return nil, nil, fmt.Errorf("You must set either Label or Key string for SSH Key update")
 	}
-	path := fmt.Sprintf("%s/%s", sshKeyBasePath, id)
+	apiPath := path.Join(sshKeyBasePath, id)
 
 	sshKey := new(SSHKey)
 
-	resp, err := s.client.DoRequest("PATCH", path, updateRequest, sshKey)
+	resp, err := s.client.DoRequest("PATCH", apiPath, updateRequest, sshKey)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -133,7 +146,10 @@ func (s *SSHKeyServiceOp) Update(id string, updateRequest *SSHKeyUpdateRequest) 
 
 // Delete deletes an ssh key
 func (s *SSHKeyServiceOp) Delete(sshKeyID string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", sshKeyBasePath, sshKeyID)
+	if validateErr := ValidateUUID(sshKeyID); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(sshKeyBasePath, sshKeyID)
 
-	return s.client.DoRequest("DELETE", path, nil, nil)
+	return s.client.DoRequest("DELETE", apiPath, nil, nil)
 }

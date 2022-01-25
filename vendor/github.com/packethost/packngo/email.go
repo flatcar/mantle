@@ -1,6 +1,8 @@
 package packngo
 
-import "fmt"
+import (
+	"path"
+)
 
 const emailBasePath = "/emails"
 
@@ -36,12 +38,15 @@ type EmailServiceOp struct {
 }
 
 // Get retrieves an email by id
-func (s *EmailServiceOp) Get(emailID string, getOpt *GetOptions) (*Email, *Response, error) {
-	params := createGetOptionsURL(getOpt)
-	path := fmt.Sprintf("%s/%s?%s", emailBasePath, emailID, params)
+func (s *EmailServiceOp) Get(emailID string, opts *GetOptions) (*Email, *Response, error) {
+	if validateErr := ValidateUUID(emailID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(emailBasePath, emailID)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	email := new(Email)
 
-	resp, err := s.client.DoRequest("GET", path, nil, email)
+	resp, err := s.client.DoRequest("GET", apiPathQuery, nil, email)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -61,11 +66,14 @@ func (s *EmailServiceOp) Create(request *EmailRequest) (*Email, *Response, error
 	return email, resp, err
 }
 
-// Delete removes the email addres from the current user account
+// Delete removes the email address from the current user account
 func (s *EmailServiceOp) Delete(emailID string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", emailBasePath, emailID)
+	if validateErr := ValidateUUID(emailID); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(emailBasePath, emailID)
 
-	resp, err := s.client.DoRequest("DELETE", path, nil, nil)
+	resp, err := s.client.DoRequest("DELETE", apiPath, nil, nil)
 	if err != nil {
 		return resp, err
 	}
@@ -75,10 +83,13 @@ func (s *EmailServiceOp) Delete(emailID string) (*Response, error) {
 
 // Update email parameters
 func (s *EmailServiceOp) Update(emailID string, request *EmailRequest) (*Email, *Response, error) {
+	if validateErr := ValidateUUID(emailID); validateErr != nil {
+		return nil, nil, validateErr
+	}
 	email := new(Email)
-	path := fmt.Sprintf("%s/%s", emailBasePath, emailID)
+	apiPath := path.Join(emailBasePath, emailID)
 
-	resp, err := s.client.DoRequest("PUT", path, request, email)
+	resp, err := s.client.DoRequest("PUT", apiPath, request, email)
 	if err != nil {
 		return nil, resp, err
 	}

@@ -1,6 +1,8 @@
 package packngo
 
-import "fmt"
+import (
+	"path"
+)
 
 const hardwareReservationBasePath = "/hardware-reservations"
 
@@ -13,7 +15,7 @@ type HardwareReservationService interface {
 
 // HardwareReservationServiceOp implements HardwareReservationService
 type HardwareReservationServiceOp struct {
-	client *Client
+	client requestDoer
 }
 
 // HardwareReservation struct
@@ -39,43 +41,40 @@ type hardwareReservationRoot struct {
 }
 
 // List returns all hardware reservations for a given project
-func (s *HardwareReservationServiceOp) List(projectID string, listOpt *ListOptions) (reservations []HardwareReservation, resp *Response, err error) {
-	root := new(hardwareReservationRoot)
-	params := createListOptionsURL(listOpt)
-
-	path := fmt.Sprintf("%s/%s%s?%s", projectBasePath, projectID, hardwareReservationBasePath, params)
+func (s *HardwareReservationServiceOp) List(projectID string, opts *ListOptions) (reservations []HardwareReservation, resp *Response, err error) {
+	if validateErr := ValidateUUID(projectID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(projectBasePath, projectID, hardwareReservationBasePath)
+	apiPathQuery := opts.WithQuery(endpointPath)
 
 	for {
 		subset := new(hardwareReservationRoot)
 
-		resp, err = s.client.DoRequest("GET", path, nil, root)
+		resp, err = s.client.DoRequest("GET", apiPathQuery, nil, subset)
 		if err != nil {
 			return nil, resp, err
 		}
 
-		reservations = append(reservations, root.HardwareReservations...)
-
-		if subset.Meta.Next != nil && (listOpt == nil || listOpt.Page == 0) {
-			path = subset.Meta.Next.Href
-			if params != "" {
-				path = fmt.Sprintf("%s&%s", path, params)
-			}
+		reservations = append(reservations, subset.HardwareReservations...)
+		if apiPathQuery = nextPage(subset.Meta, opts); apiPathQuery != "" {
 			continue
 		}
-
 		return
 	}
 }
 
 // Get returns a single hardware reservation
-func (s *HardwareReservationServiceOp) Get(hardwareReservationdID string, getOpt *GetOptions) (*HardwareReservation, *Response, error) {
-	params := createGetOptionsURL(getOpt)
-
+func (s *HardwareReservationServiceOp) Get(hardwareReservationdID string, opts *GetOptions) (*HardwareReservation, *Response, error) {
+	if validateErr := ValidateUUID(hardwareReservationdID); validateErr != nil {
+		return nil, nil, validateErr
+	}
 	hardwareReservation := new(HardwareReservation)
 
-	path := fmt.Sprintf("%s/%s?%s", hardwareReservationBasePath, hardwareReservationdID, params)
+	endpointPath := path.Join(hardwareReservationBasePath, hardwareReservationdID)
+	apiPathQuery := opts.WithQuery(endpointPath)
 
-	resp, err := s.client.DoRequest("GET", path, nil, hardwareReservation)
+	resp, err := s.client.DoRequest("GET", apiPathQuery, nil, hardwareReservation)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -85,12 +84,18 @@ func (s *HardwareReservationServiceOp) Get(hardwareReservationdID string, getOpt
 
 // Move a hardware reservation to another project
 func (s *HardwareReservationServiceOp) Move(hardwareReservationdID, projectID string) (*HardwareReservation, *Response, error) {
+	if validateErr := ValidateUUID(hardwareReservationdID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	if validateErr := ValidateUUID(projectID); validateErr != nil {
+		return nil, nil, validateErr
+	}
 	hardwareReservation := new(HardwareReservation)
-	path := fmt.Sprintf("%s/%s/%s", hardwareReservationBasePath, hardwareReservationdID, "move")
+	apiPath := path.Join(hardwareReservationBasePath, hardwareReservationdID, "move")
 	body := map[string]string{}
 	body["project_id"] = projectID
 
-	resp, err := s.client.DoRequest("POST", path, body, hardwareReservation)
+	resp, err := s.client.DoRequest("POST", apiPath, body, hardwareReservation)
 	if err != nil {
 		return nil, resp, err
 	}

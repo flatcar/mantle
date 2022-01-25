@@ -1,7 +1,7 @@
 package packngo
 
 import (
-	"fmt"
+	"path"
 )
 
 const (
@@ -63,7 +63,7 @@ func (v Volume) String() string {
 	return Stringify(v)
 }
 
-// VolumeCreateRequest type used to create a Packet volume
+// VolumeCreateRequest type used to create an Equinix Metal volume
 type VolumeCreateRequest struct {
 	BillingCycle     string            `json:"billing_cycle"`
 	Description      string            `json:"description,omitempty"`
@@ -78,7 +78,7 @@ func (v VolumeCreateRequest) String() string {
 	return Stringify(v)
 }
 
-// VolumeUpdateRequest type used to update a Packet volume
+// VolumeUpdateRequest type used to update an Equinix Metal volume
 type VolumeUpdateRequest struct {
 	Description  *string `json:"description,omitempty"`
 	PlanID       *string `json:"plan_id,omitempty"`
@@ -86,7 +86,7 @@ type VolumeUpdateRequest struct {
 	BillingCycle *string `json:"billing_cycle,omitempty"`
 }
 
-// VolumeAttachment is a type from Packet API
+// VolumeAttachment is a type from Equinix Metal API
 type VolumeAttachment struct {
 	Href   string `json:"href"`
 	ID     string `json:"id"`
@@ -109,39 +109,39 @@ type VolumeServiceOp struct {
 }
 
 // List returns the volumes for a project
-func (v *VolumeServiceOp) List(projectID string, listOpt *ListOptions) (volumes []Volume, resp *Response, err error) {
-	params := createListOptionsURL(listOpt)
-	path := fmt.Sprintf("%s/%s%s?%s", projectBasePath, projectID, volumeBasePath, params)
-
+func (v *VolumeServiceOp) List(projectID string, opts *ListOptions) (volumes []Volume, resp *Response, err error) {
+	if validateErr := ValidateUUID(projectID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(projectBasePath, projectID, volumeBasePath)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	for {
 		subset := new(volumesRoot)
 
-		resp, err = v.client.DoRequest("GET", path, nil, subset)
+		resp, err = v.client.DoRequest("GET", apiPathQuery, nil, subset)
 		if err != nil {
 			return nil, resp, err
 		}
 
 		volumes = append(volumes, subset.Volumes...)
 
-		if subset.Meta.Next != nil && (listOpt == nil || listOpt.Page == 0) {
-			path = subset.Meta.Next.Href
-			if params != "" {
-				path = fmt.Sprintf("%s&%s", path, params)
-			}
+		if apiPathQuery = nextPage(subset.Meta, opts); apiPathQuery != "" {
 			continue
 		}
-
 		return
 	}
 }
 
 // Get returns a volume by id
-func (v *VolumeServiceOp) Get(volumeID string, getOpt *GetOptions) (*Volume, *Response, error) {
-	params := createGetOptionsURL(getOpt)
-	path := fmt.Sprintf("%s/%s?%s", volumeBasePath, volumeID, params)
+func (v *VolumeServiceOp) Get(volumeID string, opts *GetOptions) (*Volume, *Response, error) {
+	if validateErr := ValidateUUID(volumeID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(volumeBasePath, volumeID)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	volume := new(Volume)
 
-	resp, err := v.client.DoRequest("GET", path, nil, volume)
+	resp, err := v.client.DoRequest("GET", apiPathQuery, nil, volume)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -151,10 +151,13 @@ func (v *VolumeServiceOp) Get(volumeID string, getOpt *GetOptions) (*Volume, *Re
 
 // Update updates a volume
 func (v *VolumeServiceOp) Update(id string, updateRequest *VolumeUpdateRequest) (*Volume, *Response, error) {
-	path := fmt.Sprintf("%s/%s", volumeBasePath, id)
+	if validateErr := ValidateUUID(id); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(volumeBasePath, id)
 	volume := new(Volume)
 
-	resp, err := v.client.DoRequest("PATCH", path, updateRequest, volume)
+	resp, err := v.client.DoRequest("PATCH", apiPath, updateRequest, volume)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -164,14 +167,20 @@ func (v *VolumeServiceOp) Update(id string, updateRequest *VolumeUpdateRequest) 
 
 // Delete deletes a volume
 func (v *VolumeServiceOp) Delete(volumeID string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", volumeBasePath, volumeID)
+	if validateErr := ValidateUUID(volumeID); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(volumeBasePath, volumeID)
 
-	return v.client.DoRequest("DELETE", path, nil, nil)
+	return v.client.DoRequest("DELETE", apiPath, nil, nil)
 }
 
 // Create creates a new volume for a project
 func (v *VolumeServiceOp) Create(createRequest *VolumeCreateRequest, projectID string) (*Volume, *Response, error) {
-	url := fmt.Sprintf("%s/%s%s", projectBasePath, projectID, volumeBasePath)
+	if validateErr := ValidateUUID(projectID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	url := path.Join(projectBasePath, projectID, volumeBasePath)
 	volume := new(Volume)
 
 	resp, err := v.client.DoRequest("POST", url, createRequest, volume)
@@ -186,7 +195,13 @@ func (v *VolumeServiceOp) Create(createRequest *VolumeCreateRequest, projectID s
 
 // Create Attachment, i.e. attach volume to a device
 func (v *VolumeAttachmentServiceOp) Create(volumeID, deviceID string) (*VolumeAttachment, *Response, error) {
-	url := fmt.Sprintf("%s/%s%s", volumeBasePath, volumeID, attachmentsBasePath)
+	if validateErr := ValidateUUID(volumeID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	if validateErr := ValidateUUID(deviceID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	url := path.Join(volumeBasePath, volumeID, attachmentsBasePath)
 	volAttachParam := map[string]string{
 		"device_id": deviceID,
 	}
@@ -200,13 +215,15 @@ func (v *VolumeAttachmentServiceOp) Create(volumeID, deviceID string) (*VolumeAt
 }
 
 // Get gets attachment by id
-func (v *VolumeAttachmentServiceOp) Get(attachmentID string, getOpt *GetOptions) (*VolumeAttachment, *Response, error) {
-	params := createGetOptionsURL(getOpt)
-
-	path := fmt.Sprintf("%s%s/%s?%s", volumeBasePath, attachmentsBasePath, attachmentID, params)
+func (v *VolumeAttachmentServiceOp) Get(attachmentID string, opts *GetOptions) (*VolumeAttachment, *Response, error) {
+	if validateErr := ValidateUUID(attachmentID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(volumeBasePath, attachmentsBasePath, attachmentID)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	volumeAttachment := new(VolumeAttachment)
 
-	resp, err := v.client.DoRequest("GET", path, nil, volumeAttachment)
+	resp, err := v.client.DoRequest("GET", apiPathQuery, nil, volumeAttachment)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -216,23 +233,32 @@ func (v *VolumeAttachmentServiceOp) Get(attachmentID string, getOpt *GetOptions)
 
 // Delete deletes attachment by id
 func (v *VolumeAttachmentServiceOp) Delete(attachmentID string) (*Response, error) {
-	path := fmt.Sprintf("%s%s/%s", volumeBasePath, attachmentsBasePath, attachmentID)
+	if validateErr := ValidateUUID(attachmentID); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(volumeBasePath, attachmentsBasePath, attachmentID)
 
-	return v.client.DoRequest("DELETE", path, nil, nil)
+	return v.client.DoRequest("DELETE", apiPath, nil, nil)
 }
 
 // Lock sets a volume to "locked"
 func (v *VolumeServiceOp) Lock(id string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", volumeBasePath, id)
+	if validateErr := ValidateUUID(id); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(volumeBasePath, id)
 	action := lockType{Locked: true}
 
-	return v.client.DoRequest("PATCH", path, action, nil)
+	return v.client.DoRequest("PATCH", apiPath, action, nil)
 }
 
 // Unlock sets a volume to "unlocked"
 func (v *VolumeServiceOp) Unlock(id string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", volumeBasePath, id)
+	if validateErr := ValidateUUID(id); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(volumeBasePath, id)
 	action := lockType{Locked: false}
 
-	return v.client.DoRequest("PATCH", path, action, nil)
+	return v.client.DoRequest("PATCH", apiPath, action, nil)
 }

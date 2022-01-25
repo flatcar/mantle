@@ -324,12 +324,6 @@ github.com/gophercloud/gophercloud/pagination
 ## explicit
 # github.com/grpc-ecosystem/grpc-gateway v1.6.2
 ## explicit
-# github.com/hashicorp/go-cleanhttp v0.5.1
-github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-hclog v0.9.2
-github.com/hashicorp/go-hclog
-# github.com/hashicorp/go-retryablehttp v0.6.2
-github.com/hashicorp/go-retryablehttp
 # github.com/inconshreveable/mousetrap v1.0.0
 ## explicit
 github.com/inconshreveable/mousetrap
@@ -351,7 +345,7 @@ github.com/kylelemons/godebug/pretty
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
-# github.com/packethost/packngo v0.2.1-0.20200224173249-1156d996f0d5
+# github.com/packethost/packngo v0.21.0
 ## explicit
 github.com/packethost/packngo
 # github.com/pborman/uuid v1.2.0
