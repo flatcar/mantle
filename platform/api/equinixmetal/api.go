@@ -223,7 +223,7 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 	plog.Debugf("Created device: %q", deviceID)
 
 	if console != nil {
-		err := a.startConsole(deviceID, console)
+		err := a.startConsole(deviceID, device.Facility.Code, console)
 		consoleStarted = true
 		if err != nil {
 			a.DeleteDevice(deviceID)
@@ -560,13 +560,13 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 	return nil, fmt.Errorf("reached maximum number of retries to create/update a device: %w", err)
 }
 
-func (a *API) startConsole(deviceID string, console Console) error {
+func (a *API) startConsole(deviceID, facility string, console Console) error {
 	ready := make(chan error)
 
 	runner := func() error {
 		defer console.Close()
 
-		client, err := console.SSHClient("sos."+a.opts.Facility+".platformequinix.com", deviceID)
+		client, err := console.SSHClient("sos."+facility+".platformequinix.com", deviceID)
 		if err != nil {
 			return fmt.Errorf("couldn't create SSH client for %s console: %v", deviceID, err)
 		}
