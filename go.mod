@@ -11,7 +11,7 @@ require (
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
 	github.com/ajeddeloh/yaml v0.0.0-20170912190910-6b94386aeefd // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
-	github.com/aws/aws-sdk-go v1.19.11
+	github.com/aws/aws-sdk-go v1.42.41
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/coreos/bbolt v1.3.1-coreos.6 // indirect
 	github.com/coreos/container-linux-config-transpiler v0.8.0
