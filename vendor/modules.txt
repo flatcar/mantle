@@ -71,9 +71,10 @@ github.com/ajeddeloh/yaml
 # github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
 ## explicit
 github.com/alecthomas/units
-# github.com/aws/aws-sdk-go v1.19.11
+# github.com/aws/aws-sdk-go v1.42.41
 ## explicit
 github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/arn
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
 github.com/aws/aws-sdk-go/aws/client
@@ -83,6 +84,7 @@ github.com/aws/aws-sdk-go/aws/credentials
 github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
 github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
 github.com/aws/aws-sdk-go/aws/credentials/processcreds
+github.com/aws/aws-sdk-go/aws/credentials/ssocreds
 github.com/aws/aws-sdk-go/aws/credentials/stscreds
 github.com/aws/aws-sdk-go/aws/csm
 github.com/aws/aws-sdk-go/aws/defaults
@@ -91,27 +93,41 @@ github.com/aws/aws-sdk-go/aws/endpoints
 github.com/aws/aws-sdk-go/aws/request
 github.com/aws/aws-sdk-go/aws/session
 github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/internal/context
 github.com/aws/aws-sdk-go/internal/ini
-github.com/aws/aws-sdk-go/internal/s3err
+github.com/aws/aws-sdk-go/internal/s3shared
+github.com/aws/aws-sdk-go/internal/s3shared/arn
+github.com/aws/aws-sdk-go/internal/s3shared/s3err
 github.com/aws/aws-sdk-go/internal/sdkio
+github.com/aws/aws-sdk-go/internal/sdkmath
 github.com/aws/aws-sdk-go/internal/sdkrand
 github.com/aws/aws-sdk-go/internal/sdkuri
 github.com/aws/aws-sdk-go/internal/shareddefaults
+github.com/aws/aws-sdk-go/internal/strings
+github.com/aws/aws-sdk-go/internal/sync/singleflight
+github.com/aws/aws-sdk-go/private/checksum
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/ec2query
 github.com/aws/aws-sdk-go/private/protocol/eventstream
 github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
+github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
+github.com/aws/aws-sdk-go/private/protocol/jsonrpc
 github.com/aws/aws-sdk-go/private/protocol/query
 github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/restjson
 github.com/aws/aws-sdk-go/private/protocol/restxml
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
 github.com/aws/aws-sdk-go/service/ec2
 github.com/aws/aws-sdk-go/service/iam
+github.com/aws/aws-sdk-go/service/marketplacecatalog
 github.com/aws/aws-sdk-go/service/s3
 github.com/aws/aws-sdk-go/service/s3/s3iface
 github.com/aws/aws-sdk-go/service/s3/s3manager
+github.com/aws/aws-sdk-go/service/sso
+github.com/aws/aws-sdk-go/service/sso/ssoiface
 github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.0
 ## explicit
 github.com/beorn7/perks/quantile
@@ -327,7 +343,7 @@ github.com/gophercloud/gophercloud/pagination
 # github.com/inconshreveable/mousetrap v1.0.0
 ## explicit
 github.com/inconshreveable/mousetrap
-# github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
+# github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
 # github.com/jonboulle/clockwork v0.1.0
 ## explicit
