@@ -3,7 +3,6 @@ package packngo
 import (
 	"bytes"
 	"context"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,106 +16,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
-	packetTokenEnvVar = "PACKET_AUTH_TOKEN"
-	libraryVersion    = "0.1.0"
-	baseURL           = "https://api.packet.net/"
-	userAgent         = "packngo/" + libraryVersion
-	mediaType         = "application/json"
-	debugEnvVar       = "PACKNGO_DEBUG"
+	authTokenEnvVar = "PACKET_AUTH_TOKEN"
+	baseURL         = "https://api.equinix.com/metal/v1/"
+	mediaType       = "application/json"
+	debugEnvVar     = "PACKNGO_DEBUG"
 
-	headerRateLimit     = "X-RateLimit-Limit"
-	headerRateRemaining = "X-RateLimit-Remaining"
-	headerRateReset     = "X-RateLimit-Reset"
+	headerRateLimit              = "X-RateLimit-Limit"
+	headerRateRemaining          = "X-RateLimit-Remaining"
+	headerRateReset              = "X-RateLimit-Reset"
+	expectedAPIContentTypePrefix = "application/json"
 )
-
-var redirectsErrorRe = regexp.MustCompile(`stopped after \d+ redirects\z`)
-
-type GetOptions struct {
-	Includes []string
-	Excludes []string
-}
-
-// ListOptions specifies optional global API parameters
-type ListOptions struct {
-	// for paginated result sets, page of results to retrieve
-	Page int `url:"page,omitempty"`
-	// for paginated result sets, the number of results to return per page
-	PerPage  int `url:"per_page,omitempty"`
-	Includes []string
-	Excludes []string
-}
-
-func makeSureGetOptionsInclude(g *GetOptions, s string) *GetOptions {
-	if g == nil {
-		return &GetOptions{Includes: []string{s}}
-	}
-	if !contains(g.Includes, s) {
-		g.Includes = append(g.Includes, s)
-	}
-	return g
-}
-
-func makeSureListOptionsInclude(l *ListOptions, s string) *ListOptions {
-	if l == nil {
-		return &ListOptions{Includes: []string{s}}
-	}
-	if !contains(l.Includes, s) {
-		l.Includes = append(l.Includes, s)
-	}
-	return l
-}
-
-func createGetOptionsURL(g *GetOptions) (url string) {
-	if g == nil {
-		return ""
-	}
-	if len(g.Includes) != 0 {
-		url += fmt.Sprintf("include=%s", strings.Join(g.Includes, ","))
-	}
-	if len(g.Excludes) != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("exclude=%s", strings.Join(g.Excludes, ","))
-	}
-	return
-
-}
-
-func createListOptionsURL(l *ListOptions) (url string) {
-	if l == nil {
-		return ""
-	}
-	if len(l.Includes) != 0 {
-		url += fmt.Sprintf("include=%s", strings.Join(l.Includes, ","))
-	}
-	if len(l.Excludes) != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("exclude=%s", strings.Join(l.Excludes, ","))
-	}
-	if l.Page != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("page=%d", l.Page)
-	}
-
-	if l.PerPage != 0 {
-		if url != "" {
-			url += "&"
-		}
-		url += fmt.Sprintf("per_page=%d", l.PerPage)
-	}
-
-	return
-}
 
 // meta contains pagination information
 type meta struct {
@@ -170,7 +82,7 @@ func (r *ErrorResponse) Error() string {
 
 // Client is the base API Client
 type Client struct {
-	client *retryablehttp.Client
+	client *http.Client
 	debug  bool
 
 	BaseURL *url.URL
@@ -181,39 +93,63 @@ type Client struct {
 
 	RateLimit Rate
 
-	// Packet Api Objects
+	// Equinix Metal Api Objects
 	APIKeys                APIKeyService
 	BGPConfig              BGPConfigService
 	BGPSessions            BGPSessionService
 	Batches                BatchService
 	CapacityService        CapacityService
+	Connections            ConnectionService
 	DeviceIPs              DeviceIPService
-	DevicePorts            DevicePortService
 	Devices                DeviceService
 	Emails                 EmailService
 	Events                 EventService
 	Facilities             FacilityService
 	HardwareReservations   HardwareReservationService
+	Metros                 MetroService
 	Notifications          NotificationService
 	OperatingSystems       OSService
 	Organizations          OrganizationService
 	Plans                  PlanService
+	Ports                  PortService
 	ProjectIPs             ProjectIPService
 	ProjectVirtualNetworks ProjectVirtualNetworkService
 	Projects               ProjectService
 	SSHKeys                SSHKeyService
 	SpotMarket             SpotMarketService
 	SpotMarketRequests     SpotMarketRequestService
+	MetalGateways          MetalGatewayService
 	TwoFactorAuth          TwoFactorAuthService
 	Users                  UserService
-	VPN                    VPNService
+	VirtualCircuits        VirtualCircuitService
+	VLANAssignments        VLANAssignmentService
 	VolumeAttachments      VolumeAttachmentService
 	Volumes                VolumeService
+
+	// DevicePorts
+	//
+	// Deprecated: Use Client.Ports or Device methods
+	DevicePorts DevicePortService
+}
+
+// requestDoer provides methods for making HTTP requests and receiving the
+// response, errors, and a structured result
+//
+// This interface is used in *ServiceOp as a mockable alternative to a full
+// Client object.
+type requestDoer interface {
+	NewRequest(method, path string, body interface{}) (*http.Request, error)
+	Do(req *http.Request, v interface{}) (*Response, error)
+	DoRequest(method, path string, body, v interface{}) (*Response, error)
+	DoRequestWithHeader(method string, headers map[string]string, path string, body, v interface{}) (*Response, error)
 }
 
 // NewRequest inits a new http request with the proper headers
-func (c *Client) NewRequest(method, path string, body interface{}) (*retryablehttp.Request, error) {
+func (c *Client) NewRequest(method, path string, body interface{}) (*http.Request, error) {
 	// relative path to append to the endpoint url, no leading slash please
+	if path[0] == '/' {
+		path = path[1:]
+	}
 	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err
@@ -230,7 +166,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*retryableht
 		}
 	}
 
-	req, err := retryablehttp.NewRequest(method, u.String(), buf)
+	req, err := http.NewRequest(method, u.String(), buf)
 	if err != nil {
 		return nil, err
 	}
@@ -242,12 +178,12 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*retryableht
 
 	req.Header.Add("Content-Type", mediaType)
 	req.Header.Add("Accept", mediaType)
-	req.Header.Add("User-Agent", userAgent)
+	req.Header.Add("User-Agent", c.UserAgent)
 	return req, nil
 }
 
 // Do executes the http request
-func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error) {
+func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -260,6 +196,7 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error
 	if c.debug {
 		dumpResponse(response.Response)
 	}
+	dumpDeprecation(response.Response)
 	c.RateLimit = response.Rate
 
 	err = checkResponse(resp)
@@ -271,7 +208,10 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error
 	if v != nil {
 		// if v implements the io.Writer interface, return the raw response
 		if w, ok := v.(io.Writer); ok {
-			io.Copy(w, resp.Body)
+			_, err = io.Copy(w, resp.Body)
+			if err != nil {
+				return &response, err
+			}
 		} else {
 			err = json.NewDecoder(resp.Body).Decode(v)
 			if err != nil {
@@ -283,9 +223,60 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error
 	return &response, err
 }
 
+// dumpDeprecation logs headers defined by
+// https://tools.ietf.org/html/rfc8594
+func dumpDeprecation(resp *http.Response) {
+	uri := ""
+	if resp.Request != nil {
+		uri = resp.Request.Method + " " + resp.Request.URL.Path
+	}
+
+	deprecation := resp.Header.Get("Deprecation")
+	if deprecation != "" {
+		if deprecation == "true" {
+			deprecation = ""
+		} else {
+			deprecation = " on " + deprecation
+		}
+		log.Printf("WARNING: %q reported deprecation%s", uri, deprecation)
+	}
+
+	sunset := resp.Header.Get("Sunset")
+	if sunset != "" {
+		log.Printf("WARNING: %q reported sunsetting on %s", uri, sunset)
+	}
+
+	links := resp.Header.Values("Link")
+
+	for _, s := range links {
+		for _, ss := range strings.Split(s, ",") {
+			if strings.Contains(ss, "rel=\"sunset\"") {
+				link := strings.Split(ss, ";")[0]
+				log.Printf("WARNING: See %s for sunset details", link)
+			} else if strings.Contains(ss, "rel=\"deprecation\"") {
+				link := strings.Split(ss, ";")[0]
+				log.Printf("WARNING: See %s for deprecation details", link)
+			}
+		}
+	}
+}
+
+// from terraform-plugin-sdk/v2/helper/logging/transport.go
+func prettyPrintJsonLines(b []byte) string {
+	parts := strings.Split(string(b), "\n")
+	for i, p := range parts {
+		if b := []byte(p); json.Valid(b) {
+			var out bytes.Buffer
+			_ = json.Indent(&out, b, "", " ")
+			parts[i] = out.String()
+		}
+	}
+	return strings.Join(parts, "\n")
+}
+
 func dumpResponse(resp *http.Response) {
 	o, _ := httputil.DumpResponse(resp, true)
-	strResp := string(o)
+	strResp := prettyPrintJsonLines(o)
 	reg, _ := regexp.Compile(`"token":(.+?),`)
 	reMatches := reg.FindStringSubmatch(strResp)
 	if len(reMatches) == 2 {
@@ -294,16 +285,20 @@ func dumpResponse(resp *http.Response) {
 	log.Printf("\n=======[RESPONSE]============\n%s\n\n", strResp)
 }
 
-func dumpRequest(req *retryablehttp.Request) {
-	o, _ := httputil.DumpRequestOut(req.Request, false)
-	strReq := string(o)
-	reg, _ := regexp.Compile(`X-Auth-Token: (\w*)`)
-	reMatches := reg.FindStringSubmatch(strReq)
-	if len(reMatches) == 2 {
-		strReq = strings.Replace(strReq, reMatches[1], strings.Repeat("-", len(reMatches[1])), 1)
+func dumpRequest(req *http.Request) {
+	r := req.Clone(context.TODO())
+	r.Body, _ = req.GetBody()
+	h := r.Header
+	if len(h.Get("X-Auth-Token")) != 0 {
+		h.Set("X-Auth-Token", "**REDACTED**")
 	}
-	bbs, _ := req.BodyBytes()
-	log.Printf("\n=======[REQUEST]=============\n%s%s\n", strReq, string(bbs))
+	defer r.Body.Close()
+
+	o, _ := httputil.DumpRequestOut(r, false)
+	bbs, _ := ioutil.ReadAll(r.Body)
+	reqBodyStr := prettyPrintJsonLines(bbs)
+	strReq := prettyPrintJsonLines(o)
+	log.Printf("\n=======[REQUEST]=============\n%s%s\n", string(strReq), reqBodyStr)
 }
 
 // DoRequest is a convenience method, it calls NewRequest followed by Do
@@ -337,9 +332,9 @@ func (c *Client) DoRequestWithHeader(method string, headers map[string]string, p
 
 // NewClient initializes and returns a Client
 func NewClient() (*Client, error) {
-	apiToken := os.Getenv(packetTokenEnvVar)
+	apiToken := os.Getenv(authTokenEnvVar)
 	if apiToken == "" {
-		return nil, fmt.Errorf("you must export %s", packetTokenEnvVar)
+		return nil, fmt.Errorf("you must export %s", authTokenEnvVar)
 	}
 	c := NewClientWithAuth("packngo lib", apiToken, nil)
 	return c, nil
@@ -347,60 +342,19 @@ func NewClient() (*Client, error) {
 }
 
 // NewClientWithAuth initializes and returns a Client, use this to get an API Client to operate on
-// N.B.: Packet's API certificate requires Go 1.5+ to successfully parse. If you are using
+// N.B.: Equinix Metal's API certificate requires Go 1.5+ to successfully parse. If you are using
 // an older version of Go, pass in a custom http.Client with a custom TLS configuration
 // that sets "InsecureSkipVerify" to "true"
-func NewClientWithAuth(consumerToken string, apiKey string, httpClient *retryablehttp.Client) *Client {
+func NewClientWithAuth(consumerToken string, apiKey string, httpClient *http.Client) *Client {
 	client, _ := NewClientWithBaseURL(consumerToken, apiKey, httpClient, baseURL)
 	return client
 }
 
-func PacketRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
-	// do not retry on context.Canceled or context.DeadlineExceeded
-	if ctx.Err() != nil {
-		return false, ctx.Err()
-	}
-
-	if err != nil {
-		if v, ok := err.(*url.Error); ok {
-			// Don't retry if the error was due to too many redirects.
-			if redirectsErrorRe.MatchString(v.Error()) {
-				return false, nil
-			}
-
-			// Don't retry if the error was due to TLS cert verification failure.
-			if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
-				return false, nil
-			}
-		}
-
-		// The error is likely recoverable so retry.
-		return true, nil
-	}
-
-	// Check the response code. We retry on 500-range responses to allow
-	// the server time to recover, as 500's are typically not permanent
-	// errors and may relate to outages on the server side. This will catch
-	// invalid response codes as well, like 0 and 999.
-	//if resp.StatusCode == 0 || (resp.StatusCode >= 500 && resp.StatusCode != 501) {
-	//	return true, nil
-	//}
-
-	return false, nil
-}
-
 // NewClientWithBaseURL returns a Client pointing to nonstandard API URL, e.g.
 // for mocking the remote API
-func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *retryablehttp.Client, apiBaseURL string) (*Client, error) {
+func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.Client, apiBaseURL string) (*Client, error) {
 	if httpClient == nil {
-		// Don't fall back on http.DefaultClient as it's not nice to adjust state
-		// implicitly. If the client wants to use http.DefaultClient, they can
-		// pass it in explicitly.
-		httpClient = retryablehttp.NewClient()
-		httpClient.RetryWaitMin = time.Second
-		httpClient.RetryWaitMax = 30 * time.Second
-		httpClient.RetryMax = 10
-		httpClient.CheckRetry = PacketRetryPolicy
+		httpClient = http.DefaultClient
 	}
 
 	u, err := url.Parse(apiBaseURL)
@@ -408,12 +362,13 @@ func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *retry
 		return nil, err
 	}
 
-	c := &Client{client: httpClient, BaseURL: u, UserAgent: userAgent, ConsumerToken: consumerToken, APIKey: apiKey}
+	c := &Client{client: httpClient, BaseURL: u, UserAgent: UserAgent, ConsumerToken: consumerToken, APIKey: apiKey}
 	c.APIKeys = &APIKeyServiceOp{client: c}
 	c.BGPConfig = &BGPConfigServiceOp{client: c}
 	c.BGPSessions = &BGPSessionServiceOp{client: c}
 	c.Batches = &BatchServiceOp{client: c}
 	c.CapacityService = &CapacityServiceOp{client: c}
+	c.Connections = &ConnectionServiceOp{client: c}
 	c.DeviceIPs = &DeviceIPServiceOp{client: c}
 	c.DevicePorts = &DevicePortServiceOp{client: c}
 	c.Devices = &DeviceServiceOp{client: c}
@@ -421,29 +376,33 @@ func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *retry
 	c.Events = &EventServiceOp{client: c}
 	c.Facilities = &FacilityServiceOp{client: c}
 	c.HardwareReservations = &HardwareReservationServiceOp{client: c}
+	c.Metros = &MetroServiceOp{client: c}
 	c.Notifications = &NotificationServiceOp{client: c}
 	c.OperatingSystems = &OSServiceOp{client: c}
 	c.Organizations = &OrganizationServiceOp{client: c}
 	c.Plans = &PlanServiceOp{client: c}
+	c.Ports = &PortServiceOp{client: c}
 	c.ProjectIPs = &ProjectIPServiceOp{client: c}
 	c.ProjectVirtualNetworks = &ProjectVirtualNetworkServiceOp{client: c}
 	c.Projects = &ProjectServiceOp{client: c}
 	c.SSHKeys = &SSHKeyServiceOp{client: c}
 	c.SpotMarket = &SpotMarketServiceOp{client: c}
 	c.SpotMarketRequests = &SpotMarketRequestServiceOp{client: c}
+	c.MetalGateways = &MetalGatewayServiceOp{client: c}
 	c.TwoFactorAuth = &TwoFactorAuthServiceOp{client: c}
 	c.Users = &UserServiceOp{client: c}
-	c.VPN = &VPNServiceOp{client: c}
+	c.VirtualCircuits = &VirtualCircuitServiceOp{client: c}
 	c.VolumeAttachments = &VolumeAttachmentServiceOp{client: c}
 	c.Volumes = &VolumeServiceOp{client: c}
+	c.VLANAssignments = &VLANAssignmentServiceOp{client: c}
 	c.debug = os.Getenv(debugEnvVar) != ""
 
 	return c, nil
 }
 
 func checkResponse(r *http.Response) error {
-	// return if http status code is within 200 range
-	if c := r.StatusCode; c >= 200 && c <= 299 {
+
+	if s := r.StatusCode; s >= 200 && s <= 299 {
 		// response is good, return
 		return nil
 	}
@@ -451,8 +410,21 @@ func checkResponse(r *http.Response) error {
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
 	// if the response has a body, populate the message in errorResponse
-	if err == nil && len(data) > 0 {
-		json.Unmarshal(data, errorResponse)
+	if err != nil {
+		return err
+	}
+
+	ct := r.Header.Get("Content-Type")
+	if !strings.HasPrefix(ct, expectedAPIContentTypePrefix) {
+		errorResponse.SingleError = fmt.Sprintf("Unexpected Content-Type %s with status %s", ct, r.Status)
+		return errorResponse
+	}
+
+	if len(data) > 0 {
+		err = json.Unmarshal(data, errorResponse)
+		if err != nil {
+			return err
+		}
 	}
 
 	return errorResponse

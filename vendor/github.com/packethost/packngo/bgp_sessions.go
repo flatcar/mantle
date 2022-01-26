@@ -1,8 +1,11 @@
 package packngo
 
-import "fmt"
+import (
+	"path"
+)
 
 var bgpSessionBasePath = "/bgp/sessions"
+var bgpNeighborsBasePath = "/bgp/neighbors"
 
 // BGPSessionService interface defines available BGP session methods
 type BGPSessionService interface {
@@ -21,7 +24,7 @@ type BGPSessionServiceOp struct {
 	client *Client
 }
 
-// BGPSession represents a Packet BGP Session
+// BGPSession represents an Equinix Metal BGP Session
 type BGPSession struct {
 	ID            string   `json:"id,omitempty"`
 	Status        string   `json:"status,omitempty"`
@@ -32,6 +35,30 @@ type BGPSession struct {
 	DefaultRoute  *bool    `json:"default_route,omitempty"`
 }
 
+type bgpNeighborsRoot struct {
+	BGPNeighbors []BGPNeighbor `json:"bgp_neighbors"`
+}
+
+// BGPNeighor is struct for listing BGP neighbors of a device
+type BGPNeighbor struct {
+	AddressFamily int        `json:"address_family"`
+	CustomerAs    int        `json:"customer_as"`
+	CustomerIP    string     `json:"customer_ip"`
+	Md5Enabled    bool       `json:"md5_enabled"`
+	Md5Password   string     `json:"md5_password"`
+	Multihop      bool       `json:"multihop"`
+	PeerAs        int        `json:"peer_as"`
+	PeerIps       []string   `json:"peer_ips"`
+	RoutesIn      []BGPRoute `json:"routes_in"`
+	RoutesOut     []BGPRoute `json:"routes_out"`
+}
+
+// BGPRoute is a struct for Route in BGP neighbor listing
+type BGPRoute struct {
+	Route string `json:"route"`
+	Exact bool   `json:"exact"`
+}
+
 // CreateBGPSessionRequest struct
 type CreateBGPSessionRequest struct {
 	AddressFamily string `json:"address_family"`
@@ -40,10 +67,13 @@ type CreateBGPSessionRequest struct {
 
 // Create function
 func (s *BGPSessionServiceOp) Create(deviceID string, request CreateBGPSessionRequest) (*BGPSession, *Response, error) {
-	path := fmt.Sprintf("%s/%s%s", deviceBasePath, deviceID, bgpSessionBasePath)
+	if validateErr := ValidateUUID(deviceID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(deviceBasePath, deviceID, bgpSessionBasePath)
 	session := new(BGPSession)
 
-	resp, err := s.client.DoRequest("POST", path, request, session)
+	resp, err := s.client.DoRequest("POST", apiPath, request, session)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -53,17 +83,23 @@ func (s *BGPSessionServiceOp) Create(deviceID string, request CreateBGPSessionRe
 
 // Delete function
 func (s *BGPSessionServiceOp) Delete(id string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", bgpSessionBasePath, id)
+	if validateErr := ValidateUUID(id); validateErr != nil {
+		return nil, validateErr
+	}
+	apiPath := path.Join(bgpSessionBasePath, id)
 
-	return s.client.DoRequest("DELETE", path, nil, nil)
+	return s.client.DoRequest("DELETE", apiPath, nil, nil)
 }
 
 // Get function
-func (s *BGPSessionServiceOp) Get(id string, getOpt *GetOptions) (session *BGPSession, response *Response, err error) {
-	params := createGetOptionsURL(getOpt)
-	path := fmt.Sprintf("%s/%s?%s", bgpSessionBasePath, id, params)
+func (s *BGPSessionServiceOp) Get(id string, opts *GetOptions) (session *BGPSession, response *Response, err error) {
+	if validateErr := ValidateUUID(id); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(bgpSessionBasePath, id)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	session = new(BGPSession)
-	response, err = s.client.DoRequest("GET", path, nil, session)
+	response, err = s.client.DoRequest("GET", apiPathQuery, nil, session)
 	if err != nil {
 		return nil, response, err
 	}

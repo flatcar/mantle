@@ -1,6 +1,7 @@
-IMG ?= golang:1.12
+IMG ?= golang:1.16
 
 # enable go modules, disabled CGO
+
 GOENV ?= GO111MODULE=on CGO_ENABLED=0
 export GO111MODULE=on
 export CGO_ENABLED=0
@@ -15,20 +16,8 @@ endif
 build:
 	$(GO) go build -i -v ./...
 
-golangci-lint:
-ifeq (, $(shell which golangci-lint))
-	$(GO) go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.17.1
-endif
-
-golint:
-ifeq (, $(shell which golint))
-	$(GO) go get -u golang.org/x/lint/golint
-endif
-
-lint: golint golangci-lint
-	$(GO) golangci-lint run --disable-all --enable=golint ./...
-	$(GO) go vet ./...
-	$(GO) gofmt -d .
+lint:
+	@docker run --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.34.1 golangci-lint run -v
 
 test:
 	$(GO) test ./...

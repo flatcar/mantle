@@ -1,42 +1,79 @@
 package packngo
 
 import (
-	"fmt"
+	"path"
 )
 
-const portBasePath = "/ports"
-
-// DevicePortService handles operations on a port which belongs to a particular device
-type DevicePortService interface {
-	Assign(*PortAssignRequest) (*Port, *Response, error)
-	Unassign(*PortAssignRequest) (*Port, *Response, error)
-	AssignNative(*PortAssignRequest) (*Port, *Response, error)
+// PortService handles operations on a port
+type PortService interface {
+	Assign(string, string) (*Port, *Response, error)
+	Unassign(string, string) (*Port, *Response, error)
+	AssignNative(string, string) (*Port, *Response, error)
 	UnassignNative(string) (*Port, *Response, error)
-	Bond(*BondRequest) (*Port, *Response, error)
-	Disbond(*DisbondRequest) (*Port, *Response, error)
-	DeviceToNetworkType(string, string) (*Device, error)
-	DeviceNetworkType(string) (string, error)
-	PortToLayerTwo(string) (*Port, *Response, error)
-	PortToLayerThree(string) (*Port, *Response, error)
-	DeviceToLayerTwo(string) (*Device, error)
-	DeviceToLayerThree(string) (*Device, error)
-	GetBondPort(string) (*Port, error)
-	GetPortByName(string, string) (*Port, error)
+	Bond(string, bool) (*Port, *Response, error)
+	Disbond(string, bool) (*Port, *Response, error)
+	ConvertToLayerTwo(string) (*Port, *Response, error)
+	ConvertToLayerThree(string, []AddressRequest) (*Port, *Response, error)
+	Get(string, *GetOptions) (*Port, *Response, error)
 }
+
+type PortServiceOp struct {
+	client requestDoer
+}
+
+var _ PortService = (*PortServiceOp)(nil)
 
 type PortData struct {
-	MAC    string `json:"mac"`
-	Bonded bool   `json:"bonded"`
+	// MAC address is set for NetworkPort ports
+	MAC string `json:"mac,omitempty"`
+
+	// Bonded is true for NetworkPort ports in a bond and NetworkBondPort ports
+	// that are active
+	Bonded bool `json:"bonded"`
 }
 
+type BondData struct {
+	// ID is the Port.ID of the bonding port
+	ID string `json:"id"`
+
+	// Name of the port interface for the bond ("bond0")
+	Name string `json:"name"`
+}
+
+// Port is a hardware port associated with a reserved or instantiated hardware
+// device.
 type Port struct {
-	ID                      string           `json:"id"`
-	Type                    string           `json:"type"`
-	Name                    string           `json:"name"`
-	Data                    PortData         `json:"data"`
-	NetworkType             string           `json:"network_type,omitempty"`
-	NativeVirtualNetwork    *VirtualNetwork  `json:"native_virtual_network"`
-	AttachedVirtualNetworks []VirtualNetwork `json:"virtual_networks"`
+	*Href `json:",inline"`
+
+	// ID of the Port
+	ID string `json:"id"`
+
+	// Type is either "NetworkBondPort" for bond ports or "NetworkPort" for
+	// bondable ethernet ports
+	Type string `json:"type"`
+
+	// Name of the interface for this port (such as "bond0" or "eth0")
+	Name string `json:"name"`
+
+	// Data about the port
+	Data PortData `json:"data,omitempty"`
+
+	// Indicates whether or not the bond can be broken on the port (when applicable).
+	DisbondOperationSupported bool `json:"disbond_operation_supported,omitempty"`
+
+	// NetworkType is either of layer2-bonded, layer2-individual, layer3,
+	// hybrid, hybrid-bonded
+	NetworkType string `json:"network_type,omitempty"`
+
+	// NativeVirtualNetwork is the Native VLAN attached to the port
+	// <https://metal.equinix.com/developers/docs/layer2-networking/native-vlan>
+	NativeVirtualNetwork *VirtualNetwork `json:"native_virtual_network,omitempty"`
+
+	// VLANs attached to the port
+	AttachedVirtualNetworks []VirtualNetwork `json:"virtual_networks,omitempty"`
+
+	// Bond details for ports with a NetworkPort type
+	Bond *BondData `json:"bond,omitempty"`
 }
 
 type AddressRequest struct {
@@ -48,68 +85,61 @@ type BackToL3Request struct {
 	RequestIPs []AddressRequest `json:"request_ips"`
 }
 
-type DevicePortServiceOp struct {
-	client *Client
-}
-
 type PortAssignRequest struct {
-	PortID           string `json:"id"`
+	// PortID of the Port
+	//
+	// Deprecated: this is redundant to the portID parameter in request
+	// functions. This is kept for use by deprecated DevicePortServiceOps
+	// methods.
+	PortID string `json:"id,omitempty"`
+
 	VirtualNetworkID string `json:"vnid"`
 }
 
 type BondRequest struct {
-	PortID     string `json:"id"`
-	BulkEnable bool   `json:"bulk_enable"`
+	BulkEnable bool `json:"bulk_enable"`
 }
 
 type DisbondRequest struct {
-	PortID      string `json:"id"`
-	BulkDisable bool   `json:"bulk_disable"`
+	BulkDisable bool `json:"bulk_disable"`
 }
 
-func (i *DevicePortServiceOp) GetBondPort(deviceID string) (*Port, error) {
-	device, _, err := i.client.Devices.Get(deviceID, nil)
-	if err != nil {
-		return nil, err
+// Assign adds a VLAN to a port
+func (i *PortServiceOp) Assign(portID, vlanID string) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
 	}
-	for _, port := range device.NetworkPorts {
-		if port.Type == "NetworkBondPort" {
-			return &port, nil
-		}
+	if validateErr := ValidateUUID(vlanID); validateErr != nil {
+		return nil, nil, validateErr
 	}
+	apiPath := path.Join(portBasePath, portID, "assign")
+	par := &PortAssignRequest{VirtualNetworkID: vlanID}
 
-	return nil, fmt.Errorf("No bonded port found in device %s", deviceID)
+	return i.portAction(apiPath, par)
 }
 
-func (i *DevicePortServiceOp) GetPortByName(deviceID, name string) (*Port, error) {
-	device, _, err := i.client.Devices.Get(deviceID, nil)
-	if err != nil {
-		return nil, err
+// AssignNative assigns a virtual network to the port as a "native VLAN"
+func (i *PortServiceOp) AssignNative(portID, vlanID string) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
 	}
-	for _, port := range device.NetworkPorts {
-		if port.Name == name {
-			return &port, nil
-		}
+	if validateErr := ValidateUUID(vlanID); validateErr != nil {
+		return nil, nil, validateErr
 	}
-
-	return nil, fmt.Errorf("Port %s not found in device %s", name, deviceID)
+	apiPath := path.Join(portBasePath, portID, "native-vlan")
+	par := &PortAssignRequest{VirtualNetworkID: vlanID}
+	return i.portAction(apiPath, par)
 }
 
-func (i *DevicePortServiceOp) Assign(par *PortAssignRequest) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/assign", portBasePath, par.PortID)
-	return i.portAction(path, par)
-}
-
-func (i *DevicePortServiceOp) AssignNative(par *PortAssignRequest) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/native-vlan", portBasePath, par.PortID)
-	return i.portAction(path, par)
-}
-
-func (i *DevicePortServiceOp) UnassignNative(portID string) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/native-vlan", portBasePath, portID)
+// UnassignNative removes native VLAN from the supplied port
+func (i *PortServiceOp) UnassignNative(portID string) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(portBasePath, portID, "native-vlan")
 	port := new(Port)
 
-	resp, err := i.client.DoRequest("DELETE", path, nil, port)
+	resp, err := i.client.DoRequest("DELETE", apiPath, nil, port)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -117,25 +147,44 @@ func (i *DevicePortServiceOp) UnassignNative(portID string) (*Port, *Response, e
 	return port, resp, err
 }
 
-func (i *DevicePortServiceOp) Unassign(par *PortAssignRequest) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/unassign", portBasePath, par.PortID)
-	return i.portAction(path, par)
+// Unassign removes a VLAN from the port
+func (i *PortServiceOp) Unassign(portID, vlanID string) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	if validateErr := ValidateUUID(vlanID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(portBasePath, portID, "unassign")
+	par := &PortAssignRequest{VirtualNetworkID: vlanID}
+
+	return i.portAction(apiPath, par)
 }
 
-func (i *DevicePortServiceOp) Bond(br *BondRequest) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/bond", portBasePath, br.PortID)
-	return i.portAction(path, br)
+// Bond enables bonding for one or all ports
+func (i *PortServiceOp) Bond(portID string, bulkEnable bool) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	br := &BondRequest{BulkEnable: bulkEnable}
+	apiPath := path.Join(portBasePath, portID, "bond")
+	return i.portAction(apiPath, br)
 }
 
-func (i *DevicePortServiceOp) Disbond(dr *DisbondRequest) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/disbond", portBasePath, dr.PortID)
-	return i.portAction(path, dr)
+// Disbond disables bonding for one or all ports
+func (i *PortServiceOp) Disbond(portID string, bulkEnable bool) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	dr := &DisbondRequest{BulkDisable: bulkEnable}
+	apiPath := path.Join(portBasePath, portID, "disbond")
+	return i.portAction(apiPath, dr)
 }
 
-func (i *DevicePortServiceOp) portAction(path string, req interface{}) (*Port, *Response, error) {
+func (i *PortServiceOp) portAction(apiPath string, req interface{}) (*Port, *Response, error) {
 	port := new(Port)
 
-	resp, err := i.client.DoRequest("POST", path, req, port)
+	resp, err := i.client.DoRequest("POST", apiPath, req, port)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -143,11 +192,17 @@ func (i *DevicePortServiceOp) portAction(path string, req interface{}) (*Port, *
 	return port, resp, err
 }
 
-func (i *DevicePortServiceOp) PortToLayerTwo(portID string) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/convert/layer-2", portBasePath, portID)
+// ConvertToLayerTwo converts a bond port to Layer 2. IP assignments of the port will be removed.
+//
+// portID is the UUID of a Bonding Port
+func (i *PortServiceOp) ConvertToLayerTwo(portID string) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(portBasePath, portID, "convert", "layer-2")
 	port := new(Port)
 
-	resp, err := i.client.DoRequest("POST", path, nil, port)
+	resp, err := i.client.DoRequest("POST", apiPath, nil, port)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -155,19 +210,19 @@ func (i *DevicePortServiceOp) PortToLayerTwo(portID string) (*Port, *Response, e
 	return port, resp, err
 }
 
-func (i *DevicePortServiceOp) PortToLayerThree(portID string) (*Port, *Response, error) {
-	path := fmt.Sprintf("%s/%s/convert/layer-3", portBasePath, portID)
+// ConvertToLayerThree converts a bond port to Layer 3. VLANs must first be unassigned.
+func (i *PortServiceOp) ConvertToLayerThree(portID string, ips []AddressRequest) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(portBasePath, portID, "convert", "layer-3")
 	port := new(Port)
 
 	req := BackToL3Request{
-		RequestIPs: []AddressRequest{
-			{AddressFamily: 4, Public: true},
-			{AddressFamily: 4, Public: false},
-			{AddressFamily: 6, Public: true},
-		},
+		RequestIPs: ips,
 	}
 
-	resp, err := i.client.DoRequest("POST", path, &req, port)
+	resp, err := i.client.DoRequest("POST", apiPath, &req, port)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -175,147 +230,17 @@ func (i *DevicePortServiceOp) PortToLayerThree(portID string) (*Port, *Response,
 	return port, resp, err
 }
 
-func (i *DevicePortServiceOp) DeviceNetworkType(deviceID string) (string, error) {
-	d, _, err := i.client.Devices.Get(deviceID, nil)
+// Get returns a port by id
+func (s *PortServiceOp) Get(portID string, opts *GetOptions) (*Port, *Response, error) {
+	if validateErr := ValidateUUID(portID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	endpointPath := path.Join(portBasePath, portID)
+	apiPathQuery := opts.WithQuery(endpointPath)
+	port := new(Port)
+	resp, err := s.client.DoRequest("GET", apiPathQuery, nil, port)
 	if err != nil {
-		return "", err
+		return nil, resp, err
 	}
-	return d.NetworkType, nil
-}
-
-func (i *DevicePortServiceOp) DeviceToNetworkType(deviceID string, nType string) (*Device, error) {
-
-	d, _, err := i.client.Devices.Get(deviceID, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	curType := d.NetworkType
-
-	if curType == nType {
-		return nil, fmt.Errorf("Device already is in state %s", nType)
-	}
-	bond0ID := ""
-	eth1ID := ""
-	for _, port := range d.NetworkPorts {
-		if port.Name == "bond0" {
-			bond0ID = port.ID
-		}
-		if port.Name == "eth1" {
-			eth1ID = port.ID
-		}
-	}
-
-	if nType == "layer3" {
-		if curType == "layer2-individual" || curType == "layer2-bonded" {
-			if curType == "layer2-individual" {
-				_, _, err := i.client.DevicePorts.Bond(
-					&BondRequest{PortID: bond0ID, BulkEnable: false})
-				if err != nil {
-					return nil, err
-				}
-
-			}
-			_, _, err := i.client.DevicePorts.PortToLayerThree(bond0ID)
-			if err != nil {
-				return nil, err
-			}
-		}
-		_, _, err = i.client.DevicePorts.Bond(
-			&BondRequest{PortID: bond0ID, BulkEnable: true})
-		if err != nil {
-			return nil, err
-		}
-	}
-	if nType == "hybrid" {
-		if curType == "layer2-individual" || curType == "layer2-bonded" {
-			if curType == "layer2-individual" {
-				_, _, err = i.client.DevicePorts.Bond(
-					&BondRequest{PortID: bond0ID, BulkEnable: false})
-				if err != nil {
-					return nil, err
-				}
-			}
-			_, _, err = i.client.DevicePorts.PortToLayerThree(bond0ID)
-			if err != nil {
-				return nil, err
-			}
-		}
-		_, _, err := i.client.DevicePorts.Disbond(
-			&DisbondRequest{PortID: eth1ID, BulkDisable: false})
-		if err != nil {
-			return nil, err
-		}
-	}
-	if nType == "layer2-individual" {
-		if curType == "hybrid" || curType == "layer3" {
-			_, _, err = i.client.DevicePorts.PortToLayerTwo(bond0ID)
-			if err != nil {
-				return nil, err
-			}
-
-		}
-		_, _, err = i.client.DevicePorts.Disbond(
-			&DisbondRequest{PortID: bond0ID, BulkDisable: true})
-		if err != nil {
-			return nil, err
-		}
-	}
-	if nType == "layer2-bonded" {
-		if curType == "hybrid" || curType == "layer3" {
-			_, _, err = i.client.DevicePorts.PortToLayerTwo(bond0ID)
-			if err != nil {
-				return nil, err
-			}
-		}
-		_, _, err = i.client.DevicePorts.Bond(
-			&BondRequest{PortID: bond0ID, BulkEnable: false})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	d, _, err = i.client.Devices.Get(deviceID, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if d.NetworkType != nType {
-		return nil, fmt.Errorf(
-			"Failed to convert device %s from %s to %s. New type was %s",
-			deviceID, curType, nType, d.NetworkType)
-
-	}
-	return d, err
-}
-
-func (i *DevicePortServiceOp) DeviceToLayerThree(deviceID string) (*Device, error) {
-	// hopefull all the VLANs are unassigned at this point
-	bond0, err := i.client.DevicePorts.GetBondPort(deviceID)
-	if err != nil {
-		return nil, err
-	}
-
-	bond0, _, err = i.client.DevicePorts.PortToLayerThree(bond0.ID)
-	if err != nil {
-		return nil, err
-	}
-	d, _, err := i.client.Devices.Get(deviceID, nil)
-	return d, err
-}
-
-// DeviceToLayerTwo converts device to L2 networking. Use bond0 to attach VLAN.
-func (i *DevicePortServiceOp) DeviceToLayerTwo(deviceID string) (*Device, error) {
-	bond0, err := i.client.DevicePorts.GetBondPort(deviceID)
-	if err != nil {
-		return nil, err
-	}
-
-	bond0, _, err = i.client.DevicePorts.PortToLayerTwo(bond0.ID)
-	if err != nil {
-		return nil, err
-	}
-	d, _, err := i.client.Devices.Get(deviceID, nil)
-	return d, err
-
+	return port, resp, err
 }

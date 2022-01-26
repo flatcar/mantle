@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - plume: Add new AWS regions, af-south-1, ap-southeast-3, eu-south-1 ([#274](https://github.com/flatcar-linux/mantle/pull/274))
 - kubernetes test for release 1.23.0 ([#275](https://github.com/flatcar-linux/mantle/pull/275))
 - arm64 kubeadm test for `calico` CNI ([#278](https://github.com/flatcar-linux/mantle/pull/278))
+- `Metro` to Equinix Metal options ([#281](https://github.com/flatcar-linux/mantle/pull/281))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
