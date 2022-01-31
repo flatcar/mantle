@@ -15,8 +15,10 @@
 package ignition
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
 	"github.com/flatcar-linux/mantle/platform/conf"
@@ -25,6 +27,8 @@ import (
 const (
 	targetUUID   = "9aa5237a-ab6b-458b-a7e8-f25e2baef1a3"
 	targetVfatID = "1A37-8FA3"
+	swapFileName = "/var/vm/swapfile1"
+	swapSize     = "1024M"
 )
 
 func init() {
@@ -253,6 +257,53 @@ func init() {
 		UserData:    swapConfigV2_1,
 		Distros:     []string{"cl"},
 	})
+
+	swapActivation := conf.ContainerLinuxConfig(fmt.Sprintf(`storage:
+  files:
+  - path: /etc/sysctl.d/80-swappiness.conf
+    filesystem: root
+    mode: 0644
+    contents:
+      inline: "vm.swappiness=10"
+
+systemd:
+  units:
+    - name: var-vm-swapfile1.swap
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Turn on swap
+        Requires=create-swapfile.service
+        After=create-swapfile.service
+
+        [Swap]
+        What=%[1]s
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: create-swapfile.service
+      contents: |
+        [Unit]
+        Description=Create a swapfile
+        RequiresMountsFor=/var
+        ConditionPathExists=!%[1]s
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/mkdir -p /var/vm
+        ExecStart=/usr/bin/fallocate -l %[2]s %[1]s
+        ExecStart=/usr/bin/chmod 600 %[1]s
+        ExecStart=/usr/sbin/mkswap %[1]s
+        RemainAfterExit=true`, swapFileName, swapSize))
+
+	register.Register(&register.Test{
+		Name:        "cl.swap_activation",
+		Run:         testSwapActivation,
+		ClusterSize: 1,
+		UserData:    swapActivation,
+		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 3033},
+	})
 }
 
 var ext4NoClobberV2_1 = conf.Ignition(`{
@@ -339,5 +390,32 @@ func ext4CheckExisting(c cluster.TestCluster) {
 	uuid2 := strings.TrimRight(string(out), "\n")
 	if uuid1 != uuid2 {
 		c.Fatalf("Filesystem was reformatted: %s != %s", uuid1, uuid2)
+	}
+}
+
+func testSwapActivation(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	out := c.MustSSH(m, "swapon --show=NAME,SIZE --noheadings")
+	swap := string(out)
+
+	if swap == "" {
+		c.Fatalf("swap is not enabled while it should be")
+	}
+
+	columns := strings.Split(swap, " ")
+	if len(columns) < 2 {
+		c.Fatalf("swap output should be at least: name size")
+	}
+
+	name := columns[0]
+	size := columns[1]
+
+	if name != swapFileName {
+		c.Fatalf("swap's name should be: %s, got %s", swapFileName, swap)
+	}
+
+	if size != swapSize {
+		c.Fatalf("swap's size should be: %s, got %s", swapSize, size)
 	}
 }
