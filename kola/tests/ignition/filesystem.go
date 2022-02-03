@@ -286,7 +286,7 @@ systemd:
         [Unit]
         Description=Create a swapfile
         RequiresMountsFor=/var
-        ConditionPathExists=!%[1]s
+        DefaultDependencies=no
 
         [Service]
         Type=oneshot
