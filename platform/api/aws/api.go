@@ -78,6 +78,8 @@ func New(opts *Options) (*API, error) {
 		awsCfg.Credentials = credentials.NewStaticCredentials(opts.AccessKeyID, opts.SecretKey, "")
 	} else if opts.CredentialsFile != "" {
 		awsCfg.Credentials = credentials.NewSharedCredentials(opts.CredentialsFile, opts.Profile)
+	} else {
+		awsCfg.Credentials = credentials.NewEnvCredentials()
 	}
 
 	sess, err := session.NewSessionWithOptions(session.Options{
