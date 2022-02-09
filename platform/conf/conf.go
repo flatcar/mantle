@@ -23,25 +23,25 @@ import (
 	"reflect"
 	"strings"
 
-	ct "github.com/coreos/container-linux-config-transpiler/config"
 	cci "github.com/coreos/coreos-cloudinit/config"
-	ignerr "github.com/coreos/ignition/config/shared/errors"
-	v1 "github.com/coreos/ignition/config/v1"
-	v1types "github.com/coreos/ignition/config/v1/types"
-	v2 "github.com/coreos/ignition/config/v2_0"
-	v2types "github.com/coreos/ignition/config/v2_0/types"
-	v21 "github.com/coreos/ignition/config/v2_1"
-	v21types "github.com/coreos/ignition/config/v2_1/types"
-	v22 "github.com/coreos/ignition/config/v2_2"
-	v22types "github.com/coreos/ignition/config/v2_2/types"
-	v23 "github.com/coreos/ignition/config/v2_3"
-	v23types "github.com/coreos/ignition/config/v2_3/types"
-	ignvalidate "github.com/coreos/ignition/config/validate"
-	ign3err "github.com/coreos/ignition/v2/config/shared/errors"
-	v3 "github.com/coreos/ignition/v2/config/v3_0"
-	v3types "github.com/coreos/ignition/v2/config/v3_0/types"
-	ign3validate "github.com/coreos/ignition/v2/config/validate"
 	"github.com/coreos/pkg/capnslog"
+	ct "github.com/flatcar-linux/container-linux-config-transpiler/config"
+	ignerr "github.com/flatcar-linux/ignition/config/shared/errors"
+	v1 "github.com/flatcar-linux/ignition/config/v1"
+	v1types "github.com/flatcar-linux/ignition/config/v1/types"
+	v2 "github.com/flatcar-linux/ignition/config/v2_0"
+	v2types "github.com/flatcar-linux/ignition/config/v2_0/types"
+	v21 "github.com/flatcar-linux/ignition/config/v2_1"
+	v21types "github.com/flatcar-linux/ignition/config/v2_1/types"
+	v22 "github.com/flatcar-linux/ignition/config/v2_2"
+	v22types "github.com/flatcar-linux/ignition/config/v2_2/types"
+	v23 "github.com/flatcar-linux/ignition/config/v2_3"
+	v23types "github.com/flatcar-linux/ignition/config/v2_3/types"
+	ignvalidate "github.com/flatcar-linux/ignition/config/validate"
+	ign3err "github.com/flatcar-linux/ignition/v2/config/shared/errors"
+	v3 "github.com/flatcar-linux/ignition/v2/config/v3_0"
+	v3types "github.com/flatcar-linux/ignition/v2/config/v3_0/types"
+	ign3validate "github.com/flatcar-linux/ignition/v2/config/validate"
 	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -262,7 +262,7 @@ func (u *UserData) Render(ctPlatform string) (*Conf, error) {
 			plog.Warningf("rendering Container Linux config: %s", report)
 		}
 
-		c.ignitionV22 = &ignc
+		c.ignitionV23 = &ignc
 	default:
 		panic("invalid kind")
 	}

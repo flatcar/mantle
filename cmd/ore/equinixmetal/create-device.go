@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	ctplatform "github.com/coreos/container-linux-config-transpiler/config/platform"
+	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
 	"github.com/flatcar-linux/mantle/platform/conf"
 )
 
