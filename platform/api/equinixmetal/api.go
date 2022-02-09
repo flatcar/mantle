@@ -54,9 +54,8 @@ var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/equinixmetal")
 
 	defaultInstallerImageBaseURL = map[string]string{
-		// HTTPS causes iPXE to fail on a "permission denied" error
-		"amd64-usr": "http://stable.release.flatcar-linux.net/amd64-usr/current",
-		"arm64-usr": "http://alpha.release.flatcar-linux.net/arm64-usr/current",
+		"amd64-usr": "https://stable.release.flatcar-linux.net/amd64-usr/current",
+		"arm64-usr": "https://alpha.release.flatcar-linux.net/arm64-usr/current",
 	}
 	defaultImageURL = map[string]string{
 		"amd64-usr": "https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2",
@@ -476,8 +475,7 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 		return "", "", fmt.Errorf("uploading object: %v", err)
 	}
 
-	// HTTPS causes iPXE to fail on a "permission denied" error
-	url := fmt.Sprintf("http://bucket.release.flatcar-linux.net/%v/%v", a.bucket.Name(), obj.Name)
+	url := fmt.Sprintf("https://bucket.release.flatcar-linux.net/%v/%v", a.bucket.Name(), obj.Name)
 	return obj.Name, url, nil
 }
 
