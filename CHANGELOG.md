@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
 - kola: fixed cl.filesystem test for systemd 250 and newer ([#280](https://github.com/flatcar-linux/mantle/pull/280))
+- PXE boots now over HTTPS on Equinix Metal ([#288](https://github.com/flatcar-linux/mantle/pull/288))
 
 ### Removed
 - Remove `--repo-branch` option from cork ([#283](https://github.com/flatcar-linux/mantle/pull/283))
