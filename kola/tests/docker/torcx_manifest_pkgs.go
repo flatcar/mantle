@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	ignition "github.com/coreos/ignition/config/v2_1/types"
+	ignition "github.com/flatcar-linux/ignition/config/v2_1/types"
 	"github.com/flatcar-linux/mantle/kola"
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"

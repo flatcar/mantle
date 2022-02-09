@@ -18,7 +18,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
 
-	ctplatform "github.com/coreos/container-linux-config-transpiler/config/platform"
+	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
 	"github.com/flatcar-linux/mantle/network"
 	"github.com/flatcar-linux/mantle/platform"
 )

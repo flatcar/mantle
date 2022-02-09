@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	ignition "github.com/coreos/ignition/config/v2_0/types"
 	"github.com/coreos/pkg/capnslog"
+	ignition "github.com/flatcar-linux/ignition/config/v2_0/types"
 	"github.com/packethost/packngo"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
