@@ -262,6 +262,7 @@ func (a *API) CreateTags(resources []string, tags map[string]string) error {
 func (a *API) GetConsoleOutput(instanceID string) (string, error) {
 	res, err := a.ec2.GetConsoleOutput(&ec2.GetConsoleOutputInput{
 		InstanceId: aws.String(instanceID),
+		Latest:     util.BoolToPtr(true),
 	})
 	if err != nil {
 		return "", fmt.Errorf("couldn't get console output of %v: %v", instanceID, err)
