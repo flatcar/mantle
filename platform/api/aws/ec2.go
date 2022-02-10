@@ -224,10 +224,18 @@ func (a *API) TerminateInstances(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
+
+	stopInput := &ec2.StopInstancesInput{
+		InstanceIds: aws.StringSlice(ids),
+		Force:       util.BoolToPtr(true),
+	}
+	if _, err := a.ec2.StopInstances(stopInput); err != nil {
+		return err
+	}
+
 	input := &ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice(ids),
 	}
-
 	if _, err := a.ec2.TerminateInstances(input); err != nil {
 		return err
 	}
