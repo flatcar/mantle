@@ -304,7 +304,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 			"-fw_cfg", "name=opt/org.flatcar-linux/config,file="+confPath)
 	} else {
 		qmCmd = append(qmCmd,
-			"-fsdev", "local,id=cfg,security_model=none,readonly,path="+confPath,
+			"-fsdev", "local,id=cfg,security_model=none,readonly=on,path="+confPath,
 			"-device", Virtio(board, "9p", "fsdev=cfg,mount_tag=config-2"))
 	}
 
