@@ -88,7 +88,8 @@ EOF
     sudo tar -xf /opt/bin/cilium.tar.gz -C /opt/bin
     /opt/bin/cilium install \
         --config enable-endpoint-routes=true \
-        --config cluster-pool-ipv4-cidr=192.168.0.0/17
+        --config cluster-pool-ipv4-cidr=192.168.0.0/17 \
+        --version=v0.11.1
     # --wait will wait for status to report success
     /opt/bin/cilium status --wait
 
