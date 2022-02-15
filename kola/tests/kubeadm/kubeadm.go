@@ -46,7 +46,20 @@ type extraTest struct {
 
 var (
 	// extraTests can be used to extend the common tests for a given supported CNI.
-	extraTests = map[string][]extraTest{}
+	extraTests = map[string][]extraTest{
+		"cilium": []extraTest{
+			extraTest{
+				name: "IPSec encryption",
+				runFunc: func(controller platform.Machine, params map[string]interface{}, c cluster.TestCluster) {
+					_ = c.MustSSH(controller, "/opt/bin/cilium uninstall")
+					version := params["CiliumVersion"].(string)
+					cidr := params["PodSubnet"].(string)
+					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait --wait-duration 1m", cidr, version)
+					_ = c.MustSSH(controller, cmd)
+				},
+			},
+		},
+	}
 
 	// CNIs is the list of CNIs to deploy
 	// in the cluster setup
