@@ -40,6 +40,7 @@ require (
 	github.com/vmware/govmomi v0.22.2
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2
 	go.etcd.io/etcd/server/v3 v3.5.2
+	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
