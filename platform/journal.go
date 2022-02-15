@@ -96,19 +96,24 @@ func (j *Journal) Start(ctx context.Context, m Machine) error {
 	}
 	ctx, cancel := context.WithCancel(ctx)
 
-	start := func() error {
+	var lastErr error
+	start := func() (bool, error) {
 		client, err := m.SSHClient()
 		if err != nil {
-			return err
+			lastErr = err
+			return false, nil
 		}
 
-		return j.recorder.StartSSH(ctx, client)
+		err = j.recorder.StartSSH(ctx, client)
+		if err != nil {
+			lastErr = err
+			return false, nil
+		}
+		return true, nil
 	}
-
-	// Retry for a while because this should be run before CheckMachine
-	if err := util.Retry(sshRetries, sshTimeout, start); err != nil {
+	if err := util.WaitUntilReady(sshTimeout*sshRetries, sshTimeout, start); err != nil {
 		cancel()
-		return fmt.Errorf("ssh journalctl failed: %v", err)
+		return fmt.Errorf("ssh journalctl failed: %v: %v", err, lastErr)
 	}
 
 	j.cancel = cancel

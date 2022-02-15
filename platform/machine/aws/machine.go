@@ -98,7 +98,7 @@ func (am *machine) saveConsole(origConsole string) error {
 	// returned output will be non-empty but won't necessarily include
 	// the most recent log messages. So we loop until the post-termination
 	// logs are different from the pre-termination logs.
-	err := util.WaitUntilReady(5*time.Minute, 5*time.Second, func() (bool, error) {
+	err := util.WaitUntilReady(30*time.Second, 10*time.Second, func() (bool, error) {
 		var err error
 		am.console, err = am.cluster.flight.api.GetConsoleOutput(am.ID())
 		if err != nil {

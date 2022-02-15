@@ -6,10 +6,15 @@ properties([
     [$class: 'CopyArtifactPermissionProperty',
      projectNames: '*'],
 
-    pipelineTriggers([pollSCM('H/15 * * * *')])
+    pipelineTriggers([pollSCM('H/15 * * * *')]),
+    parameters([
+        booleanParam(name: 'ARCHIVE_ARTIFACTS', defaultValue: false),
+        booleanParam(name: 'CLEAN', defaultValue: true)
+    ])
 ])
 
 node('amd64 && docker') {
+  try {
     stage('SCM') {
         checkout scm
     }
@@ -25,8 +30,14 @@ node('amd64 && docker') {
     }
 
     stage('Post-build') {
-        if (env.JOB_BASE_NAME == "master-builder") {
+        if (env.JOB_BASE_NAME == "master-builder" || params.ARCHIVE_ARTIFACTS) {
             archiveArtifacts artifacts: 'bin/**, bin.arm64/**', fingerprint: true, onlyIfSuccessful: true
         }
     }
+  } finally {
+    if (params.CLEAN) {
+        sh 'sudo chown -R $USER .'
+        cleanWs()
+    }
+  }
 }
