@@ -54,6 +54,7 @@ func TestRenderTemplate(t *testing.T) {
 			res, err := render(
 				masterScript,
 				map[string]interface{}{
+					"CiliumVersion":  "v0.11.1",
 					"FlannelVersion": "v0.14.0",
 					"CNI":            CNI,
 					"Endpoints":      []string{"http://1.2.3.4:2379"},
@@ -83,6 +84,7 @@ func TestRenderTemplate(t *testing.T) {
 			res, err := render(
 				masterConfig,
 				map[string]interface{}{
+					"CiliumVersion":    "v0.11.1",
 					"CNI":              "cilium",
 					"CiliumCLIVersion": "v0.9.0",
 					"Endpoints":        []string{"http://1.2.3.4:2379"},

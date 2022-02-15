@@ -361,7 +361,8 @@ EOF
     sudo tar -xf {{ .DownloadDir }}/cilium.tar.gz -C {{ .DownloadDir }}
     /opt/bin/cilium install \
         --config enable-endpoint-routes=true \
-        --config cluster-pool-ipv4-cidr={{ .PodSubnet }}
+        --config cluster-pool-ipv4-cidr={{ .PodSubnet }} \
+        --version={{ .CiliumVersion }}
     # --wait will wait for status to report success
     /opt/bin/cilium status --wait
 {{ end }}
