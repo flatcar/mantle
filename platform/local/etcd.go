@@ -22,9 +22,11 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/coreos/etcd/etcdserver"
-	"github.com/coreos/etcd/etcdserver/api/v2http"
-	"github.com/coreos/etcd/pkg/types"
+	"go.etcd.io/etcd/client/pkg/v3/types"
+	"go.etcd.io/etcd/server/v3/config"
+	"go.etcd.io/etcd/server/v3/etcdserver"
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v2http"
+	"go.uber.org/zap"
 )
 
 const (
@@ -72,7 +74,16 @@ func NewSimpleEtcd() (*SimpleEtcd, error) {
 		return nil, err
 	}
 
-	cfg := etcdserver.ServerConfig{
+	lCfg := zap.NewProductionConfig()
+	lCfg.Encoding = "console"
+	lCfg.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
+
+	log, err := lCfg.Build()
+	if err != nil {
+		return nil, fmt.Errorf("building zap logging config: %v", err)
+	}
+
+	cfg := config.ServerConfig{
 		Name:       memberName,
 		ClientURLs: clientURLs,
 		PeerURLs:   peerURLs,
@@ -83,6 +94,7 @@ func NewSimpleEtcd() (*SimpleEtcd, error) {
 		NewCluster:    true,
 		TickMs:        100,
 		ElectionTicks: 10,
+		Logger:        log,
 	}
 
 	se.server, err = etcdserver.NewServer(cfg)
@@ -91,8 +103,9 @@ func NewSimpleEtcd() (*SimpleEtcd, error) {
 	}
 
 	se.server.Start()
+
 	go http.Serve(se.listener,
-		v2http.NewClientHandler(se.server, cfg.ReqTimeout()))
+		v2http.NewClientHandler(nil, se.server, cfg.ReqTimeout()))
 
 	return se, nil
 }
