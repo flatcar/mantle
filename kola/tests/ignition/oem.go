@@ -94,7 +94,8 @@ func reusePartition(c cluster.TestCluster) {
 	out := c.MustSSH(c.Machines()[0], `lsblk --output FSTYPE,LABEL,MOUNTPOINT --json | jq -r '.blockdevices | .[] | select(.label=="OEM") | .fstype'`)
 
 	if string(out) != "btrfs" {
-		c.Fatalf("should get btrfs, got: %s", string(out))
+		debug := c.MustSSH(c.Machines()[0], `lsblk --output FSTYPE,LABEL,MOUNTPOINT --json; echo ; lsblk`)
+		c.Fatalf("should get btrfs, got: %s\ndebug info: %s", string(out), string(debug))
 	}
 }
 
