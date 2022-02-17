@@ -96,6 +96,7 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 
 		af.Network, err = af.api.PrepareNetworkResources(af.ImageResourceGroup)
 		if err != nil {
+			af.Destroy()
 			return nil, err
 		}
 
@@ -188,6 +189,7 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 
 		ac.Network, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
 		if err != nil {
+			ac.Destroy()
 			return nil, err
 		}
 	}

@@ -17,6 +17,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 
@@ -31,6 +32,45 @@ var (
 )
 
 func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
+	if a.opts.VnetSubnetName != "" {
+		parts := strings.SplitN(a.opts.VnetSubnetName, "/", 2)
+		vnetName := parts[0]
+		subnetName := "default"
+		if len(parts) > 1 {
+			subnetName = parts[1]
+		}
+		result, err := a.netClient.ListAllComplete(context.TODO())
+		if err != nil {
+			return Network{}, fmt.Errorf("failed to query vnets: %w", err)
+		}
+		var net network.VirtualNetwork
+		found := false
+		for result.NotDone() {
+			net = result.Value()
+			if net.Name != nil && *net.Name == vnetName {
+				found = true
+				break
+			}
+			err = result.Next()
+			if err != nil {
+				return Network{}, fmt.Errorf("failed to iterate vnets: %w", err)
+			}
+		}
+		if !found {
+			return Network{}, fmt.Errorf("failed to find vnet %s", vnetName)
+		}
+		subnets := net.VirtualNetworkPropertiesFormat.Subnets
+		if subnets == nil {
+			return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
+		}
+		for _, subnet := range *subnets {
+			if subnet.Name != nil && *subnet.Name == subnetName {
+				return Network{subnet}, nil
+			}
+		}
+		return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
+	}
+
 	if err := a.createVirtualNetwork(resourceGroup); err != nil {
 		return Network{}, err
 	}
