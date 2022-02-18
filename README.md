@@ -78,6 +78,7 @@ The easiest way to get started with `kola` is to run a `qemu` test.
 
 ***requirements***:
  - IPv4 forwarding (to provide internet access to the instance): `sudo sysctl -w net.ipv4.ip_forward=1`
+ - Stop `firewalld.service` or similar frameworks: `sudo systemctl stop firewalld.service` (for permanent disablement use `sudo systemctl disable --now firewalld.service`)
  - `dnsmasq`, `go` and `iptables` installed and present in the `$PATH`
  - `qemu-system-x86_64` and / or `qemu-system-aarch64` to respectively tests `amd64` and / or `arm64`
 
