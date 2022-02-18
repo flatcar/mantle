@@ -181,8 +181,12 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	if vm.Name == nil {
 		return nil, fmt.Errorf("couldn't get VM ID")
 	}
-
-	publicaddr, privaddr, err := a.GetIPAddresses(*nic.Name, *ip.Name, resourceGroup)
+	ipName := *ip.Name
+	if a.opts.UsePrivateIps {
+		// empty IP name means instance is accessible via private ip address
+		ipName = ""
+	}
+	publicaddr, privaddr, err := a.GetIPAddresses(*nic.Name, ipName, resourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +196,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		PublicIPAddress:  publicaddr,
 		PrivateIPAddress: privaddr,
 		InterfaceName:    *nic.Name,
-		PublicIPName:     *ip.Name,
+		PublicIPName:     ipName,
 	}, nil
 }
 

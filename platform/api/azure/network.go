@@ -151,7 +151,7 @@ func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, er
 	return &ip, nil
 }
 
-func (a *API) GetPublicIP(name, resourceGroup string) (string, error) {
+func (a *API) getPublicIP(name, resourceGroup string) (string, error) {
 	ip, err := a.ipClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return "", err
@@ -166,24 +166,31 @@ func (a *API) GetPublicIP(name, resourceGroup string) (string, error) {
 
 // returns PublicIP, PrivateIP, error
 func (a *API) GetIPAddresses(name, publicIPName, resourceGroup string) (string, string, error) {
-	publicIP, err := a.GetPublicIP(publicIPName, resourceGroup)
-	if err != nil {
-		return "", "", err
-	}
-
 	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
 	if err != nil {
 		return "", "", err
 	}
-
 	configs := *nic.InterfacePropertiesFormat.IPConfigurations
+	var privateIP *string
 	for _, conf := range configs {
 		if conf.PrivateIPAddress == nil {
 			return "", "", fmt.Errorf("PrivateIPAddress is nil")
 		}
-		return publicIP, *conf.PrivateIPAddress, nil
+		privateIP = conf.PrivateIPAddress
+		break
 	}
-	return "", "", fmt.Errorf("no ip configurations found")
+	if privateIP == nil {
+		return "", "", fmt.Errorf("no ip configurations found")
+	}
+	if publicIPName == "" {
+		return *privateIP, *privateIP, nil
+	}
+
+	publicIP, err := a.getPublicIP(publicIPName, resourceGroup)
+	if err != nil {
+		return "", "", err
+	}
+	return publicIP, *privateIP, nil
 }
 
 func (a *API) GetPrivateIP(name, resourceGroup string) (string, error) {
