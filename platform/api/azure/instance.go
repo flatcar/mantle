@@ -59,6 +59,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 		osProfile.CustomData = &ud
 	}
 	var imgRef *compute.ImageReference
+	var plan *compute.Plan
 	if a.opts.DiskURI != "" {
 		imgRef = &compute.ImageReference{
 			ID: &a.opts.DiskURI,
@@ -70,6 +71,11 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			Sku:       &a.opts.Sku,
 			Version:   &a.opts.Version,
 		}
+		plan = &compute.Plan{
+			Publisher: imgRef.Publisher,
+			Product:   imgRef.Offer,
+			Name:      imgRef.Sku,
+		}
 	}
 	return compute.VirtualMachine{
 		Name:     &name,
@@ -77,6 +83,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 		Tags: map[string]*string{
 			"createdBy": util.StrToPtr("mantle"),
 		},
+		Plan: plan,
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(a.opts.Size),
