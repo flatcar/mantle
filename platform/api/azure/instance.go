@@ -182,8 +182,8 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		return nil, fmt.Errorf("couldn't get VM ID")
 	}
 	ipName := *ip.Name
-	if a.opts.UsePrivateIps {
-		// empty IP name means instance is accessible via private ip address
+	if a.opts.UsePrivateIPs {
+		// empty IP name means instance is accessible via private IP address
 		ipName = ""
 	}
 	publicaddr, privaddr, err := a.GetIPAddresses(*nic.Name, ipName, resourceGroup)

@@ -79,7 +79,7 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
 	if err != nil {
 		return Network{}, err
 	}
-	return Network{subnet}, err
+	return Network{subnet}, nil
 }
 
 func (a *API) createVirtualNetwork(resourceGroup string) error {
