@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/api/azure"
 	"github.com/flatcar-linux/mantle/platform/conf"
 )
 
@@ -30,6 +31,7 @@ type cluster struct {
 	sshKey         string
 	ResourceGroup  string
 	StorageAccount string
+	Network        azure.Network
 }
 
 func (ac *cluster) vmname() string {
@@ -46,7 +48,7 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	instance, err := ac.flight.api.CreateInstance(ac.vmname(), conf.String(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount)
+	instance, err := ac.flight.api.CreateInstance(ac.vmname(), conf.String(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, ac.Network)
 	if err != nil {
 		return nil, err
 	}

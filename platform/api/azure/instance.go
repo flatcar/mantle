@@ -110,11 +110,8 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	}
 }
 
-func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string) (*Machine, error) {
-	subnet, err := a.getSubnet(resourceGroup)
-	if err != nil {
-		return nil, fmt.Errorf("preparing network resources: %v", err)
-	}
+func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, network Network) (*Machine, error) {
+	subnet := network.subnet
 
 	ip, err := a.createPublicIP(resourceGroup)
 	if err != nil {

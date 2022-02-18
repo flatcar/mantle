@@ -26,19 +26,25 @@ import (
 var (
 	virtualNetworkPrefix = []string{"10.0.0.0/16"}
 	subnetPrefix         = "10.0.0.0/24"
+	kolaSubnet           = "kola-subnet"
+	kolaVnet             = "kola-vn"
 )
 
-func (a *API) PrepareNetworkResources(resourceGroup string) (network.Subnet, error) {
+func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
 	if err := a.createVirtualNetwork(resourceGroup); err != nil {
-		return network.Subnet{}, err
+		return Network{}, err
 	}
 
-	return a.createSubnet(resourceGroup)
+	subnet, err := a.createSubnet(resourceGroup)
+	if err != nil {
+		return Network{}, err
+	}
+	return Network{subnet}, err
 }
 
 func (a *API) createVirtualNetwork(resourceGroup string) error {
-	plog.Infof("Creating VirtualNetwork %s", "kola-vn")
-	future, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", network.VirtualNetwork{
+	plog.Infof("Creating VirtualNetwork %s", kolaVnet)
+	future, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, network.VirtualNetwork{
 		Location: &a.opts.Location,
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
@@ -58,8 +64,8 @@ func (a *API) createVirtualNetwork(resourceGroup string) error {
 }
 
 func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
-	plog.Infof("Creating Subnet %s", "kola-subnet")
-	future, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", network.Subnet{
+	plog.Infof("Creating Subnet %s", kolaSubnet)
+	future, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, kolaSubnet, network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 			AddressPrefix: &subnetPrefix,
 		},
@@ -74,8 +80,8 @@ func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
 	return future.Result(a.subClient)
 }
 
-func (a *API) getSubnet(resourceGroup string) (network.Subnet, error) {
-	return a.subClient.Get(context.TODO(), resourceGroup, "kola-vn", "kola-subnet", "")
+func (a *API) getSubnet(resourceGroup, vnet, subnet string) (network.Subnet, error) {
+	return a.subClient.Get(context.TODO(), resourceGroup, vnet, subnet, "")
 }
 
 func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, error) {
