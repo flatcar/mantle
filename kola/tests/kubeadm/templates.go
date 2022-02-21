@@ -29,6 +29,7 @@ var (
         Environment=CNI_VERSION={{ .CNIVersion }}
         ExecStartPre=/usr/bin/mkdir --parents /opt/cni/bin
         ExecStartPre=/usr/bin/tar -v --extract --file "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz" --directory /opt/cni/bin --no-same-owner
+        ExecStartPre=/usr/bin/chcon -R /opt/cni -t svirt_lxc_file_t
         ExecStart=/usr/bin/rm "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz"
         [Install]
         WantedBy=multi-user.target
@@ -121,6 +122,7 @@ storage:
         Environment=CNI_VERSION={{ .CNIVersion }}
         ExecStartPre=/usr/bin/mkdir --parents /opt/cni/bin
         ExecStartPre=/usr/bin/tar -v --extract --file "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz" --directory /opt/cni/bin --no-same-owner
+        ExecStartPre=/usr/bin/chcon -R /opt/cni -t svirt_lxc_file_t
         ExecStart=/usr/bin/rm "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz"
         [Install]
         WantedBy=multi-user.target
