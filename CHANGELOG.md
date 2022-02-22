@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - kola: fixed cl.filesystem test for systemd 250 and newer ([#280](https://github.com/flatcar-linux/mantle/pull/280))
 - PXE boots now over HTTPS on Equinix Metal ([#288](https://github.com/flatcar-linux/mantle/pull/288))
 - Bumped cilium tested version to 1.11.0 ([291](https://github.com/flatcar-linux/mantle/pull/291))
-- Bumped `etcd` and `cobra` dependency ([#293](https://github.com/flatcar-linux/mantle/pull/293))
+- Bumped `etcd` and `cobra` dependencies ([#293](https://github.com/flatcar-linux/mantle/pull/293))
+- Bumped Kubernetes binaries and CNI versions ([#297](https://github.com/flatcar-linux/mantle/pull/297))
 
 ### Removed
 - Remove `--repo-branch` option from cork ([#283](https://github.com/flatcar-linux/mantle/pull/283))

@@ -13,6 +13,7 @@ systemd:
         Environment=CNI_VERSION=v0.8.7
         ExecStartPre=/usr/bin/mkdir --parents /opt/cni/bin
         ExecStartPre=/usr/bin/tar -v --extract --file "/opt/cni-plugins-linux-amd64-${CNI_VERSION}.tgz" --directory /opt/cni/bin --no-same-owner
+        ExecStartPre=/usr/bin/chcon -R /opt/cni -t svirt_lxc_file_t
         ExecStart=/usr/bin/rm "/opt/cni-plugins-linux-amd64-${CNI_VERSION}.tgz"
         [Install]
         WantedBy=multi-user.target
