@@ -53,6 +53,10 @@ type API struct {
 	opts       *Options
 }
 
+type Network struct {
+	subnet network.Subnet
+}
+
 // New creates a new Azure client. If no publish settings file is provided or
 // can't be parsed, an anonymous client is created.
 func New(opts *Options) (*API, error) {

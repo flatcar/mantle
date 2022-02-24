@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `Metro` to Equinix Metal options ([#281](https://github.com/flatcar-linux/mantle/pull/281))
 - `update-offer` ore subcommand for AWS marketplace publishing ([#282](https://github.com/flatcar-linux/mantle/pull/282))
 - kola test `cl.swap_activation` for swap activation with CLC ([#284](https://github.com/flatcar-linux/mantle/pull/284))
+- Azure: support for running Kola within an existing vnet and with private addressing ([#295](https://github.com/flatcar-linux/mantle/pull/295))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))

@@ -35,7 +35,9 @@ type Options struct {
 	Size             string
 	Location         string
 	HyperVGeneration string
+	VnetSubnetName   string
 	UseGallery       bool
+	UsePrivateIPs    bool
 
 	SubscriptionName string
 	SubscriptionID   string

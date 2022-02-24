@@ -59,6 +59,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 		osProfile.CustomData = &ud
 	}
 	var imgRef *compute.ImageReference
+	var plan *compute.Plan
 	if a.opts.DiskURI != "" {
 		imgRef = &compute.ImageReference{
 			ID: &a.opts.DiskURI,
@@ -70,6 +71,11 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			Sku:       &a.opts.Sku,
 			Version:   &a.opts.Version,
 		}
+		plan = &compute.Plan{
+			Publisher: imgRef.Publisher,
+			Product:   imgRef.Offer,
+			Name:      imgRef.Sku,
+		}
 	}
 	return compute.VirtualMachine{
 		Name:     &name,
@@ -77,6 +83,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 		Tags: map[string]*string{
 			"createdBy": util.StrToPtr("mantle"),
 		},
+		Plan: plan,
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(a.opts.Size),
@@ -110,11 +117,8 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	}
 }
 
-func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string) (*Machine, error) {
-	subnet, err := a.getSubnet(resourceGroup)
-	if err != nil {
-		return nil, fmt.Errorf("preparing network resources: %v", err)
-	}
+func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, network Network) (*Machine, error) {
+	subnet := network.subnet
 
 	ip, err := a.createPublicIP(resourceGroup)
 	if err != nil {
@@ -177,8 +181,12 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	if vm.Name == nil {
 		return nil, fmt.Errorf("couldn't get VM ID")
 	}
-
-	publicaddr, privaddr, err := a.GetIPAddresses(*nic.Name, *ip.Name, resourceGroup)
+	ipName := *ip.Name
+	if a.opts.UsePrivateIPs {
+		// empty IP name means instance is accessible via private IP address
+		ipName = ""
+	}
+	publicaddr, privaddr, err := a.GetIPAddresses(*nic.Name, ipName, resourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +196,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		PublicIPAddress:  publicaddr,
 		PrivateIPAddress: privaddr,
 		InterfaceName:    *nic.Name,
-		PublicIPName:     *ip.Name,
+		PublicIPName:     ipName,
 	}, nil
 }
 

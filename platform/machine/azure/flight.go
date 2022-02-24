@@ -40,6 +40,7 @@ type flight struct {
 	FakeSSHKey          string
 	ImageResourceGroup  string
 	ImageStorageAccount string
+	Network             azure.Network
 }
 
 // NewFlight creates an instance of a Flight suitable for spawning
@@ -93,8 +94,9 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 			return nil, err
 		}
 
-		_, err = af.api.PrepareNetworkResources(af.ImageResourceGroup)
+		af.Network, err = af.api.PrepareNetworkResources(af.ImageResourceGroup)
 		if err != nil {
+			af.Destroy()
 			return nil, err
 		}
 
@@ -173,7 +175,7 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 	if af.ImageResourceGroup != "" && af.ImageStorageAccount != "" {
 		ac.ResourceGroup = af.ImageResourceGroup
 		ac.StorageAccount = af.ImageStorageAccount
-
+		ac.Network = af.Network
 	} else {
 		ac.ResourceGroup, err = af.api.CreateResourceGroup("kola-cluster")
 		if err != nil {
@@ -185,8 +187,9 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 			return nil, err
 		}
 
-		_, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
+		ac.Network, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
 		if err != nil {
+			ac.Destroy()
 			return nil, err
 		}
 	}
