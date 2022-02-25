@@ -91,6 +91,11 @@ func init() {
 
 // reusePartition asserts that even if the config uses a different fs format, we keep using `btrfs`.
 func reusePartition(c cluster.TestCluster) {
+	grub := c.MustSSH(c.Machines()[0], `grep -m 1 '^set linux_append="flatcar.autologin"$' /usr/share/oem/grub.cfg`)
+	if string(grub) != `set linux_append="flatcar.autologin"` {
+		c.Fatalf("did not find written grub entry: %s", string(grub))
+	}
+
 	out := c.MustSSH(c.Machines()[0], `lsblk --output FSTYPE,LABEL,MOUNTPOINT --json | jq -r '.blockdevices | .[] | select(.label=="OEM") | .fstype'`)
 
 	if string(out) != "btrfs" {
