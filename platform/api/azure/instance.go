@@ -117,15 +117,21 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	}
 }
 
-func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, network Network) (*Machine, error) {
-	subnet := network.subnet
+func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, net Network) (*Machine, error) {
+	subnet := net.subnet
 
-	ip, err := a.createPublicIP(resourceGroup)
-	if err != nil {
-		return nil, fmt.Errorf("creating public ip: %v", err)
-	}
-	if ip.Name == nil {
-		return nil, fmt.Errorf("couldn't get public IP name")
+	ipName := ""
+	var ip *network.PublicIPAddress = nil
+	var err error = nil
+	if !a.opts.UsePrivateIPs {
+		ip, err = a.createPublicIP(resourceGroup)
+		if err != nil {
+			return nil, fmt.Errorf("creating public ip: %v", err)
+		}
+		if ip.Name == nil {
+			return nil, fmt.Errorf("couldn't get public IP name")
+		}
+		ipName = *ip.Name
 	}
 
 	nic, err := a.createNIC(ip, &subnet, resourceGroup)
@@ -169,7 +175,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	if err != nil {
 		_, _ = a.compClient.Delete(context.TODO(), resourceGroup, name, &forceDelete)
 		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)
-		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, *ip.Name)
+		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, ipName)
 		return nil, fmt.Errorf("waiting for machine to become active: %v", err)
 	}
 
@@ -180,11 +186,6 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 
 	if vm.Name == nil {
 		return nil, fmt.Errorf("couldn't get VM ID")
-	}
-	ipName := *ip.Name
-	if a.opts.UsePrivateIPs {
-		// empty IP name means instance is accessible via private IP address
-		ipName = ""
 	}
 	publicaddr, privaddr, err := a.GetIPAddresses(*nic.Name, ipName, resourceGroup)
 	if err != nil {
