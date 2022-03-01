@@ -21,6 +21,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 
 	"github.com/flatcar-linux/mantle/kola"
@@ -66,6 +67,7 @@ var (
 				"CNISum":     "220ee0073e9b3708b8ec6159a6ee511b2fd9b88cbe74d48a9b823542e17acf53acec6215869a1d21826422d655eebdd53795fafcef70205d34bf9d8878b493d8",
 				"KubectlSum": "12349ef989f85e99ae88bb1e20ad15aa1c0aea7050372b4ae56e9f89c270a176246c445cf350d1024bc91e3fd5955ed1c6035185d0f4217f4b99628e9c173d50",
 			},
+			"cgroupv1": false,
 		},
 		"v1.22.7": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
@@ -90,6 +92,7 @@ var (
 				"CNISum":     "220ee0073e9b3708b8ec6159a6ee511b2fd9b88cbe74d48a9b823542e17acf53acec6215869a1d21826422d655eebdd53795fafcef70205d34bf9d8878b493d8",
 				"KubectlSum": "c34d3a8f09993036acbe21a580bb25eb95b27c03d2950844220afb1ebe35e8bc67f2cb7682adbe1e1a7f33f5dd34e5abb2c1d899abe2090b194dfdf7b9c2e509",
 			},
+			"cgroupv1": false,
 		},
 		"v1.21.10": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
@@ -114,6 +117,7 @@ var (
 				"CNISum":     "220ee0073e9b3708b8ec6159a6ee511b2fd9b88cbe74d48a9b823542e17acf53acec6215869a1d21826422d655eebdd53795fafcef70205d34bf9d8878b493d8",
 				"KubectlSum": "5334a634ea72358f2ec303e82678160e260b8920aeb62c1953a43cb70bc919870568e67144f78c4949e0db1297ee2b5e604ff76a7433637c093919c855d189d1",
 			},
+			"cgroupv1": false,
 		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/kubeadm")
@@ -124,27 +128,46 @@ etcd:
 )
 
 func init() {
-	for version, params := range testConfig {
-		for _, CNI := range CNIs {
-			// ugly but required to remove the reference between params and the params
-			// actually used by the test.
-			testParams := make(map[string]interface{})
-			for k, v := range params {
-				testParams[k] = v
-			}
-			testParams["CNI"] = CNI
-			testParams["Release"] = version
+	testConfigCgroupV1 := map[string]map[string]interface{}{}
+	testConfigCgroupV1["v1.21.10"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.21.10"] {
+		testConfigCgroupV1["v1.21.10"][k] = v
+	}
+	testConfigCgroupV1["v1.21.10"]["cgroupv1"] = true
 
-			register.Register(&register.Test{
-				Name:             fmt.Sprintf("kubeadm.%s.%s.base", version, CNI),
-				Distros:          []string{"cl"},
-				ExcludePlatforms: []string{"esx"},
-				Run: func(c cluster.TestCluster) {
-					kubeadmBaseTest(c, testParams)
-				},
-			})
+	registerTests := func(config map[string]map[string]interface{}) {
+		for version, params := range config {
+			for _, CNI := range CNIs {
+				// ugly but required to remove the reference between params and the params
+				// actually used by the test.
+				testParams := make(map[string]interface{})
+				for k, v := range params {
+					testParams[k] = v
+				}
+				testParams["CNI"] = CNI
+				testParams["Release"] = version
+
+				cgroupSuffix := ""
+				var major int64 = 0
+				if testParams["cgroupv1"].(bool) {
+					cgroupSuffix = ".cgroupv1"
+					major = 3140
+				}
+
+				register.Register(&register.Test{
+					Name:             fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
+					Distros:          []string{"cl"},
+					ExcludePlatforms: []string{"esx"},
+					Run: func(c cluster.TestCluster) {
+						kubeadmBaseTest(c, testParams)
+					},
+					MinVersion: semver.Version{Major: major},
+				})
+			}
 		}
 	}
+	registerTests(testConfig)
+	registerTests(testConfigCgroupV1)
 }
 
 // kubeadmBaseTest asserts that the cluster is up and running

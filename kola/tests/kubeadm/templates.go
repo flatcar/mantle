@@ -16,6 +16,14 @@ package kubeadm
 var (
 	workerConfig = `systemd:
   units:
+{{ if .cgroupv1 }}
+    - name: containerd.service
+      dropins:
+      - name: 10-use-cgroupfs.conf
+        contents: |
+          [Service]
+          Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml
+{{ end }}
     - name: prepare-cni-plugins.service
       enabled: true
       contents: |
@@ -52,6 +60,10 @@ var (
         WantedBy=multi-user.target
 storage:
   files:
+{{ if .cgroupv1 }}
+    - path: /etc/flatcar-cgroupv1
+      mode: 0444
+{{ end }}
     - path: /opt/cni-plugins-linux-{{ .Arch }}-{{ .CNIVersion }}.tgz
       filesystem: root
       mode: 0644
@@ -108,7 +120,13 @@ storage:
           }`
 
 	masterConfig = `systemd:
-  units:
+  units:{{ if .cgroupv1 }}
+    - name: containerd.service
+      dropins:
+      - name: 10-use-cgroupfs.conf
+        contents: |
+          [Service]
+          Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml{{ end }}
     - name: prepare-cni-plugins.service
       enabled: true
       contents: |
@@ -144,7 +162,9 @@ storage:
         [Install]
         WantedBy=multi-user.target
 storage:
-  files:
+  files:{{ if .cgroupv1 }}
+    - path: /etc/flatcar-cgroupv1
+      mode: 0444{{ end }}
     - path: /opt/cni-plugins-linux-{{ .Arch }}-{{ .CNIVersion }}.tgz
       filesystem: root
       mode: 0644
