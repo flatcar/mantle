@@ -71,7 +71,7 @@ var (
 		},
 		"v1.23.4": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.0",
+			"CiliumVersion":    "1.11.2",
 			"CiliumCLIVersion": "v0.10.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
@@ -96,7 +96,7 @@ var (
 		},
 		"v1.22.7": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.0",
+			"CiliumVersion":    "1.11.2",
 			"CiliumCLIVersion": "v0.10.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
