@@ -19,8 +19,8 @@ require (
 	github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269 // indirect
 	github.com/digitalocean/godo v1.45.0
 	github.com/flatcar-linux/container-linux-config-transpiler v0.9.3-0.20220208152502-6e8303479682
-	github.com/flatcar-linux/ignition v0.36.1
-	github.com/flatcar-linux/ignition/v2 v2.2.1-0.20220107090316-32908ec8bade
+	github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba
+	github.com/flatcar-linux/ignition/v2 v2.2.1-0.20220311122140-cb95c51122f5
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.2
@@ -31,7 +31,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/spf13/cobra v1.1.3
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 	github.com/stretchr/testify v1.7.0
 	github.com/ulikunitz/xz v0.5.10
 	github.com/vincent-petithory/dataurl v1.0.0
