@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	configErrors "github.com/flatcar-linux/ignition/config/shared/errors"
-	"github.com/flatcar-linux/ignition/config/v2_4_experimental/types"
+	"github.com/flatcar-linux/ignition/config/v2_4/types"
 	"github.com/flatcar-linux/ignition/config/validate/report"
 
 	json "github.com/ajeddeloh/go-json"

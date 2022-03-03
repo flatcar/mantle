@@ -1,4 +1,4 @@
-// Copyright 2015 CoreOS, Inc.
+// Copyright 2018 CoreOS, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,38 +15,44 @@
 package types
 
 import (
-	"github.com/coreos/go-semver/semver"
+	"net/url"
 
 	"github.com/flatcar-linux/ignition/config/shared/errors"
 	"github.com/flatcar-linux/ignition/config/validate/report"
 )
 
-func (c ConfigReference) ValidateSource() report.Report {
-	r := report.Report{}
+func (c CaReference) ValidateSource() report.Report {
 	err := validateURL(c.Source)
 	if err != nil {
+		return report.ReportFromError(err, report.EntryError)
+	}
+	return report.Report{}
+}
+
+func (c CaReference) ValidateHTTPHeaders() report.Report {
+	r := report.Report{}
+
+	if len(c.HTTPHeaders) < 1 {
+		return r
+	}
+
+	u, err := url.Parse(c.Source)
+	if err != nil {
 		r.Add(report.Entry{
-			Message: err.Error(),
+			Message: errors.ErrInvalidUrl.Error(),
+			Kind:    report.EntryError,
+		})
+		return r
+	}
+
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		r.Add(report.Entry{
+			Message: errors.ErrUnsupportedSchemeForHTTPHeaders.Error(),
 			Kind:    report.EntryError,
 		})
 	}
+
 	return r
-}
-
-func (v Ignition) Semver() (*semver.Version, error) {
-	return semver.NewVersion(v.Version)
-}
-
-func (v Ignition) Validate() report.Report {
-	tv, err := v.Semver()
-	if err != nil {
-		return report.ReportFromError(errors.ErrInvalidVersion, report.EntryError)
-	}
-	if MaxVersion.Major > tv.Major {
-		return report.ReportFromError(errors.ErrOldVersion, report.EntryError)
-	}
-	if MaxVersion.LessThan(*tv) {
-		return report.ReportFromError(errors.ErrNewVersion, report.EntryError)
-	}
-	return report.Report{}
 }

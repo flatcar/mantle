@@ -1,4 +1,4 @@
-// Copyright 2016 CoreOS, Inc.
+// Copyright 2020 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,43 +15,29 @@
 package types
 
 import (
-	"net/url"
-
-	"github.com/vincent-petithory/dataurl"
-
 	"github.com/flatcar-linux/ignition/v2/config/shared/errors"
 	"github.com/flatcar-linux/ignition/v2/config/util"
+
+	"github.com/coreos/vcontext/path"
+	"github.com/coreos/vcontext/report"
 )
 
-func validateURL(s string) error {
-	u, err := url.Parse(s)
-	if err != nil {
-		return errors.ErrInvalidUrl
-	}
-
-	switch u.Scheme {
-	case "http", "https", "tftp", "oem":
-		return nil
-	case "s3":
-		if v, ok := u.Query()["versionId"]; ok {
-			if len(v) == 0 || v[0] == "" {
-				return errors.ErrInvalidS3ObjectVersionId
-			}
-		}
-		return nil
-	case "data":
-		if _, err := dataurl.DecodeString(s); err != nil {
-			return err
-		}
-		return nil
-	default:
-		return errors.ErrInvalidScheme
-	}
+func (f File) Validate(c path.ContextPath) (r report.Report) {
+	r.Merge(f.Node.Validate(c))
+	r.AddOnError(c.Append("mode"), validateMode(f.Mode))
+	r.AddOnError(c.Append("overwrite"), f.validateOverwrite())
+	return
 }
 
-func validateURLNilOK(s *string) error {
-	if util.NilOrEmpty(s) {
-		return nil
+func (f File) validateOverwrite() error {
+	if util.IsTrue(f.Overwrite) && f.Contents.Source == nil {
+		return errors.ErrOverwriteAndNilSource
 	}
-	return validateURL(*s)
+	return nil
+}
+
+func (f FileEmbedded1) IgnoreDuplicates() map[string]struct{} {
+	return map[string]struct{}{
+		"Append": {},
+	}
 }

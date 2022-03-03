@@ -15,43 +15,28 @@
 package types
 
 import (
-	"net/url"
-
-	"github.com/vincent-petithory/dataurl"
+	"path"
 
 	"github.com/flatcar-linux/ignition/v2/config/shared/errors"
 	"github.com/flatcar-linux/ignition/v2/config/util"
 )
 
-func validateURL(s string) error {
-	u, err := url.Parse(s)
-	if err != nil {
-		return errors.ErrInvalidUrl
+func validatePath(p string) error {
+	if p == "" {
+		return errors.ErrNoPath
 	}
-
-	switch u.Scheme {
-	case "http", "https", "tftp", "oem":
-		return nil
-	case "s3":
-		if v, ok := u.Query()["versionId"]; ok {
-			if len(v) == 0 || v[0] == "" {
-				return errors.ErrInvalidS3ObjectVersionId
-			}
-		}
-		return nil
-	case "data":
-		if _, err := dataurl.DecodeString(s); err != nil {
-			return err
-		}
-		return nil
-	default:
-		return errors.ErrInvalidScheme
+	if !path.IsAbs(p) {
+		return errors.ErrPathRelative
 	}
+	if path.Clean(p) != p {
+		return errors.ErrDirtyPath
+	}
+	return nil
 }
 
-func validateURLNilOK(s *string) error {
-	if util.NilOrEmpty(s) {
+func validatePathNilOK(p *string) error {
+	if util.NilOrEmpty(p) {
 		return nil
 	}
-	return validateURL(*s)
+	return validatePath(*p)
 }

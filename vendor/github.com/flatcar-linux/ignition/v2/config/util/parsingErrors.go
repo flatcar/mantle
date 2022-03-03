@@ -15,7 +15,12 @@
 package util
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"io/ioutil"
+	"strings"
+	"unicode"
 
 	"github.com/flatcar-linux/ignition/v2/config/shared/errors"
 
@@ -24,10 +29,44 @@ import (
 	"github.com/coreos/vcontext/tree"
 )
 
+func isCloudConfig(userdata []byte) bool {
+	header := strings.SplitN(string(decompressIfGzipped(userdata)), "\n", 2)[0]
+
+	// Trim trailing whitespaces
+	header = strings.TrimRightFunc(header, unicode.IsSpace)
+
+	return (header == "#cloud-config")
+}
+
+func isScript(userdata []byte) bool {
+	header := strings.SplitN(string(decompressIfGzipped(userdata)), "\n", 2)[0]
+	return strings.HasPrefix(header, "#!")
+}
+
+func decompressIfGzipped(data []byte) []byte {
+	if reader, err := gzip.NewReader(bytes.NewReader(data)); err == nil {
+		uncompressedData, err := ioutil.ReadAll(reader)
+		reader.Close()
+		if err == nil {
+			return uncompressedData
+		} else {
+			return data
+		}
+	} else {
+		return data
+	}
+}
+
 // HandleParseErrors will attempt to unmarshal an invalid rawConfig into "to".
 // If it fails to unmarsh it will generate a report.Report from the errors.
 func HandleParseErrors(rawConfig []byte, to interface{}) (report.Report, error) {
 	r := report.Report{}
+
+	if isCloudConfig(rawConfig) || isScript(rawConfig) {
+		// returning ErrEmpty will make ignition ignoring this user provided config.
+		return report.Report{}, errors.ErrEmpty
+	}
+
 	err := json.Unmarshal(rawConfig, to)
 	if err == nil {
 		return report.Report{}, nil
