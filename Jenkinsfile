@@ -2,10 +2,7 @@
 
 properties([
     buildDiscarder(logRotator(daysToKeepStr: '20', numToKeepStr: '30', artifactNumToKeepStr: '3')),
-
-    [$class: 'CopyArtifactPermissionProperty',
-     projectNames: '*'],
-
+    copyArtifactPermission('*'),
     pipelineTriggers([
         pollSCM('H/15 * * * *'),
         githubPush(),
