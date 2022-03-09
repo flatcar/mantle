@@ -8,7 +8,7 @@ properties([
 
     pipelineTriggers([pollSCM('H/15 * * * *')]),
     parameters([
-        booleanParam(name: 'ARCHIVE_ARTIFACTS', defaultValue: false),
+        booleanParam(name: 'ARCHIVE_ARTIFACTS', defaultValue: true),
         booleanParam(name: 'CLEAN', defaultValue: true)
     ])
 ])
