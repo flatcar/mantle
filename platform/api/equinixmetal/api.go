@@ -362,6 +362,7 @@ ExecStart=/usr/bin/curl --retry-delay 1 --retry 120 --retry-connrefused --retry-
 # We don't verify signatures because the iPXE script isn't verified either
 # (and, in fact, is transferred over HTTP)
 
+ExecStartPre=-/bin/bash -c 'shopt -s nullglob; for disk in /dev/*da? /dev/nvme?n1; do wipefs --all --force ${disk}; done'
 ExecStart=/usr/bin/flatcar-install -s -f image.bin.bz2 %v /userdata
 
 ExecStart=/usr/bin/systemctl --no-block isolate reboot.target
