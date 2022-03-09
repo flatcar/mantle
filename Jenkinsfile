@@ -2,13 +2,13 @@
 
 properties([
     buildDiscarder(logRotator(daysToKeepStr: '20', numToKeepStr: '30', artifactNumToKeepStr: '3')),
-
-    [$class: 'CopyArtifactPermissionProperty',
-     projectNames: '*'],
-
-    pipelineTriggers([pollSCM('H/15 * * * *')]),
+    copyArtifactPermission('*'),
+    pipelineTriggers([
+        pollSCM('H/15 * * * *'),
+        githubPush(),
+    ]),
     parameters([
-        booleanParam(name: 'ARCHIVE_ARTIFACTS', defaultValue: false),
+        booleanParam(name: 'ARCHIVE_ARTIFACTS', defaultValue: true),
         booleanParam(name: 'CLEAN', defaultValue: true)
     ])
 ])
