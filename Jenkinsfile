@@ -6,7 +6,10 @@ properties([
     [$class: 'CopyArtifactPermissionProperty',
      projectNames: '*'],
 
-    pipelineTriggers([pollSCM('H/15 * * * *')]),
+    pipelineTriggers([
+        pollSCM('H/15 * * * *'),
+        githubPush(),
+    ]),
     parameters([
         booleanParam(name: 'ARCHIVE_ARTIFACTS', defaultValue: true),
         booleanParam(name: 'CLEAN', defaultValue: true)
