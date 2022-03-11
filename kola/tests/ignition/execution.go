@@ -80,6 +80,39 @@ func init() {
                            }`),
 		Distros: []string{"cl", "fcos", "rhcos"},
 	})
+	register.Register(&register.Test{
+		Name:        "cl.ignition.links",
+		Run:         testLink,
+		ClusterSize: 1,
+		// Important: the link's path shares a prefix with the
+		// file's path and should pass the ign-converter sanity
+		// check for not using a link dir in the file path
+		UserData: conf.Ignition(`{
+                             "ignition": { "version": "2.3.0" },
+                             "storage": {
+                               "files": [
+                                 {
+                                   "filesystem": "root",
+                                   "path": "/testdir/helloworld",
+                                   "contents": {
+                                     "source": "data:,"
+                                   },
+                                   "mode": 420
+                                 }
+                               ],
+                               "links": [
+                                 {
+                                   "filesystem": "root",
+                                   "path": "/testdir/hello",
+                                   "target": "/testdir/helloworld"
+                                 }
+                               ]
+                             }
+                           }`),
+		// This basic tests does not need to waste time on
+		// other platforms
+		Platforms: []string{"qemu", "qemu-unpriv"},
+	})
 }
 
 func runsOnce(c cluster.TestCluster) {
@@ -95,4 +128,11 @@ func runsOnce(c cluster.TestCluster) {
 
 	// make sure file hasn't been recreated
 	c.MustSSH(m, "test ! -e /etc/ignition-ran")
+}
+
+func testLink(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	// fail if link is broken or does not exist
+	c.MustSSH(m, "ls /testdir/hello")
 }
