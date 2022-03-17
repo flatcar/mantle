@@ -80,7 +80,7 @@ func init() {
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// DO: https://github.com/coreos/bugs/issues/2205
 		// EquinixMetal & QEMU: https://github.com/coreos/ignition/issues/645
-		ExcludePlatforms: []string{"esx", "do", "equinixmetal"},
+		ExcludePlatforms: []string{"esx", "do", "equinixmetal", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
 	})
 }

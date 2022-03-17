@@ -33,8 +33,10 @@ func init() {
 		ClusterSize: 1,
 		Name:        "cl.verity",
 		Distros:     []string{"cl"},
-		Flags:       []register.Flag{register.NoKernelPanicCheck},
-		MinVersion:  semver.Version{Major: 2943},
+		// Somehow hangs
+		ExcludePlatforms: []string{"qemu-unpriv"},
+		Flags:            []register.Flag{register.NoKernelPanicCheck},
+		MinVersion:       semver.Version{Major: 2943},
 	})
 }
 

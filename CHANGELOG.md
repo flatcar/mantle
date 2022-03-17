@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - kola test `cl.swap_activation` for swap activation with CLC ([#284](https://github.com/flatcar-linux/mantle/pull/284))
 - Azure: support for running Kola within an existing vnet and with private addressing ([#295](https://github.com/flatcar-linux/mantle/pull/295))
 - kola tests `cl.cgroupv1` and `kubeadm.*.*.cgroupv1.base` that test functionality with cgroupv1 ([#298](https://github.com/flatcar-linux/mantle/pull/298))
+- Added private network support to qemu-unpriv platform ([#307](https://github.com/flatcar-linux/mantle/pull/307))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))

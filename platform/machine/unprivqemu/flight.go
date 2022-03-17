@@ -15,9 +15,12 @@
 package unprivqemu
 
 import (
+	"net"
 	"os"
 
 	"github.com/coreos/pkg/capnslog"
+
+	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
 
 	"github.com/flatcar-linux/mantle/platform"
 	"github.com/flatcar-linux/mantle/platform/machine/qemu"
@@ -40,7 +43,7 @@ var (
 )
 
 func NewFlight(opts *qemu.Options) (platform.Flight, error) {
-	bf, err := platform.NewBaseFlight(opts.Options, Platform, "")
+	bf, err := platform.NewBaseFlight(opts.Options, Platform, ctplatform.Custom)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +65,14 @@ func (qf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		return nil, err
 	}
 
+	l, err := net.Listen("tcp", "127.0.0.99:0")
+	if err != nil {
+		return nil, err
+	}
 	qc := &Cluster{
-		BaseCluster: bc,
-		flight:      qf,
+		BaseCluster:     bc,
+		flight:          qf,
+		mcastPortHolder: l,
 	}
 
 	qf.AddCluster(qc)

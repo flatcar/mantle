@@ -39,8 +39,7 @@ func init() {
   listen_peer_urls:            http://{PRIVATE_IPV4}:2380
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery`),
-		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"qemu-unpriv"},
+		Distros: []string{"cl"},
 	})
 
 	register.Register(&register.Test{
@@ -57,8 +56,7 @@ etcd:
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery
   enable_v2:                   true`),
-		ExcludePlatforms: []string{"esx", "qemu-unpriv"}, // etcd-member requires ct rendering and networking
-		Distros:          []string{"cl"},
+		Distros: []string{"cl"},
 	})
 
 	register.Register(&register.Test{
@@ -75,8 +73,7 @@ etcd:
   listen_peer_urls:            http://0.0.0.0:2380
   initial_advertise_peer_urls: http://127.0.0.1:2380
 `, uuid.New())),
-		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"qemu-unpriv"},
+		Distros: []string{"cl"},
 	})
 }
 

@@ -31,6 +31,7 @@ type machine struct {
 	consolePath string
 	console     string
 	ip          string
+	privateAddr string
 }
 
 func (m *machine) ID() string {
@@ -42,7 +43,7 @@ func (m *machine) IP() string {
 }
 
 func (m *machine) PrivateIP() string {
-	return m.ip
+	return m.privateAddr
 }
 
 func (m *machine) RuntimeConf() platform.RuntimeConfig {

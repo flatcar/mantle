@@ -15,8 +15,10 @@
 package unprivqemu
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -39,9 +41,12 @@ import (
 // through type assertions.
 type Cluster struct {
 	*platform.BaseCluster
-	flight *flight
+	flight          *flight
+	mcastPortHolder net.Listener
 
 	mu sync.Mutex
+
+	counter uint64
 }
 
 func (qc *Cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
@@ -60,15 +65,47 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 	// NOTE: escaping is not supported
 	qc.mu.Lock()
 
-	conf, err := qc.RenderUserData(userdata, map[string]string{})
+	conf, err := qc.RenderUserData(userdata, map[string]string{
+		"$public_ipv4":  "${COREOS_CUSTOM_PUBLIC_IPV4}",
+		"$private_ipv4": "${COREOS_CUSTOM_PRIVATE_IPV4}",
+	})
 	if err != nil {
 		qc.mu.Unlock()
 		return nil, err
 	}
 	qc.mu.Unlock()
 
+	macAddr, privateAddr, err := qc.newAddresses()
+	if err != nil {
+		return nil, err
+	}
+
 	var confPath string
 	if conf.IsIgnition() {
+		conf.AddSystemdUnit("coreos-metadata.service", `[Unit]
+Description=QEMU metadata agent
+After=nss-lookup.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=OUTPUT=/run/metadata/flatcar
+ExecStart=/usr/bin/mkdir --parent /run/metadata
+ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=`+privateAddr+`\nCOREOS_CUSTOM_PUBLIC_IPV4=`+privateAddr+`\n" > ${OUTPUT}'
+ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
+`, false)
+		conf.AddFile("/etc/systemd/network/10-private.network", "root", `[Match]
+MACAddress=`+macAddr+`
+[Link]
+RequiredForOnline=no
+[Address]
+Address=`+privateAddr+`/24
+Scope=link
+[Network]
+DHCP=no
+LinkLocalAddressing=no
+`, 0644)
 		confPath = filepath.Join(dir, "ignition.json")
 		if err := conf.WriteFile(confPath); err != nil {
 			return nil, err
@@ -88,6 +125,7 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 		id:          id,
 		journal:     journal,
 		consolePath: filepath.Join(dir, "console.txt"),
+		privateAddr: privateAddr,
 	}
 
 	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, qc.flight.opts.BIOSImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
@@ -101,7 +139,10 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 
 	qc.mu.Lock()
 
-	qmCmd = append(qmCmd, "-netdev", "user,id=eth0,hostfwd=tcp:127.0.0.1:0-:22", "-device", platform.Virtio(qc.flight.opts.Board, "net", "netdev=eth0"))
+	mcastPort := strings.Split(qc.mcastPortHolder.Addr().String(), ":")[1]
+	sharedNetDev := "socket,id=shared0,mcast=230.0.0.1:" + mcastPort
+	sharedNetIf := platform.Virtio(qc.flight.opts.Board, "net", "netdev=shared0") + ",mac=" + macAddr
+	qmCmd = append(qmCmd, "-netdev", "user,id=eth0,hostfwd=tcp:127.0.0.1:0-:22", "-device", platform.Virtio(qc.flight.opts.Board, "net", "netdev=eth0"), "-netdev", sharedNetDev, "-device", sharedNetIf)
 
 	plog.Debugf("NewMachine: %q", qmCmd)
 
@@ -148,6 +189,19 @@ func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 func (qc *Cluster) Destroy() {
 	qc.BaseCluster.Destroy()
 	qc.flight.DelCluster(qc)
+	_ = qc.mcastPortHolder.Close()
+}
+
+func (qc *Cluster) newAddresses() (string, string, error) {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+	if qc.counter > 253 {
+		return "", "", errors.New("Too many machines")
+	}
+	qc.counter += 1
+	ma := fmt.Sprintf("aa:bb:cc:dd:ee:%02x", qc.counter)
+	ia := fmt.Sprintf("172.24.213.%d", qc.counter)
+	return ma, ia, nil
 }
 
 // parse /proc/net/tcp to determine the port selected by QEMU
