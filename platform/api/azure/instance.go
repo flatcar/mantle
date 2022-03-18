@@ -93,6 +93,9 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 				OsDisk: &compute.OSDisk{
 					CreateOption: compute.DiskCreateOptionTypesFromImage,
 					DeleteOption: compute.DiskDeleteOptionTypesDelete,
+					ManagedDisk: &compute.ManagedDiskParameters{
+						StorageAccountType: compute.StorageAccountTypesPremiumLRS,
+					},
 				},
 			},
 			OsProfile: &osProfile,
