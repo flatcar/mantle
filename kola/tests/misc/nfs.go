@@ -56,8 +56,7 @@ func init() {
 
 		// Disabled on Azure because setting hostname
 		// is required at the instance creation level
-		// qemu-unpriv machines cannot communicate
-		ExcludePlatforms: []string{"azure", "qemu-unpriv"},
+		ExcludePlatforms: []string{"azure"},
 	})
 	// TODO: enable FCOS when FCCT exists
 	register.Register(&register.Test{
@@ -68,8 +67,7 @@ func init() {
 
 		// Disabled on Azure because setting hostname
 		// is required at the instance creation level
-		// qemu-unpriv machines cannot communicate
-		ExcludePlatforms: []string{"azure", "qemu-unpriv"},
+		ExcludePlatforms: []string{"azure"},
 	})
 }
 

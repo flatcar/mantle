@@ -155,9 +155,10 @@ func init() {
 				}
 
 				register.Register(&register.Test{
-					Name:             fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
-					Distros:          []string{"cl"},
-					ExcludePlatforms: []string{"esx"},
+					Name:    fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
+					Distros: []string{"cl"},
+					// Network config problems in esx and qemu-unpriv
+					ExcludePlatforms: []string{"esx", "qemu-unpriv"},
 					Run: func(c cluster.TestCluster) {
 						kubeadmBaseTest(c, testParams)
 					},
