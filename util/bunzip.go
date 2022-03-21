@@ -16,8 +16,10 @@ package util
 
 import (
 	"compress/bzip2"
+	"fmt"
 	"io"
 	"os"
+	"os/exec"
 )
 
 // Bunzip2 does bunzip2 decompression from src to dst.
@@ -28,8 +30,7 @@ func Bunzip2(dst io.Writer, src io.Reader) (written int64, err error) {
 	return io.Copy(dst, bzr)
 }
 
-// Bunzip2File does bunzip2 decompression from src file into dst file.
-func Bunzip2File(dst, src string) error {
+func Bunzip2FileGo(dst, src string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -47,4 +48,41 @@ func Bunzip2File(dst, src string) error {
 		os.Remove(dst)
 	}
 	return err
+}
+
+// Bunzip2File does bunzip2 decompression from src file into dst file.
+func Bunzip2File(dst, src string) error {
+	lbunzip2, err := exec.LookPath("lbunzip2")
+	if err != nil {
+		return Bunzip2FileGo(dst, src)
+	}
+
+	cmd := exec.Command(lbunzip2, "--stdout", "--decompress", src)
+	cmd.Stderr = os.Stderr
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("setup stdout pipe: %w", err)
+	}
+
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		os.Remove(dst)
+		return fmt.Errorf("start lbunzip2: %w", err)
+	}
+	_, err = io.Copy(out, stdout)
+	if err != nil {
+		os.Remove(dst)
+		return fmt.Errorf("copy: %w", err)
+	}
+	err = cmd.Wait()
+	if err != nil {
+		os.Remove(dst)
+		return fmt.Errorf("lunbzip2 returned: %w", err)
+	}
+	return nil
 }
