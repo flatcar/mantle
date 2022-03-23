@@ -140,8 +140,21 @@ var (
 
 coreos:
   units:
-    - name: update-engine.service
-      mask: true
+    - name: stop-and-mask-update-engine.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Stop Update Engine
+        Conflicts=update-engine.service
+        Before=update-engine.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/usr/bin/systemctl mask --now update-engine.service
+
+        [Install]
+        WantedBy=multi-user.target
 `)
 )
 
