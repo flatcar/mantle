@@ -38,6 +38,10 @@ func TestConfCopyKey(t *testing.T) {
 		Ignition(`{ "ignition": { "version": "2.2.0" } }`),
 		Ignition(`{ "ignition": { "version": "2.1.0" } }`),
 		Ignition(`{ "ignition": { "version": "2.0.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.0.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.1.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.2.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.3.0" } }`),
 		Ignition(`{ "ignitionVersion": 1 }`),
 		CloudConfig("#cloud-config"),
 	}

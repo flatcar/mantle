@@ -1,4 +1,4 @@
-// Copyright 2018 CoreOS, Inc.
+// Copyright 2019 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,11 @@
 package types
 
 import (
-	"github.com/flatcar-linux/ignition/config/validate/report"
+	"github.com/coreos/vcontext/path"
+	"github.com/coreos/vcontext/report"
 )
 
-func (c CaReference) ValidateSource() report.Report {
-	err := validateURL(c.Source)
-	if err != nil {
-		return report.ReportFromError(err, report.EntryError)
-	}
-	return report.Report{}
+func (d Device) Validate(c path.ContextPath) (r report.Report) {
+	r.AddOnError(c, validatePath(string(d)))
+	return
 }

@@ -41,6 +41,12 @@ import (
 	ign3err "github.com/flatcar-linux/ignition/v2/config/shared/errors"
 	v3 "github.com/flatcar-linux/ignition/v2/config/v3_0"
 	v3types "github.com/flatcar-linux/ignition/v2/config/v3_0/types"
+	v31 "github.com/flatcar-linux/ignition/v2/config/v3_1"
+	v31types "github.com/flatcar-linux/ignition/v2/config/v3_1/types"
+	v32 "github.com/flatcar-linux/ignition/v2/config/v3_2"
+	v32types "github.com/flatcar-linux/ignition/v2/config/v3_2/types"
+	v33 "github.com/flatcar-linux/ignition/v2/config/v3_3"
+	v33types "github.com/flatcar-linux/ignition/v2/config/v3_3/types"
 	ign3validate "github.com/flatcar-linux/ignition/v2/config/validate"
 	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/crypto/ssh/agent"
@@ -75,6 +81,9 @@ type Conf struct {
 	ignitionV22 *v22types.Config
 	ignitionV23 *v23types.Config
 	ignitionV3  *v3types.Config
+	ignitionV31 *v31types.Config
+	ignitionV32 *v32types.Config
+	ignitionV33 *v33types.Config
 	cloudconfig *cci.CloudConfig
 	script      string
 }
@@ -226,6 +235,33 @@ func (u *UserData) Render(ctPlatform string) (*Conf, error) {
 			return err
 		}
 
+		ignc31, report31, err := v31.Parse([]byte(u.data))
+		if err == nil {
+			c.ignitionV31 = &ignc31
+			return nil
+		} else if err != ign3err.ErrUnknownVersion {
+			plog.Errorf("invalid userdata: %v", report31)
+			return err
+		}
+
+		ignc32, report32, err := v32.Parse([]byte(u.data))
+		if err == nil {
+			c.ignitionV32 = &ignc32
+			return nil
+		} else if err != ign3err.ErrUnknownVersion {
+			plog.Errorf("invalid userdata: %v", report32)
+			return err
+		}
+
+		ignc33, report33, err := v33.Parse([]byte(u.data))
+		if err == nil {
+			c.ignitionV33 = &ignc33
+			return nil
+		} else if err != ign3err.ErrUnknownVersion {
+			plog.Errorf("invalid userdata: %v", report33)
+			return err
+		}
+
 		// give up
 		return err
 	}
@@ -295,6 +331,15 @@ func (c *Conf) String() string {
 	} else if c.ignitionV3 != nil {
 		buf, _ := json.Marshal(c.ignitionV3)
 		return string(buf)
+	} else if c.ignitionV31 != nil {
+		buf, _ := json.Marshal(c.ignitionV31)
+		return string(buf)
+	} else if c.ignitionV32 != nil {
+		buf, _ := json.Marshal(c.ignitionV32)
+		return string(buf)
+	} else if c.ignitionV33 != nil {
+		buf, _ := json.Marshal(c.ignitionV33)
+		return string(buf)
 	} else if c.cloudconfig != nil {
 		return c.cloudconfig.String()
 	} else if c.script != "" {
@@ -308,6 +353,21 @@ func (c *Conf) String() string {
 func (c *Conf) MergeV3(newConfig v3types.Config) {
 	mergeConfig := v3.Merge(*c.ignitionV3, newConfig)
 	c.ignitionV3 = &mergeConfig
+}
+
+func (c *Conf) MergeV31(newConfig v31types.Config) {
+	mergeConfig := v31.Merge(*c.ignitionV31, newConfig)
+	c.ignitionV31 = &mergeConfig
+}
+
+func (c *Conf) MergeV32(newConfig v32types.Config) {
+	mergeConfig := v32.Merge(*c.ignitionV32, newConfig)
+	c.ignitionV32 = &mergeConfig
+}
+
+func (c *Conf) MergeV33(newConfig v33types.Config) {
+	mergeConfig := v33.Merge(*c.ignitionV33, newConfig)
+	c.ignitionV33 = &mergeConfig
 }
 
 func (c *Conf) ValidConfig() bool {
@@ -337,6 +397,12 @@ func (c *Conf) getIgnitionValidateValue() reflect.Value {
 		return reflect.ValueOf(c.ignitionV23)
 	} else if c.ignitionV3 != nil {
 		return reflect.ValueOf(c.ignitionV3)
+	} else if c.ignitionV31 != nil {
+		return reflect.ValueOf(c.ignitionV31)
+	} else if c.ignitionV32 != nil {
+		return reflect.ValueOf(c.ignitionV32)
+	} else if c.ignitionV33 != nil {
+		return reflect.ValueOf(c.ignitionV33)
 	}
 	return reflect.ValueOf(nil)
 }
@@ -437,6 +503,80 @@ func (c *Conf) addFileV3(path, filesystem, contents string, mode int) {
 	c.MergeV3(newConfig)
 }
 
+func (c *Conf) addFileV31(path, filesystem, contents string, mode int) {
+	source := dataurl.EncodeBytes([]byte(contents))
+	newConfig := v31types.Config{
+		Ignition: v31types.Ignition{
+			Version: "3.1.0",
+		},
+		Storage: v31types.Storage{
+			Files: []v31types.File{
+				{
+					Node: v31types.Node{
+						Path: path,
+					},
+					FileEmbedded1: v31types.FileEmbedded1{
+						Contents: v31types.Resource{
+							Source: &source,
+						},
+						Mode: &mode,
+					},
+				},
+			},
+		},
+	}
+	c.MergeV31(newConfig)
+}
+
+func (c *Conf) addFileV32(path, filesystem, contents string, mode int) {
+	source := dataurl.EncodeBytes([]byte(contents))
+	newConfig := v32types.Config{
+		Ignition: v32types.Ignition{
+			Version: "3.2.0",
+		},
+		Storage: v32types.Storage{
+			Files: []v32types.File{
+				{
+					Node: v32types.Node{
+						Path: path,
+					},
+					FileEmbedded1: v32types.FileEmbedded1{
+						Contents: v32types.Resource{
+							Source: &source,
+						},
+						Mode: &mode,
+					},
+				},
+			},
+		},
+	}
+	c.MergeV32(newConfig)
+}
+
+func (c *Conf) addFileV33(path, filesystem, contents string, mode int) {
+	source := dataurl.EncodeBytes([]byte(contents))
+	newConfig := v33types.Config{
+		Ignition: v33types.Ignition{
+			Version: "3.3.0",
+		},
+		Storage: v33types.Storage{
+			Files: []v33types.File{
+				{
+					Node: v33types.Node{
+						Path: path,
+					},
+					FileEmbedded1: v33types.FileEmbedded1{
+						Contents: v33types.Resource{
+							Source: &source,
+						},
+						Mode: &mode,
+					},
+				},
+			},
+		},
+	}
+	c.MergeV33(newConfig)
+}
 func (c *Conf) addFileV1(path, filesystem, contents string, mode int) {
 	file := v1types.File{
 		Path:     v1types.Path(path),
@@ -471,7 +611,13 @@ func (c *Conf) addFileCloudConfig(path, filesystem, contents string, mode int) {
 }
 
 func (c *Conf) AddFile(path, filesystem, contents string, mode int) {
-	if c.ignitionV3 != nil {
+	if c.ignitionV33 != nil {
+		c.addFileV33(path, filesystem, contents, mode)
+	} else if c.ignitionV32 != nil {
+		c.addFileV32(path, filesystem, contents, mode)
+	} else if c.ignitionV31 != nil {
+		c.addFileV31(path, filesystem, contents, mode)
+	} else if c.ignitionV3 != nil {
 		c.addFileV3(path, filesystem, contents, mode)
 	} else if c.ignitionV2 != nil {
 		c.addFileV2(path, filesystem, contents, mode)
@@ -548,6 +694,60 @@ func (c *Conf) addSystemdUnitV3(name, contents string, enable bool) {
 	c.MergeV3(newConfig)
 }
 
+func (c *Conf) addSystemdUnitV31(name, contents string, enable bool) {
+	newConfig := v31types.Config{
+		Ignition: v31types.Ignition{
+			Version: "3.1.0",
+		},
+		Systemd: v31types.Systemd{
+			Units: []v31types.Unit{
+				{
+					Name:     name,
+					Contents: &contents,
+					Enabled:  &enable,
+				},
+			},
+		},
+	}
+	c.MergeV31(newConfig)
+}
+
+func (c *Conf) addSystemdUnitV32(name, contents string, enable bool) {
+	newConfig := v32types.Config{
+		Ignition: v32types.Ignition{
+			Version: "3.2.0",
+		},
+		Systemd: v32types.Systemd{
+			Units: []v32types.Unit{
+				{
+					Name:     name,
+					Contents: &contents,
+					Enabled:  &enable,
+				},
+			},
+		},
+	}
+	c.MergeV32(newConfig)
+}
+
+func (c *Conf) addSystemdUnitV33(name, contents string, enable bool) {
+	newConfig := v33types.Config{
+		Ignition: v33types.Ignition{
+			Version: "3.3.0",
+		},
+		Systemd: v33types.Systemd{
+			Units: []v33types.Unit{
+				{
+					Name:     name,
+					Contents: &contents,
+					Enabled:  &enable,
+				},
+			},
+		},
+	}
+	c.MergeV33(newConfig)
+}
+
 func (c *Conf) addSystemdUnitCloudConfig(name, contents string, enable bool) {
 	c.cloudconfig.CoreOS.Units = append(c.cloudconfig.CoreOS.Units, cci.Unit{
 		Name:    name,
@@ -569,6 +769,12 @@ func (c *Conf) AddSystemdUnit(name, contents string, enable bool) {
 		c.addSystemdUnitV23(name, contents, enable)
 	} else if c.ignitionV3 != nil {
 		c.addSystemdUnitV3(name, contents, enable)
+	} else if c.ignitionV31 != nil {
+		c.addSystemdUnitV31(name, contents, enable)
+	} else if c.ignitionV32 != nil {
+		c.addSystemdUnitV32(name, contents, enable)
+	} else if c.ignitionV33 != nil {
+		c.addSystemdUnitV33(name, contents, enable)
 	} else if c.cloudconfig != nil {
 		c.addSystemdUnitCloudConfig(name, contents, enable)
 	}
@@ -706,6 +912,72 @@ func (c *Conf) addSystemdDropinV3(service, name, contents string) {
 	c.MergeV3(newConfig)
 }
 
+func (c *Conf) addSystemdDropinV31(service, name, contents string) {
+	newConfig := v31types.Config{
+		Ignition: v31types.Ignition{
+			Version: "3.1.0",
+		},
+		Systemd: v31types.Systemd{
+			Units: []v31types.Unit{
+				{
+					Name: service,
+					Dropins: []v31types.Dropin{
+						{
+							Name:     name,
+							Contents: &contents,
+						},
+					},
+				},
+			},
+		},
+	}
+	c.MergeV31(newConfig)
+}
+
+func (c *Conf) addSystemdDropinV32(service, name, contents string) {
+	newConfig := v32types.Config{
+		Ignition: v32types.Ignition{
+			Version: "3.2.0",
+		},
+		Systemd: v32types.Systemd{
+			Units: []v32types.Unit{
+				{
+					Name: service,
+					Dropins: []v32types.Dropin{
+						{
+							Name:     name,
+							Contents: &contents,
+						},
+					},
+				},
+			},
+		},
+	}
+	c.MergeV32(newConfig)
+}
+
+func (c *Conf) addSystemdDropinV33(service, name, contents string) {
+	newConfig := v33types.Config{
+		Ignition: v33types.Ignition{
+			Version: "3.3.0",
+		},
+		Systemd: v33types.Systemd{
+			Units: []v33types.Unit{
+				{
+					Name: service,
+					Dropins: []v33types.Dropin{
+						{
+							Name:     name,
+							Contents: &contents,
+						},
+					},
+				},
+			},
+		},
+	}
+	c.MergeV33(newConfig)
+}
+
 func (c *Conf) addSystemdDropinCloudConfig(service, name, contents string) {
 	for i, unit := range c.cloudconfig.CoreOS.Units {
 		if unit.Name == service {
@@ -741,6 +1013,12 @@ func (c *Conf) AddSystemdUnitDropin(service, name, contents string) {
 		c.addSystemdDropinV23(service, name, contents)
 	} else if c.ignitionV3 != nil {
 		c.addSystemdDropinV3(service, name, contents)
+	} else if c.ignitionV31 != nil {
+		c.addSystemdDropinV3(service, name, contents)
+	} else if c.ignitionV32 != nil {
+		c.addSystemdDropinV32(service, name, contents)
+	} else if c.ignitionV33 != nil {
+		c.addSystemdDropinV33(service, name, contents)
 	} else if c.cloudconfig != nil {
 		c.addSystemdDropinCloudConfig(service, name, contents)
 	}
@@ -851,6 +1129,69 @@ func (c *Conf) copyKeysIgnitionV3(keys []*agent.Key) {
 	c.MergeV3(newConfig)
 }
 
+func (c *Conf) copyKeysIgnitionV31(keys []*agent.Key) {
+	var keyObjs []v31types.SSHAuthorizedKey
+	for _, key := range keys {
+		keyObjs = append(keyObjs, v31types.SSHAuthorizedKey(key.String()))
+	}
+	newConfig := v31types.Config{
+		Ignition: v31types.Ignition{
+			Version: "3.1.0",
+		},
+		Passwd: v31types.Passwd{
+			Users: []v31types.PasswdUser{
+				{
+					Name:              "core",
+					SSHAuthorizedKeys: keyObjs,
+				},
+			},
+		},
+	}
+	c.MergeV31(newConfig)
+}
+
+func (c *Conf) copyKeysIgnitionV32(keys []*agent.Key) {
+	var keyObjs []v32types.SSHAuthorizedKey
+	for _, key := range keys {
+		keyObjs = append(keyObjs, v32types.SSHAuthorizedKey(key.String()))
+	}
+	newConfig := v32types.Config{
+		Ignition: v32types.Ignition{
+			Version: "3.2.0",
+		},
+		Passwd: v32types.Passwd{
+			Users: []v32types.PasswdUser{
+				{
+					Name:              "core",
+					SSHAuthorizedKeys: keyObjs,
+				},
+			},
+		},
+	}
+	c.MergeV32(newConfig)
+}
+
+func (c *Conf) copyKeysIgnitionV33(keys []*agent.Key) {
+	var keyObjs []v33types.SSHAuthorizedKey
+	for _, key := range keys {
+		keyObjs = append(keyObjs, v33types.SSHAuthorizedKey(key.String()))
+	}
+	newConfig := v33types.Config{
+		Ignition: v33types.Ignition{
+			Version: "3.3.0",
+		},
+		Passwd: v33types.Passwd{
+			Users: []v33types.PasswdUser{
+				{
+					Name:              "core",
+					SSHAuthorizedKeys: keyObjs,
+				},
+			},
+		},
+	}
+	c.MergeV33(newConfig)
+}
+
 func (c *Conf) copyKeysCloudConfig(keys []*agent.Key) {
 	c.cloudconfig.SSHAuthorizedKeys = append(c.cloudconfig.SSHAuthorizedKeys, keysToStrings(keys)...)
 }
@@ -875,6 +1216,12 @@ func (c *Conf) CopyKeys(keys []*agent.Key) {
 		c.copyKeysIgnitionV23(keys)
 	} else if c.ignitionV3 != nil {
 		c.copyKeysIgnitionV3(keys)
+	} else if c.ignitionV31 != nil {
+		c.copyKeysIgnitionV31(keys)
+	} else if c.ignitionV32 != nil {
+		c.copyKeysIgnitionV32(keys)
+	} else if c.ignitionV33 != nil {
+		c.copyKeysIgnitionV33(keys)
 	} else if c.cloudconfig != nil {
 		c.copyKeysCloudConfig(keys)
 	} else if c.script != "" {
@@ -893,7 +1240,7 @@ func keysToStrings(keys []*agent.Key) (keyStrs []string) {
 // Returns false in the case of empty configs as on most platforms,
 // this will default back to cloudconfig
 func (c *Conf) IsIgnition() bool {
-	return c.ignitionV1 != nil || c.ignitionV2 != nil || c.ignitionV21 != nil || c.ignitionV22 != nil || c.ignitionV23 != nil || c.ignitionV3 != nil
+	return c.ignitionV1 != nil || c.ignitionV2 != nil || c.ignitionV21 != nil || c.ignitionV22 != nil || c.ignitionV23 != nil || c.ignitionV3 != nil || c.ignitionV31 != nil || c.ignitionV32 != nil || c.ignitionV33 != nil
 }
 
 func (c *Conf) IsEmpty() bool {

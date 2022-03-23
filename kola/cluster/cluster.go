@@ -131,3 +131,13 @@ func (t *TestCluster) MustSSH(m platform.Machine, cmd string) []byte {
 	}
 	return out
 }
+
+// AssertCmdOutputContains runs cmd via SSH and panics if stdout does not contain expected
+func (t *TestCluster) AssertCmdOutputContains(m platform.Machine, cmd string, expected string) {
+	t.Logf("+ " + cmd)
+	outputBuf := t.MustSSH(m, cmd)
+	output := string(outputBuf)
+	if !strings.Contains(output, expected) {
+		t.Fatalf("cmd %s did not output %s", cmd, expected)
+	}
+}
