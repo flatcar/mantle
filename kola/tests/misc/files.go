@@ -44,8 +44,16 @@ func Filesystem(c cluster.TestCluster) {
 func sugidFiles(c cluster.TestCluster, validfiles []string, mode string) {
 	m := c.Machines()[0]
 	badfiles := make([]string, 0, 0)
+	ignore := []string{
+		// don't descend into these
+		"/proc",
+		"/sys",
+		"/var/lib/docker",
+		"/var/lib/rkt",
+		"/var/lib/flatcar-oem-gce",
+	}
 
-	output := c.MustSSH(m, fmt.Sprintf("sudo find / -ignore_readdir_race -path /sys -prune -o -path /proc -prune -o -path /var/lib/rkt -prune -o -type f -perm -%v -print", mode))
+	output := c.MustSSH(m, fmt.Sprintf("sudo find / -ignore_readdir_race -path %s -prune -o -type f -perm -%v -print", strings.Join(ignore, " -prune -o -path "), mode))
 
 	if string(output) == "" {
 		return
@@ -82,6 +90,7 @@ func DeadLinks(c cluster.TestCluster) {
 		"/sys",
 		"/var/lib/docker",
 		"/var/lib/rkt",
+		"/var/lib/flatcar-oem-gce",
 	}
 
 	output := c.MustSSH(m, fmt.Sprintf("sudo find / -ignore_readdir_race -path %s -prune -o -xtype l -print", strings.Join(ignore, " -prune -o -path ")))
@@ -157,6 +166,7 @@ func StickyDirs(c cluster.TestCluster) {
 		"/sys",
 		"/var/lib/docker",
 		"/var/lib/rkt",
+		"/var/lib/flatcar-oem-gce",
 
 		// should be sticky, and may have sticky children
 		"/dev/mqueue",
