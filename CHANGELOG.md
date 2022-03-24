@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Azure: support for running Kola within an existing vnet and with private addressing ([#295](https://github.com/flatcar-linux/mantle/pull/295))
 - kola tests `cl.cgroupv1` and `kubeadm.*.*.cgroupv1.base` that test functionality with cgroupv1 ([#298](https://github.com/flatcar-linux/mantle/pull/298))
 - Added private network support to qemu-unpriv platform ([#307](https://github.com/flatcar-linux/mantle/pull/307))
-- Ignition v3 support and tests ([#301](https://github.com/flatcar-linux/mantle/pull/301))
+- Ignition v3 support and tests ([#301](https://github.com/flatcar-linux/mantle/pull/301), [#311](https://github.com/flatcar-linux/mantle/pull/311))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
