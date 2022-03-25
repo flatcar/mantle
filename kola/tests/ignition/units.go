@@ -4,6 +4,7 @@
 package ignition
 
 import (
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
 	"github.com/flatcar-linux/mantle/platform/conf"
@@ -39,7 +40,8 @@ func init() {
 		}]
     }
 }`),
-		Distros: []string{"cl"},
+		Distros:    []string{"cl"},
+		MinVersion: semver.Version{Major: 3185},
 	})
 }
 
