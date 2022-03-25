@@ -85,13 +85,14 @@ EOF
 
 
 
+    # iconv transforms the output to valid ascii so that jenkins TAP parser accepts it
     sudo tar -xf /opt/bin/cilium.tar.gz -C /opt/bin
     /opt/bin/cilium install \
         --config enable-endpoint-routes=true \
         --config cluster-pool-ipv4-cidr=192.168.0.0/17 \
-        --version=v0.11.1
+        --version=v0.11.1 2>&1 | iconv --from-code utf-8 --to-code ascii//TRANSLIT
     # --wait will wait for status to report success
-    /opt/bin/cilium status --wait
+    /opt/bin/cilium status --wait 2>&1 | iconv --from-code utf-8 --to-code ascii//TRANSLIT
 
 } 1>&2
 
