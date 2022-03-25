@@ -380,13 +380,14 @@ EOF
     kubectl apply -f kube-flannel.yml
 {{ end }}
 {{ if eq .CNI "cilium" }}
+    # iconv transforms the output to valid ascii so that jenkins TAP parser accepts it
     sudo tar -xf {{ .DownloadDir }}/cilium.tar.gz -C {{ .DownloadDir }}
     /opt/bin/cilium install \
         --config enable-endpoint-routes=true \
         --config cluster-pool-ipv4-cidr={{ .PodSubnet }} \
-        --version={{ .CiliumVersion }}
+        --version={{ .CiliumVersion }} 2>&1 | iconv --from-code utf-8 --to-code ascii//TRANSLIT
     # --wait will wait for status to report success
-    /opt/bin/cilium status --wait
+    /opt/bin/cilium status --wait 2>&1 | iconv --from-code utf-8 --to-code ascii//TRANSLIT
 {{ end }}
 } 1>&2
 
