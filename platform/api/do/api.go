@@ -104,7 +104,7 @@ func (a *API) CreateImage(ctx context.Context, name, url string) (*godo.Image, e
 	if err != nil {
 		return nil, err
 	}
-	err = util.WaitUntilReady(10*time.Minute, 15*time.Second, func() (bool, error) {
+	err = util.WaitUntilReady(15*time.Minute, 15*time.Second, func() (bool, error) {
 		image, _, err := a.c.Images.GetByID(ctx, image.ID)
 		if err != nil {
 			return false, err
