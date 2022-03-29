@@ -37,7 +37,7 @@ func init() {
 			"CgroupMounts": TestCgroup1Mounts,
 		},
 		Distros:    []string{"cl"},
-		MinVersion: semver.Version{Major: 3140},
+		MinVersion: semver.Version{Major: 3033},
 	})
 }
 

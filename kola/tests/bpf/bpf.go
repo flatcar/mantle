@@ -59,7 +59,7 @@ func execsnoopTest(c cluster.TestCluster) {
 
 		// wait for the container and the `execsnoop` command to be correctly started before
 		// generating traffic.
-		if err := util.Retry(5, 2*time.Second, func() error {
+		if err := util.Retry(10, 2*time.Second, func() error {
 			_ = c.MustSSH(m, "docker ps")
 
 			// we first assert that the container is running and then the process too.
