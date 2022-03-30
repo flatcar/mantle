@@ -91,6 +91,7 @@ func DeadLinks(c cluster.TestCluster) {
 		"/var/lib/docker",
 		"/var/lib/rkt",
 		"/var/lib/flatcar-oem-gce",
+		"/usr/share/flatcar/etc",
 	}
 
 	output := c.MustSSH(m, fmt.Sprintf("sudo find / -ignore_readdir_race -path %s -prune -o -xtype l -print", strings.Join(ignore, " -prune -o -path ")))
