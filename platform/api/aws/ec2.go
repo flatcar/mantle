@@ -230,7 +230,7 @@ func (a *API) TerminateInstances(ids []string) error {
 		Force:       util.BoolToPtr(true),
 	}
 	if _, err := a.ec2.StopInstances(stopInput); err != nil {
-		return err
+		plog.Warningf("ec2 failed to stop instance: %v", err)
 	}
 
 	input := &ec2.TerminateInstancesInput{
