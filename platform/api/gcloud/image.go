@@ -79,6 +79,9 @@ func (a *API) CreateImage(spec *ImageSpec, overwrite bool) (*compute.Operation, 
 			&compute.GuestOsFeature{
 				Type: "VIRTIO_SCSI_MULTIQUEUE",
 			},
+			&compute.GuestOsFeature{
+				Type: "UEFI_COMPATIBLE",
+			},
 		},
 		RawDisk: &compute.ImageRawDisk{
 			Source: spec.SourceImage,
