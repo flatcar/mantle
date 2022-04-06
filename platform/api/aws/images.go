@@ -455,6 +455,7 @@ func registerImageParams(snapshotID string, diskSizeGiB uint, name, description 
 		Description:        aws.String(description),
 		Architecture:       aws.String(arch),
 		VirtualizationType: aws.String(string(imageType)),
+		BootMode:           aws.String(ec2.BootModeValuesUefi),
 		RootDeviceName:     aws.String(fmt.Sprintf("/dev/%sa", diskBaseName)),
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
 			&ec2.BlockDeviceMapping{
