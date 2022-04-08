@@ -89,6 +89,7 @@ func (a *API) mkinstance(userdata, name string, keys []*agent.Key) *compute.Inst
 					},
 				},
 				Network: instancePrefix + "/global/networks/" + a.options.Network,
+				NicType: "GVNIC",
 			},
 		},
 	}
