@@ -8,6 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
 	github.com/aws/aws-sdk-go v1.42.41
+	github.com/coreos/butane v0.14.1-0.20220401164106-6b5239299226
 	github.com/coreos/coreos-cloudinit v1.11.0
 	github.com/coreos/go-iptables v0.5.0
 	github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
