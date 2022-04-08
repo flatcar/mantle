@@ -82,6 +82,9 @@ func (a *API) CreateImage(spec *ImageSpec, overwrite bool) (*compute.Operation, 
 			&compute.GuestOsFeature{
 				Type: "UEFI_COMPATIBLE",
 			},
+			&compute.GuestOsFeature{
+				Type: "GVNIC",
+			},
 		},
 		RawDisk: &compute.ImageRawDisk{
 			Source: spec.SourceImage,
