@@ -3,7 +3,8 @@ module github.com/flatcar-linux/mantle
 go 1.16
 
 require (
-	cloud.google.com/go/storage v1.9.0
+	cloud.google.com/go/iam v0.3.0 // indirect
+	cloud.google.com/go/storage v1.10.0
 	github.com/Azure/azure-sdk-for-go v56.2.0+incompatible
 	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
@@ -42,11 +43,13 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.2
 	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
-	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
+	golang.org/x/net v0.0.0-20220325170049-de3da57026de
+	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
+	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12
 	golang.org/x/text v0.3.7
-	google.golang.org/api v0.26.0
+	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a // indirect
+	google.golang.org/api v0.74.0
+	google.golang.org/protobuf v1.28.0 // indirect
 )
 
 replace github.com/Microsoft/azure-vhd-utils => github.com/kinvolk/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
