@@ -13,12 +13,12 @@ require (
 	github.com/coreos/go-iptables v0.5.0
 	github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
 	github.com/coreos/go-semver v0.3.0
+	github.com/coreos/ignition/v2 v2.13.0
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/digitalocean/godo v1.45.0
 	github.com/flatcar-linux/container-linux-config-transpiler v0.9.3-0.20220208152502-6e8303479682
 	github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba
-	github.com/flatcar-linux/ignition/v2 v2.2.1-0.20220311122140-cb95c51122f5
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.2
 	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
@@ -29,7 +29,7 @@ require (
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/ulikunitz/xz v0.5.10
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
@@ -62,10 +62,11 @@ require (
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/coreos/go-json v0.0.0-20211020211907-c63f628265de // indirect
+	github.com/clarketm/json v1.17.1 // indirect
+	github.com/coreos/go-json v0.0.0-20220325222439-31b2177291ae // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
-	github.com/coreos/vcontext v0.0.0-20211021162308-f1dbbca7bef4 // indirect
+	github.com/coreos/vcontext v0.0.0-20220326205524-7fcaf69e7050 // indirect
 	github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
