@@ -23,6 +23,8 @@ import (
 	"reflect"
 	"strings"
 
+	butane "github.com/coreos/butane/config"
+	"github.com/coreos/butane/config/common"
 	cci "github.com/coreos/coreos-cloudinit/config"
 	ign3err "github.com/coreos/ignition/v2/config/shared/errors"
 	v3 "github.com/coreos/ignition/v2/config/v3_0"
@@ -60,6 +62,7 @@ const (
 	kindIgnition
 	kindContainerLinuxConfig
 	kindScript
+	kindButane
 )
 
 var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/conf")
@@ -111,6 +114,13 @@ func Ignition(data string) *UserData {
 func CloudConfig(data string) *UserData {
 	return &UserData{
 		kind: kindCloudConfig,
+		data: data,
+	}
+}
+
+func Butane(data string) *UserData {
+	return &UserData{
+		kind: kindButane,
 		data: data,
 	}
 }
@@ -170,7 +180,7 @@ func (u *UserData) AddKey(key agent.Key) *UserData {
 }
 
 func (u *UserData) IsIgnitionCompatible() bool {
-	return u.kind == kindIgnition || u.kind == kindContainerLinuxConfig
+	return u.kind == kindIgnition || u.kind == kindContainerLinuxConfig || u.kind == kindButane
 }
 
 // Render parses userdata and returns a new Conf. It returns an error if the
@@ -299,6 +309,37 @@ func (u *UserData) Render(ctPlatform string) (*Conf, error) {
 		}
 
 		c.ignitionV23 = &ignc
+	case kindButane:
+		// CLC translation is done in two steps:
+		// * Parsing the data
+		// * Converting the CLC parsed data to Ignition types (bound to the Ignition spec version)
+		// Butane is a bit different, so we convert data directly to Ignition3.3.0 bytes, butane will
+		// take care itself to parse the variant / version of the config to do the right translation with an Ignition
+		// version >= 3.3.0
+		ignc, report, err := butane.TranslateBytes([]byte(u.data), common.TranslateBytesOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("converting Butane to Ignition: %w", err)
+		}
+
+		if report.IsFatal() {
+			return nil, fmt.Errorf("converting Butane to Ignition: %s", report.String())
+		}
+
+		if len(report.Entries) > 0 {
+			plog.Warningf("parsing Butane config: %s", report.String())
+		}
+
+		// Doing that allows to benefit from existing Ignition mechanism:
+		// CopyKeys, AddSystemdUnit, etc.
+		u.data = string(ignc)
+
+		// for consistency.
+		u.kind = kindIgnition
+
+		// Config is now considered as an Ignition configuration.
+		if err := renderIgnition(); err != nil {
+			return nil, err
+		}
 	default:
 		panic("invalid kind")
 	}
