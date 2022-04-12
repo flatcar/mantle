@@ -23,6 +23,9 @@ func init() {
 		  }
 		}`),
 		MinVersion: semver.Version{Major: 3185},
+		// The additional reboot causes a large waiting time
+		// and it's enough to test this on QEMU
+		ExcludePlatforms: []string{"equinixmetal"},
 	})
 }
 
