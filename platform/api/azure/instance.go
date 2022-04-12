@@ -54,10 +54,10 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			},
 		},
 	}
-	if userdata != "" {
-		ud := base64.StdEncoding.EncodeToString([]byte(userdata))
-		osProfile.CustomData = &ud
-	}
+
+	// Encode userdata to base64.
+	ud := base64.StdEncoding.EncodeToString([]byte(userdata))
+
 	var imgRef *compute.ImageReference
 	var plan *compute.Plan
 	if a.opts.DiskURI != "" {
@@ -77,7 +77,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			Name:      imgRef.Sku,
 		}
 	}
-	return compute.VirtualMachine{
+	vm := compute.VirtualMachine{
 		Name:     &name,
 		Location: &a.opts.Location,
 		Tags: map[string]*string{
@@ -118,6 +118,20 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			},
 		},
 	}
+
+	// I don't think it would be an issue to have empty user-data set but better
+	// to be safe than sorry.
+	if ud != "" {
+		if a.Opts.UseUserData {
+			plog.Infof("using user-data")
+			vm.VirtualMachineProperties.UserData = &ud
+		} else {
+			plog.Infof("using custom data")
+			vm.VirtualMachineProperties.OsProfile.CustomData = &ud
+		}
+	}
+
+	return vm
 }
 
 func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, network Network) (*Machine, error) {
