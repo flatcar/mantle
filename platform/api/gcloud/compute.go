@@ -52,6 +52,10 @@ func (a *API) mkinstance(userdata, name string, keys []*agent.Key) *compute.Inst
 			Value: &sshKeys,
 		})
 	}
+	nicType := "VIRTIO_NET"
+	if a.options.GVNIC {
+		nicType = "GVNIC"
+	}
 
 	instancePrefix := "https://www.googleapis.com/compute/v1/projects/" + a.options.Project
 
@@ -89,6 +93,7 @@ func (a *API) mkinstance(userdata, name string, keys []*agent.Key) *compute.Inst
 					},
 				},
 				Network: instancePrefix + "/global/networks/" + a.options.Network,
+				NicType: nicType,
 			},
 		},
 	}
