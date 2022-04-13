@@ -17,28 +17,19 @@ func init() {
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3185},
-		UserData: conf.Ignition(`{
-		  "ignition": {"version": "3.2.0"},
-		  "storage": {
-		    "luks": [{
-		      "name": "data",
-		      "device": "/dev/disk/by-partlabel/USR-B"
-		    }],
-		    "filesystems": [{
-		      "path": "/var/lib/data",
-		      "device": "/dev/disk/by-id/dm-name-data",
-		      "format": "ext4",
-		      "label": "DATA"
-		    }]
-		  },
-		  "systemd": {
-		    "units": [{
-		      "name": "var-lib-data.mount",
-		      "enabled": true,
-		      "contents": "[Mount]\nWhat=/dev/disk/by-label/DATA\nWhere=/var/lib/data\nType=ext4\n\n[Install]\nWantedBy=local-fs.target"
-		    }]
-		  }
-	  	}`),
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  luks:
+    - name: data
+      device: /dev/disk/by-partlabel/USR-B
+  filesystems:
+    - path: /var/lib/data
+      device: /dev/disk/by-id/dm-name-data
+      format: ext4
+      label: DATA
+      with_mount_unit: true`),
 	})
 }
 

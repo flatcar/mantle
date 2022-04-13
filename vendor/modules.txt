@@ -143,13 +143,45 @@ github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.1.1
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
+# github.com/clarketm/json v1.17.1
+## explicit
+github.com/clarketm/json
+# github.com/coreos/butane v0.14.1-0.20220401164106-6b5239299226
+## explicit; go 1.15
+github.com/coreos/butane/base/util
+github.com/coreos/butane/base/v0_1
+github.com/coreos/butane/base/v0_2
+github.com/coreos/butane/base/v0_3
+github.com/coreos/butane/base/v0_4
+github.com/coreos/butane/base/v0_5_exp
+github.com/coreos/butane/config
+github.com/coreos/butane/config/common
+github.com/coreos/butane/config/fcos/v1_0
+github.com/coreos/butane/config/fcos/v1_1
+github.com/coreos/butane/config/fcos/v1_2
+github.com/coreos/butane/config/fcos/v1_3
+github.com/coreos/butane/config/fcos/v1_4
+github.com/coreos/butane/config/fcos/v1_5_exp
+github.com/coreos/butane/config/flatcar/v1_0
+github.com/coreos/butane/config/flatcar/v1_1_exp
+github.com/coreos/butane/config/openshift/v4_10
+github.com/coreos/butane/config/openshift/v4_10/result
+github.com/coreos/butane/config/openshift/v4_11_exp
+github.com/coreos/butane/config/openshift/v4_11_exp/result
+github.com/coreos/butane/config/openshift/v4_8
+github.com/coreos/butane/config/openshift/v4_8/result
+github.com/coreos/butane/config/openshift/v4_9
+github.com/coreos/butane/config/openshift/v4_9/result
+github.com/coreos/butane/config/rhcos/v0_1
+github.com/coreos/butane/config/util
+github.com/coreos/butane/translate
 # github.com/coreos/coreos-cloudinit v1.11.0
 ## explicit
 github.com/coreos/coreos-cloudinit/config
 # github.com/coreos/go-iptables v0.5.0
 ## explicit
 github.com/coreos/go-iptables/iptables
-# github.com/coreos/go-json v0.0.0-20211020211907-c63f628265de
+# github.com/coreos/go-json v0.0.0-20220325222439-31b2177291ae
 ## explicit; go 1.15
 github.com/coreos/go-json
 # github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
@@ -166,6 +198,26 @@ github.com/coreos/go-systemd/unit
 ## explicit; go 1.12
 github.com/coreos/go-systemd/v22/journal
 github.com/coreos/go-systemd/v22/unit
+# github.com/coreos/ignition/v2 v2.13.0
+## explicit; go 1.15
+github.com/coreos/ignition/v2/config/merge
+github.com/coreos/ignition/v2/config/shared/errors
+github.com/coreos/ignition/v2/config/shared/validations
+github.com/coreos/ignition/v2/config/translate
+github.com/coreos/ignition/v2/config/util
+github.com/coreos/ignition/v2/config/v3_0
+github.com/coreos/ignition/v2/config/v3_0/types
+github.com/coreos/ignition/v2/config/v3_1
+github.com/coreos/ignition/v2/config/v3_1/translate
+github.com/coreos/ignition/v2/config/v3_1/types
+github.com/coreos/ignition/v2/config/v3_2
+github.com/coreos/ignition/v2/config/v3_2/translate
+github.com/coreos/ignition/v2/config/v3_2/types
+github.com/coreos/ignition/v2/config/v3_3
+github.com/coreos/ignition/v2/config/v3_3/translate
+github.com/coreos/ignition/v2/config/v3_3/types
+github.com/coreos/ignition/v2/config/v3_4_experimental/types
+github.com/coreos/ignition/v2/config/validate
 # github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 ## explicit
 github.com/coreos/ioprogress
@@ -173,13 +225,14 @@ github.com/coreos/ioprogress
 ## explicit
 github.com/coreos/pkg/capnslog
 github.com/coreos/pkg/multierror
-# github.com/coreos/vcontext v0.0.0-20211021162308-f1dbbca7bef4
+# github.com/coreos/vcontext v0.0.0-20220326205524-7fcaf69e7050
 ## explicit; go 1.15
 github.com/coreos/vcontext/json
 github.com/coreos/vcontext/path
 github.com/coreos/vcontext/report
 github.com/coreos/vcontext/tree
 github.com/coreos/vcontext/validate
+github.com/coreos/vcontext/yaml
 # github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269
 ## explicit
 github.com/coreos/yaml
@@ -224,25 +277,6 @@ github.com/flatcar-linux/ignition/config/validate
 github.com/flatcar-linux/ignition/config/validate/astjson
 github.com/flatcar-linux/ignition/config/validate/astnode
 github.com/flatcar-linux/ignition/config/validate/report
-# github.com/flatcar-linux/ignition/v2 v2.2.1-0.20220311122140-cb95c51122f5
-## explicit; go 1.15
-github.com/flatcar-linux/ignition/v2/config/merge
-github.com/flatcar-linux/ignition/v2/config/shared/errors
-github.com/flatcar-linux/ignition/v2/config/shared/validations
-github.com/flatcar-linux/ignition/v2/config/translate
-github.com/flatcar-linux/ignition/v2/config/util
-github.com/flatcar-linux/ignition/v2/config/v3_0
-github.com/flatcar-linux/ignition/v2/config/v3_0/types
-github.com/flatcar-linux/ignition/v2/config/v3_1
-github.com/flatcar-linux/ignition/v2/config/v3_1/translate
-github.com/flatcar-linux/ignition/v2/config/v3_1/types
-github.com/flatcar-linux/ignition/v2/config/v3_2
-github.com/flatcar-linux/ignition/v2/config/v3_2/translate
-github.com/flatcar-linux/ignition/v2/config/v3_2/types
-github.com/flatcar-linux/ignition/v2/config/v3_3
-github.com/flatcar-linux/ignition/v2/config/v3_3/translate
-github.com/flatcar-linux/ignition/v2/config/v3_3/types
-github.com/flatcar-linux/ignition/v2/config/validate
 # github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 ## explicit
 github.com/form3tech-oss/jwt-go
@@ -374,7 +408,7 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.7.0
+# github.com/stretchr/testify v1.7.1
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require

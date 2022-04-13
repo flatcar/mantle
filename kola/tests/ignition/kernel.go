@@ -14,14 +14,12 @@ func init() {
 		Name:        "cl.ignition.kargs",
 		Run:         check,
 		ClusterSize: 1,
-		UserData: conf.Ignition(`{
-		  "ignition": {
-		    "version": "3.3.0"
-		  },
-		  "kernelArguments": {
-		    "shouldExist": ["quiet"]
-		  }
-		}`),
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+kernel_arguments:
+  should_exist:
+    - quiet`),
 		MinVersion: semver.Version{Major: 3185},
 		// The additional reboot causes a large waiting time
 		// and it's enough to test this on QEMU
