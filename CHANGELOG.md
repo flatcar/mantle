@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added private network support to qemu-unpriv platform ([#307](https://github.com/flatcar-linux/mantle/pull/307))
 - Ignition v3 support and tests ([#301](https://github.com/flatcar-linux/mantle/pull/301), [#311](https://github.com/flatcar-linux/mantle/pull/311))
 - Butane config support ([#318](https://github.com/flatcar-linux/mantle/pull/318))
+- GCP: support testing with GVNIC ([#322](https://github.com/flatcar-linux/mantle/pull/322))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
@@ -27,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Bumped cilium tested version to 1.11.0 ([291](https://github.com/flatcar-linux/mantle/pull/291))
 - Bumped `etcd` and `cobra` dependencies ([#293](https://github.com/flatcar-linux/mantle/pull/293))
 - Bumped Kubernetes binaries and CNI versions ([#297](https://github.com/flatcar-linux/mantle/pull/297))
+- GCP images are now published/tested with UEFI boot mode ([#322](https://github.com/flatcar-linux/mantle/pull/322))
 
 ### Removed
 - Remove `--repo-branch` option from cork ([#283](https://github.com/flatcar-linux/mantle/pull/283))
