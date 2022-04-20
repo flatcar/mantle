@@ -41,6 +41,7 @@ type Options struct {
 	DiskType    string
 	Network     string
 	JSONKeyFile string
+	GVNIC       bool
 	ServiceAuth bool
 	*platform.Options
 }
