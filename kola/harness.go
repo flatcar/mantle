@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -588,12 +589,27 @@ func boardToArch(board string) string {
 	return strings.SplitN(board, "-", 2)[0]
 }
 
+func findExecDir() string {
+	p, err := os.Executable()
+	if err != nil {
+		if strings.Contains(os.Args[0], "/") {
+			p = os.Args[0]
+		} else {
+			p, err = exec.LookPath(os.Args[0])
+			if err != nil {
+				p = os.Args[0]
+			}
+		}
+	}
+	return filepath.Dir(p)
+}
+
 // scpKolet searches for a kolet binary and copies it to the machine.
 func scpKolet(c cluster.TestCluster, mArch string) {
 	for _, d := range []string{
 		".",
-		filepath.Dir(os.Args[0]),
-		filepath.Join(filepath.Dir(os.Args[0]), mArch),
+		findExecDir(),
+		filepath.Join(findExecDir(), mArch),
 		filepath.Join("/usr/lib/kola", mArch),
 	} {
 		kolet := filepath.Join(d, "kolet")
