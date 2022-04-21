@@ -67,8 +67,8 @@ inspection.
 Kola is still under heavy development and it is expected that its
 interface will continue to change.
 
-By default, kola uses the `qemu` platform with the most recently built image
-(assuming it is run from within the SDK).
+By default, kola uses the `qemu` platform with the image
+`/mnt/host/source/src/build/images/BOARD/latest/flatcar_production_image.bin`.
 
 #### kola run
 
@@ -88,6 +88,13 @@ From the pulled sources, `kola` and `kolet` must be compiled:
 git clone https://github.com/kinvolk/mantle/
 cd mantle
 ./build kola kolet
+```
+
+Alternatively, there is a container image with the required dependencies and the mantle binaries for the latest commit on `flatcar-master`:
+
+```
+sudo docker run --privileged --net host -v /dev:/dev --rm -it ghcr.io/flatcar-linux/mantle:git-$(git rev-parse HEAD)
+# inside the container you can run "kola …" because it is in the PATH, and "sudo kola" is also not needed
 ```
 
 Finally, a Flatcar image must be available on the system:
