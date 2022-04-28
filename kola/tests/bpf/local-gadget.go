@@ -98,9 +98,6 @@ func init() {
 		Run:     localGadgetTest,
 		Name:    `bpf.local-gadget`,
 		Distros: []string{"cl"},
-		// ESX is excluded because initramfs has no network access
-		// so it's not able to download local-gadget binary.
-		ExcludePlatforms: []string{"esx"},
 		// required while SELinux policy is not correcly updated to support
 		// `bpf` and `perfmon` permission.
 		Flags: []register.Flag{register.NoEnableSelinux},
@@ -109,6 +106,12 @@ func init() {
 		MinVersion: semver.Version{Major: 3033},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// LTS (3033) does not have the network-kargs service pulled in:
+			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
+			// Let's skip this test for < 3034 on ESX.
+			return version.LessThan(semver.Version{Major: 3034}) && platform == "esx"
+		},
 	})
 }
 

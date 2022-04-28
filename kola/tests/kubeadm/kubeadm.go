@@ -210,14 +210,20 @@ func init() {
 				register.Register(&register.Test{
 					Name:    fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
 					Distros: []string{"cl"},
-					// Network config problems in esx and qemu-unpriv
-					ExcludePlatforms: []string{"esx", "qemu-unpriv"},
 					// This should run on all clouds as a good end-to-end test
+					// Network config problems in qemu-unpriv
+					ExcludePlatforms: []string{"qemu-unpriv"},
 					Run: func(c cluster.TestCluster) {
 						kubeadmBaseTest(c, testParams)
 					},
 					MinVersion: semver.Version{Major: major},
 					Flags:      flags,
+					SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+						// LTS (3033) does not have the network-kargs service pulled in:
+						// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
+						// Let's skip this test for < 3034 on ESX.
+						return version.LessThan(semver.Version{Major: 3034}) && platform == "esx"
+					},
 				})
 			}
 		}
