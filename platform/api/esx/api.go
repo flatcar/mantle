@@ -429,6 +429,12 @@ func (a *API) CreateDevice(name string, conf *conf.Conf, ips *IpPair) (*ESXMachi
 	}
 
 	if ips != nil {
+		// based on: https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut.html#_network
+		kArgs := fmt.Sprintf("ip=%s::%s:%d::ens192:off:1.1.1.1:1.0.0.1", ips.Public, ips.PublicGw, ips.SubnetSize)
+		if err := a.updateGuestVariable(vm, "guestinfo.afterburn.initrd.network-kargs", kArgs); err != nil {
+			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
+		}
+
 		err = a.updateGuestVariable(vm, "guestinfo.dns.server.0", "1.1.1.1")
 		if err != nil {
 			return nil, fmt.Errorf("setting guestinfo variable: %v", err)
