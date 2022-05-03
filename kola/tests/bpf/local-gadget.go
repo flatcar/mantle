@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar-linux/mantle/kola"
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
@@ -105,7 +106,7 @@ func init() {
 		Flags: []register.Flag{register.NoEnableSelinux},
 		// current LTS has DOCKER_API_VERSION=1.40 which is too old for local-gadget docker client.
 		// "client version 1.41 is too new. Maximum supported API version is 1.40"
-		ExcludeChannels: []string{"lts"},
+		MinVersion: semver.Version{Major: 3033},
 	})
 }
 
