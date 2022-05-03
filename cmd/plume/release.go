@@ -413,10 +413,6 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		plog.Notice("AWS image creation disabled.")
 		return
 	}
-	if specChannel == "lts" {
-		plog.Notice("Not publishing LTS AMIs.")
-		return
-	}
 
 	awsImageMetadata, err := getSpecAWSImageMetadata(spec)
 	if err != nil {
