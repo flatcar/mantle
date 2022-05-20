@@ -89,6 +89,18 @@ func init() {
 		// check for not using a link dir in the file path
 		UserData: conf.Ignition(`{
                              "ignition": { "version": "2.3.0" },
+                             "networkd": {
+                               "units": [
+                                 {
+                                   "name": "00-dummy.netdev",
+                                   "contents": "[NetDev]\nName=kola\nKind=dummy"
+                                 },
+                                 {
+                                   "name": "00-dummy.network",
+                                   "contents": "[Match]\nName=kola\n\n[Network]\nAddress=10.0.2.1/24"
+                                 }
+                               ]
+                             },
                              "storage": {
                                "files": [
                                  {
@@ -135,4 +147,7 @@ func testTranslation(c cluster.TestCluster) {
 
 	// fail if link is broken or does not exist
 	c.MustSSH(m, "ls /testdir/hello")
+
+	// assert that the networkd configuration has correctly been translated to files and applied.
+	c.AssertCmdOutputContains(m, `ip --json address show kola | jq -r '.[] | .addr_info | .[] | select( .family == "inet") | .local'`, "10.0.2.1")
 }
