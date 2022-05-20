@@ -81,8 +81,8 @@ func init() {
 		Distros: []string{"cl", "fcos", "rhcos"},
 	})
 	register.Register(&register.Test{
-		Name:        "cl.ignition.links",
-		Run:         testLink,
+		Name:        "cl.ignition.translation",
+		Run:         testTranslation,
 		ClusterSize: 1,
 		// Important: the link's path shares a prefix with the
 		// file's path and should pass the ign-converter sanity
@@ -130,7 +130,7 @@ func runsOnce(c cluster.TestCluster) {
 	c.MustSSH(m, "test ! -e /etc/ignition-ran")
 }
 
-func testLink(c cluster.TestCluster) {
+func testTranslation(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
 	// fail if link is broken or does not exist
