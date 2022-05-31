@@ -34,6 +34,75 @@ import (
 
 func init() {
 	register.Register(&register.Test{
+		Name:        "cl.locksmith.airlock",
+		Run:         airlock,
+		ClusterSize: 1,
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+systemd:
+  units:
+    - name: update-engine.service
+      enabled: true
+    - name: etcd-member.service
+      enabled: true
+    - name: locksmithd.service
+      enabled: true
+      dropins:
+        - name: custom.conf
+          contents: |
+            [Service]
+            Environment=LOCKSMITHD_ENDPOINT=http://127.0.0.1:3333
+            Environment=LOCKSMITHD_GROUP=default
+            Environment=LOCKSMITHD_ID=12345
+    - name: airlock.service
+      enabled: true
+      contents: |
+        [Install]
+        WantedBy=multi-user.target
+        [Unit]
+        After=etcd-member.service
+        Requires=etcd-member.service
+        [Service]
+        Type=fork
+        ExecStartPre=-/usr/bin/docker stop airlock
+        ExecStartPre=-/usr/bin/docker pull quay.io/coreos/airlock:main
+        ExecStart=/usr/bin/docker \
+          run \
+          --rm \
+          --network host \
+          --name airlock \
+          -v "/opt/config.toml:/etc/airlock/config.toml:ro,z" \
+          quay.io/coreos/airlock:main \
+          airlock serve -vv
+storage:
+  files:
+    - path: /opt/config.toml
+      contents:
+        inline: |
+          # Main service configuration
+          [service]
+          address = "127.0.0.1"
+          port = 3333
+          tls = false
+          # Etcd-v3 client configuration
+          [etcd3]
+          endpoints = [ "http://127.0.0.1:2379" ]
+          # Lock configuration, base reboot group
+          [lock]
+          default_group_name = "default"
+          default_slots = 2
+          # Lock configuration, additional reboot groups
+          [[lock.groups]]
+          name = "workers"
+          [[lock.groups]]
+          name = "controllers"
+          slots = 1
+      mode: 0644`),
+		Distros:   []string{"cl"},
+		Platforms: []string{"qemu"},
+	})
+	register.Register(&register.Test{
 		Name:        "cl.locksmith.cluster",
 		Run:         locksmithCluster,
 		ClusterSize: 3,
@@ -217,4 +286,11 @@ func locksmithTLS(c cluster.TestCluster) {
 	if err := util.Retry(10, 12*time.Second, checker); err != nil {
 		c.Fatal(err)
 	}
+}
+
+func airlock(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	c.MustSSH(m, "locksmithctl exp --id kola-test-id --group default --endpoint http://localhost:3333 lock")
+	c.AssertCmdOutputContains(m, "docker exec airlock airlock exp get slots", "kola-test-id")
 }
