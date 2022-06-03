@@ -81,14 +81,26 @@ func init() {
 		Distros: []string{"cl", "fcos", "rhcos"},
 	})
 	register.Register(&register.Test{
-		Name:        "cl.ignition.links",
-		Run:         testLink,
+		Name:        "cl.ignition.translation",
+		Run:         testTranslation,
 		ClusterSize: 1,
 		// Important: the link's path shares a prefix with the
 		// file's path and should pass the ign-converter sanity
 		// check for not using a link dir in the file path
 		UserData: conf.Ignition(`{
                              "ignition": { "version": "2.3.0" },
+                             "networkd": {
+                               "units": [
+                                 {
+                                   "name": "00-dummy.netdev",
+                                   "contents": "[NetDev]\nName=kola\nKind=dummy"
+                                 },
+                                 {
+                                   "name": "00-dummy.network",
+                                   "contents": "[Match]\nName=kola\n\n[Network]\nAddress=10.0.2.1/24"
+                                 }
+                               ]
+                             },
                              "storage": {
                                "files": [
                                  {
@@ -130,9 +142,12 @@ func runsOnce(c cluster.TestCluster) {
 	c.MustSSH(m, "test ! -e /etc/ignition-ran")
 }
 
-func testLink(c cluster.TestCluster) {
+func testTranslation(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
 	// fail if link is broken or does not exist
 	c.MustSSH(m, "ls /testdir/hello")
+
+	// assert that the networkd configuration has correctly been translated to files and applied.
+	c.AssertCmdOutputContains(m, `ip --json address show kola | jq -r '.[] | .addr_info | .[] | select( .family == "inet") | .local'`, "10.0.2.1")
 }

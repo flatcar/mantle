@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ignition v3 support and tests ([#301](https://github.com/flatcar-linux/mantle/pull/301), [#311](https://github.com/flatcar-linux/mantle/pull/311))
 - Butane config support ([#318](https://github.com/flatcar-linux/mantle/pull/318))
 - GCP: support testing with GVNIC ([#322](https://github.com/flatcar-linux/mantle/pull/322))
+- `networkd` Ignition translation test ([#344](https://github.com/flatcar-linux/mantle/pull/334)) 
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
