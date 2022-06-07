@@ -44,6 +44,31 @@ var (
 	// testConfig holds params for various kubernetes releases
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
+		"v1.24.1": map[string]interface{}{
+			"FlannelVersion":   "v0.18.1",
+			"CiliumVersion":    "1.11.5",
+			"CiliumCLIVersion": "v0.10.7",
+			"CNIVersion":       "v1.1.1",
+			"CRIctlVersion":    "v1.24.2",
+			"ReleaseVersion":   "v0.13.0",
+			"DownloadDir":      "/opt/bin",
+			"PodSubnet":        "192.168.0.0/17",
+			"arm64": map[string]string{
+				"KubeadmSum": "171ad33a0ffed8ae0bc78a48b12bd1575a03e221de4ca079e60d46689373c298a95bc95a156ea235f5e4f6c4fe714740277ee57e8f0f267b2eeb77f569039ad9",
+				"KubeletSum": "f774044d65ebcf07143fb482fbe69c8836287d862c740c9e4804c92060d17867f77625fef0c1a0d2a358745520f5e67bd41b7fcf68756ab105ced9e26c84c881",
+				"CRIctlSum":  "ebd055e9b2888624d006decd582db742131ed815d059d529ba21eaf864becca98a84b20a10eec91051b9d837c6855d28d5042bf5e9a454f4540aec6b82d37e96",
+				"CNISum":     "6b5df61a53601926e4b5a9174828123d555f592165439f541bc117c68781f41c8bd30dccd52367e406d104df849bcbcfb72d9c4bafda4b045c59ce95d0ca0742",
+				"KubectlSum": "ae4e316e1127b7189cdd08980729dea0e20946431c8caec07f79ea43dc34e4f161bb687c5cdf306fb032e6a3537597b9d31cfa416ad0bfc85abd0c0f8d11c66d",
+			},
+			"amd64": map[string]string{
+				"KubeadmSum": "4a825ba96997bca7fc1b3a2a4867026632cf3298709685270333452b5d755176c4891c1cfdd589e162d8af0b43aaf956c71455e4cf886ff0d767196eadb9766e",
+				"KubeletSum": "553695adcd0229f680f9edf6afcbbeefc051c77fba6c8ff82644852877c15d422801b5453a09e2fb7ddb4894c713dfe4755562711c302800f985a457a0cbb7c3",
+				"CRIctlSum":  "961188117863ca9af5b084e84691e372efee93ad09daf6a0422e8d75a5803f394d8968064f7ca89f14e8973766201e731241f32538cf2c8d91f0233e786302df",
+				"CNISum":     "4d0ed0abb5951b9cf83cba938ef84bdc5b681f4ac869da8143974f6a53a3ff30c666389fa462b9d14d30af09bf03f6cdf77598c572f8fb3ea00cecdda467a48d",
+				"KubectlSum": "db7e24076f2cbc5bae9033c736048a87c820757af3473cbe583ef7831ad046a9ceeb9e40325e381d193f37ac28f4d6926c8e2fb36ff6029f661b090d8aa15470",
+			},
+			"cgroupv1": false,
+		},
 		"v1.23.4": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
 			"CiliumVersion":    "1.11.0",
