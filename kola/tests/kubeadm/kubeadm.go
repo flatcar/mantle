@@ -129,11 +129,11 @@ etcd:
 
 func init() {
 	testConfigCgroupV1 := map[string]map[string]interface{}{}
-	testConfigCgroupV1["v1.21.10"] = map[string]interface{}{}
-	for k, v := range testConfig["v1.21.10"] {
-		testConfigCgroupV1["v1.21.10"][k] = v
+	testConfigCgroupV1["v1.22.7"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.22.7"] {
+		testConfigCgroupV1["v1.22.7"][k] = v
 	}
-	testConfigCgroupV1["v1.21.10"]["cgroupv1"] = true
+	testConfigCgroupV1["v1.22.7"]["cgroupv1"] = true
 
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
