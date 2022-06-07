@@ -94,31 +94,6 @@ var (
 			},
 			"cgroupv1": false,
 		},
-		"v1.21.10": map[string]interface{}{
-			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.0",
-			"CiliumCLIVersion": "v0.10.2",
-			"CNIVersion":       "v1.0.1",
-			"CRIctlVersion":    "v1.22.0",
-			"ReleaseVersion":   "v0.4.0",
-			"DownloadDir":      "/opt/bin",
-			"PodSubnet":        "192.168.0.0/17",
-			"arm64": map[string]string{
-				"KubeadmSum": "9acabdb85f4dada74dab909b6b21315c81fdeba6df2c156bbebf4b18b8d427a114a853e694d1b42c01c12ede23a43e04651292d65917f405486d8b0088fb2b46",
-				"KubeletSum": "029e81f48efa98cbb35835c208540acd662fa16dabea687aff3d25208d7bfa77500d97ed0a756f926f06b989f22971e91baf124d1df330eab9dee90448192752",
-				"CRIctlSum":  "f926c645e0d5f177c0589b1d052ffef4b4ed9d45b3d5b467473b6075ef767fb43b1f7ba5b525d57f021b6b8dc18d7efd27e03e1ec5b71a20f4e321c32456cdd9",
-				"CNISum":     "616c4f493a560ecd1ecc60f758720bb2c3539c4261a63d2094f474380d59d88444637cee7fed124c53193f08de7feb65510fe95579b12306c112ad45a74e1536",
-				"KubectlSum": "c9cd8ebd472d9d6652a307ae78c0753cd3bfbbdcb1ed137db06e16ad900ae454f1e2654d7c01db737b0e2dff3e07b4e18c911264afc94b584f8795baf4a92735",
-			},
-			"amd64": map[string]string{
-				"KubeadmSum": "1319e29679f1d91faf4c9900662641614fd05101dc38618ce075c6819eb8af5a097f8cf416bdf9e2ee9bb92b6c4e3cf4d25df8de2ed6c50ef48a2da605e610b6",
-				"KubeletSum": "ee16a40f5982fe459c919d396f7b407e358394cb27836cba8545a5841b3dcedf02ed4da45207b8e311a0707defe977bdcebbed130c7fefc6dd770ec3afd68718",
-				"CRIctlSum":  "9ff93e9c15942c39c85dd4e8182b3e9cd47fcb15b1315b0fdfd0d73442a84111e6cf8bb74b586e34b1f382a71107eb7e7820544a98d2224ca6b6dee3ee576222",
-				"CNISum":     "220ee0073e9b3708b8ec6159a6ee511b2fd9b88cbe74d48a9b823542e17acf53acec6215869a1d21826422d655eebdd53795fafcef70205d34bf9d8878b493d8",
-				"KubectlSum": "5334a634ea72358f2ec303e82678160e260b8920aeb62c1953a43cb70bc919870568e67144f78c4949e0db1297ee2b5e604ff76a7433637c093919c855d189d1",
-			},
-			"cgroupv1": false,
-		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
