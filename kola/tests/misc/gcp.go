@@ -3,6 +3,7 @@
 package misc
 
 import (
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar-linux/mantle/kola/cluster"
 	"github.com/flatcar-linux/mantle/kola/register"
 )
@@ -13,6 +14,7 @@ func init() {
 		ClusterSize: 1,
 		Platforms:   []string{"gce"},
 		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 2801},
 		Run:         gceVerifyOEMService,
 	})
 }
