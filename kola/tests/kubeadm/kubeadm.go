@@ -138,6 +138,7 @@ func init() {
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
 			for _, CNI := range CNIs {
+				flags := []register.Flag{}
 				// ugly but required to remove the reference between params and the params
 				// actually used by the test.
 				testParams := make(map[string]interface{})
@@ -154,6 +155,10 @@ func init() {
 					major = 3140
 				}
 
+				if CNI == "flannel" {
+					flags = append(flags, register.NoEnableSelinux)
+				}
+
 				register.Register(&register.Test{
 					Name:    fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
 					Distros: []string{"cl"},
@@ -163,6 +168,7 @@ func init() {
 						kubeadmBaseTest(c, testParams)
 					},
 					MinVersion: semver.Version{Major: major},
+					Flags:      flags,
 				})
 			}
 		}
