@@ -159,6 +159,10 @@ func init() {
 					flags = append(flags, register.NoEnableSelinux)
 				}
 
+				if version == "1.24.1" {
+					major = 3277
+				}
+
 				register.Register(&register.Test{
 					Name:    fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
 					Distros: []string{"cl"},
