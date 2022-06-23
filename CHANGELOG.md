@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - GCP: support testing with GVNIC ([#322](https://github.com/flatcar-linux/mantle/pull/322))
 - `networkd` Ignition translation test ([#344](https://github.com/flatcar-linux/mantle/pull/334)) 
 - kola test `cl.misc.falco` that tests falco kmod building ([#339](https://github.com/flatcar-linux/mantle/pull/339))
+- Kubernetes test for release 1.24.1 ([#337](https://github.com/flatcar-linux/mantle/pull/337))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
@@ -35,6 +36,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Removed
 - Remove `--repo-branch` option from cork ([#283](https://github.com/flatcar-linux/mantle/pull/283))
+- Removed Kubernetes test for release 1.21.10 ([#337](https://github.com/flatcar-linux/mantle/pull/337))
+- Removed enforced SELinux for `kubeadm.flannel.*` tests ([#337](https://github.com/flatcar-linux/mantle/pull/337))
 
 ## [0.18.0] - 12/01/2022
 ### Security
