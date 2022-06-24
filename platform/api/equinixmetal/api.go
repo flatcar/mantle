@@ -274,12 +274,16 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 	}
 	defer a.storage.Delete(context.TODO(), userdataName)
 
+	plog.Debugf("user-data available at %s", userdataURL)
+
 	// This can't go in userdata because the installed coreos-cloudinit will try to execute it.
 	ipxeScriptName, ipxeScriptURL, err := a.uploadObject(hostname, "application/octet-stream", []byte(a.ipxeScript(userdataURL)))
 	if err != nil {
 		return nil, err
 	}
 	defer a.storage.Delete(context.TODO(), ipxeScriptName)
+
+	plog.Debugf("iPXE script available at %s", ipxeScriptURL)
 
 	device, err := a.createDevice(hostname, ipxeScriptURL, id)
 	if err != nil {
