@@ -12,6 +12,8 @@ func init() {
 		Name:        "cl.misc.falco",
 		Distros:     []string{"cl"},
 		Platforms:   []string{"qemu"},
+		// falco builder container can't handle our arm64 config (yet)
+		Architectures: []string{"amd64"},
 		// selinux blocks insmod from within container
 		Flags: []register.Flag{register.NoEnableSelinux},
 	})
