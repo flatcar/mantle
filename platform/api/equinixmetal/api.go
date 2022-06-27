@@ -252,6 +252,11 @@ func (a *API) PreflightCheck() error {
 	return nil
 }
 
+// Close takes care of closing existing connections.
+func (a *API) Close() error {
+	return a.storage.Close()
+}
+
 // console is optional, and is closed on error or when the device is deleted.
 func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Console, id string) (*packngo.Device, error) {
 	consoleStarted := false

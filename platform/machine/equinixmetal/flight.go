@@ -92,6 +92,12 @@ func (pf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 }
 
 func (pf *flight) Destroy() {
+	if pf.api != nil {
+		if err := pf.api.Close(); err != nil {
+			plog.Errorf("closing API %v: ", err)
+		}
+	}
+
 	if pf.sshKeyID != "" {
 		if err := pf.api.DeleteKey(pf.sshKeyID); err != nil {
 			plog.Errorf("Error deleting key %v: %v", pf.sshKeyID, err)
