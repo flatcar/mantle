@@ -21,7 +21,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -30,13 +32,15 @@ import (
 	"github.com/packethost/packngo"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
-	gs "google.golang.org/api/storage/v1"
 
 	"github.com/flatcar-linux/mantle/auth"
 	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage"
+	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage/gcs"
+	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage/sshstorage"
 	"github.com/flatcar-linux/mantle/platform/api/gcloud"
 	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/storage"
+	ms "github.com/flatcar-linux/mantle/storage"
 	"github.com/flatcar-linux/mantle/util"
 )
 
@@ -103,12 +107,23 @@ type Options struct {
 	StorageURL string
 	// Metro is where you want your server to live.
 	Metro string
+
+	// RemoteOptions for remote storage
+
+	// RemoteUser is the user for the SSH connection.
+	RemoteUser string
+
+	// RemoteSSHPrivateKeyPath is the private SSH key path used for the SSH authentication.
+	RemoteSSHPrivateKeyPath string
+
+	// RemoteDocumentRoot is the path served by the webserver.
+	RemoteDocumentRoot string
 }
 
 type API struct {
-	c      *packngo.Client
-	bucket *storage.Bucket
-	opts   *Options
+	c       *packngo.Client
+	storage storage.Storage
+	opts    *Options
 }
 
 type Console interface {
@@ -158,21 +173,74 @@ func New(opts *Options) (*API, error) {
 		opts.ImageURL = defaultImageURL[opts.Board]
 	}
 
-	gapi, err := gcloud.New(opts.GSOptions)
+	url, err := url.Parse(opts.StorageURL)
 	if err != nil {
-		return nil, fmt.Errorf("connecting to Google Storage: %v", err)
+		return nil, fmt.Errorf("parsing storage URL: %w", err)
 	}
-	bucket, err := storage.NewBucket(gapi.Client(), opts.StorageURL)
-	if err != nil {
-		return nil, fmt.Errorf("connecting to Google Storage bucket: %v", err)
+
+	var storage storage.Storage
+
+	switch url.Scheme {
+	case "gs":
+		gapi, err := gcloud.New(opts.GSOptions)
+		if err != nil {
+			return nil, fmt.Errorf("connecting to Google Storage: %w", err)
+		}
+
+		bucket, err := ms.NewBucket(gapi.Client(), opts.StorageURL)
+		if err != nil {
+			return nil, fmt.Errorf("connecting to Google Storage bucket: %w", err)
+		}
+
+		storage = gcs.New(bucket)
+	case "ssh+http", "ssh+https", "ssh":
+		key, err := ioutil.ReadFile(opts.RemoteSSHPrivateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading private key: %w", err)
+		}
+
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			return nil, fmt.Errorf("parsing private key: %w", err)
+		}
+
+		cfg := &ssh.ClientConfig{
+			User: opts.RemoteUser,
+			// this is only used for testing - it's ok to live with that.
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			},
+		}
+
+		client, err := ssh.Dial("tcp", url.Host, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("creating SSH client: %w", err)
+		}
+
+		// default webserver protocol is HTTPs
+		protocol := "https"
+
+		// we try to extract the procol from the URL scheme of the
+		// storage URL (ssh+http, ssh+https, etc.)
+		protocols := strings.SplitN(url.Scheme, "+", 2)
+		for _, proto := range protocols {
+			if proto == "ssh" {
+				continue
+			}
+
+			protocol = proto
+		}
+
+		storage = sshstorage.New(client, url.Hostname(), opts.RemoteDocumentRoot, protocol)
 	}
 
 	client := packngo.NewClientWithAuth("github.com/flatcar-linux/mantle", opts.ApiKey, nil)
 
 	return &API{
-		c:      client,
-		bucket: bucket,
-		opts:   opts,
+		c:       client,
+		storage: storage,
+		opts:    opts,
 	}, nil
 }
 
@@ -182,6 +250,11 @@ func (a *API) PreflightCheck() error {
 		return fmt.Errorf("querying project %v: %v", a.opts.Project, err)
 	}
 	return nil
+}
+
+// Close takes care of closing existing connections.
+func (a *API) Close() error {
+	return a.storage.Close()
 }
 
 // console is optional, and is closed on error or when the device is deleted.
@@ -204,14 +277,18 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 	if err != nil {
 		return nil, err
 	}
-	defer a.bucket.Delete(context.TODO(), userdataName)
+	defer a.storage.Delete(context.TODO(), userdataName)
+
+	plog.Debugf("user-data available at %s", userdataURL)
 
 	// This can't go in userdata because the installed coreos-cloudinit will try to execute it.
 	ipxeScriptName, ipxeScriptURL, err := a.uploadObject(hostname, "application/octet-stream", []byte(a.ipxeScript(userdataURL)))
 	if err != nil {
 		return nil, err
 	}
-	defer a.bucket.Delete(context.TODO(), ipxeScriptName)
+	defer a.storage.Delete(context.TODO(), ipxeScriptName)
+
+	plog.Debugf("iPXE script available at %s", ipxeScriptURL)
 
 	device, err := a.createDevice(hostname, ipxeScriptURL, id)
 	if err != nil {
@@ -468,17 +545,12 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 	rand.Read(b)
 	name := fmt.Sprintf("%s-%x", hostname, b)
 
-	obj := gs.Object{
-		Name:        a.bucket.Prefix() + name,
-		ContentType: contentType,
-	}
-	err := a.bucket.Upload(context.TODO(), &obj, bytes.NewReader(data))
+	name, URL, err := a.storage.Upload(name, contentType, data)
 	if err != nil {
-		return "", "", fmt.Errorf("uploading object: %v", err)
+		return "", "", fmt.Errorf("uploading content: %w", err)
 	}
 
-	url := fmt.Sprintf("https://bucket.release.flatcar-linux.net/%v/%v", a.bucket.Name(), obj.Name)
-	return obj.Name, url, nil
+	return name, URL, nil
 }
 
 func (a *API) ipxeScript(userdataURL string) string {

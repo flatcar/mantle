@@ -135,6 +135,45 @@ _Note for both architectures_:
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="sudo nsenter -n -t <PID of the QEMU instance> nc %h %p" -p 22 core@<IP of the QEMU instance>
 ```
 
+##### Advanced usage with Equinix Metal
+
+The advantage of Kola is to be able to run tests for every supported provider without duplicating testing code. Running tests on Equinix Metal is a bit different from other providers as it boots from PXE.
+
+The test is split into two phases:
+* the initial PXE booting with the Flatcar installation
+* the actual Flatcar booting with the userdata defined in the test
+
+For this two phases, Kola needs to temporary store two files:
+* an Ignition config
+* an iPXE configuration
+
+It's possible to use Google Cloud Storage or a regular webserver to host these two files. For the webserver, it needs two requirements:
+* a webserver accessible from the Equinix Metal instance
+* a remote access to this webserver
+
+For example, the following command:
+```
+BASENAME="test-em"
+BOARD="amd64-usr"
+EQUINIXMETAL_KEY="1234"
+CHANNEL="alpha"
+RELEASE="3255.0.0"1
+EQUINIXMETAL_PROJECT="5678"
+./bin/kola run --basename=${BASENAME} --board=${BOARD} \
+  --equinixmetal-api-key=${PACKET_KEY} \
+  --equinixmetal-image-url=https://bucket.release.flatcar-linux.net/flatcar-jenkins/${CHANNEL}/boards/${BOARD}/${RELEASE}/flatcar_production_packet_image.bin.bz2 \
+  --equinixmetal-installer-image-base-url=https://bucket.release.flatcar-linux.net/flatcar-jenkins/${CHANNEL}/boards/${BOARD}/${RELEASE} \
+  --equinixmetal-project=${EQUINIXMETAL_PROJECT} \
+  --equinixmetal-storage-url="ssh+https://my-server" \
+  --equinixmetal-remote-document-root="/var/www" \
+  --equinixmetal-remote-user="core" \
+  --equinixmetal-remote-ssh-private-key-path="./id_rsa" \
+  --platform=equinixmetal \
+  ${TEST_NAME}
+```
+
+will upload the temporary files into "/var/www" using "ssh -i ./id_rsa core@my-server" and the iPXE, Ignition URL will be served at: "https://my-server/mantle-12345.{ipxe,ign}"
+
 #### kola list
 The list command lists all of the available tests.
 

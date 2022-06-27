@@ -197,8 +197,11 @@ func init() {
 	sv(&kola.EquinixMetalOptions.InstallerImageKernelURL, "equinixmetal-installer-image-kernel-url", "", "EquinixMetal installer image kernel URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe.vmlinuz)")
 	sv(&kola.EquinixMetalOptions.InstallerImageCpioURL, "equinixmetal-installer-image-cpio-url", "", "EquinixMetal installer image cpio URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
 	sv(&kola.EquinixMetalOptions.ImageURL, "equinixmetal-image-url", "", "EquinixMetal image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
-	sv(&kola.EquinixMetalOptions.StorageURL, "equinixmetal-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
+	sv(&kola.EquinixMetalOptions.StorageURL, "equinixmetal-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Storage URL for temporary uploads (supported: gs, ssh+http, ssh+https or ssh which defaults to https for download)")
 	sv(&kola.EquinixMetalOptions.Metro, "equinixmetal-metro", "", "the Metro where you want your server to live")
+	sv(&kola.EquinixMetalOptions.RemoteUser, "equinixmetal-remote-user", "core", "the user for SSH connection to the remote storage")
+	sv(&kola.EquinixMetalOptions.RemoteSSHPrivateKeyPath, "equinixmetal-remote-ssh-private-key-path", "./id_rsa", "the path to SSH private key for SSH connection to the remote storage")
+	sv(&kola.EquinixMetalOptions.RemoteDocumentRoot, "equinixmetal-remote-document-root", "/var/www", "the absolute path to the document root of the webserver for serving temporary files")
 
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
