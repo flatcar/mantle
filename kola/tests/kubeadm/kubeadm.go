@@ -160,7 +160,7 @@ func init() {
 				}
 
 				if version == "1.24.1" {
-					major = 3277
+					major = 3033
 				}
 
 				register.Register(&register.Test{
