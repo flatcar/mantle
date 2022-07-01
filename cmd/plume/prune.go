@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
@@ -161,6 +162,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 	// images in each of them.
 	for _, part := range spec.AWS.Partitions {
 		for _, region := range part.Regions {
+			plog := capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", fmt.Sprintf("prune:%s", region))
 			if pruneDryRun {
 				plog.Printf("Checking for images in %v...", part.Name)
 			} else {
