@@ -217,7 +217,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					plog.Infof("Valid image %q: %d days old, skipping", *image.Name, daysOld)
 					continue
 				}
-				plog.Infof("Obsolete image %q: %d days old", *image.Name, daysOld)
+				plog.Infof("Obsolete image %q/%q: %d days old", *image.Name, *image.ImageId, daysOld)
 				if !pruneDryRun {
 					// Construct the s3ObjectPath in the same manner it's constructed for upload
 					arch := *image.Architecture
