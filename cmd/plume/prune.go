@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 
 var (
 	days        int
+	keeplast    int
 	pruneDryRun bool
 	cmdPrune    = &cobra.Command{
 		Use:   "prune --channel CHANNEL [options]",
@@ -43,6 +45,7 @@ var (
 
 func init() {
 	cmdPrune.Flags().IntVar(&days, "days", 30, "Minimum age in days for files to get deleted")
+	cmdPrune.Flags().IntVar(&keeplast, "keep-last", 0, "Number of latest images to keep")
 	cmdPrune.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPrune.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdPrune.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
@@ -184,6 +187,21 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 			}
 
 			plog.Infof("Got %d images with channel %q", len(images), specChannel)
+
+			// sort images by creation date
+			sort.Slice(images, func(i, j int) bool {
+				datei, _ := time.Parse(time.RFC3339Nano, *images[i].CreationDate)
+				datej, _ := time.Parse(time.RFC3339Nano, *images[j].CreationDate)
+				return datei.Before(datej)
+			})
+			if len(images) <= keeplast {
+				plog.Infof("Not enough images to prune, keeping %d", len(images))
+				continue
+			}
+			for _, image := range images[len(images)-keeplast:] {
+				plog.Infof("Keeping image %q", *image.Name)
+			}
+			images = images[:len(images)-keeplast]
 
 			now := time.Now()
 			for _, image := range images {
