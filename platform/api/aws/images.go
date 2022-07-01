@@ -699,6 +699,24 @@ func (a *API) describeImage(imageID string) (*ec2.Image, error) {
 	return describeRes.Images[0], nil
 }
 
+func (a *API) GetImageLastLaunchedTime(imageID string) (time.Time, error) {
+	resp, err := a.ec2.DescribeImageAttribute(&ec2.DescribeImageAttributeInput{
+		Attribute: aws.String(ec2.ImageAttributeNameLastLaunchedTime),
+		ImageId:   aws.String(imageID),
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	if resp.LastLaunchedTime == nil || resp.LastLaunchedTime.Value == nil {
+		return time.Time{}, nil
+	}
+	lastLaunchedTime, err := time.Parse(time.RFC3339Nano, *resp.LastLaunchedTime.Value)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return lastLaunchedTime, nil
+}
+
 // GetImagesByTag returns all EC2 images with that tag
 func (a *API) GetImagesByTag(tag, value string) ([]*ec2.Image, error) {
 	describeRes, err := a.ec2.DescribeImages(&ec2.DescribeImagesInput{

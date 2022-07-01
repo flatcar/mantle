@@ -32,11 +32,12 @@ import (
 )
 
 var (
-	days            int
-	dayssoftdeleted int
-	keeplast        int
-	pruneDryRun     bool
-	cmdPrune        = &cobra.Command{
+	days              int
+	dayssoftdeleted   int
+	keeplast          int
+	pruneDryRun       bool
+	checkLastLaunched bool
+	cmdPrune          = &cobra.Command{
 		Use:   "prune --channel CHANNEL [options]",
 		Short: "Prune old release images for the given channel.",
 		Run:   runPrune,
@@ -54,6 +55,7 @@ func init() {
 	cmdPrune.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use another container instead of the default")
 	cmdPrune.Flags().BoolVarP(&pruneDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
+	cmdPrune.Flags().BoolVarP(&checkLastLaunched, "check-last-launched", "c", false, "Check whether image has been launched recently")
 	AddSpecFlags(cmdPrune.Flags())
 	root.AddCommand(cmdPrune)
 }
@@ -158,11 +160,12 @@ func pruneAzure(ctx context.Context, spec *channelSpec) {
 }
 
 type deleteStats struct {
-	Total       int
-	Kept        int
-	Skipped     int
-	SoftDeleted int
-	Deleted     int
+	Total        int
+	Kept         int
+	Skipped      int
+	RecentlyUsed int
+	SoftDeleted  int
+	Deleted      int
 }
 
 func pruneAWS(ctx context.Context, spec *channelSpec) {
@@ -229,6 +232,20 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					plog.Infof("Valid image %q: %d days old, skipping", *image.Name, daysOld)
 					stats.Skipped += 1
 					continue
+				}
+				if checkLastLaunched {
+					lastLaunched, err := api.GetImageLastLaunchedTime(*image.ImageId)
+					if err != nil {
+						plog.Warningf("Error converting last launched date (%v): %v", *image.ImageId, err)
+						continue
+					}
+					duration := now.Sub(lastLaunched)
+					daysOld := int(duration.Hours() / 24)
+					if daysOld < days {
+						plog.Infof("Image %q: recently used %d days ago (%v), skipping", *image.Name, daysOld, lastLaunched)
+						stats.RecentlyUsed += 1
+						continue
+					}
 				}
 				plog.Infof("Obsolete image %q/%q: %d days old", *image.Name, *image.ImageId, daysOld)
 				if !pruneDryRun {
