@@ -157,11 +157,20 @@ func pruneAzure(ctx context.Context, spec *channelSpec) {
 	}
 }
 
+type deleteStats struct {
+	Total       int
+	Kept        int
+	Skipped     int
+	SoftDeleted int
+	Deleted     int
+}
+
 func pruneAWS(ctx context.Context, spec *channelSpec) {
 	if spec.AWS.Image == "" || awsCredentialsFile == "" {
 		plog.Notice("AWS image pruning disabled.")
 		return
 	}
+	stats := deleteStats{}
 
 	// Iterate over all partitions and regions in the given channel and prune
 	// images in each of them.
@@ -187,6 +196,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 			if err != nil {
 				plog.Fatalf("Couldn't list images in channel %q: %v", specChannel, err)
 			}
+			stats.Total += len(images)
 
 			plog.Infof("Got %d images with channel %q", len(images), specChannel)
 
@@ -198,11 +208,13 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 			})
 			if len(images) <= keeplast {
 				plog.Infof("Not enough images to prune, keeping %d", len(images))
+				stats.Kept += len(images)
 				continue
 			}
 			for _, image := range images[len(images)-keeplast:] {
 				plog.Infof("Keeping image %q", *image.Name)
 			}
+			stats.Kept += keeplast
 			images = images[:len(images)-keeplast]
 
 			now := time.Now()
@@ -215,6 +227,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 				daysOld := int(duration.Hours() / 24)
 				if daysOld < days {
 					plog.Infof("Valid image %q: %d days old, skipping", *image.Name, daysOld)
+					stats.Skipped += 1
 					continue
 				}
 				plog.Infof("Obsolete image %q/%q: %d days old", *image.Name, *image.ImageId, daysOld)
@@ -248,6 +261,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 							plog.Fatalf("Error adding tag to %v: %v", *image.Name, err)
 						}
 						plog.Infof("Image %v has been soft deleted", *image.Name)
+						stats.SoftDeleted += 1
 						continue
 					} else if dayssoftdeleted != 0 {
 						// check if the image is still soft deleted
@@ -259,6 +273,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 						daysOld := int(duration.Hours() / 24)
 						if daysOld < dayssoftdeleted {
 							plog.Infof("Image %v soft deleted %d days ago, skipping", *image.Name, daysOld)
+							stats.SoftDeleted += 1
 							continue
 						}
 					}
@@ -273,8 +288,10 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					if err != nil {
 						plog.Fatalf("couldn't prune image %v: %v", *image.Name, err)
 					}
+					stats.Deleted += 1
 				}
 			}
 		}
 	}
+	plog.Noticef("Pruning complete: %+v", stats)
 }
