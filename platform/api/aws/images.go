@@ -15,6 +15,7 @@
 package aws
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -331,6 +332,28 @@ func (a *API) CreateHVMImage(snapshotID string, diskSizeGiB uint, name string, d
 	params.EnaSupport = aws.Bool(true)
 	params.SriovNetSupport = aws.String("simple")
 	return a.createImage(params)
+}
+
+func (a *API) RemoveLaunchPermission(imageid string) ([]byte, error) {
+	mod := &ec2.ModifyImageAttributeInput{
+		ImageId: &imageid,
+		LaunchPermission: &ec2.LaunchPermissionModifications{
+			Remove: []*ec2.LaunchPermission{
+				{
+					Group: aws.String("all"),
+				},
+			},
+		},
+	}
+	resp, err := a.ec2.ModifyImageAttribute(mod)
+	if err != nil {
+		return []byte{}, fmt.Errorf("modifying image attribute: %w", err)
+	}
+	out, err := json.Marshal(resp)
+	if err != nil {
+		return []byte{}, fmt.Errorf("marshaling the API response: %w", err)
+	}
+	return out, nil
 }
 
 func (a *API) deregisterImageIfExists(name string) error {

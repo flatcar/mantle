@@ -32,10 +32,11 @@ import (
 )
 
 var (
-	days        int
-	keeplast    int
-	pruneDryRun bool
-	cmdPrune    = &cobra.Command{
+	days            int
+	dayssoftdeleted int
+	keeplast        int
+	pruneDryRun     bool
+	cmdPrune        = &cobra.Command{
 		Use:   "prune --channel CHANNEL [options]",
 		Short: "Prune old release images for the given channel.",
 		Run:   runPrune,
@@ -45,6 +46,7 @@ var (
 
 func init() {
 	cmdPrune.Flags().IntVar(&days, "days", 30, "Minimum age in days for files to get deleted")
+	cmdPrune.Flags().IntVar(&dayssoftdeleted, "days-soft-deleted", 0, "Minimum age in days for files to remain soft deleted (recoverable)")
 	cmdPrune.Flags().IntVar(&keeplast, "keep-last", 0, "Number of latest images to keep")
 	cmdPrune.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPrune.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
@@ -224,11 +226,43 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					}
 					board := fmt.Sprintf("%s-usr", arch)
 					var version string
+					var softdeletedate string
 					for _, t := range image.Tags {
 						if *t.Key == "Version" {
 							version = *t.Value
 						}
+						if *t.Key == "SoftDeleteDate" {
+							softdeletedate = *t.Value
+						}
 					}
+					if softdeletedate == "" && dayssoftdeleted != 0 {
+						softdeletedate = now.Format(time.RFC3339)
+						// remove LaunchPermission
+						_, err = api.RemoveLaunchPermission(*image.ImageId)
+						if err != nil {
+							plog.Fatalf("Error removing launch permission from %v: %v", *image.Name, err)
+						}
+						// add tag
+						err = api.CreateTags([]string{*image.ImageId}, map[string]string{"SoftDeleteDate": softdeletedate})
+						if err != nil {
+							plog.Fatalf("Error adding tag to %v: %v", *image.Name, err)
+						}
+						plog.Infof("Image %v has been soft deleted", *image.Name)
+						continue
+					} else if dayssoftdeleted != 0 {
+						// check if the image is still soft deleted
+						softdeletedate, err := time.Parse(time.RFC3339, softdeletedate)
+						if err != nil {
+							plog.Fatalf("Error converting soft delete date (%v): %v", softdeletedate, err)
+						}
+						duration := now.Sub(softdeletedate)
+						daysOld := int(duration.Hours() / 24)
+						if daysOld < dayssoftdeleted {
+							plog.Infof("Image %v soft deleted %d days ago, skipping", *image.Name, daysOld)
+							continue
+						}
+					}
+
 					imageFileName := strings.TrimSuffix(spec.AWS.Image, filepath.Ext(spec.AWS.Image))
 					s3ObjectPath := fmt.Sprintf("%s/%s/%s", board, version, imageFileName)
 
