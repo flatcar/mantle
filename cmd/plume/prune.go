@@ -33,8 +33,8 @@ import (
 
 var (
 	days              int
-	dayssoftdeleted   int
-	keeplast          int
+	daysSoftDeleted   int
+	keepLast          int
 	pruneDryRun       bool
 	checkLastLaunched bool
 	cmdPrune          = &cobra.Command{
@@ -47,8 +47,8 @@ var (
 
 func init() {
 	cmdPrune.Flags().IntVar(&days, "days", 30, "Minimum age in days for files to get deleted")
-	cmdPrune.Flags().IntVar(&dayssoftdeleted, "days-soft-deleted", 0, "Minimum age in days for files to remain soft deleted (recoverable)")
-	cmdPrune.Flags().IntVar(&keeplast, "keep-last", 0, "Number of latest images to keep")
+	cmdPrune.Flags().IntVar(&daysSoftDeleted, "days-soft-deleted", 0, "Minimum age in days for files to remain soft deleted (recoverable)")
+	cmdPrune.Flags().IntVar(&keepLast, "keep-last", 0, "Number of latest images to keep")
 	cmdPrune.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPrune.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdPrune.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
@@ -209,16 +209,16 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 				datej, _ := time.Parse(time.RFC3339Nano, *images[j].CreationDate)
 				return datei.Before(datej)
 			})
-			if len(images) <= keeplast {
+			if len(images) <= keepLast {
 				plog.Infof("Not enough images to prune, keeping %d", len(images))
 				stats.Kept += len(images)
 				continue
 			}
-			for _, image := range images[len(images)-keeplast:] {
+			for _, image := range images[len(images)-keepLast:] {
 				plog.Infof("Keeping image %q", *image.Name)
 			}
-			stats.Kept += keeplast
-			images = images[:len(images)-keeplast]
+			stats.Kept += keepLast
+			images = images[:len(images)-keepLast]
 
 			now := time.Now()
 			for _, image := range images {
@@ -256,40 +256,40 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					}
 					board := fmt.Sprintf("%s-usr", arch)
 					var version string
-					var softdeletedate string
+					var softDeleteDate string
 					for _, t := range image.Tags {
 						if *t.Key == "Version" {
 							version = *t.Value
 						}
 						if *t.Key == "SoftDeleteDate" {
-							softdeletedate = *t.Value
+							softDeleteDate = *t.Value
 						}
 					}
-					if softdeletedate == "" && dayssoftdeleted != 0 {
-						softdeletedate = now.Format(time.RFC3339)
+					if softDeleteDate == "" && daysSoftDeleted != 0 {
+						softDeleteDate = now.Format(time.RFC3339)
 						// remove LaunchPermission
 						_, err = api.RemoveLaunchPermission(*image.ImageId)
 						if err != nil {
 							plog.Fatalf("Error removing launch permission from %v: %v", *image.Name, err)
 						}
 						// add tag
-						err = api.CreateTags([]string{*image.ImageId}, map[string]string{"SoftDeleteDate": softdeletedate})
+						err = api.CreateTags([]string{*image.ImageId}, map[string]string{"SoftDeleteDate": softDeleteDate})
 						if err != nil {
 							plog.Fatalf("Error adding tag to %v: %v", *image.Name, err)
 						}
-						plog.Infof("Image %v has been soft deleted", *image.Name)
+						plog.Infof("Image %v has been soft-deleted", *image.Name)
 						stats.SoftDeleted += 1
 						continue
-					} else if dayssoftdeleted != 0 {
-						// check if the image is still soft deleted
-						softdeletedate, err := time.Parse(time.RFC3339, softdeletedate)
+					} else if daysSoftDeleted != 0 {
+						// check if the image is still soft-deleted
+						softDeleteDateTs, err := time.Parse(time.RFC3339, softDeleteDate)
 						if err != nil {
-							plog.Fatalf("Error converting soft delete date (%v): %v", softdeletedate, err)
+							plog.Fatalf("Error converting soft-delete date (%v): %v", softDeleteDateTs, err)
 						}
-						duration := now.Sub(softdeletedate)
+						duration := now.Sub(softDeleteDateTs)
 						daysOld := int(duration.Hours() / 24)
-						if daysOld < dayssoftdeleted {
-							plog.Infof("Image %v soft deleted %d days ago, skipping", *image.Name, daysOld)
+						if daysOld < daysSoftDeleted {
+							plog.Infof("Image %v soft-deleted %d days ago, skipping", *image.Name, daysOld)
 							stats.SoftDeleted += 1
 							continue
 						}
