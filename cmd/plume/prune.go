@@ -34,6 +34,7 @@ import (
 var (
 	days              int
 	daysSoftDeleted   int
+	daysLastLaunched  int
 	keepLast          int
 	pruneDryRun       bool
 	checkLastLaunched bool
@@ -47,6 +48,8 @@ var (
 
 func init() {
 	cmdPrune.Flags().IntVar(&days, "days", 30, "Minimum age in days for files to get deleted")
+	cmdPrune.Flags().IntVar(&daysLastLaunched, "days-last-launched", 0,
+		"Minimum lastLaunchedTime value in days for images to be deleted. Only used when --check-last-launched is set. If not provided, --days value is used.")
 	cmdPrune.Flags().IntVar(&daysSoftDeleted, "days-soft-deleted", 0, "Minimum age in days for files to remain soft deleted (recoverable)")
 	cmdPrune.Flags().IntVar(&keepLast, "keep-last", 0, "Number of latest images to keep")
 	cmdPrune.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
@@ -64,11 +67,20 @@ func runPrune(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		plog.Fatal("No args accepted")
 	}
+	if daysLastLaunched < 0 {
+		plog.Fatal("days-last-launched must be >= 0")
+	}
 	if daysSoftDeleted < 0 {
 		plog.Fatal("days-soft-deleted must be >= 0")
 	}
 	if keepLast < 0 {
 		plog.Fatal("keep-last must be >= 0")
+	}
+	if !checkLastLaunched && daysLastLaunched > 0 {
+		plog.Fatal("days-last-launched is ignored when check-last-launched is not set")
+	}
+	if checkLastLaunched && daysLastLaunched == 0 {
+		daysLastLaunched = days
 	}
 
 	// Override specVersion as it's not relevant for this command
@@ -247,7 +259,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					}
 					duration := now.Sub(lastLaunched)
 					daysOld := int(duration.Hours() / 24)
-					if daysOld < days {
+					if daysOld < daysLastLaunched {
 						plog.Infof("Image %q: recently used %d days ago (%v), skipping", *image.Name, daysOld, lastLaunched)
 						stats.RecentlyUsed += 1
 						continue
