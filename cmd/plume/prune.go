@@ -64,6 +64,12 @@ func runPrune(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		plog.Fatal("No args accepted")
 	}
+	if daysSoftDeleted < 0 {
+		plog.Fatal("days-soft-deleted must be >= 0")
+	}
+	if keepLast < 0 {
+		plog.Fatal("keep-last must be >= 0")
+	}
 
 	// Override specVersion as it's not relevant for this command
 	specVersion = "none"
@@ -265,7 +271,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 							softDeleteDate = *t.Value
 						}
 					}
-					if softDeleteDate == "" && daysSoftDeleted != 0 {
+					if softDeleteDate == "" && daysSoftDeleted > 0 {
 						softDeleteDate = now.Format(time.RFC3339)
 						// remove LaunchPermission
 						_, err = api.RemoveLaunchPermission(*image.ImageId)
@@ -280,7 +286,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 						plog.Infof("Image %v has been soft-deleted", *image.Name)
 						stats.SoftDeleted += 1
 						continue
-					} else if daysSoftDeleted != 0 {
+					} else if daysSoftDeleted > 0 {
 						// check if the image is still soft-deleted
 						softDeleteDateTs, err := time.Parse(time.RFC3339, softDeleteDate)
 						if err != nil {
