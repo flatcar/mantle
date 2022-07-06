@@ -24,8 +24,10 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "coreos.ignition.systemd.enable-service",
-		Run:         enableSystemdService,
+		Name: "coreos.ignition.systemd.enable-service",
+		Run:  enableSystemdService,
+		// This test is normally not related to the cloud environment
+		Platforms:   []string{"qemu", "qemu-unpriv"},
 		ClusterSize: 1,
 		// enable nfs-server, touch /etc/exports as it doesn't exist by default on Container Linux,
 		// and touch /var/lib/nfs/etab (https://bugzilla.redhat.com/show_bug.cgi?id=1394395) for RHCOS

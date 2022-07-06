@@ -32,6 +32,7 @@ func init() {
 		ExcludePlatforms: []string{"qemu", "esx"},
 		Distros:          []string{"cl"},
 		UserData:         conf.Empty(),
+		// Should run on all cloud environments
 	})
 	// Tests for https://github.com/coreos/bugs/issues/1981
 	register.Register(&register.Test{
@@ -42,6 +43,7 @@ func init() {
 		Distros:          []string{"cl"},
 		Flags:            []register.Flag{register.NoSSHKeyInUserData},
 		UserData:         conf.Ignition(`{"ignitionVersion": 1}`),
+		// Should run on all cloud environments
 	})
 	register.Register(&register.Test{
 		Name:             "cl.ignition.v2.noop",
@@ -51,6 +53,7 @@ func init() {
 		Distros:          []string{"cl"},
 		Flags:            []register.Flag{register.NoSSHKeyInUserData},
 		UserData:         conf.Ignition(`{"ignition":{"version":"2.0.0"}}`),
+		// Should run on all cloud environments
 	})
 }
 

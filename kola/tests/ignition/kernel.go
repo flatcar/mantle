@@ -22,7 +22,8 @@ kernel_arguments:
     - quiet`),
 		MinVersion: semver.Version{Major: 3185},
 		// The additional reboot causes a large waiting time
-		// and it's enough to test this on QEMU
+		// and it's enough to test this on QEMU and other clouds
+		// to check that the grub.cfg rewriting causes no problems
 		ExcludePlatforms: []string{"equinixmetal"},
 	})
 }

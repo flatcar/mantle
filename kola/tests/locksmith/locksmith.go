@@ -37,6 +37,8 @@ func init() {
 		Name:        "cl.locksmith.cluster",
 		Run:         locksmithCluster,
 		ClusterSize: 3,
+		// When cl.etcd-member.discovery runs on all clouds to test CLC IP templating, we can skip running this
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.ContainerLinuxConfig(`locksmith:
   reboot_strategy: etcd-lock
 etcd:
@@ -53,12 +55,16 @@ etcd:
 		Name:        "coreos.locksmith.reboot",
 		Run:         locksmithReboot,
 		ClusterSize: 1,
-		Distros:     []string{"cl"},
+		// This test is normally not be related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		Distros:   []string{"cl"},
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.locksmith.tls",
 		Run:         locksmithTLS,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
   "ignition": { "version": "2.0.0" },
   "systemd": {

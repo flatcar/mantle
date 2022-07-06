@@ -87,6 +87,8 @@ func init() {
 		UserData:         configV1,
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"azure"},
+		// It's enough if coreos.ignition.sethostname runs on all clouds
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:             "coreos.ignition.sethostname",
@@ -96,6 +98,7 @@ func init() {
 		UserDataV3:       configV3,
 		Distros:          []string{"cl", "fcos", "rhcos"},
 		ExcludePlatforms: []string{"azure"},
+		// Should run on all clouds to test for conflicts with DHCP hostnames, afterburn or other mechanisms
 	})
 }
 

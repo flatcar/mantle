@@ -28,9 +28,10 @@ import (
 
 func init() {
 	register.Register(&register.Test{
-		Run:              OmahaPing,
-		ClusterSize:      0,
-		Name:             "cl.omaha.ping",
+		Run:         OmahaPing,
+		ClusterSize: 0,
+		Name:        "cl.omaha.ping",
+		// This test is normally not related to the cloud environment
 		Platforms:        []string{"qemu"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		Distros:          []string{"cl"},

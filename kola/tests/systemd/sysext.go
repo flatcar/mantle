@@ -16,7 +16,9 @@ func init() {
 		Run:         checkSysextSimple,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3185},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3185},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
     - path: /etc/extensions/test/usr/lib/extension-release.d/extension-release.test

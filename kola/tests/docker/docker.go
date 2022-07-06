@@ -60,6 +60,8 @@ func init() {
 		Name:        "docker.selinux",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 2942},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerNetwork,
@@ -68,6 +70,7 @@ func init() {
 		Distros:     []string{"cl"},
 		// No idea why Docker containers cannot reach each the other VM
 		ExcludePlatforms: []string{"qemu-unpriv"},
+		// Should run on all cloud environments to check against network conflicts
 	})
 	register.Register(&register.Test{
 		Run:           dockerOldClient,
@@ -77,12 +80,16 @@ func init() {
 		Distros:       []string{"cl"},
 		// incompatible with docker >=20.10
 		EndVersion: semver.Version{Major: 2956},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         dockerUserns,
 		ClusterSize: 1,
 		Name:        "docker.userns",
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:
@@ -124,12 +131,16 @@ passwd:
 		ClusterSize: 1,
 		Name:        `docker.base`,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	register.Register(&register.Test{
 		Run:         func(c cluster.TestCluster) { testDockerInfo("btrfs", c) },
 		ClusterSize: 1,
 		Name:        "docker.btrfs-storage",
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		// Note: copied verbatim from https://github.com/coreos/docs/blob/master/os/mounting-storage.md#creating-and-mounting-a-btrfs-volume-file
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
@@ -172,6 +183,8 @@ systemd:
 		Run:         dockerBaseTests,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:
@@ -214,6 +227,8 @@ systemd:
 		Run:         dockerContainerdRestart,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:

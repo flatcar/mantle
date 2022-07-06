@@ -15,6 +15,8 @@ func init() {
 		Name:        "cl.ignition.symlink",
 		Run:         writeAbsoluteSymlink,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "3.0.0"

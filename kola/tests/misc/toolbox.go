@@ -27,6 +27,8 @@ func init() {
 		ClusterSize: 1,
 		Name:        "cl.toolbox.dnf-install",
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

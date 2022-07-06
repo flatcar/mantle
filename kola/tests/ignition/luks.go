@@ -16,7 +16,9 @@ func init() {
 		Run:         luksTest,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3185},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3185},
 		UserData: conf.Butane(`---
 variant: flatcar
 version: 1.0.0

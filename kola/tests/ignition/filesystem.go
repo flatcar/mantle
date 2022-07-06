@@ -79,6 +79,8 @@ func init() {
 		ClusterSize: 1,
 		UserData:    btrfsConfigV1,
 		Distros:     []string{"cl"},
+		// Running only cl.ignition.v2.btrfsroot on all clouds should be enough
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.v2.btrfsroot",
@@ -135,6 +137,8 @@ func init() {
 		ClusterSize: 1,
 		UserData:    xfsConfigV1,
 		Distros:     []string{"cl"},
+		// Running only cl.ignition.v2.btrfsroot on all clouds should be enough
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.v2.xfsroot",
@@ -142,6 +146,8 @@ func init() {
 		ClusterSize: 1,
 		UserData:    xfsConfigV2,
 		Distros:     []string{"cl"},
+		// Running only cl.ignition.v2.btrfsroot on all clouds should be enough
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	// Reformat the root as ext4
@@ -191,6 +197,8 @@ func init() {
 		ClusterSize: 1,
 		UserData:    ext4ConfigV1,
 		Distros:     []string{"cl"},
+		// Running only cl.ignition.v2.btrfsroot on all clouds should be enough
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.v2.ext4root",
@@ -198,12 +206,16 @@ func init() {
 		ClusterSize: 1,
 		UserData:    ext4ConfigV2,
 		Distros:     []string{"cl"},
+		// Running only cl.ignition.v2.btrfsroot on all clouds should be enough
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.v2_1.ext4checkexisting",
 		Run:         ext4CheckExisting,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
+		// Running only cl.ignition.v2.btrfsroot on all clouds should be enough
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	vfatConfigV2_1 := conf.Ignition(`{
@@ -230,6 +242,8 @@ func init() {
 		ClusterSize: 1,
 		UserData:    vfatConfigV2_1,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	swapConfigV2_1 := conf.Ignition(`{
@@ -256,6 +270,8 @@ func init() {
 		ClusterSize: 1,
 		UserData:    swapConfigV2_1,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	swapActivation := conf.ContainerLinuxConfig(fmt.Sprintf(`storage:
@@ -302,7 +318,9 @@ systemd:
 		ClusterSize: 1,
 		UserData:    swapActivation,
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3033},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3033},
 	})
 }
 

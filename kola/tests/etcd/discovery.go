@@ -40,6 +40,7 @@ func init() {
   initial_advertise_peer_urls: http://{PRIVATE_IPV4}:2380
   discovery:                   $discovery`),
 		Distros: []string{"cl"},
+		// Should run on all cloud environments to test CLC IP addr templating
 	})
 
 	register.Register(&register.Test{
@@ -57,6 +58,8 @@ etcd:
   discovery:                   $discovery
   enable_v2:                   true`),
 		Distros: []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 
 	register.Register(&register.Test{
@@ -74,6 +77,8 @@ etcd:
   initial_advertise_peer_urls: http://127.0.0.1:2380
 `, uuid.New())),
 		Distros: []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

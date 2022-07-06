@@ -44,6 +44,8 @@ func init() {
                              }
                            }`),
 		Distros: []string{"cl"},
+		// We can run the coreos.ignition.once test on all cloud environments instead
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.ignition.once",

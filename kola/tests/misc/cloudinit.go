@@ -34,6 +34,7 @@ write_files:
     content: bar`),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
+		// This should run on all clouds
 	})
 	register.Register(&register.Test{
 		Run:         CloudInitScript,
@@ -50,6 +51,8 @@ chmod 700 ~core/.ssh
 chmod 600 ~core/.ssh/authorized_keys`),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
+		// When cl.cloudinit.basic passed we don't need to run this on all clouds
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

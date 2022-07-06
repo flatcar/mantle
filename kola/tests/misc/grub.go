@@ -160,13 +160,15 @@ coreos:
 
 func init() {
 	register.Register(&register.Test{
-		Run:              UpdateGrubNop,
-		ClusterSize:      1,
-		Name:             "cl.update.grubnop",
-		UserData:         grubUpdaterConf,
-		MinVersion:       semver.Version{Major: 1745},
-		Architectures:    []string{"amd64"},
-		Distros:          []string{"cl"},
+		Run:           UpdateGrubNop,
+		ClusterSize:   1,
+		Name:          "cl.update.grubnop",
+		UserData:      grubUpdaterConf,
+		MinVersion:    semver.Version{Major: 1745},
+		Architectures: []string{"amd64"},
+		Distros:       []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:        []string{"qemu"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 	})
 }

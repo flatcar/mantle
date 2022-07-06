@@ -25,6 +25,8 @@ func init() {
 		ClusterSize: 1,
 		Name:        "systemd.sysusers.gshadow",
 		Distros:     []string{"cl", "fcos"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

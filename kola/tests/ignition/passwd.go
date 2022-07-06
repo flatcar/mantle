@@ -29,6 +29,8 @@ func init() {
 		Name:        "cl.ignition.v1.groups",
 		Run:         groups,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
 		             "ignitionVersion": 1,
 		             "systemd": {
@@ -57,6 +59,8 @@ func init() {
 		Name:        "coreos.ignition.groups",
 		Run:         groups,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
 		             "ignition": { "version": "2.0.0" },
 		             "systemd": {
@@ -107,6 +111,8 @@ func init() {
 		Name:        "cl.ignition.v1.users",
 		Run:         users,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
 		             "ignitionVersion": 1,
 		             "systemd": {
@@ -141,6 +147,8 @@ func init() {
 		Name:        "cl.ignition.v2.users",
 		Run:         users,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
 		             "ignition": { "version": "2.0.0" },
 		             "systemd": {
@@ -175,6 +183,8 @@ func init() {
 		Name:        "coreos.ignition.v2.users",
 		Run:         usersRhcos,
 		ClusterSize: 1,
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.Ignition(`{
 		             "ignition": { "version": "2.0.0" },
 		             "passwd": {

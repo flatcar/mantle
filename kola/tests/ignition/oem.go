@@ -27,7 +27,9 @@ func init() {
 		Run:         reusePartition,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 2983},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 2983},
 		UserData: conf.ContainerLinuxConfig(`storage:
   filesystems:
      - name: oem
@@ -47,7 +49,9 @@ func init() {
 		Run:         reusePartition,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 2983},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 2983},
 		UserData: conf.ContainerLinuxConfig(`storage:
   filesystems:
      - name: oem

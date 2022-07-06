@@ -46,6 +46,8 @@ func init() {
 		Name:        "cl.update.reboot",
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadVerity,
@@ -54,6 +56,8 @@ func init() {
 		Flags:       []register.Flag{register.NoEmergencyShellCheck, register.NoKernelPanicCheck},
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadUsr,
@@ -62,6 +66,8 @@ func init() {
 		Flags:       []register.Flag{register.NoEmergencyShellCheck},
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

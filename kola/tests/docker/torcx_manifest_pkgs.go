@@ -37,6 +37,8 @@ func init() {
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		ExcludePlatforms: []string{"esx", "do"},
 		Distros:          []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

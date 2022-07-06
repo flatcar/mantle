@@ -30,6 +30,8 @@ func init() {
 		Flags:            []register.Flag{register.NoSSHKeyInMetadata},
 		UserData:         conf.Ignition(`{"ignitionVersion": 1}`),
 		Distros:          []string{"cl"},
+		// Does not really need to run in addition to coreos.ignition.ssh.key, so at least limit it to one cloud (here "do")
+		Platforms: []string{"do"},
 	})
 	register.Register(&register.Test{
 		Name:             "coreos.ignition.ssh.key",
