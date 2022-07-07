@@ -34,6 +34,8 @@ func init() {
 		ClusterSize: 1,
 		Name:        "cl.network.listeners",
 		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment unless the OEM tools would unexpectedly listen on ports
+		Platforms: []string{"qemu", "qemu-unpriv"},
 		// be sure to notice listeners in the docker stack
 		UserData: conf.ContainerLinuxConfig(`systemd:
   units:
@@ -47,6 +49,8 @@ func init() {
 		Name:        "cl.network.listeners.legacy",
 		Distros:     []string{"cl"},
 		EndVersion:  semver.Version{Major: 1967},
+		// This test is normally not related to the cloud environment unless the OEM tools would unexpectedly listen on ports
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:              NetworkInitramfsSecondBoot,

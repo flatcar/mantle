@@ -40,6 +40,7 @@ func init() {
 }`),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"azure"},
+		// This should run on all clouds to test the relation of Ignition and cloudinit
 	})
 }
 

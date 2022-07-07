@@ -32,9 +32,10 @@ var timesyncdMsgs = [][]byte{
 
 func init() {
 	register.Register(&register.Test{
-		Run:              NTP,
-		ClusterSize:      0,
-		Name:             "linux.ntp",
+		Run:         NTP,
+		ClusterSize: 0,
+		Name:        "linux.ntp",
+		// This test is normally not related to the cloud environment
 		Platforms:        []string{"qemu"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		Distros:          []string{"cl"},

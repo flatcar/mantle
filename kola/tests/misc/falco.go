@@ -11,7 +11,8 @@ func init() {
 		ClusterSize: 1,
 		Name:        "cl.misc.falco",
 		Distros:     []string{"cl"},
-		Platforms:   []string{"qemu"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu"},
 		// falco builder container can't handle our arm64 config (yet)
 		Architectures: []string{"amd64"},
 		// selinux blocks insmod from within container

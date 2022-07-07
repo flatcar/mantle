@@ -27,7 +27,9 @@ func init() {
 	register.Register(&register.Test{
 		Run:         torcxEnable,
 		ClusterSize: 1,
-		Name:        "torcx.enable-service",
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		Name:      "torcx.enable-service",
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:

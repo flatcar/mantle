@@ -71,6 +71,7 @@ func init() {
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		UserData:         flannelConf.Subst("$type", "udp"),
 		Architectures:    []string{"amd64"},
+		// Should run on all cloud environments to check for network problems
 	})
 
 	register.Register(&register.Test{
@@ -79,6 +80,7 @@ func init() {
 		Name:        "cl.flannel.vxlan",
 		Distros:     []string{"cl"},
 		UserData:    flannelConf.Subst("$type", "vxlan"),
+		// Should run on all cloud environments to check for network problems
 	})
 }
 

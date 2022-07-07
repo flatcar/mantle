@@ -107,6 +107,8 @@ func init() {
 		// current LTS has DOCKER_API_VERSION=1.40 which is too old for local-gadget docker client.
 		// "client version 1.41 is too new. Maximum supported API version is 1.40"
 		MinVersion: semver.Version{Major: 3033},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

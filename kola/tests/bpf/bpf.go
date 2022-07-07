@@ -42,6 +42,8 @@ func init() {
 		Flags: []register.Flag{register.NoEnableSelinux},
 		// exclude `arm64` while `quay.io/iovisor/bcc` does not have `arm64` support.
 		Architectures: []string{"amd64"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

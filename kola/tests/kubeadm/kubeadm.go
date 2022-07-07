@@ -168,6 +168,7 @@ func init() {
 					Distros: []string{"cl"},
 					// Network config problems in esx and qemu-unpriv
 					ExcludePlatforms: []string{"esx", "qemu-unpriv"},
+					// This should run on all clouds as a good end-to-end test
 					Run: func(c cluster.TestCluster) {
 						kubeadmBaseTest(c, testParams)
 					},

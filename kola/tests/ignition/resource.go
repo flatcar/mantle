@@ -108,6 +108,7 @@ func init() {
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		ExcludePlatforms: []string{"esx", "do", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
+		// This should run on all clouds to test initramfs networking
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.ignition.resource.remote",
@@ -116,6 +117,7 @@ func init() {
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
 		ExcludePlatforms: []string{"esx", "do"},
+		// This should run on all clouds to test initramfs networking
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "2.1.0"
@@ -241,7 +243,9 @@ func init() {
 		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
 		ExcludePlatforms: []string{"esx", "do"},
-		MinVersion:       semver.Version{Major: 1995},
+		// This does not need to run on all clouds because it is a special case of coreos.ignition.resource.remote
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 1995},
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "2.1.0"

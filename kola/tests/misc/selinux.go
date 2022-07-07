@@ -30,24 +30,32 @@ func init() {
 		ClusterSize: 1,
 		Name:        "coreos.selinux.enforce",
 		Distros:     []string{"cl", "fcos", "rhcos"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         SelinuxBoolean,
 		ClusterSize: 1,
 		Name:        "coreos.selinux.boolean",
 		Distros:     []string{"cl", "fcos", "rhcos"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         SelinuxBooleanPersist,
 		ClusterSize: 1,
 		Name:        "rhcos.selinux.boolean.persist",
 		Distros:     []string{"fcos", "rhcos"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
 		Run:         SelinuxManage,
 		ClusterSize: 1,
 		Name:        "rhcos.selinux.manage",
 		Distros:     []string{"rhcos"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 

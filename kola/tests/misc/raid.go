@@ -182,9 +182,10 @@ func init() {
 			// once Ignition supports it.
 			Run:         runRootOnRaid,
 			ClusterSize: 0,
-			Platforms:   []string{"qemu"},
-			Name:        fmt.Sprintf("cl.disk.%s.root", raidLevel),
-			Distros:     []string{"cl"},
+			// This test is normally not related to the cloud environment
+			Platforms: []string{"qemu"},
+			Name:      fmt.Sprintf("cl.disk.%s.root", raidLevel),
+			Distros:   []string{"cl"},
 		})
 
 		// data partition
@@ -207,6 +208,8 @@ func init() {
 			Name:        fmt.Sprintf("cl.disk.%s.data", raidLevel),
 			UserData:    userDataData,
 			Distros:     []string{"cl"},
+			// This test is normally not related to the cloud environment
+			Platforms: []string{"qemu", "qemu-unpriv"},
 		})
 	}
 }
