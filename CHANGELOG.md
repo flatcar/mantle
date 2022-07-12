@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - kola test `cl.misc.falco` that tests falco kmod building ([#339](https://github.com/flatcar-linux/mantle/pull/339))
 - Kubernetes test for release 1.24.1 ([#337](https://github.com/flatcar-linux/mantle/pull/337))
 - Added storage abstraction for Equinix Metal tests (SSH can be used in addition of Google Cloud Storage) ([#340](https://github.com/flatcar-linux/mantle/pull/340))
+- `plume prune` support for soft-deleting AWS images and more advanced retention strategies ([#343](https://github.com/flatcar-linux/mantle/pull/343))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))

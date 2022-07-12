@@ -18,10 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
@@ -30,9 +32,13 @@ import (
 )
 
 var (
-	days        int
-	pruneDryRun bool
-	cmdPrune    = &cobra.Command{
+	days              int
+	daysSoftDeleted   int
+	daysLastLaunched  int
+	keepLast          int
+	pruneDryRun       bool
+	checkLastLaunched bool
+	cmdPrune          = &cobra.Command{
 		Use:   "prune --channel CHANNEL [options]",
 		Short: "Prune old release images for the given channel.",
 		Run:   runPrune,
@@ -42,12 +48,17 @@ var (
 
 func init() {
 	cmdPrune.Flags().IntVar(&days, "days", 30, "Minimum age in days for files to get deleted")
+	cmdPrune.Flags().IntVar(&daysLastLaunched, "days-last-launched", 0,
+		"Minimum lastLaunchedTime value in days for images to be deleted. Only used when --check-last-launched is set. If not provided, --days value is used.")
+	cmdPrune.Flags().IntVar(&daysSoftDeleted, "days-soft-deleted", 0, "Minimum age in days for files to remain soft deleted (recoverable)")
+	cmdPrune.Flags().IntVar(&keepLast, "keep-last", 0, "Number of latest images to keep")
 	cmdPrune.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPrune.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdPrune.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdPrune.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use another container instead of the default")
 	cmdPrune.Flags().BoolVarP(&pruneDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
+	cmdPrune.Flags().BoolVarP(&checkLastLaunched, "check-last-launched", "c", false, "Check whether image has been launched recently")
 	AddSpecFlags(cmdPrune.Flags())
 	root.AddCommand(cmdPrune)
 }
@@ -55,6 +66,21 @@ func init() {
 func runPrune(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		plog.Fatal("No args accepted")
+	}
+	if daysLastLaunched < 0 {
+		plog.Fatal("days-last-launched must be >= 0")
+	}
+	if daysSoftDeleted < 0 {
+		plog.Fatal("days-soft-deleted must be >= 0")
+	}
+	if keepLast < 0 {
+		plog.Fatal("keep-last must be >= 0")
+	}
+	if !checkLastLaunched && daysLastLaunched > 0 {
+		plog.Fatal("days-last-launched is ignored when check-last-launched is not set")
+	}
+	if checkLastLaunched && daysLastLaunched == 0 {
+		daysLastLaunched = days
 	}
 
 	// Override specVersion as it's not relevant for this command
@@ -151,16 +177,27 @@ func pruneAzure(ctx context.Context, spec *channelSpec) {
 	}
 }
 
+type deleteStats struct {
+	total        int
+	kept         int
+	skipped      int
+	recentlyUsed int
+	softDeleted  int
+	deleted      int
+}
+
 func pruneAWS(ctx context.Context, spec *channelSpec) {
 	if spec.AWS.Image == "" || awsCredentialsFile == "" {
 		plog.Notice("AWS image pruning disabled.")
 		return
 	}
+	stats := deleteStats{}
 
 	// Iterate over all partitions and regions in the given channel and prune
 	// images in each of them.
 	for _, part := range spec.AWS.Partitions {
 		for _, region := range part.Regions {
+			plog := capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", fmt.Sprintf("prune:%s", region))
 			if pruneDryRun {
 				plog.Printf("Checking for images in %v...", part.Name)
 			} else {
@@ -180,8 +217,26 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 			if err != nil {
 				plog.Fatalf("Couldn't list images in channel %q: %v", specChannel, err)
 			}
+			stats.total += len(images)
 
 			plog.Infof("Got %d images with channel %q", len(images), specChannel)
+
+			// sort images by creation date
+			sort.Slice(images, func(i, j int) bool {
+				datei, _ := time.Parse(time.RFC3339Nano, *images[i].CreationDate)
+				datej, _ := time.Parse(time.RFC3339Nano, *images[j].CreationDate)
+				return datei.Before(datej)
+			})
+			if len(images) <= keepLast {
+				plog.Infof("Not enough images to prune, keeping %d", len(images))
+				stats.kept += len(images)
+				continue
+			}
+			for _, image := range images[len(images)-keepLast:] {
+				plog.Infof("Keeping image %q", *image.Name)
+			}
+			stats.kept += keepLast
+			images = images[:len(images)-keepLast]
 
 			now := time.Now()
 			for _, image := range images {
@@ -193,9 +248,24 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 				daysOld := int(duration.Hours() / 24)
 				if daysOld < days {
 					plog.Infof("Valid image %q: %d days old, skipping", *image.Name, daysOld)
+					stats.skipped += 1
 					continue
 				}
-				plog.Infof("Obsolete image %q: %d days old", *image.Name, daysOld)
+				if checkLastLaunched {
+					lastLaunched, err := api.GetImageLastLaunchedTime(*image.ImageId)
+					if err != nil {
+						plog.Warningf("Error converting last launched date (%v): %v", *image.ImageId, err)
+						continue
+					}
+					duration := now.Sub(lastLaunched)
+					daysOld := int(duration.Hours() / 24)
+					if daysOld < daysLastLaunched {
+						plog.Infof("Image %q: recently used %d days ago (%v), skipping", *image.Name, daysOld, lastLaunched)
+						stats.recentlyUsed += 1
+						continue
+					}
+				}
+				plog.Infof("Obsolete image %q/%q: %d days old", *image.Name, *image.ImageId, daysOld)
 				if !pruneDryRun {
 					// Construct the s3ObjectPath in the same manner it's constructed for upload
 					arch := *image.Architecture
@@ -204,11 +274,45 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					}
 					board := fmt.Sprintf("%s-usr", arch)
 					var version string
+					var softDeleteDate string
 					for _, t := range image.Tags {
 						if *t.Key == "Version" {
 							version = *t.Value
 						}
+						if *t.Key == "SoftDeleteDate" {
+							softDeleteDate = *t.Value
+						}
 					}
+					if softDeleteDate == "" && daysSoftDeleted > 0 {
+						softDeleteDate = now.Format(time.RFC3339)
+						// remove LaunchPermission
+						_, err = api.RemoveLaunchPermission(*image.ImageId)
+						if err != nil {
+							plog.Fatalf("Error removing launch permission from %v: %v", *image.Name, err)
+						}
+						// add tag
+						err = api.CreateTags([]string{*image.ImageId}, map[string]string{"SoftDeleteDate": softDeleteDate})
+						if err != nil {
+							plog.Fatalf("Error adding tag to %v: %v", *image.Name, err)
+						}
+						plog.Infof("Image %v has been soft-deleted", *image.Name)
+						stats.softDeleted += 1
+						continue
+					} else if daysSoftDeleted > 0 {
+						// check if the image is still soft-deleted
+						softDeleteDateTs, err := time.Parse(time.RFC3339, softDeleteDate)
+						if err != nil {
+							plog.Fatalf("Error converting soft-delete date (%v): %v", softDeleteDateTs, err)
+						}
+						duration := now.Sub(softDeleteDateTs)
+						daysOld := int(duration.Hours() / 24)
+						if daysOld < daysSoftDeleted {
+							plog.Infof("Image %v soft-deleted %d days ago, skipping", *image.Name, daysOld)
+							stats.softDeleted += 1
+							continue
+						}
+					}
+
 					imageFileName := strings.TrimSuffix(spec.AWS.Image, filepath.Ext(spec.AWS.Image))
 					s3ObjectPath := fmt.Sprintf("%s/%s/%s", board, version, imageFileName)
 
@@ -219,8 +323,10 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 					if err != nil {
 						plog.Fatalf("couldn't prune image %v: %v", *image.Name, err)
 					}
+					stats.deleted += 1
 				}
 			}
 		}
 	}
+	plog.Noticef("Pruning complete: %+v", stats)
 }
