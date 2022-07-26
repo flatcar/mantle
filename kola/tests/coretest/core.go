@@ -254,6 +254,14 @@ func TestSymlinkResolvConf() error {
 	if !IsLink(f) {
 		return fmt.Errorf("/etc/resolv.conf is not a symlink.")
 	}
+	// check that resolv.conf points to the correct file
+	target, err := filepath.EvalSymlinks("/etc/resolv.conf")
+	if err != nil {
+		return fmt.Errorf("SymlinkResolvConf: readlink: %v", err)
+	}
+	if target != "/run/systemd/resolve/resolv.conf" {
+		return fmt.Errorf("/etc/resolv.conf points at the wrong file: %s", target)
+	}
 	return nil
 }
 
