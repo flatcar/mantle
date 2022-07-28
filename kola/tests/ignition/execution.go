@@ -99,7 +99,7 @@ func init() {
                                  },
                                  {
                                    "name": "00-dummy.network",
-                                   "contents": "[Match]\nName=kola\n\n[Network]\nAddress=10.0.2.1/24"
+                                   "contents": "[Match]\nType=!vlan bond bridge\nName=kola\n\n[Network]\nAddress=10.0.2.1/24"
                                  }
                                ]
                              },
@@ -152,4 +152,5 @@ func testTranslation(c cluster.TestCluster) {
 
 	// assert that the networkd configuration has correctly been translated to files and applied.
 	c.AssertCmdOutputContains(m, `ip --json address show kola | jq -r '.[] | .addr_info | .[] | select( .family == "inet") | .local'`, "10.0.2.1")
+	c.AssertCmdOutputContains(m, `cat /etc/systemd/network/00-dummy.network`, "!vlan bond bridge")
 }
