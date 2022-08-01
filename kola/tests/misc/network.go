@@ -59,6 +59,51 @@ func init() {
 		ExcludePlatforms: []string{"do"},
 		Distros:          []string{"cl"},
 	})
+	register.Register(&register.Test{
+		MinVersion:  semver.Version{Major: 3185},
+		Run:         wireguard,
+		ClusterSize: 1,
+		Name:        "cl.network.wireguard",
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment unless the OEM tools would unexpectedly listen on ports
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /etc/wireguard/kv0.conf
+      contents:
+        inline: |
+          [Interface]
+          Address = 10.100.0.2/32
+          PrivateKey = GPSa0CZhJRqtZQciPAZPI62rrGivQ2TWhCJUYI01c2g=
+
+          [Peer]
+          PublicKey = EQluuT9Wk0TFUDYlU/5fBsY3KPx/YsZxaM0lCvlLwF4=
+          AllowedIPs = 0.0.0.0/0, ::/0
+          Endpoint = 127.0.0.1:51820
+    - path: /etc/wireguard/wg0.conf
+      contents:
+        inline: |
+          [Interface]
+          Address = 10.100.0.1/24
+          SaveConfig = true
+          ListenPort = 51820
+          FwMark = 0xca6c
+          PrivateKey = OLjWWVfIcPj0TOIaqPOJKFArd9PfVooWeBFyC9Kqwmg=
+
+          [Peer]
+          PublicKey = 1Qy9mZNQIUmHCfvdhoBCNhuLjR0UVGOEONQAJkkqilg=
+          AllowedIPs = 10.100.0.2/32
+systemd:
+  units:
+    - name: wg-quick@kv0.service
+      enabled: true
+    - name: wg-quick@wg0.service
+      enabled: true
+`),
+	})
 }
 
 type listener struct {
@@ -180,4 +225,10 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 	if lines[0] != "Reached target Switch Root." {
 		c.Fatal("networkd started in initramfs")
 	}
+}
+
+// wireguard setups and runs a simple wireguard setup.
+func wireguard(c cluster.TestCluster) {
+	m := c.Machines()[0]
+	c.AssertCmdOutputContains(m, `ip --json address show kv0 | jq -r '.[] | .addr_info | .[] | select( .family == "inet") | .local'`, "10.100.0.2")
 }
