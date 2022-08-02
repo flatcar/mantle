@@ -93,6 +93,7 @@ func init() {
 	sv(&kola.AWSOptions.InstanceType, "aws-type", "m4.large", "AWS instance type")
 	sv(&kola.AWSOptions.SecurityGroup, "aws-sg", "kola", "AWS security group name")
 	sv(&kola.AWSOptions.IAMInstanceProfile, "aws-iam-profile", "kola", "AWS IAM instance profile name")
+	bv(&kola.AWSOptions.ForceIMDSv2, "aws-force-imdsv2", true, "Force IMDSv2 on AWS")
 
 	// azure-specific options
 	sv(&kola.AzureOptions.AzureProfile, "azure-profile", "", "Azure profile (default \"~/"+auth.AzureProfilePath+"\")")

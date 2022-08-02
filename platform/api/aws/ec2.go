@@ -74,6 +74,10 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64) ([]*
 		return nil, fmt.Errorf("error resolving subnets: %v", err)
 	}
 
+	httpTokensStateValue := ec2.HttpTokensStateOptional
+	if a.opts.ForceIMDSv2 {
+		httpTokensStateValue = ec2.HttpTokensStateRequired
+	}
 	key := &keyname
 	if keyname == "" {
 		key = nil
@@ -83,11 +87,14 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64) ([]*
 
 	for _, subnetId := range subnetIds {
 		inst := ec2.RunInstancesInput{
-			ImageId:          &a.opts.AMI,
-			MinCount:         &cnt,
-			MaxCount:         &cnt,
-			KeyName:          key,
-			InstanceType:     &a.opts.InstanceType,
+			ImageId:      &a.opts.AMI,
+			MinCount:     &cnt,
+			MaxCount:     &cnt,
+			KeyName:      key,
+			InstanceType: &a.opts.InstanceType,
+			MetadataOptions: &ec2.InstanceMetadataOptionsRequest{
+				HttpTokens: &httpTokensStateValue,
+			},
 			SecurityGroupIds: []*string{&sgId},
 			SubnetId:         &subnetId,
 			UserData:         ud,

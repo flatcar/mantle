@@ -55,6 +55,8 @@ type Options struct {
 	InstanceType       string
 	SecurityGroup      string
 	IAMInstanceProfile string
+
+	ForceIMDSv2 bool
 }
 
 type API struct {
