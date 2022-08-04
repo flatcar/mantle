@@ -40,9 +40,37 @@ func (om *machine) ID() string {
 func (om *machine) IP() string {
 	if om.mach.FloatingIP != nil {
 		return om.mach.FloatingIP.IP
-	} else {
-		return om.mach.Server.AccessIPv4
 	}
+
+	// we try to get the IPv4 address.
+	for _, addrs := range om.mach.Server.Addresses {
+		addrs, ok := addrs.([]interface{})
+		if !ok {
+			continue
+		}
+
+		for _, addr := range addrs {
+			a, ok := addr.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			iptype, ok := a["OS-EXT-IPS:type"].(string)
+			if !ok || iptype != "fixed" {
+				continue
+			}
+
+			version, ok := a["version"].(float64)
+			if !ok || version != 4 {
+				continue
+			}
+
+			if ip, ok := a["addr"].(string); ok {
+				return ip
+			}
+		}
+	}
+	return ""
 }
 
 func (om *machine) PrivateIP() string {
