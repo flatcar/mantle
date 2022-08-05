@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added storage abstraction for Equinix Metal tests (SSH can be used in addition of Google Cloud Storage) ([#340](https://github.com/flatcar-linux/mantle/pull/340))
 - `plume prune` support for soft-deleting AWS images and more advanced retention strategies ([#343](https://github.com/flatcar-linux/mantle/pull/343))
 - Added simple wireguard test ([#348](https://github.com/flatcar-linux/mantle/pull/348))
+- Added SSH proxy jump to Openstack platform ([#349](https://github.com/flatcar-linux/mantle/pull/349))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
