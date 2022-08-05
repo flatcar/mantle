@@ -15,9 +15,12 @@
 package openstack
 
 import (
+	"fmt"
+
 	"github.com/coreos/pkg/capnslog"
 	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
 
+	"github.com/flatcar-linux/mantle/network"
 	"github.com/flatcar-linux/mantle/platform"
 	"github.com/flatcar-linux/mantle/platform/api/openstack"
 )
@@ -44,9 +47,26 @@ func NewFlight(opts *openstack.Options) (platform.Flight, error) {
 		return nil, err
 	}
 
-	bf, err := platform.NewBaseFlight(opts.Options, Platform, ctplatform.OpenStackMetadata)
-	if err != nil {
-		return nil, err
+	var bf *platform.BaseFlight
+
+	if opts.Host != "" {
+		if opts.User == "" || opts.Keyfile == "" {
+			return nil, fmt.Errorf("--openstack-user and --openstack-keyfile can't be empty when using --openstack-host")
+		}
+
+		bf, err = platform.NewBaseFlightWithDialer(opts.Options, Platform, ctplatform.OpenStackMetadata, network.NewJumpDialer(opts.Host, opts.User, opts.Keyfile))
+		if err != nil {
+			return nil, fmt.Errorf("creating base flight with jump dialer: %w", err)
+		}
+	} else {
+		if opts.User == "" || opts.Keyfile == "" {
+			plog.Info("--openstack-user and/or --openstack-keyfile are provided but ignored")
+		}
+
+		bf, err = platform.NewBaseFlight(opts.Options, Platform, ctplatform.OpenStackMetadata)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	of := &flight{
