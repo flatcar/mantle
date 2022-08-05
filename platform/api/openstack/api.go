@@ -64,6 +64,12 @@ type Options struct {
 	Domain string
 	// Floating IP Pool
 	FloatingIPPool string
+	// Host can be used to optionally SSH into deployed VMs from the OpenStack host
+	Host string
+	// User is the one used for the SSH connection to the Host
+	User string
+	// Keyfile is the abs. path to private SSH key file for the User on the Host
+	Keyfile string
 }
 
 type Server struct {

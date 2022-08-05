@@ -161,6 +161,9 @@ func init() {
 	sv(&kola.OpenStackOptions.Network, "openstack-network", "", "OpenStack network")
 	sv(&kola.OpenStackOptions.Domain, "openstack-domain", "", "OpenStack domain ID")
 	sv(&kola.OpenStackOptions.FloatingIPPool, "openstack-floating-ip-pool", "", "OpenStack floating IP pool for Compute v2 networking")
+	sv(&kola.OpenStackOptions.Host, "openstack-host", "", "Host can be used to optionally SSH into deployed VMs from the OpenStack host")
+	sv(&kola.OpenStackOptions.User, "openstack-user", "", "User is the one used for the SSH connection to the Host")
+	sv(&kola.OpenStackOptions.Keyfile, "openstack-keyfile", "", "Keyfile is the absolute path to private SSH key file for the User on the Host")
 
 	// packet-specific options (kept for compatiblity but marked as deprecated)
 	sv(&kola.EquinixMetalOptions.ConfigPath, "packet-config-file", "", "Packet config file (default \"~/"+auth.EquinixMetalConfigPath+"\")")
