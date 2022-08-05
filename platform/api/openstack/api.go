@@ -34,6 +34,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/pagination"
+	ugroups "github.com/gophercloud/utils/openstack/networking/v2/extensions/security/groups"
 
 	"github.com/flatcar-linux/mantle/auth"
 	"github.com/flatcar-linux/mantle/platform"
@@ -108,7 +109,7 @@ func New(opts *Options) (*API, error) {
 		TenantName:       profile.TenantName,
 		Username:         profile.Username,
 		Password:         profile.Password,
-		DomainID:         opts.Domain,
+		DomainID:         profile.DomainID,
 	}
 
 	provider, err := openstack.AuthenticatedClient(osOpts)
@@ -366,7 +367,7 @@ func (a *API) getNetworks() ([]networks.Network, error) {
 }
 
 func (a *API) getSecurityGroup() (string, error) {
-	id, err := groups.IDFromName(a.networkClient, "kola")
+	id, err := ugroups.IDFromName(a.networkClient, "kola")
 	if err != nil {
 		if _, ok := err.(gophercloud.ErrResourceNotFound); ok {
 			return a.createSecurityGroup()
@@ -551,7 +552,7 @@ func (a *API) AddKey(name, key string) error {
 }
 
 func (a *API) DeleteKey(name string) error {
-	return keypairs.Delete(a.computeClient, name).ExtractErr()
+	return keypairs.Delete(a.computeClient, name, nil).ExtractErr()
 }
 
 func (a *API) listServersWithMetadata(metadata map[string]string) ([]servers.Server, error) {
