@@ -212,8 +212,25 @@ type Server struct {
 	// to it.
 	SecurityGroups []map[string]interface{} `json:"security_groups"`
 
+	// AttachedVolumes includes the volume attachments of this instance
+	AttachedVolumes []AttachedVolume `json:"os-extended-volumes:volumes_attached"`
+
 	// Fault contains failure information about a server.
 	Fault Fault `json:"fault"`
+
+	// Tags is a slice/list of string tags in a server.
+	// The requires microversion 2.26 or later.
+	Tags *[]string `json:"tags"`
+
+	// ServerGroups is a slice of strings containing the UUIDs of the
+	// server groups to which the server belongs. Currently this can
+	// contain at most one entry.
+	// New in microversion 2.71
+	ServerGroups *[]string `json:"server_groups"`
+}
+
+type AttachedVolume struct {
+	ID string `json:"id"`
 }
 
 type Fault struct {
