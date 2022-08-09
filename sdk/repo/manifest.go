@@ -15,7 +15,7 @@
 
 // repo is a limited implementation of the python repo git front end.
 //
-// Manifest Format
+// # Manifest Format
 //
 // A repo manifest describes the structure of a repo client; that is
 // the directories that are visible and where they should be obtained
@@ -31,25 +31,25 @@
 // A manifest XML file (e.g. 'default.xml') roughly conforms to the
 // following DTD. The python code is the only authoritative source.
 //
-// Local Manifests
+// # Local Manifests
 //
 // Additional remotes and projects may be added through local manifest
 // files stored in `$TOP_DIR/.repo/local_manifests/*.xml`.
 //
 // For example:
 //
-//   $ ls .repo/local_manifests
-//   local_manifest.xml
-//   another_local_manifest.xml
+//	$ ls .repo/local_manifests
+//	local_manifest.xml
+//	another_local_manifest.xml
 //
-//   $ cat .repo/local_manifests/local_manifest.xml
-//   <?xml version="1.0" encoding="UTF-8"?>
-//   <manifest>
-//     <project path="manifest"
-//              name="tools/manifest" />
-//     <project path="platform-manifest"
-//              name="platform/manifest" />
-//   </manifest>
+//	$ cat .repo/local_manifests/local_manifest.xml
+//	<?xml version="1.0" encoding="UTF-8"?>
+//	<manifest>
+//	  <project path="manifest"
+//	           name="tools/manifest" />
+//	  <project path="platform-manifest"
+//	           name="platform/manifest" />
+//	</manifest>
 //
 // Users may add projects to the local manifest(s) prior to a `repo sync`
 // invocation, instructing repo to automatically download and manage
@@ -73,18 +73,17 @@ import (
 
 // Manifest is the root element of the file.
 //
-//    <!ELEMENT manifest (include*,
-//                        notice?,
-//                        remote*,
-//                        default?,
-//                        manifest-server?,
-//                        project*,
-//                        extend-project*,
-//                        remove-project*,
-//                        repo-hooks?)>
+//	<!ELEMENT manifest (include*,
+//	                    notice?,
+//	                    remote*,
+//	                    default?,
+//	                    manifest-server?,
+//	                    project*,
+//	                    extend-project*,
+//	                    remove-project*,
+//	                    repo-hooks?)>
 //
-//    <!ELEMENT notice (#PCDATA)>
-//
+//	<!ELEMENT notice (#PCDATA)>
 type Manifest struct {
 	XMLName        xml.Name        `xml:"manifest"`
 	Includes       []Include       `xml:"include"`
@@ -100,12 +99,12 @@ type Manifest struct {
 
 // Remote
 //
-//    <!ELEMENT remote (EMPTY)>
-//    <!ATTLIST remote name         ID    #REQUIRED>
-//    <!ATTLIST remote alias        CDATA #IMPLIED>
-//    <!ATTLIST remote fetch        CDATA #REQUIRED>
-//    <!ATTLIST remote review       CDATA #IMPLIED>
-//    <!ATTLIST remote revision     CDATA #IMPLIED>
+//	<!ELEMENT remote (EMPTY)>
+//	<!ATTLIST remote name         ID    #REQUIRED>
+//	<!ATTLIST remote alias        CDATA #IMPLIED>
+//	<!ATTLIST remote fetch        CDATA #REQUIRED>
+//	<!ATTLIST remote review       CDATA #IMPLIED>
+//	<!ATTLIST remote revision     CDATA #IMPLIED>
 //
 // One or more remote elements may be specified.  Each remote element
 // specifies a Git URL shared by one or more projects and (optionally)
@@ -133,7 +132,6 @@ type Manifest struct {
 // Attribute `revision`: Name of a Git branch (e.g. `master` or
 // `refs/heads/master`). Remotes with their own revision will override
 // the default revision.
-//
 type Remote struct {
 	Name     string `xml:"name,attr"`
 	Alias    string `xml:"alias,attr,omitempty"`
@@ -144,13 +142,13 @@ type Remote struct {
 
 // Default
 //
-//    <!ELEMENT default (EMPTY)>
-//    <!ATTLIST default remote      IDREF #IMPLIED>
-//    <!ATTLIST default revision    CDATA #IMPLIED>
-//    <!ATTLIST default dest-branch CDATA #IMPLIED>
-//    <!ATTLIST default sync-j      CDATA #IMPLIED>
-//    <!ATTLIST default sync-c      CDATA #IMPLIED>
-//    <!ATTLIST default sync-s      CDATA #IMPLIED>
+//	<!ELEMENT default (EMPTY)>
+//	<!ATTLIST default remote      IDREF #IMPLIED>
+//	<!ATTLIST default revision    CDATA #IMPLIED>
+//	<!ATTLIST default dest-branch CDATA #IMPLIED>
+//	<!ATTLIST default sync-j      CDATA #IMPLIED>
+//	<!ATTLIST default sync-c      CDATA #IMPLIED>
+//	<!ATTLIST default sync-s      CDATA #IMPLIED>
 //
 // At most one default element may be specified.  Its remote and
 // revision attributes are used when a project element does not
@@ -177,7 +175,6 @@ type Remote struct {
 // their own will use this value.
 //
 // Attribute `sync-s`: Set to true to also sync sub-projects.
-//
 type Default struct {
 	Remote          string `xml:"remote,attr,omitempty"`
 	Revision        string `xml:"revision,attr,omitempty"`
@@ -189,8 +186,8 @@ type Default struct {
 
 // ManifestServer
 //
-//    <!ELEMENT manifest-server (EMPTY)>
-//    <!ATTLIST url              CDATA #REQUIRED>
+//	<!ELEMENT manifest-server (EMPTY)>
+//	<!ATTLIST url              CDATA #REQUIRED>
 //
 // At most one manifest-server may be specified. The url attribute
 // is used to specify the URL of a manifest server, which is an
@@ -198,7 +195,7 @@ type Default struct {
 //
 // The manifest server should implement the following RPC methods:
 //
-//   GetApprovedManifest(branch, target)
+//	GetApprovedManifest(branch, target)
 //
 // Return a manifest in which each project is pegged to a known good revision
 // for the current branch and target.
@@ -210,32 +207,31 @@ type Default struct {
 // GetApprovedManifest without the target parameter and the manifest server
 // should choose a reasonable default target.
 //
-//   GetManifest(tag)
+//	GetManifest(tag)
 //
 // Return a manifest in which each project is pegged to the revision at
 // the specified tag.
-//
 type ManifestServer struct {
 	URL string `xml:"url,attr"`
 }
 
 // Project
 //
-//    <!ELEMENT project (annotation*,
-//                       project*,
-//                       copyfile*,
-//                       linkfile*)>
-//    <!ATTLIST project name        CDATA #REQUIRED>
-//    <!ATTLIST project path        CDATA #IMPLIED>
-//    <!ATTLIST project remote      IDREF #IMPLIED>
-//    <!ATTLIST project revision    CDATA #IMPLIED>
-//    <!ATTLIST project dest-branch CDATA #IMPLIED>
-//    <!ATTLIST project groups      CDATA #IMPLIED>
-//    <!ATTLIST project sync-c      CDATA #IMPLIED>
-//    <!ATTLIST project sync-s      CDATA #IMPLIED>
-//    <!ATTLIST project upstream    CDATA #IMPLIED>
-//    <!ATTLIST project clone-depth CDATA #IMPLIED>
-//    <!ATTLIST project force-path  CDATA #IMPLIED>
+//	<!ELEMENT project (annotation*,
+//	                   project*,
+//	                   copyfile*,
+//	                   linkfile*)>
+//	<!ATTLIST project name        CDATA #REQUIRED>
+//	<!ATTLIST project path        CDATA #IMPLIED>
+//	<!ATTLIST project remote      IDREF #IMPLIED>
+//	<!ATTLIST project revision    CDATA #IMPLIED>
+//	<!ATTLIST project dest-branch CDATA #IMPLIED>
+//	<!ATTLIST project groups      CDATA #IMPLIED>
+//	<!ATTLIST project sync-c      CDATA #IMPLIED>
+//	<!ATTLIST project sync-s      CDATA #IMPLIED>
+//	<!ATTLIST project upstream    CDATA #IMPLIED>
+//	<!ATTLIST project clone-depth CDATA #IMPLIED>
+//	<!ATTLIST project force-path  CDATA #IMPLIED>
 //
 // One or more project elements may be specified.  Each element
 // describes a single Git repository to be cloned into the repo
@@ -248,7 +244,7 @@ type ManifestServer struct {
 // name is appended onto its remote's fetch URL to generate the actual
 // URL to configure the Git remote with.  The URL gets formed as:
 //
-//   ${remote_fetch}/${project_name}.git
+//	${remote_fetch}/${project_name}.git
 //
 // where ${remote_fetch} is the remote's fetch attribute and
 // ${project_name} is the project's name attribute.  The suffix ".git"
@@ -311,7 +307,6 @@ type ManifestServer struct {
 // rather than the `name` attribute.  This attribute only applies to the
 // local mirrors syncing, it will be ignored when syncing the projects in a
 // client working directory.
-//
 type Project struct {
 	Annotations     []Annotation `xml:"annotation"`
 	SubProjects     []Project    `xml:"project"`
@@ -332,10 +327,10 @@ type Project struct {
 
 // ExtendProject
 //
-//    <!ELEMENT extend-project>
-//    <!ATTLIST extend-project name   CDATA #REQUIRED>
-//    <!ATTLIST extend-project path   CDATA #IMPLIED>
-//    <!ATTLIST extend-project groups CDATA #IMPLIED>
+//	<!ELEMENT extend-project>
+//	<!ATTLIST extend-project name   CDATA #REQUIRED>
+//	<!ATTLIST extend-project path   CDATA #IMPLIED>
+//	<!ATTLIST extend-project groups CDATA #IMPLIED>
 //
 // Modify the attributes of the named project.
 //
@@ -349,7 +344,6 @@ type Project struct {
 //
 // Attribute `groups`: List of additional groups to which this project
 // belongs.  Same syntax as the corresponding element of `project`.
-//
 type ExtendProject struct {
 	Name   string `xml:"name,attr"`
 	Path   string `xml:"path,attr,omitempty"`
@@ -358,10 +352,10 @@ type ExtendProject struct {
 
 // Annotation
 //
-//    <!ELEMENT annotation (EMPTY)>
-//    <!ATTLIST annotation name  CDATA #REQUIRED>
-//    <!ATTLIST annotation value CDATA #REQUIRED>
-//    <!ATTLIST annotation keep  CDATA "true">
+//	<!ELEMENT annotation (EMPTY)>
+//	<!ATTLIST annotation name  CDATA #REQUIRED>
+//	<!ATTLIST annotation value CDATA #REQUIRED>
+//	<!ATTLIST annotation keep  CDATA "true">
 //
 // Zero or more annotation elements may be specified as children of a
 // project element. Each element describes a name-value pair that will be
@@ -370,7 +364,6 @@ type ExtendProject struct {
 // "keep" which accepts the case insensitive values "true" (default) or
 // "false".  This attribute determines whether or not the annotation will
 // be kept when exported with the manifest subcommand.
-//
 type Annotation struct {
 	Name  string `xml:"name,attr"`
 	Value string `xml:"value,attr"`
@@ -379,16 +372,15 @@ type Annotation struct {
 
 // CopyFile
 //
-//    <!ELEMENT copyfile (EMPTY)>
-//    <!ATTLIST src value  CDATA #REQUIRED>
-//    <!ATTLIST dest value CDATA #REQUIRED>
+//	<!ELEMENT copyfile (EMPTY)>
+//	<!ATTLIST src value  CDATA #REQUIRED>
+//	<!ATTLIST dest value CDATA #REQUIRED>
 //
 // Zero or more copyfile elements may be specified as children of a
 // project element. Each element describes a src-dest pair of files;
 // the "src" file will be copied to the "dest" place during 'repo sync'
 // command.
 // "src" is project relative, "dest" is relative to the top of the tree.
-//
 type CopyFile struct {
 	Src  string `xml:"src,attr"`
 	Dest string `xml:"dest,attr"`
@@ -396,13 +388,12 @@ type CopyFile struct {
 
 // LinkFile
 //
-//    <!ELEMENT linkfile (EMPTY)>
-//    <!ATTLIST src value  CDATA #REQUIRED>
-//    <!ATTLIST dest value CDATA #REQUIRED>
+//	<!ELEMENT linkfile (EMPTY)>
+//	<!ATTLIST src value  CDATA #REQUIRED>
+//	<!ATTLIST dest value CDATA #REQUIRED>
 //
 // It's just like copyfile and runs at the same time as copyfile but
 // instead of copying it creates a symlink.
-//
 type LinkFile struct {
 	Src  string `xml:"src,attr"`
 	Dest string `xml:"dest,attr"`
@@ -410,8 +401,8 @@ type LinkFile struct {
 
 // RemoveProject
 //
-//    <!ELEMENT remove-project (EMPTY)>
-//    <!ATTLIST remove-project name CDATA #REQUIRED>
+//	<!ELEMENT remove-project (EMPTY)>
+//	<!ATTLIST remove-project name CDATA #REQUIRED>
 //
 // Deletes the named project from the internal manifest table, possibly
 // allowing a subsequent project element in the same manifest file to
@@ -420,17 +411,15 @@ type LinkFile struct {
 // This element is mostly useful in a local manifest file, where
 // the user can remove a project, and possibly replace it with their
 // own definition.
-//
 type RemoveProject struct {
 	Name string `xml:"name,attr"`
 }
 
 // RepoHooks
 //
-//    <!ELEMENT repo-hooks (EMPTY)>
-//    <!ATTLIST repo-hooks in-project   CDATA #REQUIRED>
-//    <!ATTLIST repo-hooks enabled-list CDATA #REQUIRED>
-//
+//	<!ELEMENT repo-hooks (EMPTY)>
+//	<!ATTLIST repo-hooks in-project   CDATA #REQUIRED>
+//	<!ATTLIST repo-hooks enabled-list CDATA #REQUIRED>
 type RepoHooks struct {
 	InProject   string `xml:"in-project,attr"`
 	EnabledList string `xml:"enabled-list,attr"`
@@ -438,8 +427,8 @@ type RepoHooks struct {
 
 // Include
 //
-//    <!ELEMENT include      (EMPTY)>
-//    <!ATTLIST include name CDATA #REQUIRED>
+//	<!ELEMENT include      (EMPTY)>
+//	<!ATTLIST include name CDATA #REQUIRED>
 //
 // This element provides the capability of including another manifest
 // file into the originating manifest.  Normal rules apply for the
@@ -447,7 +436,6 @@ type RepoHooks struct {
 //
 // Attribute `name`: the manifest to include, specified relative to
 // the manifest repository's root.
-//
 type Include struct {
 	Name string `xml:"name,attr"`
 }

@@ -36,7 +36,7 @@ func init() {
 // One line must fit into the character buffer (1024 bytes, unless a previous
 // line was longer) but have enough group members such that
 //
-//     line length + alignment + sizeof(char *) * (#adm + 1 + #mem + 1) > 1024.
+//	line length + alignment + sizeof(char *) * (#adm + 1 + #mem + 1) > 1024.
 //
 // The parser would return early to avoid overflow, leaving the static result
 // struct pointing to pointers from the previous line which are now invalid,

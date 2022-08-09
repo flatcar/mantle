@@ -1,6 +1,6 @@
-# golang:1.17 is based on debian:11, this is important to ensure we have libc compatibility for the copied binary
+# golang:1.19 is based on debian:11, this is important to ensure we have libc compatibility for the copied binary
 
-FROM docker.io/library/golang:1.17 as builder
+FROM docker.io/library/golang:1.19 as builder
 ENV CGO_ENABLED=1
 COPY . /usr/src/mantle
 RUN cd /usr/src/mantle && ./build

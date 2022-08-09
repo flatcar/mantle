@@ -498,7 +498,7 @@ func setDefaultEmail(environ []string) []string {
 }
 
 // Enter the chroot and run a command in the given dir. The args specified in cmd
-//get passed directly to sudo so things like -i for a login shell are allowed.
+// get passed directly to sudo so things like -i for a login shell are allowed.
 func enterChroot(e enter) error {
 	if e.RepoRoot == "" {
 		e.RepoRoot = RepoRoot()
