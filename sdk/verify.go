@@ -25,10 +25,14 @@ import (
 )
 
 // Flatcar image signing key:
-// $ gpg2 --list-keys --list-options show-unusable-subkeys \
-//     --keyid-format SHORT F88CFEDEFF29A5B4D9523864E25D9AED0593B34A
+//
+//	$ gpg2 --list-keys --list-options show-unusable-subkeys \
+//	    --keyid-format SHORT F88CFEDEFF29A5B4D9523864E25D9AED0593B34A
+//
 // pub   rsa4096/0593B34A 2018-02-26 [SC]
-//       F88CFEDEFF29A5B4D9523864E25D9AED0593B34A
+//
+//	F88CFEDEFF29A5B4D9523864E25D9AED0593B34A
+//
 // uid         [ultimate] Flatcar Buildbot (Official Builds) <buildbot@flatcar-linux.org>
 // sub   rsa4096/064D542D 2018-02-26 [S] [revoked: 2018-03-14]
 // sub   rsa4096/D0FC498C 2018-03-14 [S] [revoked: 2018-09-26]

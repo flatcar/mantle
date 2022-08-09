@@ -6,9 +6,11 @@
 Package metadata is a generated protocol buffer package.
 
 It is generated from these files:
+
 	update_metadata.proto
 
 It has these top-level messages:
+
 	InstallOperation
 	Extent
 	Signatures
@@ -105,16 +107,16 @@ func (InstallProcedure_Type) EnumDescriptor() ([]byte, []int) { return fileDescr
 // The client will perform each InstallOperation in order, beginning even
 // before the entire delta file is downloaded (but after at least the
 // protobuf is downloaded). The types of operations are explained:
-// - REPLACE: Replace the dst_extents on the drive with the attached data,
-//   zero padding out to block size.
-// - REPLACE_BZ: bzip2-uncompress the attached data and write it into
-//   dst_extents on the drive, zero padding to block size.
-// - MOVE: Copy the data in src_extents to dst_extents. Extents may overlap,
-//   so it may be desirable to read all src_extents data into memory before
-//   writing it out.
-// - BSDIFF: Read src_length bytes from src_extents into memory, perform
-//   bspatch with attached data, write new data to dst_extents, zero padding
-//   to block size.
+//   - REPLACE: Replace the dst_extents on the drive with the attached data,
+//     zero padding out to block size.
+//   - REPLACE_BZ: bzip2-uncompress the attached data and write it into
+//     dst_extents on the drive, zero padding to block size.
+//   - MOVE: Copy the data in src_extents to dst_extents. Extents may overlap,
+//     so it may be desirable to read all src_extents data into memory before
+//     writing it out.
+//   - BSDIFF: Read src_length bytes from src_extents into memory, perform
+//     bspatch with attached data, write new data to dst_extents, zero padding
+//     to block size.
 type InstallOperation struct {
 	Type *InstallOperation_Type `protobuf:"varint,1,req,name=type,enum=chromeos_update_engine.InstallOperation_Type" json:"type,omitempty"`
 	// The offset into the delta file (after the protobuf)
