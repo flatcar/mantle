@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Bumped `etcd` and `cobra` dependencies ([#293](https://github.com/flatcar-linux/mantle/pull/293))
 - Bumped Kubernetes binaries and CNI versions ([#297](https://github.com/flatcar-linux/mantle/pull/297))
 - GCP images are now published/tested with UEFI boot mode ([#322](https://github.com/flatcar-linux/mantle/pull/322))
+- Bumped Go version to 1.19 ([#352](https://github.com/flatcar-linux/mantle/pull/352))
 
 ### Removed
 - Remove `--repo-branch` option from cork ([#283](https://github.com/flatcar-linux/mantle/pull/283))
