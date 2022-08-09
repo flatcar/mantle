@@ -41,7 +41,7 @@ func init() {
 	OpenStack.AddCommand(cmdCreate)
 	cmdCreate.Flags().StringVar(&path, "file",
 		sdk.BuildRoot()+"/images/amd64-usr/latest/coreos_production_openstack_image.img",
-		"path to CoreOS image (build with: ./image_to_vm.sh --format=openstack ...)")
+		"Flatcar image (can be an absolute path or an URL)")
 	cmdCreate.Flags().StringVar(&name, "name", "", "image name")
 }
 
