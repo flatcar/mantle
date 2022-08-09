@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `plume prune` support for soft-deleting AWS images and more advanced retention strategies ([#343](https://github.com/flatcar-linux/mantle/pull/343))
 - Added simple wireguard test ([#348](https://github.com/flatcar-linux/mantle/pull/348))
 - Added SSH proxy jump to Openstack platform ([#349](https://github.com/flatcar-linux/mantle/pull/349))
+- Added URL support for Openstack image creation ([#350](https://github.com/flatcar-linux/mantle/pull/350))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
