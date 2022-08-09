@@ -21,7 +21,8 @@ require (
 	github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.2
-	github.com/gophercloud/gophercloud v0.0.0-20180817041643-185230dfbd12
+	github.com/gophercloud/gophercloud v0.25.0
+	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v0.0.0-20150519154555-21cb3784d9bd
 	github.com/packethost/packngo v0.21.0

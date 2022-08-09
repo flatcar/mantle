@@ -16,6 +16,7 @@ package openstack
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -29,11 +30,13 @@ import (
 	computeImages "github.com/gophercloud/gophercloud/openstack/compute/v2/images"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
+	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imageimport"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/pagination"
+	ugroups "github.com/gophercloud/utils/openstack/networking/v2/extensions/security/groups"
 
 	"github.com/flatcar-linux/mantle/auth"
 	"github.com/flatcar-linux/mantle/platform"
@@ -108,7 +111,7 @@ func New(opts *Options) (*API, error) {
 		TenantName:       profile.TenantName,
 		Username:         profile.Username,
 		Password:         profile.Password,
-		DomainID:         opts.Domain,
+		DomainID:         profile.DomainID,
 	}
 
 	provider, err := openstack.AuthenticatedClient(osOpts)
@@ -366,7 +369,7 @@ func (a *API) getNetworks() ([]networks.Network, error) {
 }
 
 func (a *API) getSecurityGroup() (string, error) {
-	id, err := groups.IDFromName(a.networkClient, "kola")
+	id, err := ugroups.IDFromName(a.networkClient, "kola")
 	if err != nil {
 		if _, ok := err.(gophercloud.ErrResourceNotFound); ok {
 			return a.createSecurityGroup()
@@ -511,6 +514,19 @@ func (a *API) GetConsoleOutput(id string) (string, error) {
 	return servers.ShowConsoleOutput(a.computeClient, id, servers.ShowConsoleOutputOpts{}).Extract()
 }
 
+func (a *API) webUpload(ID, URI string) error {
+	createOpts := imageimport.CreateOpts{
+		Name: imageimport.WebDownloadMethod,
+		URI:  URI,
+	}
+
+	if err := imageimport.Create(a.imageClient, ID, createOpts).ExtractErr(); err != nil {
+		return fmt.Errorf("importing web image: %w", err)
+	}
+
+	return nil
+}
+
 func (a *API) UploadImage(name, path string) (string, error) {
 	image, err := images.Create(a.imageClient, images.CreateOpts{
 		Name:            name,
@@ -522,6 +538,18 @@ func (a *API) UploadImage(name, path string) (string, error) {
 		return "", fmt.Errorf("creating image: %v", err)
 	}
 
+	u, err := url.Parse(path)
+	if err == nil && u.Scheme != "" && image.ID != "" {
+		plog.Debug("creating image from URL")
+		if err := a.webUpload(image.ID, path); err != nil {
+			a.DeleteImage(image.ID)
+			return "", fmt.Errorf("web uploading: %w", err)
+		}
+
+		return image.ID, nil
+	}
+
+	plog.Debug("creating image from source file")
 	data, err := os.Open(path)
 	if err != nil {
 		a.DeleteImage(image.ID)
@@ -551,7 +579,7 @@ func (a *API) AddKey(name, key string) error {
 }
 
 func (a *API) DeleteKey(name string) error {
-	return keypairs.Delete(a.computeClient, name).ExtractErr()
+	return keypairs.Delete(a.computeClient, name, nil).ExtractErr()
 }
 
 func (a *API) listServersWithMetadata(metadata map[string]string) ([]servers.Server, error) {

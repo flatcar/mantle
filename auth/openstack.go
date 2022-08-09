@@ -26,6 +26,7 @@ const OpenStackConfigPath = ".config/openstack.json"
 
 type OpenStackProfile struct {
 	AuthURL    string `json:"auth_url"`
+	DomainID   string `json:"domain_id"`
 	TenantID   string `json:"tenant_id"`
 	TenantName string `json:"tenant_name"`
 	Username   string `json:"username"`
