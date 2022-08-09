@@ -5,40 +5,13 @@ package network
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 
 	"golang.org/x/crypto/ssh"
 )
 
-var _ Dialer = (*JumpDialer)(nil)
-
-// JumpDialer is a RetryDialer from a proxy.
-type JumpDialer struct {
-	RetryDialer
-	user    string
-	addr    string
-	keyfile string
-}
-
-// NewJumpDialer initializes a JumpDialer to establish a SSH Proxy Jump.
-func NewJumpDialer(addr, user, keyfile string) *JumpDialer {
-	return &JumpDialer{
-		RetryDialer: RetryDialer{
-			Dialer: &net.Dialer{
-				Timeout:   DefaultTimeout,
-				KeepAlive: DefaultKeepAlive,
-			},
-			Retries: DefaultRetries,
-		},
-		user:    user,
-		addr:    addr,
-		keyfile: keyfile,
-	}
-}
-
-// Dial connects to a remote address, retrying on failure.
-func (d *JumpDialer) Dial(network, address string) (c net.Conn, err error) {
-	key, err := ioutil.ReadFile(d.keyfile)
+// NewJumpDialer initializes a RetryDialer with SSH Proxy Jump.
+func NewJumpDialer(addr, user, keyfile string) (*RetryDialer, error) {
+	key, err := ioutil.ReadFile(keyfile)
 	if err != nil {
 		return nil, fmt.Errorf("reading private key: %w", err)
 	}
@@ -49,7 +22,7 @@ func (d *JumpDialer) Dial(network, address string) (c net.Conn, err error) {
 	}
 
 	cfg := &ssh.ClientConfig{
-		User: d.user,
+		User: user,
 		// this is only used for testing - it's ok to live with that.
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Auth: []ssh.AuthMethod{
@@ -57,11 +30,14 @@ func (d *JumpDialer) Dial(network, address string) (c net.Conn, err error) {
 		},
 	}
 
-	addr := ensurePortSuffix(d.addr, defaultPort)
+	addr = ensurePortSuffix(addr, defaultPort)
 	client, err := ssh.Dial("tcp", addr, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("creating SSH client: %w", err)
 	}
 
-	return client.Dial(network, address)
+	return &RetryDialer{
+		Dialer:  client,
+		Retries: DefaultRetries,
+	}, nil
 }

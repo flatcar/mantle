@@ -54,7 +54,12 @@ func NewFlight(opts *openstack.Options) (platform.Flight, error) {
 			return nil, fmt.Errorf("--openstack-user and --openstack-keyfile can't be empty when using --openstack-host")
 		}
 
-		bf, err = platform.NewBaseFlightWithDialer(opts.Options, Platform, ctplatform.OpenStackMetadata, network.NewJumpDialer(opts.Host, opts.User, opts.Keyfile))
+		d, err := network.NewJumpDialer(opts.Host, opts.User, opts.Keyfile)
+		if err != nil {
+			return nil, fmt.Errorf("setting proxy jump dialer: %w", err)
+		}
+
+		bf, err = platform.NewBaseFlightWithDialer(opts.Options, Platform, ctplatform.OpenStackMetadata, d)
 		if err != nil {
 			return nil, fmt.Errorf("creating base flight with jump dialer: %w", err)
 		}
