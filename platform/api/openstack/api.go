@@ -610,6 +610,24 @@ func (a *API) listServersWithMetadata(metadata map[string]string) ([]servers.Ser
 	return retServers, nil
 }
 
+func (a *API) listImagesWithTags(tags []string) ([]images.Image, error) {
+	listOpts := images.ListOpts{
+		Tags: tags,
+	}
+
+	allPages, err := images.List(a.imageClient, listOpts).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("listing images: %w", err)
+	}
+
+	allImages, err := images.ExtractImages(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("extracting image list: %w", err)
+	}
+
+	return allImages, nil
+}
+
 func (a *API) GC(gracePeriod time.Duration) error {
 	threshold := time.Now().Add(-gracePeriod)
 
@@ -628,5 +646,21 @@ func (a *API) GC(gracePeriod time.Duration) error {
 			return fmt.Errorf("couldn't delete server %s: %v", server.ID, err)
 		}
 	}
+
+	images, err := a.listImagesWithTags([]string{"mantle"})
+	if err != nil {
+		return fmt.Errorf("listing Mantle images: %w", err)
+	}
+
+	for _, image := range images {
+		if image.CreatedAt.After(threshold) {
+			continue
+		}
+
+		if err := a.DeleteImage(image.ID); err != nil {
+			return fmt.Errorf("deleting image with name: %s", image.Name)
+		}
+	}
+
 	return nil
 }
