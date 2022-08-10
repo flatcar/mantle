@@ -45,6 +45,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Removed Kubernetes test for release 1.21.10 ([#337](https://github.com/flatcar-linux/mantle/pull/337))
 - Removed enforced SELinux for `kubeadm.flannel.*` tests ([#337](https://github.com/flatcar-linux/mantle/pull/337))
 
+### Fixed
+- Fix version check in kubeadm tests ([#353](https://github.com/flatcar-linux/mantle/pull/353))
+
 ## [0.18.0] - 12/01/2022
 ### Security
 - go: Update golang.org/x/{text,crypto} ([#262](https://github.com/flatcar-linux/mantle/pull/262))
