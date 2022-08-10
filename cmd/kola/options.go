@@ -63,6 +63,7 @@ func init() {
 	sv := root.PersistentFlags().StringVar
 	bv := root.PersistentFlags().BoolVar
 	ss := root.PersistentFlags().StringSlice
+	dv := root.PersistentFlags().DurationVar
 
 	// general options
 	sv(&outputDir, "output-dir", "", "Temporary output directory for test data and logs")
@@ -205,6 +206,8 @@ func init() {
 	sv(&kola.EquinixMetalOptions.RemoteUser, "equinixmetal-remote-user", "core", "the user for SSH connection to the remote storage")
 	sv(&kola.EquinixMetalOptions.RemoteSSHPrivateKeyPath, "equinixmetal-remote-ssh-private-key-path", "./id_rsa", "the path to SSH private key for SSH connection to the remote storage")
 	sv(&kola.EquinixMetalOptions.RemoteDocumentRoot, "equinixmetal-remote-document-root", "/var/www", "the absolute path to the document root of the webserver for serving temporary files")
+	dv(&kola.EquinixMetalOptions.LaunchTimeout, "equinixmetal-launch-timeout", 0, "Timeout used for waiting for instance to launch")
+	dv(&kola.EquinixMetalOptions.InstallTimeout, "equinixmetal-install-timeout", 0, "Timeout used for waiting for installation to finish")
 
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")

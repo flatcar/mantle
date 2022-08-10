@@ -46,12 +46,12 @@ import (
 
 const (
 	// Provisioning a VM is supposed to take < 8 minutes, but in practice can take longer.
-	launchTimeout       = 10 * time.Minute
-	launchPollInterval  = 30 * time.Second
-	installTimeout      = 45 * time.Minute
-	installPollInterval = 5 * time.Second
-	apiRetries          = 3
-	apiRetryInterval    = 5 * time.Second
+	defaultLaunchTimeout  = 10 * time.Minute
+	launchPollInterval    = 30 * time.Second
+	defaultInstallTimeout = 45 * time.Minute
+	installPollInterval   = 5 * time.Second
+	apiRetries            = 3
+	apiRetryInterval      = 5 * time.Second
 )
 
 var (
@@ -118,6 +118,11 @@ type Options struct {
 
 	// RemoteDocumentRoot is the path served by the webserver.
 	RemoteDocumentRoot string
+
+	// LaunchTimeout specifies the timeout used for waiting for instance to launch.
+	LaunchTimeout time.Duration
+	// InstallTimeout specifies the timeout used for waiting for installation to finish.
+	InstallTimeout time.Duration
 }
 
 type API struct {
@@ -235,6 +240,20 @@ func New(opts *Options) (*API, error) {
 		storage = sshstorage.New(client, url.Hostname(), opts.RemoteDocumentRoot, protocol)
 	}
 
+	if opts.LaunchTimeout == 0 {
+		opts.LaunchTimeout = defaultLaunchTimeout
+	}
+	if opts.LaunchTimeout < 0 {
+		return nil, fmt.Errorf("launch timeout can't be negative, is %v", opts.LaunchTimeout)
+	}
+
+	if opts.InstallTimeout == 0 {
+		opts.InstallTimeout = defaultInstallTimeout
+	}
+	if opts.InstallTimeout < 0 {
+		return nil, fmt.Errorf("install timeout can't be negative, is %v", opts.InstallTimeout)
+	}
+
 	client := packngo.NewClientWithAuth("github.com/flatcar-linux/mantle", opts.ApiKey, nil)
 
 	return &API{
@@ -324,7 +343,7 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 
 	plog.Debugf("Device active: %q", deviceID)
 
-	err = waitForInstall(ipAddress)
+	err = waitForInstall(a.opts.InstallTimeout, ipAddress)
 	if err != nil {
 		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
 	}
@@ -687,7 +706,7 @@ func (a *API) startConsole(deviceID, facility string, console Console) error {
 
 func (a *API) waitForActive(deviceID string) (*packngo.Device, error) {
 	var device *packngo.Device
-	err := util.WaitUntilReady(launchTimeout, launchPollInterval, func() (bool, error) {
+	err := util.WaitUntilReady(a.opts.LaunchTimeout, launchPollInterval, func() (bool, error) {
 		var err error
 		device, _, err = a.c.Devices.Get(deviceID, nil)
 		if err != nil {
@@ -703,7 +722,7 @@ func (a *API) waitForActive(deviceID string) (*packngo.Device, error) {
 
 // Connect to the discard port and wait for the connection to close,
 // indicating that install is complete.
-func waitForInstall(address string) (err error) {
+func waitForInstall(installTimeout time.Duration, address string) (err error) {
 	deadline := time.Now().Add(installTimeout)
 	dialer := net.Dialer{
 		Timeout: installPollInterval,
