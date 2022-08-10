@@ -159,7 +159,7 @@ func init() {
 					flags = append(flags, register.NoEnableSelinux)
 				}
 
-				if version == "1.24.1" {
+				if version == "v1.24.1" {
 					major = 3033
 				}
 
