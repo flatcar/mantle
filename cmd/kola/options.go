@@ -22,6 +22,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -57,6 +58,9 @@ var (
 		"amd64-usr": "bios-256k.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_qemu_uefi_efi_code.fd",
 	}
+
+	kolaSSHRetries = 60
+	kolaSSHTimeout = 10 * time.Second
 )
 
 func init() {
@@ -64,6 +68,7 @@ func init() {
 	bv := root.PersistentFlags().BoolVar
 	ss := root.PersistentFlags().StringSlice
 	dv := root.PersistentFlags().DurationVar
+	iv := root.PersistentFlags().IntVar
 
 	// general options
 	sv(&outputDir, "output-dir", "", "Temporary output directory for test data and logs")
@@ -78,6 +83,8 @@ func init() {
 	ss("debug-systemd-unit", []string{}, "full-unit-name.service to enable SYSTEMD_LOG_LEVEL=debug on. Specify multiple times for multiple units.")
 	sv(&kola.UpdatePayloadFile, "update-payload", "", "Path to an update payload that should be made available to tests")
 	sv(&kola.Options.IgnitionVersion, "ignition-version", "", "Ignition version override: v2, v3")
+	iv(&kola.Options.SSHRetries, "ssh-retries", kolaSSHRetries, "Number of retries with the SSH timeout when starting the machine")
+	dv(&kola.Options.SSHTimeout, "ssh-timeout", kolaSSHTimeout, "A timeout for a single try of establishing an SSH connection when starting the machine")
 
 	// rhcos-specific options
 	sv(&kola.Options.OSContainer, "oscontainer", "", "oscontainer image pullspec for pivot (RHCOS only)")
@@ -293,6 +300,19 @@ func syncOptions() error {
 		if !ok {
 			return fmt.Errorf("Distribution %q has no default Ignition version", kola.Options.Distribution)
 		}
+	}
+
+	if kola.Options.SSHRetries == 0 {
+		kola.Options.SSHRetries = kolaSSHRetries
+	}
+	if kola.Options.SSHRetries < 0 {
+		return fmt.Errorf("Number of SSH retries can't be negative, is %d", kola.Options.SSHRetries)
+	}
+	if kola.Options.SSHTimeout == 0 {
+		kola.Options.SSHTimeout = kolaSSHTimeout
+	}
+	if kola.Options.SSHTimeout < 0 {
+		return fmt.Errorf("SSH timeout can't be negative, is %v", kola.Options.SSHTimeout)
 	}
 
 	return nil

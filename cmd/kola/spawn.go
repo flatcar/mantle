@@ -126,6 +126,8 @@ func doSpawn(cmd *cobra.Command, args []string) error {
 	cluster, err := flight.NewCluster(&platform.RuntimeConfig{
 		OutputDir:        outputDir,
 		AllowFailedUnits: true,
+		SSHRetries:       kola.Options.SSHRetries,
+		SSHTimeout:       kola.Options.SSHTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("Cluster failed: %v", err)
