@@ -1,0 +1,50 @@
+name: Sync Calico version used for getting Tigera Operator manifest
+on:
+  schedule:
+    # run every 12h
+    - cron:  '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-calico-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update links to Tigera Operator manifest
+        id: update-links
+        run: |
+          set -exuo pipefail
+
+          calico_version=$(curl \
+                             -H 'Accept: application/vnd.github+json' \
+                             'https://api.github.com/repos/projectcalico/calico/releases' | \
+                           jq '.[].tag_name' | \
+                           sed -e 's/"\(.*\)"/\1/g' | \
+                           sort --version-sort --reverse | \
+                           head -n1)
+
+          # The ':!.github' obviously means "exclude .github". This is to avoid
+          # this action to mangle itself.
+          files=( $(git grep 'https://[^ ]\+tigera-operator.yaml' -- . ':!.github' | cut -d: -f1) )
+          new_link="https://raw.githubusercontent.com/projectcalico/calico/${calico_version}/manifests/tigera-operator.yaml"
+
+          sed \
+            -i \
+            -e "s@https://[^ ]\+tigera-operator.yaml@${new_link}@g" \
+            "${files[@]}"
+          update_needed=0
+          if git status --porcelain | grep --quiet '^ M'; then
+            update_needed=1
+          fi
+          echo ::set-output "name=CALICO_VERSION::${calico_version}"
+          echo ::set-output "name=UPDATE_NEEDED::${update_needed}"
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v3
+        if: steps.update-links.outputs.UPDATE_NEEDED == 1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: calico-update-${{ steps.update-links.outputs.CALICO_VERSION }}
+          title: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
+          commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
+          reviewers: flatcar-linux/flatcar-maintainers
+          delete-branch: true
