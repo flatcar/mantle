@@ -105,7 +105,7 @@ EOF
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
 
-    kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.0/manifests/tigera-operator.yaml
     kubectl apply -f calico.yaml
 
 
