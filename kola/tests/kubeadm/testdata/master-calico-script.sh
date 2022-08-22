@@ -74,7 +74,9 @@ EOF
 
 
 cat << EOF > calico.yaml
-# Source: https://docs.projectcalico.org/manifests/custom-resources.yaml
+# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.24.0/manifests/custom-resources.yaml
+# This section includes base Calico installation configuration.
+# For more information, see: https://projectcalico.docs.tigera.io/master/reference/installation/api#operator.tigera.io/v1.Installation
 apiVersion: operator.tigera.io/v1
 kind: Installation
 metadata:
@@ -87,12 +89,22 @@ spec:
   calicoNetwork:
     # Note: The ipPools section cannot be modified post-install.
     ipPools:
-      - blockSize: 26
-        cidr: 192.168.0.0/17
-        encapsulation: VXLANCrossSubnet
-        natOutgoing: Enabled
-        nodeSelector: all()
+    - blockSize: 26
+      cidr: 192.168.0.0/17
+      encapsulation: VXLANCrossSubnet
+      natOutgoing: Enabled
+      nodeSelector: all()
   flexVolumePath: /opt/libexec/kubernetes/kubelet-plugins/volume/exec/
+
+---
+
+# This section configures the Calico API server.
+# For more information, see: https://projectcalico.docs.tigera.io/master/reference/installation/api#operator.tigera.io/v1.APIServer
+apiVersion: operator.tigera.io/v1
+kind: APIServer
+metadata:
+  name: default
+spec: {}
 EOF
 
 
