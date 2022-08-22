@@ -48,3 +48,11 @@ jobs:
           commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           reviewers: flatcar-linux/flatcar-maintainers
           delete-branch: true
+          body: |
+            Before merging this pull request, PLEASE make sure that a manifest based
+            on `custom-resources.yaml` in `kola/tests/kubeadm/templates.go`
+            and `kola/tests/kubeadm/testdata/master-calico-script.sh` is in sync
+            with https://raw.githubusercontent.com/projectcalico/calico/${{ steps.update-links.outputs.CALICO_VERSION }}/manifests/custom-resources.yaml
+            and amend the commit in this pull request with an update
+            of the `# Source:` comment there to match the new version.
+            Thank you.
