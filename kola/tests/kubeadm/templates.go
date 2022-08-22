@@ -384,6 +384,9 @@ EOF
 
 {{ if eq .CNI "calico" }}
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.0/manifests/tigera-operator.yaml
+    # calico.yaml uses Installation and APIServer CRDs, so make sure that they are established.
+    kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/installations.operator.tigera.io
+    kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/apiservers.operator.tigera.io
     kubectl apply -f calico.yaml
 {{ end }}
 {{ if eq .CNI "flannel" }}
