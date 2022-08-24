@@ -81,7 +81,7 @@ storage:
 
           [Peer]
           PublicKey = EQluuT9Wk0TFUDYlU/5fBsY3KPx/YsZxaM0lCvlLwF4=
-          AllowedIPs = 0.0.0.0/0, ::/0
+          AllowedIPs = 192.168.0.0/24
           Endpoint = 127.0.0.1:51820
     - path: /etc/wireguard/wg0.conf
       contents:
