@@ -47,6 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 - Fix version check in kubeadm tests ([#353](https://github.com/flatcar-linux/mantle/pull/353))
+- Make Calico testing in kubeadm tests more reliable ([#359](https://github.com/flatcar-linux/mantle/pull/359))
 
 ## [0.18.0] - 12/01/2022
 ### Security
