@@ -33,7 +33,34 @@ import (
 	"github.com/flatcar-linux/mantle/util"
 )
 
+// extraTest is a regular test except that the `runFunc` takes
+// a kubernetes controller as parameter in order to run the test commands from the
+// controller node.
+type extraTest struct {
+	// name is the name of the test.
+	name string
+	// runFunc is step to run in order to perform the actual test. Controller is the Kubernetes node
+	// from where the commands are ran.
+	runFunc func(m platform.Machine, p map[string]interface{}, c cluster.TestCluster)
+}
+
 var (
+	// extraTests can be used to extend the common tests for a given supported CNI.
+	extraTests = map[string][]extraTest{
+		"cilium": []extraTest{
+			extraTest{
+				name: "IPSec encryption",
+				runFunc: func(controller platform.Machine, params map[string]interface{}, c cluster.TestCluster) {
+					_ = c.MustSSH(controller, "/opt/bin/cilium uninstall")
+					version := params["CiliumVersion"].(string)
+					cidr := params["PodSubnet"].(string)
+					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait --wait-duration 1m", cidr, version)
+					_ = c.MustSSH(controller, cmd)
+				},
+			},
+		},
+	}
+
 	// CNIs is the list of CNIs to deploy
 	// in the cluster setup
 	CNIs = []string{
@@ -71,7 +98,7 @@ var (
 		},
 		"v1.23.4": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.0",
+			"CiliumVersion":    "1.11.2",
 			"CiliumCLIVersion": "v0.10.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
@@ -96,7 +123,7 @@ var (
 		},
 		"v1.22.7": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.0",
+			"CiliumVersion":    "1.11.2",
 			"CiliumCLIVersion": "v0.10.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
@@ -224,6 +251,21 @@ func kubeadmBaseTest(c cluster.TestCluster, params map[string]interface{}) {
 			c.Fatalf("nginx is not deployed: %v", err)
 		}
 	})
+
+	// this should not fail, we always have the CNI present at this step.
+	cni, ok := params["CNI"]
+	if !ok {
+		c.Fatalf("CNI is not available in the runtime params")
+	}
+
+	// based on the CNI, we fetch the list of extra tests to run.
+	extras, ok := extraTests[cni.(string)]
+	if ok {
+		for _, extra := range extras {
+			t := extra.runFunc
+			c.Run(extra.name, func(c cluster.TestCluster) { t(kubectl, params, c) })
+		}
+	}
 }
 
 // render takes care of template rendering
