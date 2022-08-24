@@ -65,8 +65,7 @@ func init() {
 		ClusterSize: 1,
 		Name:        "cl.network.wireguard",
 		Distros:     []string{"cl"},
-		// This test is normally not related to the cloud environment unless the OEM tools would unexpectedly listen on ports
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms:   []string{"qemu", "qemu-unpriv", "esx"},
 		UserData: conf.Butane(`---
 variant: flatcar
 version: 1.0.0
