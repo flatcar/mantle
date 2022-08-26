@@ -294,7 +294,13 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create device: %v", err)
 	}
+	destroyDevice := true
 	deviceID := device.ID
+	defer func() {
+		if destroyDevice {
+			a.DeleteDevice(deviceID)
+		}
+	}()
 
 	plog.Debugf("Created device: %q", deviceID)
 
@@ -302,20 +308,17 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 		err := a.startConsole(deviceID, device.Facility.Code, console)
 		consoleStarted = true
 		if err != nil {
-			a.DeleteDevice(deviceID)
 			return nil, err
 		}
 	}
 
 	device, err = a.waitForActive(deviceID)
 	if err != nil {
-		a.DeleteDevice(deviceID)
 		return nil, err
 	}
 
 	ipAddress := a.GetDeviceAddress(device, 4, true)
 	if ipAddress == "" {
-		a.DeleteDevice(deviceID)
 		return nil, fmt.Errorf("no public IP address found for %v", deviceID)
 	}
 
@@ -323,7 +326,6 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 
 	err = waitForInstall(ipAddress)
 	if err != nil {
-		a.DeleteDevice(deviceID)
 		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
 	}
 
@@ -338,6 +340,7 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 
 	plog.Debugf("Finished installation of device: %q", deviceID)
 
+	destroyDevice = false
 	return device, nil
 }
 
