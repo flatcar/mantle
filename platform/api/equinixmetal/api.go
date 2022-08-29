@@ -444,7 +444,9 @@ ExecStart=/usr/bin/curl --retry-delay 1 --retry 120 --retry-connrefused --retry-
 
 ExecStartPre=-/bin/bash -c 'lvchange -an /dev/mapper/*'
 ExecStartPre=-/bin/bash -c 'shopt -s nullglob; for disk in /dev/*d? /dev/nvme?n1; do wipefs --all --force $${disk}; done'
-ExecStart=/usr/bin/flatcar-install -s -f image.bin.bz2 %v /userdata
+# 259 is a major number of NVMe devices. They need to be excluded, because
+# the boot agent can't boot from them.
+ExecStart=/usr/bin/flatcar-install -s -e 259 -f image.bin.bz2 %v /userdata
 
 ExecStart=/usr/bin/systemctl --no-block isolate reboot.target
 
