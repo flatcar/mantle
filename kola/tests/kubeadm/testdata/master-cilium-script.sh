@@ -91,6 +91,7 @@ EOF
         --config enable-endpoint-routes=true \
         --config cluster-pool-ipv4-cidr=192.168.0.0/17 \
         --version=v0.11.1 2>&1 | iconv --from-code utf-8 --to-code ascii//TRANSLIT
+    kubectl --namespace kube-system patch daemonset/cilium -p '{"spec":{"template":{"spec":{"containers":[{"name":"cilium-agent","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}],"initContainers":[{"name":"mount-cgroup","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"apply-sysctl-overwrites","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"clean-cilium-state","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}]}}}}'
     # --wait will wait for status to report success
     /opt/bin/cilium status --wait 2>&1 | iconv --from-code utf-8 --to-code ascii//TRANSLIT
 
