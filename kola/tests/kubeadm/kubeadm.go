@@ -54,8 +54,12 @@ var (
 					_ = c.MustSSH(controller, "/opt/bin/cilium uninstall")
 					version := params["CiliumVersion"].(string)
 					cidr := params["PodSubnet"].(string)
-					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait --wait-duration 1m", cidr, version)
-					_ = c.MustSSH(controller, cmd)
+					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait=false --restart-unmanaged-pods=false --rollback=false", cidr, version)
+					_, _ = c.SSH(controller, cmd)
+					patch := `/opt/bin/kubectl --namespace kube-system patch daemonset/cilium -p '{"spec":{"template":{"spec":{"containers":[{"name":"cilium-agent","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}],"initContainers":[{"name":"mount-cgroup","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"apply-sysctl-overwrites","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"clean-cilium-state","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}]}}}}'`
+					_ = c.MustSSH(controller, patch)
+					status := "/opt/bin/cilium status --wait --wait-duration 1m"
+					_ = c.MustSSH(controller, status)
 				},
 			},
 		},
