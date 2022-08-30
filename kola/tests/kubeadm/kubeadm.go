@@ -73,8 +73,8 @@ var (
 	testConfig = map[string]map[string]interface{}{
 		"v1.24.1": map[string]interface{}{
 			"FlannelVersion":   "v0.18.1",
-			"CiliumVersion":    "1.11.5",
-			"CiliumCLIVersion": "v0.10.7",
+			"CiliumVersion":    "1.12.1",
+			"CiliumCLIVersion": "v0.12.2",
 			"CNIVersion":       "v1.1.1",
 			"CRIctlVersion":    "v1.24.2",
 			"ReleaseVersion":   "v0.13.0",
@@ -98,8 +98,8 @@ var (
 		},
 		"v1.23.4": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.2",
-			"CiliumCLIVersion": "v0.10.2",
+			"CiliumVersion":    "1.12.1",
+			"CiliumCLIVersion": "v0.12.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
 			"ReleaseVersion":   "v0.4.0",
@@ -123,8 +123,8 @@ var (
 		},
 		"v1.22.7": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.2",
-			"CiliumCLIVersion": "v0.10.2",
+			"CiliumVersion":    "1.12.1",
+			"CiliumCLIVersion": "v0.12.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
 			"ReleaseVersion":   "v0.4.0",
