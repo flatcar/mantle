@@ -329,15 +329,6 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 		return nil, fmt.Errorf("timed out waiting for flatcar-install: %v", err)
 	}
 
-	// TCP discard service has been reached so `flatcar-install` is done.
-	// We can deactivate `PXE` boot to avoid bootlooping.
-	alwaysPXE := false
-	if _, _, err = a.c.Devices.Update(deviceID, &packngo.DeviceUpdateRequest{
-		AlwaysPXE: &alwaysPXE,
-	}); err != nil {
-		return nil, fmt.Errorf("unable to deactivate PXE boot: %v", err)
-	}
-
 	plog.Debugf("Finished installation of device: %q", deviceID)
 
 	destroyDevice = false
@@ -569,10 +560,6 @@ boot`, a.opts.InstallerImageKernelURL, userdataURL, linuxConsole[a.opts.Board], 
 func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device, error) {
 	var err error
 
-	// we force a PXE boot in order to fetch the
-	// new configuration and prevent to boot from a mis-installed Flatcar.
-	alwaysPXE := true
-
 	for tries := apiRetries; tries >= 0; tries-- {
 		var (
 			device   *packngo.Device
@@ -582,7 +569,6 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 		if id != "" {
 			plog.Infof("Recycling instance: %s", id)
 			device, response, err = a.c.Devices.Update(id, &packngo.DeviceUpdateRequest{
-				AlwaysPXE:     &alwaysPXE,
 				IPXEScriptURL: &ipxeScriptURL,
 				Hostname:      &hostname,
 			})
@@ -591,14 +577,17 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 				continue
 			}
 
-			// we reboot the instance to apply the changes.
-			response, err = a.c.Devices.Reboot(id)
+			// reinstall flatcar on the instance
+			response, err = a.c.Devices.Reinstall(id, &packngo.DeviceReinstallFields{
+				PreserveData: true,
+				DeprovisionFast: true,
+			})
 			if err != nil {
-				err = fmt.Errorf("rebooting device: %w", err)
+				err = fmt.Errorf("reinstalling device: %w", err)
 				continue
 			}
 
-			plog.Infof("device rebooted: %s", id)
+			plog.Infof("Reinstallation on device %q requested", id)
 		} else {
 			plog.Infof("Recycling is not possible, creating a new instance")
 			// if the Metro is set, we set the Facility to empty string in order
@@ -616,7 +605,6 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 				OS:            "custom_ipxe",
 				IPXEScriptURL: ipxeScriptURL,
 				Tags:          []string{"mantle"},
-				AlwaysPXE:     alwaysPXE,
 				Metro:         a.opts.Metro,
 			})
 		}
