@@ -64,7 +64,9 @@ func runBootchart(cmd *cobra.Command, args []string) {
 	defer flight.Destroy()
 
 	cluster, err := flight.NewCluster(&platform.RuntimeConfig{
-		OutputDir: outputDir,
+		OutputDir:  outputDir,
+		SSHRetries: kola.Options.SSHRetries,
+		SSHTimeout: kola.Options.SSHTimeout,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Cluster failed: %v\n", err)

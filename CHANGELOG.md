@@ -31,6 +31,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added URL support for Openstack image creation ([#350](https://github.com/flatcar-linux/mantle/pull/350))
 - kola tests for Cilium IPSec encryption ([#292](https://github.com/flatcar-linux/mantle/pull/292))
 - Kubernetes test for release 1.25.0 ([#360](https://github.com/flatcar-linux/mantle/pull/360))
+- Configurable timeouts for installation and launching Equinix Metal instances through `--equinixmetal-install-timeout` and `--equinixmetal-launch-timeout` flags ([#354](https://github.com/flatcar-linux/mantle/pull/354))
+- Configurable timeouts for attaching to machine's journal and for machine checks through `--ssh-retries` and `--ssh-timeout` flags ([#354](https://github.com/flatcar-linux/mantle/pull/354))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))

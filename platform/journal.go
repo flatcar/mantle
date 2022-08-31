@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/coreos/pkg/multierror"
 
@@ -111,7 +112,8 @@ func (j *Journal) Start(ctx context.Context, m Machine) error {
 		}
 		return true, nil
 	}
-	if err := util.WaitUntilReady(sshTimeout*sshRetries, sshTimeout, start); err != nil {
+	rc := m.RuntimeConf()
+	if err := util.WaitUntilReady(rc.SSHTimeout*time.Duration(rc.SSHRetries), rc.SSHTimeout, start); err != nil {
 		cancel()
 		return fmt.Errorf("ssh journalctl failed: %v: %v", err, lastErr)
 	}

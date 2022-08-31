@@ -423,7 +423,9 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 	}
 
 	cluster, err := flight.NewCluster(&platform.RuntimeConfig{
-		OutputDir: testDir,
+		OutputDir:  testDir,
+		SSHRetries: Options.SSHRetries,
+		SSHTimeout: Options.SSHTimeout,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating cluster for semver check: %v", err)
@@ -492,6 +494,8 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 		NoSSHKeyInUserData: t.HasFlag(register.NoSSHKeyInUserData),
 		NoSSHKeyInMetadata: t.HasFlag(register.NoSSHKeyInMetadata),
 		NoEnableSelinux:    t.HasFlag(register.NoEnableSelinux),
+		SSHRetries:         Options.SSHRetries,
+		SSHTimeout:         Options.SSHTimeout,
 	}
 	c, err := flight.NewCluster(rconf)
 	if err != nil {

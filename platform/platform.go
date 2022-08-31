@@ -31,11 +31,6 @@ import (
 	"github.com/flatcar-linux/mantle/util"
 )
 
-const (
-	sshRetries = 60
-	sshTimeout = 10 * time.Second
-)
-
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform")
 )
@@ -164,16 +159,25 @@ type Options struct {
 
 	// Board is the board used by the image
 	Board string
+
+	// How many times to retry establishing an SSH connection when
+	// creating a journal or when doing a machine check.
+	SSHRetries int
+	// A duration of a single try of establishing the connection
+	// when creating a journal or when doing a machine check.
+	SSHTimeout time.Duration
 }
 
 // RuntimeConfig contains cluster-specific configuration.
 type RuntimeConfig struct {
 	OutputDir string
 
-	NoSSHKeyInUserData bool // don't inject SSH key into Ignition/cloud-config
-	NoSSHKeyInMetadata bool // don't add SSH key to platform metadata
-	NoEnableSelinux    bool // don't enable selinux when starting or rebooting a machine
-	AllowFailedUnits   bool // don't fail CheckMachine if a systemd unit has failed
+	NoSSHKeyInUserData bool          // don't inject SSH key into Ignition/cloud-config
+	NoSSHKeyInMetadata bool          // don't add SSH key to platform metadata
+	NoEnableSelinux    bool          // don't enable selinux when starting or rebooting a machine
+	AllowFailedUnits   bool          // don't fail CheckMachine if a systemd unit has failed
+	SSHRetries         int           // see SSHRetries field in Options
+	SSHTimeout         time.Duration // see SSHTimeout field in Options
 }
 
 // Wrap a StdoutPipe as a io.ReadCloser
@@ -348,7 +352,8 @@ func CheckMachine(ctx context.Context, m Machine) error {
 		return nil
 	}
 
-	if err := util.Retry(sshRetries, sshTimeout, sshChecker); err != nil {
+	rc := m.RuntimeConf()
+	if err := util.Retry(rc.SSHRetries, rc.SSHTimeout, sshChecker); err != nil {
 		return fmt.Errorf("ssh unreachable or system not ready: %v", err)
 	}
 
