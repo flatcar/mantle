@@ -54,8 +54,12 @@ var (
 					_ = c.MustSSH(controller, "/opt/bin/cilium uninstall")
 					version := params["CiliumVersion"].(string)
 					cidr := params["PodSubnet"].(string)
-					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait --wait-duration 1m", cidr, version)
-					_ = c.MustSSH(controller, cmd)
+					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait=false --restart-unmanaged-pods=false --rollback=false", cidr, version)
+					_, _ = c.SSH(controller, cmd)
+					patch := `/opt/bin/kubectl --namespace kube-system patch daemonset/cilium -p '{"spec":{"template":{"spec":{"containers":[{"name":"cilium-agent","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}],"initContainers":[{"name":"mount-cgroup","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"apply-sysctl-overwrites","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"clean-cilium-state","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}]}}}}'`
+					_ = c.MustSSH(controller, patch)
+					status := "/opt/bin/cilium status --wait --wait-duration 1m"
+					_ = c.MustSSH(controller, status)
 				},
 			},
 		},
@@ -73,8 +77,8 @@ var (
 	testConfig = map[string]map[string]interface{}{
 		"v1.24.1": map[string]interface{}{
 			"FlannelVersion":   "v0.18.1",
-			"CiliumVersion":    "1.11.5",
-			"CiliumCLIVersion": "v0.10.7",
+			"CiliumVersion":    "1.12.1",
+			"CiliumCLIVersion": "v0.12.2",
 			"CNIVersion":       "v1.1.1",
 			"CRIctlVersion":    "v1.24.2",
 			"ReleaseVersion":   "v0.13.0",
@@ -98,8 +102,8 @@ var (
 		},
 		"v1.23.4": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.2",
-			"CiliumCLIVersion": "v0.10.2",
+			"CiliumVersion":    "1.12.1",
+			"CiliumCLIVersion": "v0.12.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
 			"ReleaseVersion":   "v0.4.0",
@@ -123,8 +127,8 @@ var (
 		},
 		"v1.22.7": map[string]interface{}{
 			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.11.2",
-			"CiliumCLIVersion": "v0.10.2",
+			"CiliumVersion":    "1.12.1",
+			"CiliumCLIVersion": "v0.12.2",
 			"CNIVersion":       "v1.0.1",
 			"CRIctlVersion":    "v1.22.0",
 			"ReleaseVersion":   "v0.4.0",
@@ -182,7 +186,7 @@ func init() {
 					major = 3140
 				}
 
-				if CNI == "flannel" {
+				if CNI == "flannel" || CNI == "cilium" {
 					flags = append(flags, register.NoEnableSelinux)
 				}
 

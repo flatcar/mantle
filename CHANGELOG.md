@@ -40,6 +40,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Bumped Kubernetes binaries and CNI versions ([#297](https://github.com/flatcar-linux/mantle/pull/297))
 - GCP images are now published/tested with UEFI boot mode ([#322](https://github.com/flatcar-linux/mantle/pull/322))
 - Bumped Go version to 1.19 ([#352](https://github.com/flatcar-linux/mantle/pull/352))
+- Bumped Cilium version to 1.12.1 ([#365](https://github.com/flatcar-linux/mantle/pull/365))
+- Set SELinux in permissive mode for Cilium ([#365](https://github.com/flatcar-linux/mantle/pull/365))
 
 ### Removed
 - Remove `--repo-branch` option from cork ([#283](https://github.com/flatcar-linux/mantle/pull/283))
