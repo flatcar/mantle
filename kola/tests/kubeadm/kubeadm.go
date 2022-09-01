@@ -76,6 +76,7 @@ var (
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
 		"v1.25.0": map[string]interface{}{
+			"MinMajorVersion": 3033,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.19.1",
 			// from https://github.com/cilium/cilium/releases
@@ -107,6 +108,7 @@ var (
 			"cgroupv1": false,
 		},
 		"v1.24.1": map[string]interface{}{
+			"MinMajorVersion":  3033,
 			"FlannelVersion":   "v0.18.1",
 			"CiliumVersion":    "1.12.1",
 			"CiliumCLIVersion": "v0.12.2",
@@ -221,8 +223,13 @@ func init() {
 					flags = append(flags, register.NoEnableSelinux)
 				}
 
-				if version == "v1.24.1" {
-					major = 3033
+				if mmvi, ok := testParams["MinMajorVersion"]; ok {
+					mmv := (int64)(mmvi.(int))
+					// Careful, so we don't lower
+					// the min version too much.
+					if mmv > major {
+						major = mmv
+					}
 				}
 
 				register.Register(&register.Test{
