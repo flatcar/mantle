@@ -5,6 +5,7 @@ import (
 	_ "github.com/flatcar/mantle/kola/tests/bpf"
 	_ "github.com/flatcar/mantle/kola/tests/coretest"
 	_ "github.com/flatcar/mantle/kola/tests/crio"
+	_ "github.com/flatcar/mantle/kola/tests/devcontainer"
 	_ "github.com/flatcar/mantle/kola/tests/docker"
 	_ "github.com/flatcar/mantle/kola/tests/etcd"
 	_ "github.com/flatcar/mantle/kola/tests/flannel"
