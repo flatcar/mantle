@@ -73,6 +73,11 @@ type Snapshot struct {
 	SnapshotID string
 }
 
+type Image struct {
+	Name string
+	Snapshot
+}
+
 // Look up a Snapshot by name. Return nil if not found.
 func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
 	// Look for an existing snapshot with this image name.
@@ -435,10 +440,11 @@ func (a *API) createImage(params *ec2.RegisterImageInput) (string, error) {
 		// The AMI already exists. Get its ID. Due to races, this
 		// may take several attempts.
 		for {
-			imageID, err = a.FindImage(*params.Name)
+			image, err := a.FindImage(*params.Name)
 			if err != nil {
 				return "", err
 			}
+			imageID = image.Name
 			if imageID != "" {
 				plog.Infof("found existing image %v, reusing", imageID)
 				break
@@ -584,11 +590,11 @@ func (a *API) CopyImage(sourceImageID string, regions []string) (map[string]stri
 }
 
 func (a *API) copyImageIn(sourceRegion, sourceImageID, name, description string, imageTags, snapshotTags []*ec2.Tag, launchPermissions []*ec2.LaunchPermission) (string, error) {
-	imageID, err := a.FindImage(name)
+	image, err := a.FindImage(name)
 	if err != nil {
 		return "", err
 	}
-
+	imageID := image.Name
 	if imageID == "" {
 		copyRes, err := a.ec2.CopyImage(&ec2.CopyImageInput{
 			SourceRegion:  aws.String(sourceRegion),
@@ -667,7 +673,7 @@ func (a *API) copyImageIn(sourceRegion, sourceImageID, name, description string,
 }
 
 // Find an image we own with the specified name. Return ID or "".
-func (a *API) FindImage(name string) (string, error) {
+func (a *API) FindImage(name string) (Image, error) {
 	describeRes, err := a.ec2.DescribeImages(&ec2.DescribeImagesInput{
 		Filters: []*ec2.Filter{
 			&ec2.Filter{
@@ -678,15 +684,20 @@ func (a *API) FindImage(name string) (string, error) {
 		Owners: aws.StringSlice([]string{"self"}),
 	})
 	if err != nil {
-		return "", fmt.Errorf("couldn't describe image %q: %v", name, err)
+		return Image{}, fmt.Errorf("couldn't describe image %q: %v", name, err)
 	}
 	if len(describeRes.Images) > 1 {
-		return "", fmt.Errorf("found multiple images with name %v. DescribeImage output: %v", name, describeRes.Images)
+		return Image{}, fmt.Errorf("found multiple images with name %v. DescribeImage output: %v", name, describeRes.Images)
 	}
 	if len(describeRes.Images) == 1 {
-		return *describeRes.Images[0].ImageId, nil
+		img := Image{
+			Name: *describeRes.Images[0].ImageId,
+		}
+		snapshotId, _ := getImageSnapshotID(describeRes.Images[0])
+		img.Snapshot = Snapshot{snapshotId}
+		return img, nil
 	}
-	return "", nil
+	return Image{}, nil
 }
 
 func (a *API) describeImage(imageID string) (*ec2.Image, error) {

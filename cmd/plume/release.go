@@ -439,13 +439,13 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 			}
 
 			publish := func(imageName string) {
-				imageID, err := api.FindImage(imageName)
+				image, err := api.FindImage(imageName)
 				if err != nil {
 					plog.Fatalf("couldn't find image %q in %v %v: %v", imageName, part.Name, region, err)
 				}
 
 				if !releaseDryRun {
-					err := api.PublishImage(imageID)
+					err := api.PublishImage(image.Name)
 					if err != nil {
 						plog.Fatalf("couldn't publish image in %v %v: %v", part.Name, region, err)
 					}
