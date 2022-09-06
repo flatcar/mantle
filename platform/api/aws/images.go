@@ -361,19 +361,20 @@ func (a *API) RemoveLaunchPermission(imageid string) ([]byte, error) {
 	return out, nil
 }
 
-func (a *API) deregisterImageIfExists(name string) error {
-	imageID, err := a.FindImage(name)
+func (a *API) deregisterImageIfExists(name string) (*Image, error) {
+	image, err := a.FindImage(name)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	imageID := image.Name
 	if imageID != "" {
 		_, err := a.ec2.DeregisterImage(&ec2.DeregisterImageInput{ImageId: &imageID})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		plog.Infof("Deregistered existing image %s", imageID)
 	}
-	return nil
+	return &image, nil
 }
 
 // Remove all uploaded data associated with an AMI, also in other given regions.
@@ -400,30 +401,40 @@ func (a *API) RemoveImage(amiName, imageName, s3BucketName, s3ObjectPath string,
 		}
 		plog.Infof("Trying to deregister %s in %s", amiName, region)
 
-		err = aa.deregisterImageIfExists(amiName + "-hvm")
+		imageHvm, err := aa.deregisterImageIfExists(amiName + "-hvm")
 		if err != nil {
 			return err
 		}
-		err = aa.deregisterImageIfExists(amiName)
+		image, err := aa.deregisterImageIfExists(amiName)
 		if err != nil {
 			return err
 		}
-
-		snapshot, err := aa.FindSnapshot(imageName)
-		if err != nil {
-			return err
-		}
-		if snapshot != nil {
+		deleteSnapshot := func(snapshotID string) {
 			// We explicitly ignore errors here in case somehow another AMI was based
 			// on that snapshot
-			_, err := aa.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: &snapshot.SnapshotID})
+			_, err := aa.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: &snapshotID})
 			if err != nil {
-				plog.Warningf("Failed to delete snapshot %s: %v", snapshot.SnapshotID, err)
+				plog.Warningf("Failed to delete snapshot %s: %v", snapshotID, err)
 			} else {
-				plog.Infof("Deleted existing snapshot %s", snapshot.SnapshotID)
+				plog.Infof("Deleted existing snapshot %s", snapshotID)
 			}
-		} else {
-			plog.Warningf("No snapshot was found")
+		}
+		if imageHvm.SnapshotID != "" {
+			deleteSnapshot(imageHvm.SnapshotID)
+		}
+		if image.SnapshotID != "" {
+			deleteSnapshot(image.SnapshotID)
+		}
+		if imageHvm.SnapshotID == "" && image.SnapshotID == "" {
+			snapshot, err := aa.FindSnapshot(imageName)
+			if err != nil {
+				return err
+			}
+			if snapshot != nil {
+				deleteSnapshot(snapshot.SnapshotID)
+			} else {
+				plog.Warningf("No snapshot was found")
+			}
 		}
 	}
 
