@@ -78,8 +78,7 @@ type BucketObject struct {
 	Path   string
 }
 
-// Look up a Snapshot by name. Return nil if not found.
-func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
+func (a *API) FindSnapshots(imageName string) ([]Snapshot, error) {
 	// Look for an existing snapshot with this image name.
 	snapshotRes, err := a.ec2.DescribeSnapshots(&ec2.DescribeSnapshotsInput{
 		Filters: []*ec2.Filter{
@@ -97,15 +96,28 @@ func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to describe snapshots: %v", err)
 	}
-	if len(snapshotRes.Snapshots) > 1 {
+	snaphots := make([]Snapshot, len(snapshotRes.Snapshots))
+	for i, snapshot := range snapshotRes.Snapshots {
+		snapshotID := *snapshot.SnapshotId
+		plog.Infof("Found existing snapshot %v", snapshotID)
+		snaphots[i] = Snapshot{
+			SnapshotID: snapshotID,
+		}
+	}
+	return snaphots, nil
+}
+
+// Look up a Snapshot by name. Return nil if not found.
+func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
+	snapshots, err := a.FindSnapshots(imageName)
+	if err != nil {
+		return nil, err
+	}
+	if len(snapshots) > 1 {
 		return nil, fmt.Errorf("found multiple matching snapshots")
 	}
-	if len(snapshotRes.Snapshots) == 1 {
-		snapshotID := *snapshotRes.Snapshots[0].SnapshotId
-		plog.Infof("Found existing snapshot %v", snapshotID)
-		return &Snapshot{
-			SnapshotID: snapshotID,
-		}, nil
+	if len(snapshots) == 1 {
+		return &snapshots[0], nil
 	}
 
 	// Look for an existing import task with this image name. We have
@@ -419,11 +431,11 @@ func (a *API) RemoveImage(amiName, imageName string, s3object BucketObject, othe
 			return err
 		}
 
-		snapshot, err := aa.FindSnapshot(imageName)
+		snapshots, err := aa.FindSnapshots(imageName)
 		if err != nil {
 			return err
 		}
-		if snapshot != nil {
+		for _, snapshot := range snapshots {
 			// We explicitly ignore errors here in case somehow another AMI was based
 			// on that snapshot
 			_, err := aa.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: &snapshot.SnapshotID})
@@ -432,7 +444,8 @@ func (a *API) RemoveImage(amiName, imageName string, s3object BucketObject, othe
 			} else {
 				plog.Infof("Deleted existing snapshot %s", snapshot.SnapshotID)
 			}
-		} else {
+		}
+		if len(snapshots) == 0 {
 			plog.Warningf("No snapshot was found")
 		}
 	}
