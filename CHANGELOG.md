@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - AMI publishing on the AWS Marketplace ([#369](https://github.com/flatcar-linux/mantle/pull/369))
 - plume: generate AMI ID files locally ([#373](https://github.com/flatcar/mantle/pull/373))
-
+- Kola test for devcontainer ([#367](https://github.com/flatcar-linux/mantle/pull/367))
+- `--qemu-grow-base-disk-by` flag to grow the base disk ([#367](https://github.com/flatcar-linux/mantle/pull/367))
 
 ### Changed
 - organization renaming (`flatcar-linux` -> `flatcar`) ([#372](https://github.com/flatcar/mantle/pull/372), [#374](https://github.com/flatcar/mantle/pull/374))
