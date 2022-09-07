@@ -72,6 +72,11 @@ var vmImportRole = "vmimport"
 type Snapshot struct {
 	SnapshotID string
 }
+type BucketObject struct {
+	Region string
+	Bucket string
+	Path   string
+}
 
 // Look up a Snapshot by name. Return nil if not found.
 func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
@@ -372,8 +377,18 @@ func (a *API) deregisterImageIfExists(name string) error {
 }
 
 // Remove all uploaded data associated with an AMI, also in other given regions.
-func (a *API) RemoveImage(amiName, imageName, s3BucketName, s3ObjectPath string, otherRegions []string) error {
-	err := a.DeleteObject(s3BucketName, s3ObjectPath)
+func (a *API) RemoveImage(amiName, imageName string, s3object BucketObject, otherRegions []string) error {
+	s3a := a
+	if s3object.Region != "" && s3object.Region != a.opts.Region {
+		opts := *a.opts
+		opts.Region = s3object.Region
+		aa, err := New(&opts)
+		if err != nil {
+			return fmt.Errorf("failed to fetch auth token for region %v: %w", s3object.Region, err)
+		}
+		s3a = aa
+	}
+	err := s3a.DeleteObject(s3object.Bucket, s3object.Path)
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() != "NoSuchKey" {
@@ -383,7 +398,7 @@ func (a *API) RemoveImage(amiName, imageName, s3BucketName, s3ObjectPath string,
 			return err
 		}
 	} else {
-		plog.Infof("Deleted existing S3 object bucket:%s path:%s", s3BucketName, s3ObjectPath)
+		plog.Infof("Deleted existing S3 object bucket:%s path:%s", s3object.Bucket, s3object.Path)
 	}
 
 	for _, region := range append(otherRegions, a.opts.Region) {

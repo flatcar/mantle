@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/flatcar-linux/mantle/platform/api/aws"
 	"github.com/spf13/cobra"
 )
 
@@ -78,8 +79,12 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	plog.Debugf("S3 object: %v\n", s3URL)
 	s3BucketName := s3URL.Host
 	s3ObjectPath := strings.TrimPrefix(s3URL.Path, "/")
+	s3object := aws.BucketObject{
+		Bucket: s3BucketName,
+		Path:   s3ObjectPath,
+	}
 
-	err = API.RemoveImage(amiName, deleteImageName, s3BucketName, s3ObjectPath, nil)
+	err = API.RemoveImage(amiName, deleteImageName, s3object, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to delete: %v\n", err)
 		os.Exit(1)

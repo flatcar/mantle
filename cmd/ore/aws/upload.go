@@ -211,7 +211,11 @@ func runUpload(cmd *cobra.Command, args []string) error {
 	s3ObjectPath := strings.TrimPrefix(s3URL.Path, "/")
 
 	if uploadForce {
-		API.RemoveImage(amiName, imageName, s3BucketName, s3ObjectPath, nil)
+		s3object := aws.BucketObject{
+			Bucket: s3BucketName,
+			Path:   s3ObjectPath,
+		}
+		API.RemoveImage(amiName, imageName, s3object, nil)
 	}
 
 	// if no snapshot was specified, check for an existing one or a
