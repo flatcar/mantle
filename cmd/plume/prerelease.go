@@ -72,6 +72,17 @@ var (
 	awsCredentialsFile string
 	verifyKeyFile      string
 	imageInfoFile      string
+	// productID is the AWS Marketplace offer ID.
+	productID string
+	// accessRoleARN is the ARN to give marketplace access to the AMI.
+	accessRoleARN string
+	// awsMarketplaceCredentialsFile is used for publishing
+	// the AMIs on the AWS Marketplace.
+	awsMarketplaceCredentialsFile string
+	// publishMarketplace is used to publish or not on the AWS Marketplace.
+	publishMarketplace bool
+	// username is the default user on instances launched by AWS Marketplace.
+	username string
 )
 
 type imageMetadataAbstract struct {

@@ -53,6 +53,12 @@ func init() {
 	cmdRelease.Flags().StringVar(&gceReleaseKey, "gce-release-key", "", "GCE key file for releases")
 	cmdRelease.Flags().BoolVarP(&releaseDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
+	cmdRelease.Flags().BoolVarP(&publishMarketplace, "publish-marketplace", "", false,
+		"publish on the AWS marketplace")
+	cmdRelease.Flags().StringVar(&accessRoleARN, "access-role-arn", "", "ARN to give marketplace access to the AMI")
+	cmdRelease.Flags().StringVar(&productID, "product-id", "", "AWS Marketplace offer ID")
+	cmdRelease.Flags().StringVar(&awsMarketplaceCredentialsFile, "aws-marketplace-credentials", "", "AWS Marketplace credentials file")
+	cmdRelease.Flags().StringVar(&username, "username", "core", "default username")
 	AddSpecFlags(cmdRelease.Flags())
 	root.AddCommand(cmdRelease)
 }
@@ -438,20 +444,48 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 				plog.Fatalf("creating client for %v %v: %v", part.Name, region, err)
 			}
 
-			publish := func(imageName string) {
+			publish := func(imageName string) error {
 				imageID, err := api.FindImage(imageName)
 				if err != nil {
-					plog.Fatalf("couldn't find image %q in %v %v: %v", imageName, part.Name, region, err)
+					return fmt.Errorf("couldn't find image %q in %v %v: %v", imageName, part.Name, region, err)
 				}
 
 				if !releaseDryRun {
 					err := api.PublishImage(imageID)
 					if err != nil {
-						plog.Fatalf("couldn't publish image in %v %v: %v", part.Name, region, err)
+						return fmt.Errorf("couldn't publish image in %v %v: %v", part.Name, region, err)
 					}
 				}
+
+				// Publish on AWS Marketplace AMIs in us-east-1.
+				if publishMarketplace && region == "us-east-1" {
+					// Create a new API client to consume the AWS Marketplace credentials.
+					marketplace, err := aws.New(&aws.Options{
+						CredentialsFile: awsMarketplaceCredentialsFile,
+						Profile:         "default",
+						Region:          "us-east-1",
+					})
+					if err != nil {
+						return fmt.Errorf("creating API Marketplace client: %w", err)
+					}
+
+					// Define the launch instance type based on the arch.
+					instanceType := "t3.medium"
+					if specBoard == "arm64-usr" {
+						instanceType = "m6g.medium"
+					}
+
+					if err := marketplace.UpdateProduct(imageID, accessRoleARN, username, specVersion, productID, instanceType, releaseDryRun); err != nil {
+						return fmt.Errorf("updating product with ID %s: %w", productID, err)
+					}
+				}
+
+				return nil
 			}
-			publish(imageName + "-hvm")
+
+			if err := publish(imageName + "-hvm"); err != nil {
+				plog.Fatalf("publishing AWS release: %v", err)
+			}
 		}
 	}
 }
