@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Kubernetes test for release 1.25.0 ([#360](https://github.com/flatcar-linux/mantle/pull/360))
 - Configurable timeouts for installation and launching Equinix Metal instances through `--equinixmetal-install-timeout` and `--equinixmetal-launch-timeout` flags ([#354](https://github.com/flatcar-linux/mantle/pull/354))
 - Configurable timeouts for attaching to machine's journal and for machine checks through `--ssh-retries` and `--ssh-timeout` flags ([#354](https://github.com/flatcar-linux/mantle/pull/354))
+- AMI publishing on the AWS Marketplace ([#369](https://github.com/flatcar-linux/mantle/pull/369))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
