@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,19 +34,22 @@ import (
 )
 
 type MachineOptions struct {
-	AdditionalDisks []Disk
+	AdditionalDisks      []Disk
+	ExtraPrimaryDiskSize string
 }
 
 type Disk struct {
-	Size        string   // disk image size in bytes, optional suffixes "K", "M", "G", "T" allowed. Incompatible with BackingFile
-	BackingFile string   // raw disk image to use. Incompatible with Size.
-	DeviceOpts  []string // extra options to pass to qemu. "serial=XXXX" makes disks show up as /dev/disk/by-id/virtio-<serial>
+	Size          string   // disk image size in bytes, optional suffixes "K", "M", "G", "T" allowed. Incompatible with BackingFile
+	BackingFile   string   // raw disk image to use. Incompatible with Size.
+	ExtraDiskSize string   // additional disk size to add to the image in bytes, optional suffixes "K", "M", "G", "T" allowed. Incompatible with Size.
+	DeviceOpts    []string // extra options to pass to qemu. "serial=XXXX" makes disks show up as /dev/disk/by-id/virtio-<serial>
 }
 
 var (
-	ErrNeedSizeOrFile  = errors.New("Disks need either Size or BackingFile specified")
-	ErrBothSizeAndFile = errors.New("Only one of Size and BackingFile can be specified")
-	primaryDiskOptions = []string{"serial=primary-disk"}
+	ErrNeedSizeOrFile    = errors.New("Disks need either Size or BackingFile specified")
+	ErrBothSizeAndFile   = errors.New("Only one of Size and BackingFile can be specified")
+	ErrExtraWithFileOnly = errors.New("ExtraDiskSize can only be used with BackingFile")
+	primaryDiskOptions   = []string{"serial=primary-disk"}
 )
 
 // Copy Container Linux input image and specialize copy for running kola tests.
@@ -180,16 +184,19 @@ func (d Disk) setupFile() (*os.File, error) {
 	if d.Size != "" && d.BackingFile != "" {
 		return nil, ErrBothSizeAndFile
 	}
+	if d.Size != "" && d.ExtraDiskSize != "" {
+		return nil, ErrExtraWithFileOnly
+	}
 
 	if d.Size != "" {
 		return setupDisk(d.Size)
 	} else {
-		return setupDiskFromFile(d.BackingFile)
+		return setupDiskFromFile(d.BackingFile, d.ExtraDiskSize)
 	}
 }
 
 // Create a nameless temporary qcow2 image file backed by a raw image.
-func setupDiskFromFile(imageFile string) (*os.File, error) {
+func setupDiskFromFile(imageFile, extraDiskSize string) (*os.File, error) {
 	// a relative path would be interpreted relative to /tmp
 	backingFile, err := filepath.Abs(imageFile)
 	if err != nil {
@@ -208,9 +215,50 @@ func setupDiskFromFile(imageFile string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	sizeOpt := ""
+	if extraDiskSize != "" {
+		diskSize, err := parseDiskSize(extraDiskSize)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse extra disk size %s: %v", extraDiskSize, err)
+		}
+		diskSize += imgInfo.VirtualSize
+		sizeOpt = fmt.Sprintf(",size=%d", diskSize)
+	}
 
-	qcowOpts := fmt.Sprintf("backing_file=%s,backing_fmt=%s,lazy_refcounts=on", backingFile, imgInfo.Format)
+	qcowOpts := fmt.Sprintf("backing_file=%s,backing_fmt=%s,lazy_refcounts=on%s", backingFile, imgInfo.Format, sizeOpt)
 	return setupDisk("-o", qcowOpts)
+}
+
+func parseDiskSize(diskSize string) (uint64, error) {
+	multiplier := (uint64)(1)
+	last := len(diskSize) - 1
+	suffix := diskSize[last]
+	digitsOnly := diskSize
+	switch suffix {
+	case 'T':
+		multiplier *= 1024
+		fallthrough
+	case 'G':
+		multiplier *= 1024
+		fallthrough
+	case 'M':
+		multiplier *= 1024
+		fallthrough
+	case 'K', 'k':
+		multiplier *= 1024
+		fallthrough
+	case 'b':
+		digitsOnly = diskSize[0:last]
+	default:
+		if suffix < '0' || suffix > '9' {
+			return 0, fmt.Errorf("invalid suffix %c in %s for disk size", suffix, diskSize)
+		}
+	}
+	result, err := strconv.ParseUint(digitsOnly, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid disk size %s (parsed %s): %v", diskSize, digitsOnly, err)
+	}
+	return result * multiplier, nil
 }
 
 func setupDisk(additionalOptions ...string) (*os.File, error) {
@@ -330,8 +378,9 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 
 	allDisks := append([]Disk{
 		{
-			BackingFile: diskImagePath,
-			DeviceOpts:  primaryDiskOptions,
+			BackingFile:   diskImagePath,
+			DeviceOpts:    primaryDiskOptions,
+			ExtraDiskSize: options.ExtraPrimaryDiskSize,
 		},
 	}, options.AdditionalDisks...)
 
