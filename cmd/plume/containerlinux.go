@@ -102,7 +102,7 @@ var (
 
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/alpha/boards",
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          newGceSpec("alpha", alpha_desc),
@@ -111,7 +111,7 @@ var (
 			AWS:          newAWSSpec(),
 		},
 		"beta": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/beta/boards",
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          newGceSpec("beta", beta_desc),
@@ -120,7 +120,7 @@ var (
 			AWS:          newAWSSpec(),
 		},
 		"stable": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/stable/boards",
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          newGceSpec("stable", stable_desc),
@@ -129,7 +129,7 @@ var (
 			AWS:          newAWSSpec(),
 		},
 		"edge": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/edge/boards",
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          newGceSpec("edge", edge_desc),
@@ -138,7 +138,7 @@ var (
 			AWS:          newAWSSpec(),
 		},
 		"lts": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/lts/boards",
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          newGceSpec("lts", lts_desc),
@@ -147,7 +147,7 @@ var (
 			AWS:          newAWSSpec(),
 		},
 		"developer": channelSpec{
-			BaseURL:      "gs://flatcar-jenkins/developer/developer/boards",
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
 			Boards:       []string{"amd64-usr", "arm64-usr"},
 			Destinations: []storageSpec{},
 			GCE:          gceSpec{},
