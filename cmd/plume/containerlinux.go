@@ -102,64 +102,58 @@ var (
 
 	specs = map[string]channelSpec{
 		"alpha": channelSpec{
-			BaseURL:        "gs://flatcar-jenkins/alpha/boards",
-			BasePrivateURL: "gs://flatcar-jenkins-private/alpha/boards",
-			Boards:         []string{"amd64-usr", "arm64-usr"},
-			Destinations:   []storageSpec{},
-			GCE:            newGceSpec("alpha", alpha_desc),
-			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Alpha", "", alpha_desc),
-			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Alpha", "", alpha_desc),
-			AWS:            newAWSSpec(),
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          newGceSpec("alpha", alpha_desc),
+			Azure:        newAzureSpec(azureEnvironments, "publish", "Flatcar Alpha", "", alpha_desc),
+			AzurePremium: newAzureSpec(azureEnvironments, "publish", "Flatcar Alpha", "", alpha_desc),
+			AWS:          newAWSSpec(),
 		},
 		"beta": channelSpec{
-			BaseURL:        "gs://flatcar-jenkins/beta/boards",
-			BasePrivateURL: "gs://flatcar-jenkins-private/beta/boards",
-			Boards:         []string{"amd64-usr", "arm64-usr"},
-			Destinations:   []storageSpec{},
-			GCE:            newGceSpec("beta", beta_desc),
-			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "", beta_desc),
-			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "", beta_desc),
-			AWS:            newAWSSpec(),
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          newGceSpec("beta", beta_desc),
+			Azure:        newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "", beta_desc),
+			AzurePremium: newAzureSpec(azureEnvironments, "publish", "Flatcar Beta", "", beta_desc),
+			AWS:          newAWSSpec(),
 		},
 		"stable": channelSpec{
-			BaseURL:        "gs://flatcar-jenkins/stable/boards",
-			BasePrivateURL: "gs://flatcar-jenkins-private/stable/boards",
-			Boards:         []string{"amd64-usr", "arm64-usr"},
-			Destinations:   []storageSpec{},
-			GCE:            newGceSpec("stable", stable_desc),
-			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "", stable_desc),
-			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "", stable_desc),
-			AWS:            newAWSSpec(),
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          newGceSpec("stable", stable_desc),
+			Azure:        newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "", stable_desc),
+			AzurePremium: newAzureSpec(azureEnvironments, "publish", "Flatcar Stable", "", stable_desc),
+			AWS:          newAWSSpec(),
 		},
 		"edge": channelSpec{
-			BaseURL:        "gs://flatcar-jenkins/edge/boards",
-			BasePrivateURL: "gs://flatcar-jenkins-private/edge/boards",
-			Boards:         []string{"amd64-usr", "arm64-usr"},
-			Destinations:   []storageSpec{},
-			GCE:            newGceSpec("edge", edge_desc),
-			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar Edge", "", edge_desc),
-			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar Edge", "", edge_desc),
-			AWS:            newAWSSpec(),
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          newGceSpec("edge", edge_desc),
+			Azure:        newAzureSpec(azureEnvironments, "publish", "Flatcar Edge", "", edge_desc),
+			AzurePremium: newAzureSpec(azureEnvironments, "publish", "Flatcar Edge", "", edge_desc),
+			AWS:          newAWSSpec(),
 		},
 		"lts": channelSpec{
-			BaseURL:        "gs://flatcar-jenkins/lts/boards",
-			BasePrivateURL: "gs://flatcar-jenkins-private/lts/boards",
-			Boards:         []string{"amd64-usr", "arm64-usr"},
-			Destinations:   []storageSpec{},
-			GCE:            newGceSpec("lts", lts_desc),
-			Azure:          newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
-			AzurePremium:   newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
-			AWS:            newAWSSpec(),
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          newGceSpec("lts", lts_desc),
+			Azure:        newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
+			AzurePremium: newAzureSpec(azureEnvironments, "publish", "Flatcar LTS", "", lts_desc),
+			AWS:          newAWSSpec(),
 		},
 		"developer": channelSpec{
-			BaseURL:        "gs://flatcar-jenkins/developer/developer/boards",
-			BasePrivateURL: "gs://flatcar-jenkins-private/developer/developer/boards",
-			Boards:         []string{"amd64-usr", "arm64-usr"},
-			Destinations:   []storageSpec{},
-			GCE:            gceSpec{},
-			Azure:          newAzureSpec(azureEnvironments, "developer", "Flatcar Developer Channel", "", dev_desc),
-			AzurePremium:   newAzureSpec(azureEnvironments, "developer", "Flatcar Developer Channel", "", dev_desc),
-			AWS:            newAWSSpec(),
+			BaseURL:      "http://bincache.flatcar-linux.net/images",
+			Boards:       []string{"amd64-usr", "arm64-usr"},
+			Destinations: []storageSpec{},
+			GCE:          gceSpec{},
+			Azure:        newAzureSpec(azureEnvironments, "developer", "Flatcar Developer Channel", "", dev_desc),
+			AzurePremium: newAzureSpec(azureEnvironments, "developer", "Flatcar Developer Channel", "", dev_desc),
+			AWS:          newAWSSpec(),
 		},
 	}
 )
@@ -320,9 +314,6 @@ func ChannelSpec() channelSpec {
 
 func (cs channelSpec) SourceURL() string {
 	baseURL := cs.BaseURL
-	if specPrivateBucket {
-		baseURL = cs.BasePrivateURL
-	}
 	if gceJSONKeyFile == "none" {
 		baseURL = strings.Replace(baseURL, "gs://", "https://bucket.release.flatcar-linux.net/", 1)
 	}
@@ -336,12 +327,7 @@ func (cs channelSpec) SourceURL() string {
 }
 
 func (ss storageSpec) ParentPrefixes() []string {
-	baseURL := ss.BaseURL
-	if specPrivateBucket {
-		baseURL = ss.BasePrivateURL
-	}
-
-	u, err := url.Parse(baseURL)
+	u, err := url.Parse(ss.BaseURL)
 	if err != nil {
 		panic(err)
 	}
@@ -349,12 +335,7 @@ func (ss storageSpec) ParentPrefixes() []string {
 }
 
 func (ss storageSpec) FinalPrefixes() []string {
-	baseURL := ss.BaseURL
-	if specPrivateBucket {
-		baseURL = ss.BasePrivateURL
-	}
-
-	u, err := url.Parse(baseURL)
+	u, err := url.Parse(ss.BaseURL)
 	if err != nil {
 		plog.Panic(err)
 	}
