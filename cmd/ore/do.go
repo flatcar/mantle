@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/flatcar-linux/mantle/cmd/ore/do"
+	"github.com/flatcar/mantle/cmd/ore/do"
 )
 
 func init() {

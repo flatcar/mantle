@@ -19,7 +19,7 @@ import (
 
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/flatcar-linux/mantle/storage"
+	"github.com/flatcar/mantle/storage"
 )
 
 type IndexSet map[string]struct{}

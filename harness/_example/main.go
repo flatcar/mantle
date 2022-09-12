@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flatcar-linux/mantle/harness"
+	"github.com/flatcar/mantle/harness"
 )
 
 type X struct {

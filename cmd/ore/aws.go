@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/flatcar-linux/mantle/cmd/ore/aws"
+	"github.com/flatcar/mantle/cmd/ore/aws"
 )
 
 func init() {

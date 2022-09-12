@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/flatcar-linux/mantle/cmd/ore/openstack"
+	"github.com/flatcar/mantle/cmd/ore/openstack"
 )
 
 func init() {

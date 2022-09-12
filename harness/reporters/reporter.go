@@ -17,7 +17,7 @@ package reporters
 import (
 	"time"
 
-	"github.com/flatcar-linux/mantle/harness/testresult"
+	"github.com/flatcar/mantle/harness/testresult"
 )
 
 type Reporters []Reporter

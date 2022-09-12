@@ -7,14 +7,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage"
+	"github.com/flatcar/mantle/platform/api/equinixmetal/storage"
 
 	"github.com/coreos/pkg/capnslog"
 	"golang.org/x/crypto/ssh"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/equinixmetal/storage/remote")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/api/equinixmetal/storage/remote")
 )
 
 func New(client *ssh.Client, host, docRoot, protocol string) storage.Storage {

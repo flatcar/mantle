@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/util"
 )
 
 // GetClusterHealth polls etcdctl cluster-health command until success

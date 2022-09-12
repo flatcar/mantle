@@ -27,8 +27,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
-	"github.com/flatcar-linux/mantle/platform/api/aws"
-	"github.com/flatcar-linux/mantle/platform/api/azure"
+	"github.com/flatcar/mantle/platform/api/aws"
+	"github.com/flatcar/mantle/platform/api/azure"
 )
 
 var (
@@ -197,7 +197,7 @@ func pruneAWS(ctx context.Context, spec *channelSpec) {
 	// images in each of them.
 	for _, part := range spec.AWS.Partitions {
 		for _, region := range part.Regions {
-			plog := capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", fmt.Sprintf("prune:%s", region))
+			plog := capnslog.NewPackageLogger("github.com/flatcar/mantle", fmt.Sprintf("prune:%s", region))
 			if pruneDryRun {
 				plog.Printf("Checking for images in %v...", part.Name)
 			} else {

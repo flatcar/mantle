@@ -28,20 +28,20 @@ import (
 	"time"
 
 	"github.com/coreos/pkg/capnslog"
-	ignition "github.com/flatcar-linux/ignition/config/v2_0/types"
+	ignition "github.com/flatcar/ignition/config/v2_0/types"
 	"github.com/packethost/packngo"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage"
-	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage/gcs"
-	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage/sshstorage"
-	"github.com/flatcar-linux/mantle/platform/api/gcloud"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	ms "github.com/flatcar-linux/mantle/storage"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/api/equinixmetal/storage"
+	"github.com/flatcar/mantle/platform/api/equinixmetal/storage/gcs"
+	"github.com/flatcar/mantle/platform/api/equinixmetal/storage/sshstorage"
+	"github.com/flatcar/mantle/platform/api/gcloud"
+	"github.com/flatcar/mantle/platform/conf"
+	ms "github.com/flatcar/mantle/storage"
+	"github.com/flatcar/mantle/util"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/equinixmetal")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/api/equinixmetal")
 
 	defaultInstallerImageBaseURL = map[string]string{
 		"amd64-usr": "https://stable.release.flatcar-linux.net/amd64-usr/current",
@@ -254,7 +254,7 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("install timeout can't be negative, is %v", opts.InstallTimeout)
 	}
 
-	client := packngo.NewClientWithAuth("github.com/flatcar-linux/mantle", opts.ApiKey, nil)
+	client := packngo.NewClientWithAuth("github.com/flatcar/mantle", opts.ApiKey, nil)
 
 	return &API{
 		c:       client,

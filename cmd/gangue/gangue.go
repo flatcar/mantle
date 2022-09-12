@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/cli"
 )
 
 var (

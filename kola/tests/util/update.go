@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/platform"
 )
 
 func AssertBootedUsr(c cluster.TestCluster, m platform.Machine, usr string) {

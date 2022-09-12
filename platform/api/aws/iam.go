@@ -22,7 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/iam"
 
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/util"
 )
 
 const (

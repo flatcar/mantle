@@ -37,19 +37,19 @@ import (
 	v33types "github.com/coreos/ignition/v2/config/v3_3/types"
 	ign3validate "github.com/coreos/ignition/v2/config/validate"
 	"github.com/coreos/pkg/capnslog"
-	ct "github.com/flatcar-linux/container-linux-config-transpiler/config"
-	ignerr "github.com/flatcar-linux/ignition/config/shared/errors"
-	v1 "github.com/flatcar-linux/ignition/config/v1"
-	v1types "github.com/flatcar-linux/ignition/config/v1/types"
-	v2 "github.com/flatcar-linux/ignition/config/v2_0"
-	v2types "github.com/flatcar-linux/ignition/config/v2_0/types"
-	v21 "github.com/flatcar-linux/ignition/config/v2_1"
-	v21types "github.com/flatcar-linux/ignition/config/v2_1/types"
-	v22 "github.com/flatcar-linux/ignition/config/v2_2"
-	v22types "github.com/flatcar-linux/ignition/config/v2_2/types"
-	v23 "github.com/flatcar-linux/ignition/config/v2_3"
-	v23types "github.com/flatcar-linux/ignition/config/v2_3/types"
-	ignvalidate "github.com/flatcar-linux/ignition/config/validate"
+	ct "github.com/flatcar/container-linux-config-transpiler/config"
+	ignerr "github.com/flatcar/ignition/config/shared/errors"
+	v1 "github.com/flatcar/ignition/config/v1"
+	v1types "github.com/flatcar/ignition/config/v1/types"
+	v2 "github.com/flatcar/ignition/config/v2_0"
+	v2types "github.com/flatcar/ignition/config/v2_0/types"
+	v21 "github.com/flatcar/ignition/config/v2_1"
+	v21types "github.com/flatcar/ignition/config/v2_1/types"
+	v22 "github.com/flatcar/ignition/config/v2_2"
+	v22types "github.com/flatcar/ignition/config/v2_2/types"
+	v23 "github.com/flatcar/ignition/config/v2_3"
+	v23types "github.com/flatcar/ignition/config/v2_3/types"
+	ignvalidate "github.com/flatcar/ignition/config/validate"
 	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -65,7 +65,7 @@ const (
 	kindButane
 )
 
-var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/conf")
+var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/conf")
 
 // UserData is an immutable, unvalidated configuration for a Container Linux
 // machine.

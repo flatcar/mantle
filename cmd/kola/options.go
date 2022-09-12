@@ -27,10 +27,10 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/sdk"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/sdk"
 )
 
 var (

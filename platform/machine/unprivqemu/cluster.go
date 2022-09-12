@@ -29,10 +29,10 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/system/exec"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/system/exec"
+	"github.com/flatcar/mantle/util"
 )
 
 // Cluster is a local cluster of QEMU-based virtual machines.

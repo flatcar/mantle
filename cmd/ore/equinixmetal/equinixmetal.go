@@ -9,16 +9,16 @@ import (
 	"os"
 
 	"github.com/coreos/pkg/capnslog"
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/cli"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/equinixmetal"
-	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/cli"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/api/equinixmetal"
+	"github.com/flatcar/mantle/platform/api/gcloud"
 	"github.com/spf13/cobra"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/equinixmetal")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "ore/equinixmetal")
 
 	EquinixMetal = &cobra.Command{
 		Use:     "equinixmetal [command]",

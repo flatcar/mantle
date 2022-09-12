@@ -17,7 +17,7 @@ package harness
 import (
 	"fmt"
 
-	"github.com/flatcar-linux/mantle/lang/maps"
+	"github.com/flatcar/mantle/lang/maps"
 )
 
 // Test is a single test function.

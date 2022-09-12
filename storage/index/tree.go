@@ -19,8 +19,8 @@ import (
 
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/flatcar-linux/mantle/lang/natsort"
-	"github.com/flatcar-linux/mantle/storage"
+	"github.com/flatcar/mantle/lang/natsort"
+	"github.com/flatcar/mantle/storage"
 )
 
 type IndexTree struct {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/flatcar-linux/mantle/network/journal"
+	"github.com/flatcar/mantle/network/journal"
 )
 
 func main() {

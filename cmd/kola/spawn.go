@@ -25,12 +25,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/platform/machine/qemu"
-	"github.com/flatcar-linux/mantle/sdk"
-	"github.com/flatcar-linux/mantle/sdk/omaha"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/machine/qemu"
+	"github.com/flatcar/mantle/sdk"
+	"github.com/flatcar/mantle/sdk/omaha"
 
 	"github.com/coreos/pkg/capnslog"
 )

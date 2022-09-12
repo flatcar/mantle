@@ -26,11 +26,11 @@ import (
 	"google.golang.org/api/compute/v1"
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/flatcar-linux/mantle/platform/api/aws"
-	"github.com/flatcar-linux/mantle/platform/api/azure"
-	"github.com/flatcar-linux/mantle/platform/api/gcloud"
-	"github.com/flatcar-linux/mantle/storage"
-	"github.com/flatcar-linux/mantle/storage/index"
+	"github.com/flatcar/mantle/platform/api/aws"
+	"github.com/flatcar/mantle/platform/api/azure"
+	"github.com/flatcar/mantle/platform/api/gcloud"
+	"github.com/flatcar/mantle/storage"
+	"github.com/flatcar/mantle/storage/index"
 )
 
 var (

@@ -29,7 +29,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/flatcar-linux/mantle/network/bufnet"
+	"github.com/flatcar/mantle/network/bufnet"
 )
 
 const (

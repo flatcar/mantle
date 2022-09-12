@@ -46,7 +46,7 @@ jobs:
           branch: calico-update-${{ steps.update-links.outputs.CALICO_VERSION }}
           title: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
-          reviewers: flatcar-linux/flatcar-maintainers
+          reviewers: flatcar/flatcar-maintainers
           delete-branch: true
           body: |
             Before merging this pull request, PLEASE make sure that a manifest based

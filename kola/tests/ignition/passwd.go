@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 func init() {

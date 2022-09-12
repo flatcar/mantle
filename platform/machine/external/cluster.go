@@ -23,8 +23,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 type cluster struct {

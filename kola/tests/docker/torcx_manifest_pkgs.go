@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"strings"
 
-	ignition "github.com/flatcar-linux/ignition/config/v2_1/types"
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/kola/torcx"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	ignition "github.com/flatcar/ignition/config/v2_1/types"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/torcx"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 func init() {

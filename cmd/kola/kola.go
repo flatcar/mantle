@@ -28,16 +28,16 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/cli"
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar/mantle/cli"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/kola/register"
 
 	// register OS test suite
-	_ "github.com/flatcar-linux/mantle/kola/registry"
+	_ "github.com/flatcar/mantle/kola/registry"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola")
 
 	root = &cobra.Command{
 		Use:   "kola [command]",
@@ -98,7 +98,7 @@ func preRun(cmd *cobra.Command, args []string) {
 
 	// EquinixMetal uses storage, and storage talks too much.
 	if !plog.LevelAt(capnslog.INFO) {
-		mantleLogger := capnslog.MustRepoLogger("github.com/flatcar-linux/mantle")
+		mantleLogger := capnslog.MustRepoLogger("github.com/flatcar/mantle")
 		mantleLogger.SetLogLevel(map[string]capnslog.LogLevel{
 			"storage": capnslog.WARNING,
 		})

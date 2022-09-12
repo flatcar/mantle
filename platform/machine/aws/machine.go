@@ -24,8 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/util"
 )
 
 type machine struct {

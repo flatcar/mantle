@@ -24,13 +24,13 @@ import (
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/util"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/do")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/api/do")
 )
 
 type Options struct {

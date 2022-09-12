@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/harness"
-	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar/mantle/harness"
+	"github.com/flatcar/mantle/platform"
 )
 
 // TestCluster embedds a Cluster to provide platform independant helper

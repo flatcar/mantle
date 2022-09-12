@@ -211,6 +211,10 @@ github.com/flatcar-linux/container-linux-config-transpiler v0.9.3-0.202202081525
 github.com/flatcar-linux/ignition v0.36.1/go.mod h1:0jS5n4AopgOdwgi7QDo5MFgkMx/fQUDYjuxlGJC1Txg=
 github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba h1:HiTCL7737Hi944kXfLN8ReGoJtAiibGIsCk3MGlYy9M=
 github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba/go.mod h1:JzHCIdCu9dy0xtezyBit/aOY4QIlJ12UYU6nXNPnnRE=
+github.com/flatcar/container-linux-config-transpiler v0.9.4 h1:yXQ0NB8PeNrKJPrZvbv5/DV63PNhTqt8vaf8YxmX/RA=
+github.com/flatcar/container-linux-config-transpiler v0.9.4/go.mod h1:LxanhPvXkWgHG9PrkT4rX/p7YhUPdDGGsUdkNpV3L5U=
+github.com/flatcar/ignition v0.36.2 h1:xGHgScUe0P4Fkprjqv7L2CE58emiQgP833OCCn9z2v4=
+github.com/flatcar/ignition v0.36.2/go.mod h1:uk1tpzLFRXus4RrvzgMI+IqmmB8a/RGFSBlI+tMTbbA=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/form3tech-oss/jwt-go v3.2.3+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/form3tech-oss/jwt-go v3.2.5+incompatible h1:/l4kBbb4/vGSsdtB5nUe8L7B9mImVMaBPw9L/0TBHU8=

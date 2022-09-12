@@ -38,9 +38,9 @@ import (
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 type Options struct {
@@ -72,7 +72,7 @@ type IpPair struct {
 	SubnetSize int
 }
 
-var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/esx")
+var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/api/esx")
 
 type API struct {
 	options *Options

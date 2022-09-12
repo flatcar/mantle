@@ -20,8 +20,8 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/system/exec"
-	"github.com/flatcar-linux/mantle/version"
+	"github.com/flatcar/mantle/system/exec"
+	"github.com/flatcar/mantle/version"
 )
 
 var (
@@ -38,7 +38,7 @@ var (
 	logVerbose bool
 	logLevel   = capnslog.NOTICE
 
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "cli")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "cli")
 )
 
 // Execute sets up common features that all mantle commands should share

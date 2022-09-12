@@ -38,13 +38,13 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 	ugroups "github.com/gophercloud/utils/openstack/networking/v2/extensions/security/groups"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/util"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/api/openstack")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/api/openstack")
 )
 
 type Options struct {

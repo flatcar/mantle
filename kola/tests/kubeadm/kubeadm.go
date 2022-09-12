@@ -24,13 +24,13 @@ import (
 	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/kola/tests/etcd"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/tests/etcd"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/util"
 )
 
 // extraTest is a regular test except that the `runFunc` takes
@@ -184,7 +184,7 @@ var (
 			"cgroupv1": false,
 		},
 	}
-	plog       = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/kubeadm")
+	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
 etcd:
   advertise_client_urls: http://{PRIVATE_IPV4}:2379

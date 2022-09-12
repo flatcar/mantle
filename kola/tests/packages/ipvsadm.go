@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/cluster"
 )
 
 func ipvsadm(c cluster.TestCluster) {

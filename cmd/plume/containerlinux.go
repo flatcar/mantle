@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/flatcar-linux/mantle/lang/maps"
-	"github.com/flatcar-linux/mantle/sdk"
+	"github.com/flatcar/mantle/lang/maps"
+	"github.com/flatcar/mantle/sdk"
 )
 
 var (

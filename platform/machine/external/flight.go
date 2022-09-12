@@ -18,9 +18,9 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
 
-	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
-	"github.com/flatcar-linux/mantle/network"
-	"github.com/flatcar-linux/mantle/platform"
+	ctplatform "github.com/flatcar/container-linux-config-transpiler/config/platform"
+	"github.com/flatcar/mantle/network"
+	"github.com/flatcar/mantle/platform"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/external")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/machine/external")
 )
 
 type flight struct {

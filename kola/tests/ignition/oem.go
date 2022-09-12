@@ -16,9 +16,9 @@ package ignition
 
 import (
 	"github.com/coreos/go-semver/semver"
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 func init() {
@@ -73,7 +73,7 @@ func init() {
 		ClusterSize: 1,
 		// `wiping` the OEM file system does not allow the instance to boot on platforms
 		// different from QEMU.
-		// More details: https://github.com/flatcar-linux/Flatcar/issues/514.
+		// More details: https://github.com/flatcar/Flatcar/issues/514.
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		UserData: conf.ContainerLinuxConfig(`storage:
   filesystems:
