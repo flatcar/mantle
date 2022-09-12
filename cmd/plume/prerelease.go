@@ -532,7 +532,57 @@ type amiList struct {
 	Entries []amiListEntry `json:"amis"`
 }
 
-func awsUploadAmiLists(ctx context.Context, bucket *storage.Bucket, spec *channelSpec, amis *amiList) error {
+type amiFile struct {
+	Name    string
+	Content string
+}
+
+func awsCreateAmiLists(amis *amiList) ([]amiFile, error) {
+	var amiFiles []amiFile
+	// emit keys in stable order
+	sort.Slice(amis.Entries, func(i, j int) bool {
+		return amis.Entries[i].Region < amis.Entries[j].Region
+	})
+
+	// format JSON AMI list
+	var jsonBuf bytes.Buffer
+	encoder := json.NewEncoder(&jsonBuf)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(amis); err != nil {
+		return nil, fmt.Errorf("couldn't encode JSON: %v", err)
+	}
+	jsonAll := jsonBuf.String()
+
+	// format text AMI lists for individual regions
+	var hvmRecords []string
+	for _, entry := range amis.Entries {
+		hvmRecords = append(hvmRecords,
+			fmt.Sprintf("%v=%v", entry.Region, entry.HvmAmi))
+
+		content := entry.HvmAmi + "\n"
+		amiFiles = append(amiFiles, amiFile{Name: fmt.Sprintf("hvm_%v.txt", entry.Region), Content: content})
+		amiFiles = append(amiFiles, amiFile{Name: fmt.Sprintf("%v.txt", entry.Region), Content: content})
+	}
+	hvmAll := strings.Join(hvmRecords, "|") + "\n"
+
+	amiFiles = append(amiFiles, amiFile{Name: "all.json", Content: jsonAll})
+	amiFiles = append(amiFiles, amiFile{Name: "hvm.txt", Content: hvmAll})
+	amiFiles = append(amiFiles, amiFile{Name: "all.txt", Content: hvmAll})
+
+	return amiFiles, nil
+}
+
+func awsWriteAmiLists(amiFiles []amiFile) error {
+	for _, amiFileEntry := range amiFiles {
+		if err := os.WriteFile("flatcar_production_ami_"+amiFileEntry.Name, []byte(amiFileEntry.Content), 0644); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func awsUploadAmiLists(ctx context.Context, bucket *storage.Bucket, spec *channelSpec, amiFiles []amiFile) error {
 	upload := func(name string, data string) error {
 		var contentType string
 		if strings.HasSuffix(name, ".txt") {
@@ -554,47 +604,10 @@ func awsUploadAmiLists(ctx context.Context, bucket *storage.Bucket, spec *channe
 		return nil
 	}
 
-	// emit keys in stable order
-	sort.Slice(amis.Entries, func(i, j int) bool {
-		return amis.Entries[i].Region < amis.Entries[j].Region
-	})
-
-	// format JSON AMI list
-	var jsonBuf bytes.Buffer
-	encoder := json.NewEncoder(&jsonBuf)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(amis); err != nil {
-		return fmt.Errorf("couldn't encode JSON: %v", err)
-	}
-	jsonAll := jsonBuf.String()
-
-	// format text AMI lists and upload AMI IDs for individual regions
-	var hvmRecords []string
-	for _, entry := range amis.Entries {
-		hvmRecords = append(hvmRecords,
-			fmt.Sprintf("%v=%v", entry.Region, entry.HvmAmi))
-
-		if err := upload(fmt.Sprintf("hvm_%v.txt", entry.Region),
-			entry.HvmAmi+"\n"); err != nil {
+	for _, amiFileEntry := range amiFiles {
+		if err := upload(amiFileEntry.Name, amiFileEntry.Content); err != nil {
 			return err
 		}
-		if err := upload(fmt.Sprintf("%v.txt", entry.Region),
-			entry.HvmAmi+"\n"); err != nil {
-			return err
-		}
-	}
-	hvmAll := strings.Join(hvmRecords, "|") + "\n"
-
-	// upload AMI lists
-	if err := upload("all.json", jsonAll); err != nil {
-		return err
-	}
-	if err := upload("hvm.txt", hvmAll); err != nil {
-		return err
-	}
-	// compatibility
-	if err := upload("all.txt", hvmAll); err != nil {
-		return err
 	}
 
 	return nil
@@ -638,8 +651,17 @@ func awsPreRelease(ctx context.Context, client *http.Client, src *storage.Bucket
 		}
 	}
 
+	amiFiles, err := awsCreateAmiLists(&amis)
+	if err != nil {
+		return fmt.Errorf("creating AMI ID list files: %v", err)
+	}
+
+	if err := awsWriteAmiLists(amiFiles); err != nil {
+		return fmt.Errorf("writing AMI ID list files: %v", err)
+	}
+
 	if gceJSONKeyFile != "none" {
-		if err := awsUploadAmiLists(ctx, src, spec, &amis); err != nil {
+		if err := awsUploadAmiLists(ctx, src, spec, amiFiles); err != nil {
 			return fmt.Errorf("uploading AMI IDs: %v", err)
 		}
 	}
