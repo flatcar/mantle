@@ -19,27 +19,9 @@ and options.
 ## Tools
 
 ### cork
-Cork is a tool that helps working with Container Linux images and the SDK.
+Cork is a now-deprecated tool that was used to help in working with Container Linux images and the SDK.
 
-#### cork create
-Download and unpack the Container Linux SDK.
-
-`cork create`
-
-#### cork enter
-Enter the SDK chroot, and optionally run a command. The command and its
-arguments can be given after `--`.
-
-`cork enter -- repo sync`
-
-#### cork download-image
-Download a Container Linux image into `$PWD/.cache/images`.
-
-`cork download-image --platform=qemu`
-
-#### Building Container Linux with cork
-See [Modifying Container Linux](https://docs.flatcar-linux.org/os/sdk-modifying-coreos/) for
-an example of using cork to build a Container Linux image.
+Please see [developer guides](https://www.flatcar.org/docs/latest/reference/developer-guides/) to see how to work with Flatcar SDK.
 
 ### gangue
 Gangue is a tool for downloading and verifying files from Google Storage with authenticated requests.
@@ -93,7 +75,7 @@ cd mantle
 Alternatively, there is a container image with the required dependencies and the mantle binaries for the latest commit on `flatcar-master`:
 
 ```
-sudo docker run --privileged --net host -v /dev:/dev --rm -it ghcr.io/flatcar-linux/mantle:git-$(git rev-parse HEAD)
+sudo docker run --privileged --net host -v /dev:/dev --rm -it ghcr.io/flatcar/mantle:git-$(git rev-parse HEAD)
 # inside the container you can run "kola …" because it is in the PATH, and "sudo kola" is also not needed
 ```
 
@@ -219,7 +201,7 @@ kola package.  `Register(*Test)` is called per test. A kola `Test`
 struct requires a unique name, and a single function that is the entry
 point into the test. Additionally, userdata (such as a Container Linux
 Config) can be supplied. See the `Test` struct in
-[kola/register/register.go](https://github.com/flatcar-linux/mantle/tree/master/kola/register/register.go)
+[kola/register/register.go](https://github.com/flatcar/mantle/tree/master/kola/register/register.go)
 for a complete list of options.
 
 #### kola test writing
@@ -232,7 +214,7 @@ give you access to a running cluster of Container Linux machines. A test writer
 can interact with these machines through this interface.
 
 To see test examples look under
-[kola/tests](https://github.com/flatcar-linux/mantle/tree/master/kola/tests) in the
+[kola/tests](https://github.com/flatcar/mantle/tree/master/kola/tests) in the
 mantle codebase.
 
 For a quickstart see [kola/README.md](/kola/README.md).
@@ -250,7 +232,7 @@ a kola test using a `TestCluster`'s `RunNative` method. The function
 itself is then run natively on the specified running Container Linux instances.
 
 For more examples, look at the
-[coretest](https://github.com/flatcar-linux/mantle/tree/master/kola/tests/coretest)
+[coretest](https://github.com/flatcar/mantle/tree/master/kola/tests/coretest)
 suite of tests under kola. These tests were ported into kola and make
 heavy use of the native code interface.
 
