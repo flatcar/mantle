@@ -22,7 +22,7 @@ import (
 	"github.com/kballard/go-shellquote"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar/mantle/system/exec"
 )
 
 type Recorder struct {

@@ -23,13 +23,13 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/kola/tests/etcd"
-	"github.com/flatcar-linux/mantle/lang/worker"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/tests/etcd"
+	"github.com/flatcar/mantle/lang/worker"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/util"
 )
 
 func init() {

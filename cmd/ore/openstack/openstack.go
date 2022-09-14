@@ -20,13 +20,13 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/cli"
-	"github.com/flatcar-linux/mantle/platform/api/openstack"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/cli"
+	"github.com/flatcar/mantle/platform/api/openstack"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/openstack")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "ore/openstack")
 
 	OpenStack = &cobra.Command{
 		Use:   "openstack [command]",

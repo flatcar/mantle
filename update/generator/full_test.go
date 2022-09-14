@@ -21,9 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/flatcar-linux/mantle/system"
-	"github.com/flatcar-linux/mantle/system/exec"
-	"github.com/flatcar-linux/mantle/update/metadata"
+	"github.com/flatcar/mantle/system"
+	"github.com/flatcar/mantle/system/exec"
+	"github.com/flatcar/mantle/update/metadata"
 )
 
 func TestFullUpdateScanEmpty(t *testing.T) {

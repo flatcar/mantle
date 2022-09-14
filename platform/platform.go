@@ -27,12 +27,12 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/util"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform")
 )
 
 // Name is a unique identifier for a platform.

@@ -19,7 +19,7 @@ import (
 
 	"github.com/vishvananda/netns"
 
-	"github.com/flatcar-linux/mantle/system/ns"
+	"github.com/flatcar/mantle/system/ns"
 )
 
 // NsDialer is a RetryDialer that can enter any network namespace.

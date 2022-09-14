@@ -249,35 +249,35 @@ github.com/dimchansky/utfbom
 # github.com/dustin/go-humanize v1.0.0
 ## explicit
 github.com/dustin/go-humanize
-# github.com/flatcar-linux/container-linux-config-transpiler v0.9.3-0.20220208152502-6e8303479682
+# github.com/flatcar/container-linux-config-transpiler v0.9.4
 ## explicit; go 1.16
-github.com/flatcar-linux/container-linux-config-transpiler/config
-github.com/flatcar-linux/container-linux-config-transpiler/config/astyaml
-github.com/flatcar-linux/container-linux-config-transpiler/config/platform
-github.com/flatcar-linux/container-linux-config-transpiler/config/templating
-github.com/flatcar-linux/container-linux-config-transpiler/config/types
-github.com/flatcar-linux/container-linux-config-transpiler/config/types/util
-github.com/flatcar-linux/container-linux-config-transpiler/internal/util
-# github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba
+github.com/flatcar/container-linux-config-transpiler/config
+github.com/flatcar/container-linux-config-transpiler/config/astyaml
+github.com/flatcar/container-linux-config-transpiler/config/platform
+github.com/flatcar/container-linux-config-transpiler/config/templating
+github.com/flatcar/container-linux-config-transpiler/config/types
+github.com/flatcar/container-linux-config-transpiler/config/types/util
+github.com/flatcar/container-linux-config-transpiler/internal/util
+# github.com/flatcar/ignition v0.36.2
 ## explicit; go 1.16
-github.com/flatcar-linux/ignition/config/shared/errors
-github.com/flatcar-linux/ignition/config/shared/validations
-github.com/flatcar-linux/ignition/config/util
-github.com/flatcar-linux/ignition/config/v1
-github.com/flatcar-linux/ignition/config/v1/types
-github.com/flatcar-linux/ignition/config/v2_0
-github.com/flatcar-linux/ignition/config/v2_0/types
-github.com/flatcar-linux/ignition/config/v2_1
-github.com/flatcar-linux/ignition/config/v2_1/types
-github.com/flatcar-linux/ignition/config/v2_2
-github.com/flatcar-linux/ignition/config/v2_2/types
-github.com/flatcar-linux/ignition/config/v2_3
-github.com/flatcar-linux/ignition/config/v2_3/types
-github.com/flatcar-linux/ignition/config/v2_4/types
-github.com/flatcar-linux/ignition/config/validate
-github.com/flatcar-linux/ignition/config/validate/astjson
-github.com/flatcar-linux/ignition/config/validate/astnode
-github.com/flatcar-linux/ignition/config/validate/report
+github.com/flatcar/ignition/config/shared/errors
+github.com/flatcar/ignition/config/shared/validations
+github.com/flatcar/ignition/config/util
+github.com/flatcar/ignition/config/v1
+github.com/flatcar/ignition/config/v1/types
+github.com/flatcar/ignition/config/v2_0
+github.com/flatcar/ignition/config/v2_0/types
+github.com/flatcar/ignition/config/v2_1
+github.com/flatcar/ignition/config/v2_1/types
+github.com/flatcar/ignition/config/v2_2
+github.com/flatcar/ignition/config/v2_2/types
+github.com/flatcar/ignition/config/v2_3
+github.com/flatcar/ignition/config/v2_3/types
+github.com/flatcar/ignition/config/v2_4/types
+github.com/flatcar/ignition/config/validate
+github.com/flatcar/ignition/config/validate/astjson
+github.com/flatcar/ignition/config/validate/astnode
+github.com/flatcar/ignition/config/validate/report
 # github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 ## explicit
 github.com/form3tech-oss/jwt-go

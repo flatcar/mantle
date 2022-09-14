@@ -15,7 +15,7 @@
 package azure
 
 import (
-	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar/mantle/platform"
 )
 
 type Options struct {

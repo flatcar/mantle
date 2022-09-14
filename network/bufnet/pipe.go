@@ -11,7 +11,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/flatcar-linux/mantle/lang/bufpipe"
+	"github.com/flatcar/mantle/lang/bufpipe"
 )
 
 // Pipe creates a synchronous, in-memory, full duplex

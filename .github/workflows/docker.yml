@@ -8,7 +8,7 @@ on:
       - 'flatcar-master'
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: flatcar-linux/mantle
+  IMAGE_NAME: flatcar/mantle
 
 jobs:
   docker:

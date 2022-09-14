@@ -24,8 +24,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/flatcar-linux/mantle/update/metadata"
-	"github.com/flatcar-linux/mantle/update/signature"
+	"github.com/flatcar/mantle/update/metadata"
+	"github.com/flatcar/mantle/update/signature"
 )
 
 var (

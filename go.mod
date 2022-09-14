@@ -1,4 +1,4 @@
-module github.com/flatcar-linux/mantle
+module github.com/flatcar/mantle
 
 go 1.19
 
@@ -17,8 +17,6 @@ require (
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/digitalocean/godo v1.45.0
-	github.com/flatcar-linux/container-linux-config-transpiler v0.9.3-0.20220208152502-6e8303479682
-	github.com/flatcar-linux/ignition v0.36.2-0.20220221101037-de4e6cc9bbba
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.2
 	github.com/gophercloud/gophercloud v0.25.0
@@ -73,6 +71,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/flatcar/container-linux-config-transpiler v0.9.4 // indirect
+	github.com/flatcar/ignition v0.36.2 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

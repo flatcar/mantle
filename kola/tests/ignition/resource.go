@@ -23,11 +23,11 @@ import (
 	"github.com/coreos/go-semver/semver"
 	"github.com/pin/tftp"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/platform/machine/equinixmetal"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/machine/equinixmetal"
 )
 
 var (

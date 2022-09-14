@@ -18,13 +18,13 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/cli"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	"github.com/flatcar/mantle/cli"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/api/gcloud"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/gce")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "ore/gce")
 
 	GCloud = &cobra.Command{
 		Use:   "gcloud [command]",

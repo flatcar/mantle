@@ -15,8 +15,8 @@
 package ignition
 
 import (
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 func init() {

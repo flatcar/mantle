@@ -19,7 +19,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/platform/api/aws"
+	"github.com/flatcar/mantle/platform/api/aws"
 	"github.com/spf13/cobra"
 )
 

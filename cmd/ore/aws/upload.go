@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/platform/api/aws"
-	"github.com/flatcar-linux/mantle/sdk"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/platform/api/aws"
+	"github.com/flatcar/mantle/sdk"
+	"github.com/flatcar/mantle/util"
 	"github.com/spf13/cobra"
 )
 

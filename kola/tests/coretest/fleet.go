@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/util"
 )
 
 const (

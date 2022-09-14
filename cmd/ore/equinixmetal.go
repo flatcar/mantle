@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/flatcar-linux/mantle/cmd/ore/equinixmetal"
+	"github.com/flatcar/mantle/cmd/ore/equinixmetal"
 )
 
 func init() {

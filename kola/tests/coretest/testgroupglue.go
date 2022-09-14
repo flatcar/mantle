@@ -1,7 +1,7 @@
 package coretest
 
 import (
-	"github.com/flatcar-linux/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/cluster"
 )
 
 // run various native functions that only require a single machine

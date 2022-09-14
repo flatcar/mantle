@@ -8,11 +8,11 @@ import (
 	"text/template"
 
 	"github.com/coreos/go-semver/semver"
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/kola/tests/docker"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/tests/docker"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 type gadget struct {
@@ -140,7 +140,7 @@ func localGadgetTest(c cluster.TestCluster) {
 
 		docker.GenDockerImage(c, node, "dig", []string{"dig"})
 
-		if _, err := c.SSH(node, "docker run --rm --name shell01 dig dig flatcar-linux.org"); err != nil {
+		if _, err := c.SSH(node, "docker run --rm --name shell01 dig dig flatcar.org"); err != nil {
 			c.Fatalf("unable to run docker cmd: %v", err)
 		}
 
@@ -151,8 +151,8 @@ func localGadgetTest(c cluster.TestCluster) {
 
 		name := string(out)
 
-		if name != "flatcar-linux.org." {
-			c.Fatalf("should have 'flatcar-linux.org.', got: %v", err)
+		if name != "flatcar.org." {
+			c.Fatalf("should have 'flatcar.org.', got: %v", err)
 		}
 	})
 }

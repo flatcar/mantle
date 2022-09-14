@@ -28,12 +28,12 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/flatcar-linux/mantle/sdk"
-	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar/mantle/sdk"
+	"github.com/flatcar/mantle/system/exec"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "sdk/repo")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "sdk/repo")
 
 	Unimplemented = errors.New("repo: unimplemented feature in manifest")
 	MissingField  = errors.New("repo: missing required field in manifest")

@@ -5,9 +5,9 @@ package ignition
 
 import (
 	"github.com/coreos/go-semver/semver"
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 func init() {

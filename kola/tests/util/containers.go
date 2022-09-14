@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/platform"
 )
 
 // GenPodmanScratchContainer creates a podman scratch container out of binaries from the host

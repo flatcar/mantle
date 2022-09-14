@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	ctplatform "github.com/flatcar/container-linux-config-transpiler/config/platform"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 var (

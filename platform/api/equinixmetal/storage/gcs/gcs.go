@@ -9,8 +9,8 @@ import (
 
 	gs "google.golang.org/api/storage/v1"
 
-	"github.com/flatcar-linux/mantle/platform/api/equinixmetal/storage"
-	ms "github.com/flatcar-linux/mantle/storage"
+	"github.com/flatcar/mantle/platform/api/equinixmetal/storage"
+	ms "github.com/flatcar/mantle/storage"
 )
 
 func New(bucket *ms.Bucket) storage.Storage {

@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
-	"github.com/flatcar-linux/mantle/auth"
-	"github.com/flatcar-linux/mantle/storage"
-	"github.com/flatcar-linux/mantle/storage/index"
+	"github.com/flatcar/mantle/auth"
+	"github.com/flatcar/mantle/storage"
+	"github.com/flatcar/mantle/storage/index"
 )
 
 var (

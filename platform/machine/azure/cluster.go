@@ -20,9 +20,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/azure"
-	"github.com/flatcar-linux/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/api/azure"
+	"github.com/flatcar/mantle/platform/conf"
 )
 
 type cluster struct {

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flatcar-linux/mantle/sdk"
+	"github.com/flatcar/mantle/sdk"
 	"github.com/spf13/cobra"
 )
 

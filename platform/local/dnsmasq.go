@@ -29,9 +29,9 @@ import (
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 
-	"github.com/flatcar-linux/mantle/system/exec"
-	"github.com/flatcar-linux/mantle/system/ns"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/system/exec"
+	"github.com/flatcar/mantle/system/ns"
+	"github.com/flatcar/mantle/util"
 )
 
 var (
@@ -120,7 +120,7 @@ dhcp-host={{.HardwareAddr}}{{template "ips" .DHCPv4}}{{template "ips" .DHCPv6}}
 `
 )
 
-var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/local")
+var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/local")
 
 func newInterface(s byte, i uint16) *Interface {
 	return &Interface{

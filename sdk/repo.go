@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/flatcar-linux/mantle/system"
-	"github.com/flatcar-linux/mantle/system/exec"
+	"github.com/flatcar/mantle/system"
+	"github.com/flatcar/mantle/system/exec"
 )
 
 const (

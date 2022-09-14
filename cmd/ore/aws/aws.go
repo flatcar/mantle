@@ -19,14 +19,14 @@ import (
 	"os"
 
 	"github.com/coreos/pkg/capnslog"
-	"github.com/flatcar-linux/mantle/cli"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/aws"
+	"github.com/flatcar/mantle/cli"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/api/aws"
 	"github.com/spf13/cobra"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "ore/aws")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "ore/aws")
 
 	AWS = &cobra.Command{
 		Use:   "aws [command]",

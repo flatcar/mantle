@@ -10,16 +10,16 @@ import (
 	"time"
 
 	"github.com/coreos/pkg/capnslog"
-	"github.com/flatcar-linux/mantle/kola/cluster"
-	"github.com/flatcar-linux/mantle/kola/register"
-	"github.com/flatcar-linux/mantle/util"
+	"github.com/flatcar/mantle/kola/cluster"
+	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/util"
 )
 
 // cmdPrefix is a temporary hack to pull `bcc` tools into Flatcar
 const cmdPrefix = "docker run -d --name %s -v /lib/modules:/lib/modules -v /sys/kernel/debug:/sys/kernel/debug -v /sys/fs/cgroup:/sys/fs/cgroup -v /sys/fs/bpf:/sys/fs/bpf --privileged --net host --pid host quay.io/iovisor/bcc %s"
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "kola/tests/bpf")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/bpf")
 )
 
 // Log defines the standard log format

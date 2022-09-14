@@ -18,10 +18,10 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar-linux/mantle/cli"
+	"github.com/flatcar/mantle/cli"
 )
 
-var plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "cork")
+var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "cork")
 var root = &cobra.Command{
 	Use:   "cork [command]",
 	Short: "The CoreOS SDK Manager",

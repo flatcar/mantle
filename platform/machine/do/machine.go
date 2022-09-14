@@ -21,7 +21,7 @@ import (
 	"github.com/digitalocean/godo"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/flatcar-linux/mantle/platform"
+	"github.com/flatcar/mantle/platform"
 )
 
 type machine struct {

@@ -24,11 +24,11 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/flatcar-linux/mantle/update/metadata"
+	"github.com/flatcar/mantle/update/metadata"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "update")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "update")
 )
 
 type Updater struct {

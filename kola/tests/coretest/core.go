@@ -11,7 +11,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/flatcar-linux/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/register"
 )
 
 const (

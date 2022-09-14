@@ -19,9 +19,9 @@ package gcloud
 import (
 	"github.com/coreos/pkg/capnslog"
 
-	ctplatform "github.com/flatcar-linux/container-linux-config-transpiler/config/platform"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/api/gcloud"
+	ctplatform "github.com/flatcar/container-linux-config-transpiler/config/platform"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/api/gcloud"
 )
 
 type flight struct {
@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar-linux/mantle", "platform/machine/gcloud")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/machine/gcloud")
 )
 
 func NewFlight(opts *gcloud.Options) (platform.Flight, error) {

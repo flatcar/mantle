@@ -28,12 +28,12 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/flatcar-linux/mantle/kola"
-	"github.com/flatcar-linux/mantle/platform"
-	"github.com/flatcar-linux/mantle/platform/conf"
-	"github.com/flatcar-linux/mantle/platform/machine/qemu"
-	"github.com/flatcar-linux/mantle/sdk"
-	sdkomaha "github.com/flatcar-linux/mantle/sdk/omaha"
+	"github.com/flatcar/mantle/kola"
+	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/machine/qemu"
+	"github.com/flatcar/mantle/sdk"
+	sdkomaha "github.com/flatcar/mantle/sdk/omaha"
 )
 
 var (
