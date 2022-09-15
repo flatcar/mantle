@@ -218,6 +218,8 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		Distros:   []string{"cl"},
+		// TODO: Revisit this flag when updating SELinux policies.
+		Flags: []register.Flag{register.NoEnableSelinux},
 	})
 }
 
