@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Security
+
+### Added
+- AMI publishing on the AWS Marketplace ([#369](https://github.com/flatcar-linux/mantle/pull/369))
+- plume: generate AMI ID files locally ([#373](https://github.com/flatcar/mantle/pull/373))
+
+
+### Changed
+- organization renaming (`flatcar-linux` -> `flatcar`) ([#372](https://github.com/flatcar/mantle/pull/372), [#374](https://github.com/flatcar/mantle/pull/374))
+- plume: consume images from bincache ([#371](https://github.com/flatcar/mantle/pull/371))
+
+### Removed
+
+### Fixed
+
+## [v0.19.0] - 15/09/2022
+### Security
 - go: Update golang.org/x/net ([#279](https://github.com/flatcar-linux/mantle/pull/279))
 - go: Update golang.org/x/crypto ([#332](https://github.com/flatcar-linux/mantle/pull/332))
 
@@ -33,7 +49,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Kubernetes test for release 1.25.0 ([#360](https://github.com/flatcar-linux/mantle/pull/360))
 - Configurable timeouts for installation and launching Equinix Metal instances through `--equinixmetal-install-timeout` and `--equinixmetal-launch-timeout` flags ([#354](https://github.com/flatcar-linux/mantle/pull/354))
 - Configurable timeouts for attaching to machine's journal and for machine checks through `--ssh-retries` and `--ssh-timeout` flags ([#354](https://github.com/flatcar-linux/mantle/pull/354))
-- AMI publishing on the AWS Marketplace ([#369](https://github.com/flatcar-linux/mantle/pull/369))
 
 ### Changed
 - removed `packet` occurrences in favor of `equinixmetal` ([#277](https://github.com/flatcar-linux/mantle/pull/277))
