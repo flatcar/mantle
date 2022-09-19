@@ -56,7 +56,7 @@ func init() {
 	cmdRelease.Flags().BoolVarP(&publishMarketplace, "publish-marketplace", "", false,
 		"publish on the AWS marketplace")
 	cmdRelease.Flags().StringVar(&accessRoleARN, "access-role-arn", "", "ARN to give marketplace access to the AMI")
-	cmdRelease.Flags().StringVar(&productID, "product-id", "", "AWS Marketplace offer ID")
+	cmdRelease.Flags().StringSliceVar(&productIDs, "product-ids", []string{}, "AWS Marketplace offer IDs")
 	cmdRelease.Flags().StringVar(&awsMarketplaceCredentialsFile, "aws-marketplace-credentials", "", "AWS Marketplace credentials file")
 	cmdRelease.Flags().StringVar(&username, "username", "core", "default username")
 	AddSpecFlags(cmdRelease.Flags())
@@ -475,9 +475,12 @@ func doAWS(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 						instanceType = "m6g.medium"
 					}
 
-					if err := marketplace.UpdateProduct(imageID, accessRoleARN, username, specVersion, productID, instanceType, releaseDryRun); err != nil {
-						return fmt.Errorf("updating product with ID %s: %w", productID, err)
+					for _, pid := range productIDs {
+						if err := marketplace.UpdateProduct(imageID, accessRoleARN, username, specVersion, pid, instanceType, releaseDryRun); err != nil {
+							return fmt.Errorf("updating product with ID %s: %w", pid, err)
+						}
 					}
+
 				}
 
 				return nil

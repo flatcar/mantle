@@ -72,8 +72,8 @@ var (
 	awsCredentialsFile string
 	verifyKeyFile      string
 	imageInfoFile      string
-	// productID is the AWS Marketplace offer ID.
-	productID string
+	// productIDs are the AWS Marketplace offer ID.
+	productIDs []string
 	// accessRoleARN is the ARN to give marketplace access to the AMI.
 	accessRoleARN string
 	// awsMarketplaceCredentialsFile is used for publishing
