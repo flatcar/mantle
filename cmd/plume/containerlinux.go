@@ -322,7 +322,15 @@ func (cs channelSpec) SourceURL() string {
 	if err != nil {
 		panic(err)
 	}
-	u.Path = path.Join(u.Path, specBoard, specVersion)
+
+	// We conditionnally drop the '-usr' of the board based on the
+	// URL scheme of the BaseURL.
+	arch := specBoard
+	if u.Scheme != "gs" {
+		arch = strings.TrimSuffix(specBoard, "-usr")
+	}
+
+	u.Path = path.Join(u.Path, arch, specVersion)
 	return u.String()
 }
 
