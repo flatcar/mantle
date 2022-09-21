@@ -41,7 +41,10 @@ type Cluster struct {
 }
 
 func (qc *Cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
-	return qc.NewMachineWithOptions(userdata, platform.MachineOptions{})
+	options := platform.MachineOptions{
+		ExtraPrimaryDiskSize: qc.flight.opts.ExtraBaseDiskSize,
+	}
+	return qc.NewMachineWithOptions(userdata, options)
 }
 
 func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platform.MachineOptions) (platform.Machine, error) {

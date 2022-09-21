@@ -42,6 +42,8 @@ type Options struct {
 	// Don't modify CL disk images to add console logging
 	UseVanillaImage bool
 
+	ExtraBaseDiskSize string
+
 	*platform.Options
 }
 
