@@ -232,6 +232,12 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 	}
 
 	name := fmt.Sprintf("%s-%s", spec.GCE.Family, sanitizeVersion())
+
+	// We extend the name with '-arm64' suffix to avoid conflicting image name.
+	if specBoard == "arm64-usr" {
+		name = name + "-arm64"
+	}
+
 	date := time.Now().UTC()
 	desc := fmt.Sprintf("%s, %s, %s published on %s", spec.GCE.Description,
 		specVersion, specBoard, date.Format("2006-01-02"))
