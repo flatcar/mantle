@@ -17,6 +17,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -29,6 +31,7 @@ import (
 	"github.com/flatcar/mantle/platform/api/aws"
 	"github.com/flatcar/mantle/platform/api/azure"
 	"github.com/flatcar/mantle/platform/api/gcloud"
+	"github.com/flatcar/mantle/sdk"
 	"github.com/flatcar/mantle/storage"
 	"github.com/flatcar/mantle/storage/index"
 )
@@ -97,8 +100,16 @@ func runCLRelease(cmd *cobra.Command, args []string) error {
 		plog.Fatalf("File not found: %s", verurl)
 	}
 
-	// Register GCE image if needed.
-	doGCE(ctx, client, src, &spec)
+	// We do not provide yet ARM64 image for Google.
+	if specBoard == "amd64-usr" {
+		// Create a GCS bucket client to temporary upload the GCE image on GCS.
+		gcs, err := storage.NewBucket(client, "gs://flatcar-jenkins")
+		if err != nil {
+			plog.Fatalf("creating GCE bucket client: %v", err)
+		}
+
+		doGCE(ctx, client, gcs, &spec)
+	}
 
 	// Make Azure images public.
 	doAzure(ctx, client, src, &spec)
@@ -184,13 +195,14 @@ func gceWaitForImage(pending *gcloud.Pending) {
 
 func gceUploadImage(spec *channelSpec, api *gcloud.API, obj *gs.Object, name, desc string) string {
 	plog.Noticef("Creating GCE image %s", name)
+	// Overwrite is set
 	op, pending, err := api.CreateImage(&gcloud.ImageSpec{
 		SourceImage: obj.MediaLink,
 		Family:      spec.GCE.Family,
 		Name:        name,
 		Description: desc,
 		Licenses:    spec.GCE.Licenses,
-	}, false)
+	}, true)
 	if err != nil {
 		plog.Fatalf("GCE image creation failed: %v", err)
 	}
@@ -220,6 +232,12 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 	}
 
 	name := fmt.Sprintf("%s-%s", spec.GCE.Family, sanitizeVersion())
+
+	// We extend the name with '-arm64' suffix to avoid conflicting image name.
+	if specBoard == "arm64-usr" {
+		name = name + "-arm64"
+	}
+
 	date := time.Now().UTC()
 	desc := fmt.Sprintf("%s, %s, %s published on %s", spec.GCE.Description,
 		specVersion, specBoard, date.Format("2006-01-02"))
@@ -229,11 +247,9 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		plog.Fatal(err)
 	}
 
-	var conflicting, oldImages []*compute.Image
+	var oldImages []*compute.Image
 	for _, image := range images {
-		if strings.HasPrefix(image.Name, name) {
-			conflicting = append(conflicting, image)
-		} else {
+		if !strings.HasPrefix(image.Name, name) {
 			oldImages = append(oldImages, image)
 		}
 	}
@@ -248,45 +264,57 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		return getCreation(oldImages[i]).After(getCreation(oldImages[j]))
 	})
 
+	// Prepare the URL to temporary store the downloaded GCE image.
+	gsURL, err := url.Parse(src.Prefix())
+	if err != nil {
+		plog.Fatalf("parsing GCS prefix URL: %v", err)
+	}
+
+	gsURL = gsURL.JoinPath(specChannel, "boards", specBoard, specVersion, spec.GCE.Image)
+
 	// Check for any with the same version but possibly different dates.
 	var imageLink string
-	if len(conflicting) > 1 {
-		plog.Fatalf("Duplicate GCE images found: %v", conflicting)
-	} else if len(conflicting) == 1 {
-		image := conflicting[0]
-		name = image.Name
-		imageLink = image.SelfLink
-
-		if image.Status == "FAILED" {
-			plog.Fatalf("Found existing GCE image %q in state %q", name, image.Status)
-		}
-
-		plog.Noticef("GCE image already exists: %s", name)
-
-		if releaseDryRun {
-			return
-		}
-
-		if image.Status == "PENDING" {
-			pending, err := api.GetPendingForImage(image)
-			if err != nil {
-				plog.Fatalf("Couldn't wait for image creation: %v", err)
-			}
-			gceWaitForImage(pending)
-		}
-	} else {
-		obj := src.Object(src.Prefix() + spec.GCE.Image)
-		if obj == nil {
-			plog.Fatalf("GCE image not found %s%s", src.URL(), spec.GCE.Image)
-		}
-
-		if releaseDryRun {
-			plog.Noticef("Would create GCE image %s", name)
-			return
-		}
-
-		imageLink = gceUploadImage(spec, api, obj, name, desc)
+	if releaseDryRun {
+		plog.Noticef("Would create GCE image %s", name)
+		return
 	}
+
+	// Download the image from the webserver, to temporary upload it on GCS.
+	// To create the Image on GCE, it's required to have a GCS URL.
+	imgURL, err := url.Parse(spec.SourceURL())
+	if err != nil {
+		plog.Fatalf("parsing webserver source URL: %v", err)
+	}
+
+	imgURL = imgURL.JoinPath(spec.GCE.Image)
+
+	// verify key is set to "" to use the embedded one.
+	if err := sdk.DownloadSignedFile(spec.GCE.Image, imgURL.String(), &http.Client{}, ""); err != nil {
+		plog.Fatalf("downloading GCE image from webserver: %v", err)
+	}
+
+	f, err := os.Open(spec.GCE.Image)
+	if err != nil {
+		plog.Fatalf("opening GCE image: %v", err)
+	}
+
+	defer f.Close()
+
+	o := gs.Object{Name: gsURL.String()}
+
+	// Required to overwrite an existing image.
+	src.WriteAlways(true)
+
+	if err := src.Upload(ctx, &o, f); err != nil {
+		plog.Fatalf("uploading GCE image to GCS: %v", err)
+	}
+
+	obj := src.Object(gsURL.String())
+	if obj == nil {
+		plog.Fatalf("GCE image not found %s%s", src.URL(), spec.GCE.Image)
+	}
+
+	imageLink = gceUploadImage(spec, api, obj, name, desc)
 
 	// Released images should be public
 	fmt.Printf("Setting image to have public access: %v\n", name)
