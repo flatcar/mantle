@@ -546,6 +546,18 @@ func (a *API) UploadImage(name, path string) (string, error) {
 			return "", fmt.Errorf("web uploading: %w", err)
 		}
 
+		// It usually takes around 10 seconds to extract the image.
+		if err := util.WaitUntilReady(1*time.Minute, 5*time.Second, func() (bool, error) {
+			image, err = images.Get(a.imageClient, image.ID).Extract()
+			if err != nil {
+				return false, fmt.Errorf("getting image status: %w", err)
+			}
+
+			return image.Status == images.ImageStatusActive, nil
+		}); err != nil {
+			return "", fmt.Errorf("getting image active: %w", err)
+		}
+
 		return image.ID, nil
 	}
 
