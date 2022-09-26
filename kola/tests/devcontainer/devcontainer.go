@@ -109,11 +109,16 @@ curl --fail --silent --show-error --location --retry-delay 1 --retry 60 \
         --retry-connrefused --retry-max-time 60 --connect-timeout 20 \
         --remote-name "${IMAGE_URL}"
 
+bzip2cat=bzcat
+if command -v lbzcat; then
+        bzip2cat=lbzcat
+fi
+
 # The image file takes over 6Gb after normal unpacking, but a lot of
 # it is just zeros. Use cp --sparse=always to avoid unnecessary disk
 # space waste. Especially that we may not have 6Gb of disk space
 # available.
-cp --sparse=always <(lbzcat flatcar_developer_container.bin.bz2) flatcar_developer_container.bin
+cp --sparse=always <("${bzip2cat}" flatcar_developer_container.bin.bz2) flatcar_developer_container.bin
 
 # PORTAGE_BINHOST and EXPECTED_VERSION are meant to be propagated to
 # the dev container as environment variables.
