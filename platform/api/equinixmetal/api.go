@@ -442,7 +442,7 @@ ExecStart=/usr/bin/cat
 StandardInput=socket
 StandardOutput=null
 `
-	installUnit := fmt.Sprintf(`
+	installUnit := `
 [Unit]
 Description=Install Container Linux
 
@@ -457,28 +457,38 @@ RestartSec=3s
 # Prevent flatcar-install from validating cloud-config
 Environment=PATH=/root/bin:/usr/sbin:/usr/bin
 
-ExecStart=/usr/bin/curl --retry-delay 1 --retry 120 --retry-connrefused --retry-max-time 120 --connect-timeout 20 -fo image.bin.bz2 "%v"
-# We don't verify signatures because the iPXE script isn't verified either
-# (and, in fact, is transferred over HTTP)
-
-ExecStartPre=-/bin/bash -c 'lvchange -an /dev/mapper/*'
-ExecStartPre=-/bin/bash -c 'shopt -s nullglob; for disk in /dev/*d? /dev/nvme?n1; do wipefs --all --force $${disk}; done'
-# 259 is a major number of NVMe devices. They need to be excluded, because
-# the boot agent can't boot from them.
-ExecStart=/usr/bin/flatcar-install -s -e 259 -f image.bin.bz2 %v /userdata
-
-ExecStart=/usr/bin/systemctl --no-block isolate reboot.target
+ExecStart=/opt/installer
 
 StandardOutput=journal+console
 StandardError=journal+console
 
 [Install]
 RequiredBy=multi-user.target
-`, escapedImageURL, userDataOption)
+`
 
 	// make workarounds
 	noopIgnitionConfig := base64.StdEncoding.EncodeToString([]byte(`{"ignition": {"version": "2.1.0"}}`))
 	coreosCloudInit := base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\nexit 0"))
+	installerScript := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`#!/bin/bash
+set -euo pipefail
+curl --retry-delay 1 --retry 120 --retry-connrefused --retry-max-time 120 --connect-timeout 20 -fsSLo image.bin.bz2 "%v"
+# We don't verify signatures because the iPXE script isn't verified either
+# (and, in fact, is transferred over HTTP)
+lvchange -an /dev/mapper/* || true
+shopt -s nullglob
+for disk in /dev/*d? /dev/nvme?n1; do
+  wipefs --all --force "${disk}" || true
+done
+# 259 is a major number of NVMe devices. They need to be excluded, because
+# the boot agent can't boot from them on s3.xlarge.x86.
+INSTANCE=$(curl --retry-delay 1 --retry 120 --retry-connrefused --retry-max-time 120 --connect-timeout 20 -fsSL 'https://metadata.packet.net/metadata' | jq -r '.plan')
+EXCLUDE=""
+if [ "${INSTANCE}" = "s3.xlarge.x86" ]; then
+  EXCLUDE="-e 259"
+fi
+flatcar-install -s ${EXCLUDE} -f image.bin.bz2 %v /userdata
+systemctl --no-block isolate reboot.target
+`, escapedImageURL, userDataOption)))
 
 	// make Ignition config
 	b64UserData := base64.StdEncoding.EncodeToString(conf.Bytes())
@@ -518,6 +528,17 @@ RequiredBy=multi-user.target
 						Source: ignition.Url{
 							Scheme: "data",
 							Opaque: ";base64," + coreosCloudInit,
+						},
+					},
+					Mode: 0755,
+				},
+				ignition.File{
+					Filesystem: "root",
+					Path:       "/opt/installer",
+					Contents: ignition.FileContents{
+						Source: ignition.Url{
+							Scheme: "data",
+							Opaque: ";base64," + installerScript,
 						},
 					},
 					Mode: 0755,
