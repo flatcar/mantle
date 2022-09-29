@@ -70,8 +70,8 @@ var (
 		"arm64-usr": "c3.large.arm",
 	}
 	linuxConsole = map[string]string{
-		"amd64-usr": "ttyS1,115200n8",
-		"arm64-usr": "ttyAMA0,115200n8",
+		"amd64-usr": "console=ttyS1,115200n8",
+		"arm64-usr": "",
 	}
 )
 
@@ -600,7 +600,7 @@ func (a *API) uploadObject(hostname, contentType string, data []byte) (string, s
 
 func (a *API) ipxeScript(userdataURL string) string {
 	return fmt.Sprintf(`#!ipxe
-kernel %s initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 flatcar.oem.id=packet ignition.config.url=%s console=%s
+kernel %s initrd=flatcar_production_pxe_image.cpio.gz flatcar.first_boot=1 flatcar.oem.id=packet ignition.config.url=%s %s
 initrd %s
 boot`, a.opts.InstallerImageKernelURL, userdataURL, linuxConsole[a.opts.Board], a.opts.InstallerImageCpioURL)
 }
