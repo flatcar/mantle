@@ -164,12 +164,15 @@ func updateMachine(c cluster.TestCluster, m platform.Machine) {
 	if err != nil {
 		c.Fatalf("Executing update_engine_client failed: %v: %v: %s", out, err, stderr)
 	}
+	c.Logf("%q stdout: %s", "update_engine_client -check_for_update", string(out))
+	c.Logf("%q stderr: %s", "update_engine_client -check_for_update", string(stderr))
 
 	err = util.WaitUntilReady(600*time.Second, 10*time.Second, func() (bool, error) {
 		envs, stderr, err := m.SSH("update_engine_client -status 2>/dev/null")
 		if err != nil {
 			return false, fmt.Errorf("checking status failed: %v: %s", err, stderr)
 		}
+		c.Logf("%q output: %s", "update_engine_client -status 2>/dev/null", string(envs))
 
 		return splitNewlineEnv(string(envs))["CURRENT_OP"] == "UPDATE_STATUS_UPDATED_NEED_REBOOT", nil
 	})
