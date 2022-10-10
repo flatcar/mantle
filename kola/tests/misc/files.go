@@ -50,6 +50,9 @@ func sugidFiles(c cluster.TestCluster, validfiles []string, mode string) {
 		// don't descend into these
 		"/proc",
 		"/sys",
+		// Symlinks in this directory get indirectly tested by
+		// going through /etc.
+		"/usr/share/flatcat/etc",
 		"/var/lib/docker",
 		"/var/lib/rkt",
 		"/var/lib/flatcar-oem-gce",
