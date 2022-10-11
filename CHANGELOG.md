@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 ### Fixed
+- Fixed `cl.internet/DockerPing` test failures, because it was pinging a non-existent address ([#386](https://github.com/flatcar/mantle/pull/386))
 
 ## [v0.19.0] - 15/09/2022
 ### Security

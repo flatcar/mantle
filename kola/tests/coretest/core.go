@@ -174,7 +174,7 @@ func TestDockerPing() error {
 	//t.Parallel()
 	errc := make(chan error, 1)
 	go func() {
-		c := exec.Command("docker", "run", "ghcr.io/kinvolk/busybox", "ping", "-c4", "coreos.com")
+		c := exec.Command("docker", "run", "ghcr.io/kinvolk/busybox", "ping", "-c4", "flatcar.org")
 		err := c.Run()
 		errc <- err
 	}()
