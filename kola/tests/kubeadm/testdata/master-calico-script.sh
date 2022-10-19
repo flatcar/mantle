@@ -117,7 +117,7 @@ EOF
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
 
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.1/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.2/manifests/tigera-operator.yaml
     # calico.yaml uses Installation and APIServer CRDs, so make sure that they are established.
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/installations.operator.tigera.io
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/apiservers.operator.tigera.io
