@@ -191,7 +191,7 @@ func newAWSSpec() awsSpec {
 		BaseName:        "Flatcar",
 		BaseDescription: "Flatcar Container Linux",
 		Prefix:          "flatcar_production_ami_",
-		Image:           "flatcar_production_ami_vmdk_image.vmdk.bz2",
+		Image:           "flatcar_production_ami_image.bin.bz2",
 	}
 }
 
