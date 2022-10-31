@@ -459,7 +459,7 @@ func awsUploadToPartition(spec *channelSpec, part *awsPartitionSpec, imagePath s
 
 		plog.Printf("Creating EBS snapshot...")
 
-		format := aws.EC2ImageFormatVmdk
+		format := aws.EC2ImageFormatRaw
 
 		snapshot, err = api.CreateSnapshot(imageName, s3ObjectURL, format)
 		if err != nil {
@@ -615,7 +615,7 @@ func awsUploadAmiLists(ctx context.Context, bucket *storage.Bucket, spec *channe
 
 // awsPreRelease runs everything necessary to prepare a Flatcar release for AWS.
 //
-// This includes uploading the ami_vmdk image to an S3 bucket in each EC2
+// This includes uploading the ami image to an S3 bucket in each EC2
 // partition, creating HVM AMIs, and replicating the AMIs to each
 // region.
 func awsPreRelease(ctx context.Context, client *http.Client, src *storage.Bucket, spec *channelSpec, imageInfo *imageInfo) error {
