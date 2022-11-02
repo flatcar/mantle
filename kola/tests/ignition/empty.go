@@ -15,6 +15,7 @@
 package ignition
 
 import (
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
@@ -49,10 +50,11 @@ func init() {
 		Name:             "cl.ignition.v2.noop",
 		Run:              empty,
 		ClusterSize:      1,
-		ExcludePlatforms: []string{"qemu", "esx", "openstack"},
+		ExcludePlatforms: []string{"qemu", "esx"},
 		Distros:          []string{"cl"},
 		Flags:            []register.Flag{register.NoSSHKeyInUserData},
 		UserData:         conf.Ignition(`{"ignition":{"version":"2.0.0"}}`),
+		MinVersion:       semver.Version{Major: 3227},
 		// Should run on all cloud environments
 	})
 }
