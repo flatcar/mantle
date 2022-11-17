@@ -69,6 +69,10 @@ type Test struct {
 	// greater than or equal to EndVersion. This will be ignored if
 	// the name fully matches without globbing.
 	EndVersion semver.Version
+
+	// SkipFunc can be used to define if a test should be skip or not based on some
+	// condition on the version, channel, arch and platform.
+	SkipFunc func(version semver.Version, channel, arch, platform string) bool
 }
 
 // Registered tests live here. Mapping of names to tests.

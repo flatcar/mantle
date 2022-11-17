@@ -206,6 +206,10 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, of
 	}
 
 	for name, t := range tests {
+		if t.SkipFunc != nil && t.SkipFunc(version, channel, architecture(pltfrm), pltfrm) {
+			continue
+		}
+
 		noMatch := true
 		for _, pattern := range patterns {
 			match, err := filepath.Match(pattern, t.Name)
