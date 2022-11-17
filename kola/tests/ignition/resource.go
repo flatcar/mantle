@@ -105,19 +105,29 @@ func init() {
 			"Serve": Serve,
 		},
 		// https://github.com/coreos/bugs/issues/2205
-		// ESX: Currently Ignition does not support static IPs during the initramfs
-		ExcludePlatforms: []string{"esx", "do", "qemu-unpriv"},
+		ExcludePlatforms: []string{"do", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// LTS (3033) does not have the network-kargs service pulled in:
+			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
+			// Let's skip this test for < 3034 on ESX.
+			return version.LessThan(semver.Version{Major: 3034}) && platform == "esx"
+		},
 		// This should run on all clouds to test initramfs networking
 	})
 	register.Register(&register.Test{
 		Name:        "coreos.ignition.resource.remote",
 		Run:         resourceRemote,
 		ClusterSize: 1,
-		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// https://github.com/coreos/bugs/issues/2205 for DO
-		ExcludePlatforms: []string{"esx", "do"},
 		// This should run on all clouds to test initramfs networking
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// LTS (3033) does not have the network-kargs service pulled in:
+			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
+			// Let's skip this test for < 3034 on ESX.
+			return version.LessThan(semver.Version{Major: 3034}) && platform == "esx"
+		},
+		ExcludePlatforms: []string{"do"},
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "2.1.0"
@@ -237,12 +247,16 @@ func init() {
 	//       this test should be rolled into coreos.ignition.resources.remote
 	// Test specifically for versioned s3 objects
 	register.Register(&register.Test{
-		Name:        "coreos.ignition.resource.s3.versioned",
-		Run:         resourceS3Versioned,
-		ClusterSize: 1,
-		// ESX: Currently Ignition does not support static IPs during the initramfs
-		// https://github.com/coreos/bugs/issues/2205 for DO
-		ExcludePlatforms: []string{"esx", "do"},
+		Name:             "coreos.ignition.resource.s3.versioned",
+		Run:              resourceS3Versioned,
+		ClusterSize:      1,
+		ExcludePlatforms: []string{"do"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// LTS (3033) does not have the network-kargs service pulled in:
+			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
+			// Let's skip this test for < 3034 on ESX.
+			return version.LessThan(semver.Version{Major: 3034}) && platform == "esx"
+		},
 		// This does not need to run on all clouds because it is a special case of coreos.ignition.resource.remote
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 1995},

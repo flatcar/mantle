@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/vincent-petithory/dataurl"
 
 	"github.com/flatcar/mantle/kola/cluster"
@@ -77,11 +78,16 @@ func init() {
 			"TLSServe":   TLSServe,
 			"TLSServeV3": TLSServeV3,
 		},
-		// ESX: Currently Ignition does not support static IPs during the initramfs
 		// DO: https://github.com/coreos/bugs/issues/2205
 		// EquinixMetal & QEMU: https://github.com/coreos/ignition/issues/645
-		ExcludePlatforms: []string{"esx", "do", "equinixmetal", "qemu-unpriv"},
+		ExcludePlatforms: []string{"do", "equinixmetal", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// LTS (3033) does not have the network-kargs service pulled in:
+			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
+			// Let's skip this test for < 3034 on ESX.
+			return version.LessThan(semver.Version{Major: 3034}) && platform == "esx"
+		},
 	})
 }
 
