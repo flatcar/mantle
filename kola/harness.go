@@ -206,7 +206,8 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, of
 	}
 
 	for name, t := range tests {
-		if t.SkipFunc != nil && t.SkipFunc(version, channel, architecture(pltfrm), pltfrm) {
+		// The filtering is done twice, do not evaluate until we have fetched the version from the machine.
+		if version.Major != 0 && t.SkipFunc != nil && t.SkipFunc(version, channel, architecture(pltfrm), pltfrm) {
 			continue
 		}
 
