@@ -123,9 +123,9 @@ func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI st
 		ImageVersion:        paramValue{imageVersion},
 		StorageAccountsName: paramValue{storageAccount},
 		VhdUri:              paramValue{blobURI},
-		Location:            paramValue{a.opts.Location},
-		Architecture:        paramValue{azureArchForBoard(a.opts.Board)},
-		HyperVGeneration:    paramValue{a.opts.HyperVGeneration},
+		Location:            paramValue{a.Opts.Location},
+		Architecture:        paramValue{azureArchForBoard(a.Opts.Board)},
+		HyperVGeneration:    paramValue{a.Opts.HyperVGeneration},
 	}
 	params := make(map[string]interface{})
 	paramsData, err := json.Marshal(&galleryParams)
@@ -156,7 +156,7 @@ func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI st
 		return "", err
 	}
 	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s",
-		a.opts.SubscriptionID, resourceGroup, galleryName, name, imageVersion)
+		a.Opts.SubscriptionID, resourceGroup, galleryName, name, imageVersion)
 	return id, nil
 }
 
@@ -165,9 +165,9 @@ func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, e
 	plog.Infof("Creating Image %s", name)
 	future, err := a.imgClient.CreateOrUpdate(context.TODO(), resourceGroup, name, compute.Image{
 		Name:     &name,
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 		ImageProperties: &compute.ImageProperties{
-			HyperVGeneration: compute.HyperVGenerationTypes(a.opts.HyperVGeneration),
+			HyperVGeneration: compute.HyperVGenerationTypes(a.Opts.HyperVGeneration),
 			StorageProfile: &compute.ImageStorageProfile{
 				OsDisk: &compute.ImageOSDisk{
 					OsType:  compute.OperatingSystemTypesLinux,
@@ -194,13 +194,13 @@ func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, e
 func (a *API) resolveImage() error {
 	// immediately return if the version has been set or if the channel
 	// is not set via the Sku (this happens in ore)
-	if a.opts.DiskURI != "" || a.opts.BlobURL != "" || a.opts.ImageFile != "" || a.opts.Version != "" || a.opts.Sku == "" {
+	if a.Opts.DiskURI != "" || a.Opts.BlobURL != "" || a.Opts.ImageFile != "" || a.Opts.Version != "" || a.Opts.Sku == "" {
 		return nil
 	}
 
-	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/version.txt", a.opts.Sku))
+	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/version.txt", a.Opts.Sku))
 	if err != nil {
-		return fmt.Errorf("unable to fetch release bucket %v version: %v", a.opts.Sku, err)
+		return fmt.Errorf("unable to fetch release bucket %v version: %v", a.Opts.Sku, err)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -210,7 +210,7 @@ func (a *API) resolveImage() error {
 			continue
 		}
 		if line[0] == "FLATCAR_VERSION" {
-			a.opts.Version = line[1]
+			a.Opts.Version = line[1]
 			return nil
 		}
 	}

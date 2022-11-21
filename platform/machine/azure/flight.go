@@ -35,7 +35,7 @@ var (
 
 type flight struct {
 	*platform.BaseFlight
-	api                 *azure.API
+	Api                 *azure.API
 	SSHKey              string
 	FakeSSHKey          string
 	ImageResourceGroup  string
@@ -65,7 +65,7 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 
 	af := &flight{
 		BaseFlight: bf,
-		api:        api,
+		Api:        api,
 	}
 
 	keys, err := af.Keys()
@@ -84,23 +84,23 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		blobName := imageName + ".vhd"
 		container := "temp"
 
-		af.ImageResourceGroup, err = af.api.CreateResourceGroup("kola-cluster-image")
+		af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
 		if err != nil {
 			return nil, err
 		}
 
-		af.ImageStorageAccount, err = af.api.CreateStorageAccount(af.ImageResourceGroup)
+		af.ImageStorageAccount, err = af.Api.CreateStorageAccount(af.ImageResourceGroup)
 		if err != nil {
 			return nil, err
 		}
 
-		af.Network, err = af.api.PrepareNetworkResources(af.ImageResourceGroup)
+		af.Network, err = af.Api.PrepareNetworkResources(af.ImageResourceGroup)
 		if err != nil {
 			af.Destroy()
 			return nil, err
 		}
 
-		kr, err := af.api.GetStorageServiceKeysARM(af.ImageStorageAccount, af.ImageResourceGroup)
+		kr, err := af.Api.GetStorageServiceKeysARM(af.ImageStorageAccount, af.ImageResourceGroup)
 		if err != nil {
 			return nil, fmt.Errorf("Fetching storage service keys failed: %v", err)
 		}
@@ -112,7 +112,7 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		if opts.BlobURL != "" {
 			for _, k := range *kr.Keys {
 				plog.Infof("Copying blob")
-				if err := af.api.CopyBlob(af.ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
+				if err := af.Api.CopyBlob(af.ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
 					return nil, fmt.Errorf("Copying blob failed: %v", err)
 				}
 				plog.Infof("Blob copy done")
@@ -120,22 +120,22 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 			}
 		} else if opts.ImageFile != "" {
 			for _, k := range *kr.Keys {
-				if err := af.api.UploadBlob(af.ImageStorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
+				if err := af.Api.UploadBlob(af.ImageStorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
 					return nil, fmt.Errorf("Uploading blob failed: %v", err)
 				}
 				break
 			}
 		}
-		targetBlobURL := af.api.UrlOfBlob(af.ImageStorageAccount, container, blobName).String()
+		targetBlobURL := af.Api.UrlOfBlob(af.ImageStorageAccount, container, blobName).String()
 		var imgID string
 		if opts.UseGallery {
-			imgID, err = af.api.CreateGalleryImage(imageName, af.ImageResourceGroup, af.ImageStorageAccount, targetBlobURL)
+			imgID, err = af.Api.CreateGalleryImage(imageName, af.ImageResourceGroup, af.ImageStorageAccount, targetBlobURL)
 			if err != nil {
 				return nil, fmt.Errorf("couldn't create gallery image: %w", err)
 			}
 			plog.Infof("Created gallery image: %v\n", imgID)
 		} else {
-			img, err := af.api.CreateImage(imageName, af.ImageResourceGroup, targetBlobURL)
+			img, err := af.Api.CreateImage(imageName, af.ImageResourceGroup, targetBlobURL)
 			if err != nil {
 				return nil, fmt.Errorf("couldn't create image: %w", err)
 			}
@@ -177,17 +177,17 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		ac.StorageAccount = af.ImageStorageAccount
 		ac.Network = af.Network
 	} else {
-		ac.ResourceGroup, err = af.api.CreateResourceGroup("kola-cluster")
+		ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
 		if err != nil {
 			return nil, err
 		}
 
-		ac.StorageAccount, err = af.api.CreateStorageAccount(ac.ResourceGroup)
+		ac.StorageAccount, err = af.Api.CreateStorageAccount(ac.ResourceGroup)
 		if err != nil {
 			return nil, err
 		}
 
-		ac.Network, err = af.api.PrepareNetworkResources(ac.ResourceGroup)
+		ac.Network, err = af.Api.PrepareNetworkResources(ac.ResourceGroup)
 		if err != nil {
 			ac.Destroy()
 			return nil, err
@@ -203,7 +203,7 @@ func (af *flight) Destroy() {
 	af.BaseFlight.Destroy()
 
 	if af.ImageResourceGroup != "" {
-		if e := af.api.TerminateResourceGroup(af.ImageResourceGroup); e != nil {
+		if e := af.Api.TerminateResourceGroup(af.ImageResourceGroup); e != nil {
 			plog.Errorf("Deleting image resource group %v: %v", af.ImageResourceGroup, e)
 		}
 	}

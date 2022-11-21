@@ -48,7 +48,7 @@ const pageBlobPageSize int64 = 2 * 1024 * 1024
 type BlobExistsError string
 
 func (a *API) ListStorageContainers(storageaccount, storagekey, prefix string) (*storage.ContainerListResponse, error) {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (a *API) ListStorageContainers(storageaccount, storagekey, prefix string) (
 }
 
 func (a *API) TerminateStorageContainer(storageaccount, storagekey, name string) error {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (be BlobExistsError) Error() string {
 }
 
 func (a *API) BlobExists(storageaccount, storagekey, container, blob string) (bool, error) {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return false, err
 	}
@@ -86,7 +86,7 @@ func (a *API) BlobExists(storageaccount, storagekey, container, blob string) (bo
 }
 
 func (a *API) ListBlobs(storageaccount, storagekey, container string, params storage.ListBlobsParameters) ([]storage.Blob, error) {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating storage client: %v", err)
 	}
@@ -112,7 +112,7 @@ func (a *API) ListBlobs(storageaccount, storagekey, container string, params sto
 }
 
 func (a *API) GetBlob(storageaccount, storagekey, container, name string) (io.ReadCloser, error) {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (a *API) UploadBlob(storageaccount, storagekey, vhd, container, blob string
 	}
 	defer ds.Close()
 
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return err
 	}
@@ -291,7 +291,7 @@ func getBlobMD5Hash(client storage.BlobStorageClient, containerName, blobName st
 }
 
 func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (string, error) {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return "", err
 	}
@@ -324,7 +324,7 @@ func (a *API) SignBlob(storageaccount, storagekey, container, blob string) (stri
 }
 
 func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, sourceBlob string) error {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return err
 	}
@@ -364,7 +364,7 @@ func (a *API) CopyBlob(storageaccount, storagekey, container, targetBlob, source
 }
 
 func (a *API) DeleteBlob(storageaccount, storagekey, container, blob string) error {
-	sc, err := storage.NewClient(storageaccount, storagekey, a.opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
+	sc, err := storage.NewClient(storageaccount, storagekey, a.Opts.StorageEndpointSuffix, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return err
 	}

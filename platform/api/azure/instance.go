@@ -60,16 +60,16 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 
 	var imgRef *compute.ImageReference
 	var plan *compute.Plan
-	if a.opts.DiskURI != "" {
+	if a.Opts.DiskURI != "" {
 		imgRef = &compute.ImageReference{
-			ID: &a.opts.DiskURI,
+			ID: &a.Opts.DiskURI,
 		}
 	} else {
 		imgRef = &compute.ImageReference{
-			Publisher: &a.opts.Publisher,
-			Offer:     &a.opts.Offer,
-			Sku:       &a.opts.Sku,
-			Version:   &a.opts.Version,
+			Publisher: &a.Opts.Publisher,
+			Offer:     &a.Opts.Offer,
+			Sku:       &a.Opts.Sku,
+			Version:   &a.Opts.Version,
 		}
 		plan = &compute.Plan{
 			Publisher: imgRef.Publisher,
@@ -79,14 +79,14 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	}
 	vm := compute.VirtualMachine{
 		Name:     &name,
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 		Tags: map[string]*string{
 			"createdBy": util.StrToPtr("mantle"),
 		},
 		Plan: plan,
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
-				VMSize: compute.VirtualMachineSizeTypes(a.opts.Size),
+				VMSize: compute.VirtualMachineSizeTypes(a.Opts.Size),
 			},
 			StorageProfile: &compute.StorageProfile{
 				ImageReference: imgRef,
@@ -199,7 +199,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		return nil, fmt.Errorf("couldn't get VM ID")
 	}
 	ipName := *ip.Name
-	if a.opts.UsePrivateIPs {
+	if a.Opts.UsePrivateIPs {
 		// empty IP name means instance is accessible via private IP address
 		ipName = ""
 	}
