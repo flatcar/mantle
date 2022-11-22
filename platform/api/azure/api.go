@@ -50,7 +50,7 @@ type API struct {
 	ipClient   network.PublicIPAddressesClient
 	intClient  network.InterfacesClient
 	accClient  armStorage.AccountsClient
-	opts       *Options
+	Opts       *Options
 }
 
 type Network struct {
@@ -125,7 +125,7 @@ func New(opts *Options) (*API, error) {
 
 	api := &API{
 		client: client,
-		opts:   opts,
+		Opts:   opts,
 	}
 
 	err = api.resolveImage()
@@ -193,7 +193,7 @@ func randomName(prefix string) string {
 }
 
 func (a *API) GetOpts() *Options {
-	return a.opts
+	return a.Opts
 }
 
 func (a *API) GC(gracePeriod time.Duration) error {

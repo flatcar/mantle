@@ -81,7 +81,7 @@ func (a *API) OSImageExists(name string) (bool, error) {
 func (a *API) UrlOfBlob(account, container, blob string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
-		Host:   fmt.Sprintf("%s.blob.%s", account, a.opts.StorageEndpointSuffix),
+		Host:   fmt.Sprintf("%s.blob.%s", account, a.Opts.StorageEndpointSuffix),
 		Path:   path.Join(container, blob),
 	}
 }
@@ -94,7 +94,7 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 			Name: "Standard_LRS",
 		},
 		Kind:     "StorageV2",
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 	}
 	plog.Infof("Creating StorageAccount %s", name)
 	future, err := a.accClient.Create(context.TODO(), resourceGroup, name, parameters)

@@ -48,7 +48,7 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	instance, err := ac.flight.api.CreateInstance(ac.vmname(), conf.String(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, ac.Network)
+	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), conf.String(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, ac.Network)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 func (ac *cluster) Destroy() {
 	ac.BaseCluster.Destroy()
 	if ac.ResourceGroup != ac.flight.ImageResourceGroup {
-		if e := ac.flight.api.TerminateResourceGroup(ac.ResourceGroup); e != nil {
+		if e := ac.flight.Api.TerminateResourceGroup(ac.ResourceGroup); e != nil {
 			plog.Errorf("Deleting resource group %v: %v", ac.ResourceGroup, e)
 		}
 	}

@@ -32,8 +32,8 @@ var (
 )
 
 func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
-	if a.opts.VnetSubnetName != "" {
-		parts := strings.SplitN(a.opts.VnetSubnetName, "/", 2)
+	if a.Opts.VnetSubnetName != "" {
+		parts := strings.SplitN(a.Opts.VnetSubnetName, "/", 2)
 		vnetName := parts[0]
 		subnetName := "default"
 		if len(parts) > 1 {
@@ -85,7 +85,7 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
 func (a *API) createVirtualNetwork(resourceGroup string) error {
 	plog.Infof("Creating VirtualNetwork %s", kolaVnet)
 	future, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, network.VirtualNetwork{
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
 				AddressPrefixes: &virtualNetworkPrefix,
@@ -129,7 +129,7 @@ func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, er
 	plog.Infof("Creating PublicIP %s", name)
 
 	future, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			DeleteOption: network.DeleteOptionsDelete,
 		},
@@ -209,7 +209,7 @@ func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, res
 	plog.Infof("Creating NIC %s", name)
 
 	future, err := a.intClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.Interface{
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				{

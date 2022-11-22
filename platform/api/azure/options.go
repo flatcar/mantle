@@ -48,4 +48,6 @@ type Options struct {
 
 	// Azure Storage API endpoint suffix. If unset, the Azure SDK default will be used.
 	StorageEndpointSuffix string
+	// UseUserData can be use to enable custom data only or user-data only.
+	UseUserData bool
 }

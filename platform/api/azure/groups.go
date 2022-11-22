@@ -31,7 +31,7 @@ func (a *API) CreateResourceGroup(prefix string) (string, error) {
 	}
 	plog.Infof("Creating ResourceGroup %s", name)
 	_, err := a.rgClient.CreateOrUpdate(context.TODO(), name, resources.Group{
-		Location: &a.opts.Location,
+		Location: &a.Opts.Location,
 		Tags:     tags,
 	})
 	if err != nil {

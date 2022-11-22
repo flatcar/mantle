@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -367,9 +368,23 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 
 	if !skipGetVersion {
 		plog.Info("Creating cluster to check semver...")
+
 		version, err := getClusterSemver(flight, outputDir)
 		if err != nil {
 			plog.Fatal(err)
+		}
+
+		// If the version is > 3033, we can safely use user-data instead of custom-data for
+		// provisioning the instance on Azure.
+		if !version.LessThan(semver.Version{Major: 3034}) && pltfrm == "azure" {
+			// Using reflection is a bit hacky, but it seems to be the only way to
+			// access the field we want to set.
+			f := reflect.ValueOf(flight).Elem()
+			api := f.FieldByName("Api")
+			opts := api.Elem().FieldByName("Opts")
+			userData := opts.Elem().FieldByName("UseUserData")
+			// At this point, this field can be set.
+			userData.SetBool(true)
 		}
 
 		versionStr = version.String()

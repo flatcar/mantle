@@ -80,7 +80,7 @@ func (am *machine) Reboot() error {
 	}
 
 	// Re-fetch the Public & Private IP address for the event that it's changed during the reboot
-	am.mach.PublicIPAddress, am.mach.PrivateIPAddress, err = am.cluster.flight.api.GetIPAddresses(am.InterfaceName(), am.PublicIPName(), am.ResourceGroup())
+	am.mach.PublicIPAddress, am.mach.PrivateIPAddress, err = am.cluster.flight.Api.GetIPAddresses(am.InterfaceName(), am.PublicIPName(), am.ResourceGroup())
 	if err != nil {
 		return fmt.Errorf("Fetching IP addresses: %v", err)
 	}
@@ -93,7 +93,7 @@ func (am *machine) Destroy() {
 		plog.Warningf("Saving console for instance %v: %v", am.ID(), err)
 	}
 
-	if err := am.cluster.flight.api.TerminateInstance(am.mach, am.ResourceGroup()); err != nil {
+	if err := am.cluster.flight.Api.TerminateInstance(am.mach, am.ResourceGroup()); err != nil {
 		plog.Errorf("terminating instance: %v", err)
 	}
 
@@ -110,7 +110,7 @@ func (am *machine) ConsoleOutput() string {
 
 func (am *machine) saveConsole() error {
 	var err error
-	am.console, err = am.cluster.flight.api.GetConsoleOutput(am.ID(), am.ResourceGroup(), am.cluster.StorageAccount)
+	am.console, err = am.cluster.flight.Api.GetConsoleOutput(am.ID(), am.ResourceGroup(), am.cluster.StorageAccount)
 	if err != nil {
 		return err
 	}
