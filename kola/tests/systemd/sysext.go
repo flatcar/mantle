@@ -4,7 +4,11 @@
 package systemd
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/coreos/go-semver/semver"
+	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
@@ -68,6 +72,13 @@ func checkSysextSimple(c cluster.TestCluster) {
 }
 
 func checkSysextCustomDocker(c cluster.TestCluster) {
+	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
+	if arch == "arm64" {
+		arch = "aarch64"
+	} else {
+		arch = "x86_64"
+	}
+
 	cmdNotWorking := `if docker run --rm ghcr.io/kinvolk/busybox true; then exit 1; fi`
 	cmdWorking := `docker run --rm ghcr.io/kinvolk/busybox echo Hello World`
 	// First assert that Docker doesn't work because Torcx is disabled
@@ -76,13 +87,13 @@ func checkSysextCustomDocker(c cluster.TestCluster) {
 	_ = c.MustSSH(c.Machines()[0], `git clone https://github.com/flatcar/sysext-bakery.git && git -C sysext-bakery checkout 2d6ab6bdba96476138c7db841e9a4c4ed38bd3fc`)
 	// Flatcar has no mksquashfs and btrfs is missing a bugfix but at least ext4 works
 	// The first test is for a fixed Docker version, which with the time will get old and older but is still expected to work because users may also "freeze" their Docker version this way
-	_ = c.MustSSH(c.Machines()[0], `ONLY_DOCKER=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 docker && ONLY_CONTAINERD=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 containerd && sudo mv docker.raw containerd.raw /etc/extensions/`)
+	_ = c.MustSSH(c.Machines()[0], fmt.Sprintf(`ARCH=%[1]s ONLY_DOCKER=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 docker && ARCH=%[1]s ONLY_CONTAINERD=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 containerd && sudo mv docker.raw containerd.raw /etc/extensions/`, arch))
 	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext`)
 	// We should now be able to use Docker
 	_ = c.MustSSH(c.Machines()[0], cmdWorking)
 	// The next test is with a recent Docker version, here the one from the Flatcar image to couple it to something that doesn't change under our feet
 	version := string(c.MustSSH(c.Machines()[0], `bzcat /usr/share/licenses/licenses.json.bz2 | grep -m 1 -o 'app-emulation/docker[^:]*' | cut -d - -f 3`))
-	_ = c.MustSSH(c.Machines()[0], `ONLY_DOCKER=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh `+version+` docker && ONLY_CONTAINERD=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh `+version+` containerd && sudo mv docker.raw containerd.raw /etc/extensions/`)
+	_ = c.MustSSH(c.Machines()[0], fmt.Sprintf(`ONLY_DOCKER=1 FORMAT=ext4 ARCH=%[2]s sysext-bakery/create_docker_sysext.sh %[1]s docker && ONLY_CONTAINERD=1 FORMAT=ext4 ARCH=%[2]s sysext-bakery/create_docker_sysext.sh %[1]s containerd && sudo mv docker.raw containerd.raw /etc/extensions/`, version, arch))
 	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext && sudo systemctl restart docker containerd`)
 	// We should now still be able to use Docker
 	_ = c.MustSSH(c.Machines()[0], cmdWorking)
