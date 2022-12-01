@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - plume: generate AMI ID files locally ([#373](https://github.com/flatcar/mantle/pull/373))
 - Kola test for devcontainer ([#367](https://github.com/flatcar-linux/mantle/pull/367))
 - `--qemu-grow-base-disk-by` flag to grow the base disk ([#367](https://github.com/flatcar-linux/mantle/pull/367))
+- `--force-flatcar-key` flag to force injecting the Flatcar production key when testing the Flatcar update with `cl.update.payload` ([#398](https://github.com/flatcar/mantle/pull/398))
 
 ### Changed
 - organization renaming (`flatcar-linux` -> `flatcar`) ([#372](https://github.com/flatcar/mantle/pull/372), [#374](https://github.com/flatcar/mantle/pull/374))
