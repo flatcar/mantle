@@ -82,6 +82,7 @@ var (
 	TorcxManifest *torcx.Manifest = nil
 
 	UpdatePayloadFile string
+	ForceFlatcarKey   bool
 
 	consoleChecks = []struct {
 		desc        string

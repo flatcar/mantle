@@ -82,6 +82,7 @@ func init() {
 	sv(&kola.Options.BaseName, "basename", "kola", "Cluster name prefix")
 	ss("debug-systemd-unit", []string{}, "full-unit-name.service to enable SYSTEMD_LOG_LEVEL=debug on. Specify multiple times for multiple units.")
 	sv(&kola.UpdatePayloadFile, "update-payload", "", "Path to an update payload that should be made available to tests")
+	bv(&kola.ForceFlatcarKey, "force-flatcar-key", false, "Use the Flatcar production key to verify update payload")
 	sv(&kola.Options.IgnitionVersion, "ignition-version", "", "Ignition version override: v2, v3")
 	iv(&kola.Options.SSHRetries, "ssh-retries", kolaSSHRetries, "Number of retries with the SSH timeout when starting the machine")
 	dv(&kola.Options.SSHTimeout, "ssh-timeout", kolaSSHTimeout, "A timeout for a single try of establishing an SSH connection when starting the machine")

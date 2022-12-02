@@ -135,9 +135,8 @@ SERVER=http://%s/v1/update
 EOF"`, addr))
 	c.MustSSH(m, "sudo mv /etc/coreos/update.conf{.new,}")
 
-	// inject dev key
-	c.MustSSH(m, `sudo bash -c "cat >/etc/coreos/update-payload-key.pub.pem <<EOF
------BEGIN PUBLIC KEY-----
+	// dev key
+	key := `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzFS5uVJ+pgibcFLD3kbY
 k02Edj0HXq31ZT/Bva1sLp3Ysv+QTv/ezjf0gGFfASdgpz6G+zTipS9AIrQr0yFR
 +tdp1ZsHLGxVwvUoXFftdapqlyj8uQcWjjbN7qJsZu0Ett/qo93hQ5nHW7Sv5dRm
@@ -145,8 +144,26 @@ k02Edj0HXq31ZT/Bva1sLp3Ysv+QTv/ezjf0gGFfASdgpz6G+zTipS9AIrQr0yFR
 EFkZphrGjiqiCdp9AAbAvE7a5rFcJf86YR73QX08K8BX7OMzkn3DsqdnWvLB3l3W
 6kvIuP+75SrMNeYAcU8PI1+bzLcAG3VN3jA78zeKALgynUNH50mxuiiU3DO4DZ+p
 5QIDAQAB
------END PUBLIC KEY-----
-EOF"`)
+-----END PUBLIC KEY-----`
+
+	if kola.ForceFlatcarKey {
+		// prod key
+		// https://github.com/flatcar/coreos-overlay/blob/flatcar-master/coreos-base/coreos-au-key/files/official-v2.pub.pem
+		key = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAw/NZ5Tvc93KynOLPDOxa
+hyAGRKB2NvgF9l2A61SsFw5CuZc/k02u1/BvFehK4XL/eOo90Dt8A2l28D/YKs7g
+2IPUSAnA9hc5OKBbpHsDzisxlAh7kg4FpeeJJWJMzO8NDCG5NZVqXEpGjCmX0qSh
+5MLiTDr9dU2YhLo93/92dKnTvsLjUVv5wnuF55Lt2wJv4CbxVn4hHwotGfSomTBO
++7o6hE3VIIo1C6lkP+FAqMyWKA9s6U0x4tGxCXszW3hPWOANLIT4m0e55ayxiy5A
+ESEVW/xx6Rul75u925m21AqA6wwaEB6ZPKTnUiWoNKNv1xi8LPIz12+0nuE6iT1K
+jQIDAQAB
+-----END PUBLIC KEY-----`
+	}
+
+	// inject key
+	c.MustSSH(m, fmt.Sprintf(`sudo bash -c "cat >/etc/coreos/update-payload-key.pub.pem <<EOF
+%s
+EOF"`, key))
 
 	c.MustSSH(m, "sudo mount --bind /etc/coreos/update-payload-key.pub.pem /usr/share/update_engine/update-payload-key.pub.pem")
 
