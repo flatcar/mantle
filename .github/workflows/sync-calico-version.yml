@@ -1,15 +1,15 @@
 name: Sync Calico version used for getting Tigera Operator manifest
 on:
   schedule:
-    # run every 12h
-    - cron:  '0 */12 * * *'
+    # run on Monday at 7
+    - cron:  '0 7 * * 1'
   workflow_dispatch:
 
 jobs:
   sync-calico-version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Update links to Tigera Operator manifest
         id: update-links
         run: |
@@ -18,10 +18,9 @@ jobs:
           calico_version=$(curl \
                              -H 'Accept: application/vnd.github+json' \
                              'https://api.github.com/repos/projectcalico/calico/releases' | \
-                           jq '.[].tag_name' | \
-                           sed -e 's/"\(.*\)"/\1/g' | \
+                           jq --raw-output '.[].tag_name' | \
                            sort --version-sort --reverse | \
-                           head -n1)
+                           head --lines 1)
 
           # The ':!.github' obviously means "exclude .github". This is to avoid
           # this action to mangle itself.
@@ -36,10 +35,10 @@ jobs:
           if git status --porcelain | grep --quiet '^ M'; then
             update_needed=1
           fi
-          echo ::set-output "name=CALICO_VERSION::${calico_version}"
-          echo ::set-output "name=UPDATE_NEEDED::${update_needed}"
+          echo "CALICO_VERSION=${calico_version}" >>"${GITHUB_OUTPUT}"
+          echo "UPDATE_NEEDED=${update_needed}" >>"${GITHUB_OUTPUT}"
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
