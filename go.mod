@@ -17,6 +17,8 @@ require (
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/digitalocean/godo v1.45.0
+	github.com/flatcar/container-linux-config-transpiler v0.9.4
+	github.com/flatcar/ignition v0.36.2
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.2
 	github.com/gophercloud/gophercloud v0.25.0
@@ -40,8 +42,8 @@ require (
 	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
-	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886
-	golang.org/x/text v0.3.7
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
+	golang.org/x/text v0.3.8
 	google.golang.org/api v0.74.0
 )
 
@@ -71,8 +73,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/flatcar/container-linux-config-transpiler v0.9.4 // indirect
-	github.com/flatcar/ignition v0.36.2 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
