@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 - Fixed `cl.internet/DockerPing` test failures, because it was pinging a non-existent address ([#386](https://github.com/flatcar/mantle/pull/386))
+- Fixed `linux.ntp` test failures by adding output message for systemd-timesyncd v251 ([#402](https://github.com/flatcar/mantle/pull/402))
 
 ## [v0.19.0] - 15/09/2022
 ### Security
