@@ -28,6 +28,7 @@ var timesyncdMsgs = [][]byte{
 	[]byte(`Status: "Synchronized to time server 10.0.0.1:123 (10.0.0.1)."`),                    // systemd < 241
 	[]byte(`Status: "Synchronized to time server for the first time 10.0.0.1:123 (10.0.0.1)."`), // systemd >= 241
 	[]byte(`Status: "Initial synchronization to time server 10.0.0.1:123 (10.0.0.1)."`),         // systemd >= 243
+	[]byte(`Status: "Contacted time server 10.0.0.1:123 (10.0.0.1)."`),                          // systemd >= 251
 }
 
 func init() {
