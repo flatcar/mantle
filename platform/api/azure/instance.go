@@ -71,10 +71,17 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			Sku:       &a.Opts.Sku,
 			Version:   &a.Opts.Version,
 		}
-		plan = &compute.Plan{
-			Publisher: imgRef.Publisher,
-			Product:   imgRef.Offer,
-			Name:      imgRef.Sku,
+		// lookup plan information for image
+		imgInfo, err := a.vmImgClient.Get(context.TODO(), a.Opts.Location, *imgRef.Publisher, *imgRef.Offer, *imgRef.Sku, *imgRef.Version)
+		if err == nil && imgInfo.Plan != nil {
+			plan = &compute.Plan{
+				Publisher: imgInfo.Plan.Publisher,
+				Product:   imgInfo.Plan.Product,
+				Name:      imgInfo.Plan.Name,
+			}
+			plog.Debugf("using plan: %v:%v:%v", *plan.Publisher, *plan.Product, *plan.Name)
+		} else if err != nil {
+			plog.Warningf("failed to get image info: %v; continuing", err)
 		}
 	}
 	vm := compute.VirtualMachine{
