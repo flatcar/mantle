@@ -40,17 +40,18 @@ var (
 )
 
 type API struct {
-	client     management.Client
-	rgClient   resources.GroupsClient
-	depClient  resources.DeploymentsClient
-	imgClient  compute.ImagesClient
-	compClient compute.VirtualMachinesClient
-	netClient  network.VirtualNetworksClient
-	subClient  network.SubnetsClient
-	ipClient   network.PublicIPAddressesClient
-	intClient  network.InterfacesClient
-	accClient  armStorage.AccountsClient
-	Opts       *Options
+	client      management.Client
+	rgClient    resources.GroupsClient
+	depClient   resources.DeploymentsClient
+	imgClient   compute.ImagesClient
+	compClient  compute.VirtualMachinesClient
+	vmImgClient compute.VirtualMachineImagesClient
+	netClient   network.VirtualNetworksClient
+	subClient   network.SubnetsClient
+	ipClient    network.PublicIPAddressesClient
+	intClient   network.InterfacesClient
+	accClient   armStorage.AccountsClient
+	Opts        *Options
 }
 
 type Network struct {
@@ -159,6 +160,8 @@ func (a *API) SetupClients() error {
 	a.imgClient.Authorizer = auther
 	a.compClient = compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
 	a.compClient.Authorizer = auther
+	a.vmImgClient = compute.NewVirtualMachineImagesClient(settings.GetSubscriptionID())
+	a.vmImgClient.Authorizer = auther
 
 	auther, err = auth.NewAuthorizerFromFile(network.DefaultBaseURI)
 	if err != nil {
