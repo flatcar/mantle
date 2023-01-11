@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-omaha/omaha"
+	"github.com/coreos/go-semver/semver"
 
 	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
@@ -43,6 +44,13 @@ func init() {
 		Distros: []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// This test can only run if the update payload to test is given.
+			// The image passed must also be an old release to ensure that we
+			// don't have incomaptible changes
+			// (see scripts/ci-automation/vendor-testing/qemu_update.sh)
+			return kola.UpdatePayloadFile == ""
+		},
 	})
 }
 
@@ -101,10 +109,6 @@ func payload(c cluster.TestCluster) {
 }
 
 func configureOmahaServer(c cluster.TestCluster, srv platform.Machine) string {
-	if kola.UpdatePayloadFile == "" {
-		c.Skip("no update payload provided")
-	}
-
 	in, err := os.Open(kola.UpdatePayloadFile)
 	if err != nil {
 		c.Fatalf("opening update payload: %v", err)
