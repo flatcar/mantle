@@ -29,6 +29,7 @@ import (
 	"github.com/flatcar/mantle/kola/register"
 	tutil "github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/local"
 	"github.com/flatcar/mantle/util"
 )
@@ -51,6 +52,15 @@ func init() {
 			// (see scripts/ci-automation/vendor-testing/qemu_update.sh)
 			return kola.UpdatePayloadFile == ""
 		},
+	})
+	register.Register(&register.Test{
+		Name:        "cl.sysext.boot",
+		Run:         sysextBootLogic,
+		ClusterSize: 0,
+		Distros:     []string{"cl"},
+		// This test is uses its own OEM files and shouldn't run on other platforms
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3481},
 	})
 }
 
@@ -214,4 +224,96 @@ func splitNewlineEnv(envs string) map[string]string {
 		m[spl[0]] = spl[1]
 	}
 	return m
+}
+
+func sysextBootLogic(c cluster.TestCluster) {
+	// The first test case is to not use Ignition which means that the
+	// set of systemd units in the initrd is different and we also
+	// don't have Ignition mount the OEM partition
+	noIgnition, err := c.NewMachine(nil)
+	if err != nil {
+		c.Fatalf("creating test machine: %v", err)
+	}
+	version := string(c.MustSSH(noIgnition, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	if version == "" {
+		c.Fatalf("Assertion for version string failed")
+	}
+	// We disable systemd-sysext because the sysext files are empty and will fail to load.
+	// We test the following cases that differ from the test case covered by Ignition.
+	// We set up symlinks to emulate that a previous sysext was active and we store the new sysext
+	// in the rootfs instead of the OEM partition. The previous sysext is either
+	// a) stored on the rootfs and will stay there and the new one is is moved to the OEM partition
+	// b) stored on the OEM partition and gets moved to the rootfs and the new one is moved to the OEM partition
+	_ = c.MustSSH(noIgnition, fmt.Sprintf(`set -euxo pipefail
+sudo systemctl mask --now systemd-sysext
+sudo mkdir -p /etc/flatcar/sysext /etc/flatcar/oem-sysext /usr/share/oem/sysext /etc/extensions
+echo ID=test | sudo tee /usr/share/oem/oem-release
+echo myext | sudo tee /etc/flatcar/enabled-sysext.conf
+sudo touch /usr/share/oem/sysext/active-oem-test /etc/flatcar/oem-sysext/oem-test-%[1]s.raw /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /etc/flatcar/sysext/flatcar-myext-%[1]s.raw /etc/flatcar/sysext/flatcar-myext-1.2.3.raw
+sudo ln -fs /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /etc/extensions/oem-test.raw
+sudo ln -fs /etc/flatcar/sysext/flatcar-myext-1.2.3.raw /etc/extensions/flatcar-myext.raw
+`, version))
+	if err := noIgnition.Reboot(); err != nil {
+		c.Fatalf("couldn't reboot: %v", err)
+	}
+	// Check that the right symlinks are set up for case "a)" and prepare the next boot
+	_ = c.MustSSH(noIgnition, fmt.Sprintf(`set -euxo pipefail
+[ "$(readlink -f /etc/extensions/oem-test.raw)" = "/usr/share/oem/sysext/oem-test-%[1]s.raw" ] || { echo "OEM symlink wrong"; exit 1 ; }
+[ "$(readlink -f /etc/extensions/flatcar-myext.raw)" = "/etc/flatcar/sysext/flatcar-myext-%[1]s.raw" ] || { echo "Extension symlink wrong"; exit 1; }
+sudo mv /usr/share/oem/sysext/oem-test-%[1]s.raw /etc/flatcar/oem-sysext/
+sudo mv /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /usr/share/oem/sysext/
+sudo ln -fs /usr/share/oem/sysext/oem-test-1.2.3.raw /etc/extensions/oem-test.raw
+sudo ln -fs /etc/flatcar/sysext/flatcar-myext-1.2.3.raw /etc/extensions/flatcar-myext.raw
+`, version))
+	if err := noIgnition.Reboot(); err != nil {
+		c.Fatalf("couldn't reboot: %v", err)
+	}
+	// Check that the boot logic set up the right sysext symlinks for case "b)"
+	testCmds := fmt.Sprintf(`set -euxo pipefail
+[ "$(readlink -f /etc/extensions/oem-test.raw)" = "/usr/share/oem/sysext/oem-test-%[1]s.raw" ] || { echo "OEM symlink wrong"; exit 1 ; }
+[ "$(readlink -f /etc/extensions/flatcar-myext.raw)" = "/etc/flatcar/sysext/flatcar-myext-%[1]s.raw" ] || { echo "Extension symlink wrong"; exit 1; }
+`, version)
+	_ = c.MustSSH(noIgnition, testCmds+`[ -e "/etc/flatcar/oem-sysext/oem-test-1.2.3.raw" ] || { echo "Old sysext didn't get moved to rootfs"; exit 1; }`)
+	noIgnition.Destroy()
+	// The second test case is to use Ignition and Ignition will also
+	// mount the OEM partition in the initrd and use a different systemd
+	// target unit to pull initrd-setup-root-after-ignition in.
+	// The covered case here for the logic is
+	// c) where no previous sysext image is used and the new one already
+	// is on the OEM partition
+	// There is no need to cover this case in the manual setup nor
+	// adding more Ignition tests for cases a) and b) because the
+	// logic that is hit is the same.
+	conf := conf.ContainerLinuxConfig(fmt.Sprintf(`storage:
+  filesystems:
+     - name: oem
+       mount:
+         device: "/dev/disk/by-label/OEM"
+         format: "btrfs"
+  files:
+    - path: /oem-release
+      filesystem: oem
+      contents:
+        inline: |
+          ID=test
+    - path: /sysext/active-oem-test
+      filesystem: oem
+    - path: /sysext/oem-test-%[1]s.raw
+      filesystem: oem
+    - path: /etc/flatcar/enabled-sysext.conf
+      contents:
+        inline: |
+          myext
+    - path: /etc/flatcar/sysext/flatcar-myext-%[1]s.raw
+systemd:
+  units:
+    - name: systemd-sysext.service
+      mask: true
+`, version))
+	withIgnition, err := c.NewMachine(conf)
+	if err != nil {
+		c.Fatalf("creating test machine: %v", err)
+	}
+	_ = c.MustSSH(withIgnition, testCmds)
+	withIgnition.Destroy()
 }
