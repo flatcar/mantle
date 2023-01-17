@@ -12,31 +12,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Update links to Tigera Operator manifest
         id: update-links
-        run: |
-          set -exuo pipefail
-
-          calico_version=$(curl \
-                             -H 'Accept: application/vnd.github+json' \
-                             'https://api.github.com/repos/projectcalico/calico/releases' | \
-                           jq --raw-output '.[].tag_name' | \
-                           sort --version-sort --reverse | \
-                           head --lines 1)
-
-          # The ':!.github' obviously means "exclude .github". This is to avoid
-          # this action to mangle itself.
-          files=( $(git grep 'https://[^ ]\+tigera-operator.yaml' -- . ':!.github' | cut -d: -f1) )
-          new_link="https://raw.githubusercontent.com/projectcalico/calico/${calico_version}/manifests/tigera-operator.yaml"
-
-          sed \
-            -i \
-            -e "s@https://[^ ]\+tigera-operator.yaml@${new_link}@g" \
-            "${files[@]}"
-          update_needed=0
-          if git status --porcelain | grep --quiet '^ M'; then
-            update_needed=1
-          fi
-          echo "CALICO_VERSION=${calico_version}" >>"${GITHUB_OUTPUT}"
-          echo "UPDATE_NEEDED=${update_needed}" >>"${GITHUB_OUTPUT}"
+        run: .github/workflows/sync-calico-version.sh
       - name: Create pull request
         uses: peter-evans/create-pull-request@v4
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
@@ -47,11 +23,3 @@ jobs:
           commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           reviewers: flatcar/flatcar-maintainers
           delete-branch: true
-          body: |
-            Before merging this pull request, PLEASE make sure that a manifest based
-            on `custom-resources.yaml` in `kola/tests/kubeadm/templates.go`
-            and `kola/tests/kubeadm/testdata/master-calico-script.sh` is in sync
-            with https://raw.githubusercontent.com/projectcalico/calico/${{ steps.update-links.outputs.CALICO_VERSION }}/manifests/custom-resources.yaml
-            and amend the commit in this pull request with an update
-            of the `# Source:` comment there to match the new version.
-            Thank you.
