@@ -76,7 +76,7 @@ var (
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
 		"v1.26.0": map[string]interface{}{
-			"MinMajorVersion": 3033,
+			"MinMajorVersion": 3374,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.20.2",
 			// from https://github.com/cilium/cilium/releases
