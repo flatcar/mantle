@@ -161,6 +161,53 @@ var (
 			desc:  "core dump",
 			match: regexp.MustCompile("[Cc]ore dump"),
 		},
+		{
+			desc:  "ext4 filesystem corruption led to read-only mount",
+			match: regexp.MustCompile(`EXT4-fs \(.*\): Remounting filesystem read-only`),
+		},
+		{
+			desc:  "ext4 filesystem corruption",
+			match: regexp.MustCompile(`EXT4-fs error \(device .*\)|Aborting journal on device .*`),
+		},
+		{
+			desc:  "fsck.ext4 could not repair the filesystem unsupervised",
+			match: regexp.MustCompile("UNEXPECTED INCONSISTENCY; RUN fsck MANUALLY."),
+		},
+		{
+			desc:     "dm-verity detected disk corruption",
+			match:    regexp.MustCompile(`device-mapper: verity: \d+:\d+: data block \d+ is corrupted`),
+			skipFlag: &[]register.Flag{register.NoVerityCorruptionCheck}[0],
+		},
+		{
+			// With regexp in Go we can't do a Perl lookahead to exclude sr0 matches in the regular expression
+			// (would be 'dev (?!(sr0),).*, sector' and '(device|dev) (?!(sr0),).*, logical'),
+			// therefore, we just silence any found matches if the sr0 match was also around
+			desc:        "disk I/O errors",
+			match:       regexp.MustCompile(`blk_update_request: I/O error, dev .*, sector \d+|Buffer I/O error on (device|dev) .*, logical block \d+|EXT4-fs warning \(device .*\): .*:\d+: I/O error .* writing to inode \d+`),
+			skipIfMatch: regexp.MustCompile(`blk_update_request: I/O error, dev sr0, sector \d+|Buffer I/O error on (device|dev) sr0, logical block \d+`),
+		},
+		{
+			desc:     "systemd unit failed to start",
+			match:    regexp.MustCompile("Failed to start (.*)"),
+			skipFlag: &[]register.Flag{register.NoEmergencyShellCheck}[0],
+		},
+		{
+			desc:     "systemd dependency unit failed to start",
+			match:    regexp.MustCompile("Dependency failed for (.*)"),
+			skipFlag: &[]register.Flag{register.NoEmergencyShellCheck}[0],
+		},
+		{
+			desc:  "systemd default target unit dependencies not met",
+			match: regexp.MustCompile("Failed to isolate default target"),
+		},
+		{
+			desc:  "systemd froze execution",
+			match: regexp.MustCompile(`systemd\[1\]: Freezing execution`),
+		},
+		{
+			desc:  "systemd skipped execution of a unit due to an ordering cycle",
+			match: regexp.MustCompile("Ordering cycle found, skipping (.*)|Job (.*) deleted to break ordering cycle starting with (.*)|Found ordering cycle on (.*)"),
+		},
 	}
 )
 

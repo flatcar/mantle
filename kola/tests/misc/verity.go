@@ -35,7 +35,7 @@ func init() {
 		Distros:     []string{"cl"},
 		// Somehow hangs
 		ExcludePlatforms: []string{"qemu-unpriv"},
-		Flags:            []register.Flag{register.NoKernelPanicCheck},
+		Flags:            []register.Flag{register.NoKernelPanicCheck, register.NoVerityCorruptionCheck},
 		MinVersion:       semver.Version{Major: 2943},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
