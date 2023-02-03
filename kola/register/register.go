@@ -27,11 +27,12 @@ import (
 type Flag int
 
 const (
-	NoSSHKeyInUserData    Flag = iota // don't inject SSH key into Ignition/cloud-config
-	NoSSHKeyInMetadata                // don't add SSH key to platform metadata
-	NoEmergencyShellCheck             // don't check console output for emergency shell invocation
-	NoEnableSelinux                   // don't enable selinux when starting or rebooting a machine
-	NoKernelPanicCheck                // don't check console output for kernel panic
+	NoSSHKeyInUserData      Flag = iota // don't inject SSH key into Ignition/cloud-config
+	NoSSHKeyInMetadata                  // don't add SSH key to platform metadata
+	NoEmergencyShellCheck               // don't check console output for emergency shell invocation
+	NoEnableSelinux                     // don't enable selinux when starting or rebooting a machine
+	NoKernelPanicCheck                  // don't check console output for kernel panic
+	NoVerityCorruptionCheck             // don't check console output for verity corruption
 )
 
 // Test provides the main test abstraction for kola. The run function is

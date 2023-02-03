@@ -245,7 +245,7 @@ func sysextBootLogic(c cluster.TestCluster) {
 	// a) stored on the rootfs and will stay there and the new one is is moved to the OEM partition
 	// b) stored on the OEM partition and gets moved to the rootfs and the new one is moved to the OEM partition
 	_ = c.MustSSH(noIgnition, fmt.Sprintf(`set -euxo pipefail
-sudo systemctl mask --now systemd-sysext
+sudo systemctl mask --now systemd-sysext ensure-sysext
 sudo mkdir -p /etc/flatcar/sysext /etc/flatcar/oem-sysext /usr/share/oem/sysext /etc/extensions
 echo ID=test | sudo tee /usr/share/oem/oem-release
 echo myext | sudo tee /etc/flatcar/enabled-sysext.conf
@@ -308,6 +308,8 @@ sudo ln -fs /etc/flatcar/sysext/flatcar-myext-1.2.3.raw /etc/extensions/flatcar-
 systemd:
   units:
     - name: systemd-sysext.service
+      mask: true
+    - name: ensure-sysext.service
       mask: true
 `, version))
 	withIgnition, err := c.NewMachine(conf)
