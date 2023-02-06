@@ -17,6 +17,7 @@ package misc
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -194,6 +195,11 @@ func NetworkListeners(c cluster.TestCluster) {
 	}
 }
 
+func findString(strs []string, s string) bool {
+	idx := sort.SearchStrings(strs, s)
+	return idx < len(strs) && strs[idx] == s
+}
+
 // Verify that networking is not started in the initramfs on the second boot.
 // https://github.com/coreos/bugs/issues/1768
 func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
@@ -207,11 +213,15 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 
 	// verify that the network service was started
 	found := false
+	// In v249, some services description have been updated.
+	// More details: https://github.com/systemd/systemd/commit/4fd3fc66396026f81fd5b27746f2faf8a9a7b9ee
+	searchLinesNetworkd := []string{
+		"Started Network Service.",
+		"Started Network Configuration.",
+	}
+	sort.Strings(searchLinesNetworkd)
 	for _, line := range lines {
-		// Once systemd totally upgraded to > 248, we can safely remove the `line == "Started Network Service."` section.
-		// In v249, some services description have been updated.
-		// More details: https://github.com/systemd/systemd/commit/4fd3fc66396026f81fd5b27746f2faf8a9a7b9ee
-		if line == "Started Network Service." || line == "Started Network Configuration." {
+		if findString(searchLinesNetworkd, line) {
 			found = true
 			break
 		}
@@ -220,8 +230,12 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 		c.Fatal("couldn't find log entry for networkd startup")
 	}
 
+	searchLinesInitrd := []string{
+		"Reached target Switch Root.",
+	}
+	sort.Strings(searchLinesInitrd)
 	// check that we exited the initramfs first
-	if lines[0] != "Reached target Switch Root." {
+	if !findString(searchLinesInitrd, lines[0]) {
 		c.Fatal("networkd started in initramfs")
 	}
 }
