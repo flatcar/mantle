@@ -215,11 +215,13 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 	found := false
 	// In v249, some services description have been updated.
 	// More details: https://github.com/systemd/systemd/commit/4fd3fc66396026f81fd5b27746f2faf8a9a7b9ee
-	// In v252, the printed line stoped using a description of the unit, going to the unit name.
+	// In v252, the printed line stopped using a description of the unit, going to the unit name but
+	// now we normally use the combined status format.
 	searchLinesNetworkd := []string{
 		"Started Network Service.",
 		"Started Network Configuration.",
 		"Started systemd-networkd.service.",
+		"Started systemd-networkd.service - Network Configuration.",
 	}
 	sort.Strings(searchLinesNetworkd)
 	for _, line := range lines {
@@ -235,6 +237,7 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 	searchLinesInitrd := []string{
 		"Reached target Switch Root.",
 		"Reached target initrd-switch-root.target.",
+		"Reached target initrd-switch-root.target - Switch Root.",
 	}
 	sort.Strings(searchLinesInitrd)
 	// check that we exited the initramfs first
