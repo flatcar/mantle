@@ -84,9 +84,18 @@ func (om *machine) PrivateIP() string {
 			if !ok {
 				continue
 			}
+
 			iptype, ok := a["OS-EXT-IPS:type"].(string)
-			ip, ok2 := a["addr"].(string)
-			if ok && ok2 && iptype == "fixed" {
+			if !ok || iptype != "fixed" {
+				continue
+			}
+
+			version, ok := a["version"].(float64)
+			if !ok || version != 4 {
+				continue
+			}
+
+			if ip, ok := a["addr"].(string); ok {
 				return ip
 			}
 		}
