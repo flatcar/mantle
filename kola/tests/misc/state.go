@@ -10,6 +10,30 @@ import (
 
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/platform/conf"
+)
+
+var (
+	ignitionRerun = conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+  - path: /file-works
+    contents:
+      inline: "something"
+systemd:
+  units:
+    - name: test.service
+      enabled: true
+      contents: |
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=touch /service-works
+        [Install]
+        WantedBy=multi-user.target
+`)
 )
 
 func init() {
@@ -17,6 +41,16 @@ func init() {
 		Run:         OverlayCleanup,
 		ClusterSize: 1,
 		Name:        "cl.overlay.cleanup",
+		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 3530},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+	})
+	register.Register(&register.Test{
+		Run:         OsReset,
+		ClusterSize: 1,
+		Name:        "cl.osreset.ignition-rerun",
+		UserData:    ignitionRerun,
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3530},
 		// This test is normally not related to the cloud environment
@@ -59,4 +93,36 @@ func OverlayCleanup(c cluster.TestCluster) {
 
 	_ = c.MustSSH(m, fmt.Sprintf(overlayCheck, "after reboot"))
 	_ = c.MustSSH(m, `if sudo test -e /etc/sssd/sssd.conf || test -e /etc/kexec.conf || test -e /etc/samba || test ! -e /etc/bash/hello || test ! -e /etc/bash/bashrc ; then echo "Deletion or modification lost: $_" ; exit 1; fi`)
+}
+
+// Check the OS reset logic with flatcar-reset to be able to
+// reprovision the system while preserving selected paths.
+func OsReset(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	ignitionCheck := `sudo systemctl start test && if ! systemctl is-enabled -q test.service || test ! -e /service-works || test ! -e /file-works; then echo "Missing service/file %s: $_"; exit 1; fi`
+	_ = c.MustSSH(m, fmt.Sprintf(ignitionCheck, "on initial boot"))
+
+	prevMachineId := string(c.MustSSH(m, `cat /etc/machine-id`))
+
+	// Create some local state to discard and to preserve, covering cases
+	// where a file in a folder should be preserved and another not, or where
+	// a folder should be preserved with a file in it to keep
+	_ = c.MustSSH(m, `sudo rm /file-works && sudo mkdir /etc/custom /etc/keep-dir /etc/delete-dir && sudo touch /etc/delete-me /etc/keep-me /etc/keep-dir/file /etc/custom/delete-me /etc/custom/keep-me /etc/delete-dir/test`)
+
+	// Will reuse the original Ignition config but we could also specify a new one
+	_ = c.MustSSH(m, `sudo flatcar-reset --keep-machine-id --keep-paths '/etc/keep-dir' '/etc/keep-me' '/etc/custom/keep.*' '/var/log'`)
+	if err := m.Reboot(); err != nil {
+		c.Fatalf("could not reboot: %v", err)
+	}
+	// Check that Ignition reran
+	_ = c.MustSSH(m, fmt.Sprintf(ignitionCheck, "after reset"))
+
+	// Check that the local state is as expected
+	_ = c.MustSSH(m, `if test ! -e /etc/keep-dir/file || test ! -e /etc/custom/keep-me || test ! -e /etc/keep-me || test -e /etc/delete-me || test -e /etc/custom/delete-me || test -e /etc/delete-dir ; then echo "Unexpected state: $_" exit 1; fi`)
+
+	newMachineID := string(c.MustSSH(m, `cat /etc/machine-id`))
+	if prevMachineId != newMachineID {
+		c.Fatalf("machine ID not preserved: %q != %q", prevMachineId, newMachineID)
+	}
 }
