@@ -165,31 +165,6 @@ var (
 			},
 			"cgroupv1": false,
 		},
-		"v1.23.4": map[string]interface{}{
-			"FlannelVersion":   "v0.16.3",
-			"CiliumVersion":    "1.12.1",
-			"CiliumCLIVersion": "v0.12.2",
-			"CNIVersion":       "v1.0.1",
-			"CRIctlVersion":    "v1.22.0",
-			"ReleaseVersion":   "v0.4.0",
-			"DownloadDir":      "/opt/bin",
-			"PodSubnet":        "192.168.0.0/17",
-			"arm64": map[string]string{
-				"KubeadmSum": "a1d7d1dc0ee4598c53eedfac7a10ae4bf69613b352b0067f9ec5a8c4f5410b37a475afddf669f93646f830ab963f54046d22b101c385732c6252ba9c9ee78d4f",
-				"KubeletSum": "209450f58a2e9de79903723b169197e968ee58dd5b1149e3366aff9042286b4f83692f1b69e792155a9879e656802b64d317fdcbd5e85da4ad6cc2cb4667a5fe",
-				"CRIctlSum":  "f926c645e0d5f177c0589b1d052ffef4b4ed9d45b3d5b467473b6075ef767fb43b1f7ba5b525d57f021b6b8dc18d7efd27e03e1ec5b71a20f4e321c32456cdd9",
-				"CNISum":     "616c4f493a560ecd1ecc60f758720bb2c3539c4261a63d2094f474380d59d88444637cee7fed124c53193f08de7feb65510fe95579b12306c112ad45a74e1536",
-				"KubectlSum": "8e46340013faf76b7881314e1f2375b8cb13668994d09fe5037a65d9521b6fe99ce1011339aaee24ce211dc4eef7902c341ddb3d7b628038f060482e3349a7f7",
-			},
-			"amd64": map[string]string{
-				"KubeadmSum": "f56614d98fe93990664477c5c6cddcd319fcde0e452373da3506618c42ff5113a39848f169e1c4c8347dfc8c3e5f525469bcc6333d5c1bc88e60bcba45d57ea9",
-				"KubeletSum": "4306ef42564efc96ca7901a7fabe3231a3c660b83d935e78f8a06913cc9aa06b0777976bbc62de4fa5291b9bc2406970213e5d09390826da87cc05f365459c0e",
-				"CRIctlSum":  "9ff93e9c15942c39c85dd4e8182b3e9cd47fcb15b1315b0fdfd0d73442a84111e6cf8bb74b586e34b1f382a71107eb7e7820544a98d2224ca6b6dee3ee576222",
-				"CNISum":     "220ee0073e9b3708b8ec6159a6ee511b2fd9b88cbe74d48a9b823542e17acf53acec6215869a1d21826422d655eebdd53795fafcef70205d34bf9d8878b493d8",
-				"KubectlSum": "12349ef989f85e99ae88bb1e20ad15aa1c0aea7050372b4ae56e9f89c270a176246c445cf350d1024bc91e3fd5955ed1c6035185d0f4217f4b99628e9c173d50",
-			},
-			"cgroupv1": false,
-		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
@@ -200,11 +175,11 @@ etcd:
 
 func init() {
 	testConfigCgroupV1 := map[string]map[string]interface{}{}
-	testConfigCgroupV1["v1.23.4"] = map[string]interface{}{}
-	for k, v := range testConfig["v1.23.4"] {
-		testConfigCgroupV1["v1.23.4"][k] = v
+	testConfigCgroupV1["v1.24.1"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.24.1"] {
+		testConfigCgroupV1["v1.24.1"][k] = v
 	}
-	testConfigCgroupV1["v1.23.4"]["cgroupv1"] = true
+	testConfigCgroupV1["v1.24.1"]["cgroupv1"] = true
 
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
