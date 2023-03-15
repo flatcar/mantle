@@ -73,6 +73,7 @@ func init() {
 	// general options
 	sv(&outputDir, "output-dir", "", "Temporary output directory for test data and logs")
 	sv(&kola.TorcxManifestFile, "torcx-manifest", "", "Path to a torcx manifest that should be made available to tests")
+	sv(&kola.DevcontainerURL, "devcontainer-url", "http://bincache.flatcar-linux.net/images/@ARCH@/@VERSION@", "URL to a dev container archive that should be made available to tests")
 	root.PersistentFlags().StringVarP(&kolaPlatform, "platform", "p", "qemu", "VM platform: "+strings.Join(kolaPlatforms, ", "))
 	root.PersistentFlags().StringVarP(&kolaChannel, "channel", "", "stable", "Channel: "+strings.Join(kolaChannels, ", "))
 	root.PersistentFlags().StringVarP(&kolaOffering, "offering", "", "basic", "Offering: "+strings.Join(kolaOfferings, ", "))

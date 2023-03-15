@@ -24,6 +24,7 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 
+	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform"
@@ -50,11 +51,6 @@ func trimLeftSpace(contents string) string {
 }
 
 var (
-	defaultScriptTemplateParameters = scriptTemplateParameters{
-		BinhostURLTemplate:        "http://bincache.flatcar-linux.net/boards/@ARCH@-usr/@VERSION@/pkgs",
-		ImageDirectoryURLTemplate: "http://bincache.flatcar-linux.net/images/@ARCH@/@VERSION@",
-	}
-
 	devContainerScriptTemplate = trimLeftSpace(`
 #!/bin/bash
 
@@ -229,14 +225,19 @@ func init() {
 }
 
 func withSystemdNspawn(c cluster.TestCluster) {
-	runDevContainerTest(c, defaultScriptTemplateParameters, systemdNspawnScriptBody)
+	runDevContainerTest(c, systemdNspawnScriptBody)
 }
 
 func withDocker(c cluster.TestCluster) {
-	runDevContainerTest(c, defaultScriptTemplateParameters, dockerScriptBody)
+	runDevContainerTest(c, dockerScriptBody)
 }
 
-func runDevContainerTest(c cluster.TestCluster, scriptParameters scriptTemplateParameters, scriptBody string) {
+func runDevContainerTest(c cluster.TestCluster, scriptBody string) {
+	scriptParameters := scriptTemplateParameters{
+		BinhostURLTemplate:        "http://bincache.flatcar-linux.net/boards/@ARCH@-usr/@VERSION@/pkgs",
+		ImageDirectoryURLTemplate: kola.DevcontainerURL,
+	}
+
 	userdata, err := prepareUserData(scriptParameters, scriptBody)
 	if err != nil {
 		c.Fatalf("preparing user data failed: %v", err)
