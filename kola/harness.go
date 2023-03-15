@@ -626,7 +626,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 
 	// drop kolet binary on machines
 	if t.NativeFuncs != nil {
-		scpKolet(tcluster, architecture(pltfrm))
+		ScpKolet(tcluster, architecture(pltfrm))
 	}
 
 	defer func() {
@@ -677,8 +677,8 @@ func findExecDir() string {
 	return filepath.Dir(p)
 }
 
-// scpKolet searches for a kolet binary and copies it to the machine.
-func scpKolet(c cluster.TestCluster, mArch string) {
+// ScpKolet searches for a kolet binary and copies it to the machine.
+func ScpKolet(c cluster.TestCluster, mArch string) {
 	for _, d := range []string{
 		".",
 		findExecDir(),
