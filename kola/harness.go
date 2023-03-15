@@ -77,6 +77,7 @@ var (
 	TAPFile           string // if not "", write TAP results here
 	TorcxManifestFile string // torcx manifest to expose to tests, if set
 	DevcontainerURL   string // dev container to expose to tests, if set
+	DevcontainerFile  string // dev container path to expose to tests, if set
 	// TorcxManifest is the unmarshalled torcx manifest file. It is available for
 	// tests to access via `kola.TorcxManifest`. It will be nil if there was no
 	// manifest given to kola.
