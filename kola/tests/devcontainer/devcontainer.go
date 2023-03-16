@@ -250,7 +250,7 @@ func runDevContainerTest(c cluster.TestCluster, scriptBody string) {
 	}
 
 	scriptParameters := scriptTemplateParameters{
-		BinhostURLTemplate:        "http://bincache.flatcar-linux.net/boards/@ARCH@-usr/@VERSION@/pkgs",
+		BinhostURLTemplate:        kola.DevcontainerBinhostURL,
 		ImageDirectoryURLTemplate: devcontainerURL,
 	}
 

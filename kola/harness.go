@@ -73,11 +73,12 @@ var (
 	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
 	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
 
-	TestParallelism   int    //glue var to set test parallelism from main
-	TAPFile           string // if not "", write TAP results here
-	TorcxManifestFile string // torcx manifest to expose to tests, if set
-	DevcontainerURL   string // dev container to expose to tests, if set
-	DevcontainerFile  string // dev container path to expose to tests, if set
+	TestParallelism        int    //glue var to set test parallelism from main
+	TAPFile                string // if not "", write TAP results here
+	TorcxManifestFile      string // torcx manifest to expose to tests, if set
+	DevcontainerURL        string // dev container to expose to tests, if set
+	DevcontainerBinhostURL string // dev container binhost URL to use in the devcontainer test
+	DevcontainerFile       string // dev container path to expose to tests, if set
 	// TorcxManifest is the unmarshalled torcx manifest file. It is available for
 	// tests to access via `kola.TorcxManifest`. It will be nil if there was no
 	// manifest given to kola.
