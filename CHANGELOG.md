@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Security
+
+### Added
+
+### Change
+
+### Removed
+
+### Fixed
+
+## [v0.20.0] - 16/03/2023
+### Security
 - mod: Update golang.org/x/text to 0.3.8 ([#400](https://github.com/flatcar/mantle/pull/400))
 
 ### Added
