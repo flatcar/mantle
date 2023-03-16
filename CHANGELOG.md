@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Security
+
+### Added
+
+### Change
+
+### Removed
+
+### Fixed
+
+## [v0.20.0] - 16/03/2023
+### Security
 - mod: Update golang.org/x/text to 0.3.8 ([#400](https://github.com/flatcar/mantle/pull/400))
 
 ### Added
@@ -14,10 +25,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `--qemu-grow-base-disk-by` flag to grow the base disk ([#367](https://github.com/flatcar-linux/mantle/pull/367))
 - `--force-flatcar-key` flag to force injecting the Flatcar production key when testing the Flatcar update with `cl.update.payload` ([#398](https://github.com/flatcar/mantle/pull/398))
 - kubernetes 1.26.0 tests ([#406](https://github.com/flatcar/mantle/pull/406))
+- new flags `--devcontainer-binhost-url`, `--devcontainer-url` and `--devcontainer-file` to customize devcontainer tests ([#419](https://github.com/flatcar/mantle/pull/419))
 
 ### Changed
 - organization renaming (`flatcar-linux` -> `flatcar`) ([#372](https://github.com/flatcar/mantle/pull/372), [#374](https://github.com/flatcar/mantle/pull/374))
 - plume: consume images from bincache ([#371](https://github.com/flatcar/mantle/pull/371))
+- sdk: add new subkey ([#418](https://github.com/kinvolk/mantle/pull/418))
 
 ### Removed
 
