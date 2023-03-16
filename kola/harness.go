@@ -73,9 +73,12 @@ var (
 	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
 	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
 
-	TestParallelism   int    //glue var to set test parallelism from main
-	TAPFile           string // if not "", write TAP results here
-	TorcxManifestFile string // torcx manifest to expose to tests, if set
+	TestParallelism        int    //glue var to set test parallelism from main
+	TAPFile                string // if not "", write TAP results here
+	TorcxManifestFile      string // torcx manifest to expose to tests, if set
+	DevcontainerURL        string // dev container to expose to tests, if set
+	DevcontainerBinhostURL string // dev container binhost URL to use in the devcontainer test
+	DevcontainerFile       string // dev container path to expose to tests, if set
 	// TorcxManifest is the unmarshalled torcx manifest file. It is available for
 	// tests to access via `kola.TorcxManifest`. It will be nil if there was no
 	// manifest given to kola.
@@ -625,7 +628,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 
 	// drop kolet binary on machines
 	if t.NativeFuncs != nil {
-		scpKolet(tcluster, architecture(pltfrm))
+		ScpKolet(tcluster, architecture(pltfrm))
 	}
 
 	defer func() {
@@ -676,8 +679,8 @@ func findExecDir() string {
 	return filepath.Dir(p)
 }
 
-// scpKolet searches for a kolet binary and copies it to the machine.
-func scpKolet(c cluster.TestCluster, mArch string) {
+// ScpKolet searches for a kolet binary and copies it to the machine.
+func ScpKolet(c cluster.TestCluster, mArch string) {
 	for _, d := range []string{
 		".",
 		findExecDir(),

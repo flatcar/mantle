@@ -18,18 +18,23 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
+	"time"
 	"unicode"
 
 	"github.com/coreos/go-semver/semver"
 
+	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/local"
 	"github.com/flatcar/mantle/platform/machine/qemu"
 	"github.com/flatcar/mantle/platform/machine/unprivqemu"
+	"github.com/flatcar/mantle/util"
 )
 
 // Both template parameters may contain @ARCH@ and @VERSION@
@@ -50,11 +55,6 @@ func trimLeftSpace(contents string) string {
 }
 
 var (
-	defaultScriptTemplateParameters = scriptTemplateParameters{
-		BinhostURLTemplate:        "http://bincache.flatcar-linux.net/boards/@ARCH@-usr/@VERSION@/pkgs",
-		ImageDirectoryURLTemplate: "http://bincache.flatcar-linux.net/images/@ARCH@/@VERSION@",
-	}
-
 	devContainerScriptTemplate = trimLeftSpace(`
 #!/bin/bash
 
@@ -215,6 +215,9 @@ func init() {
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		Distros:    []string{"cl"},
 		MinVersion: semver.Version{Major: 2592},
+		NativeFuncs: map[string]func() error{
+			"Http": Serve,
+		},
 	})
 	register.Register(&register.Test{
 		Name:        "devcontainer.docker",
@@ -225,18 +228,32 @@ func init() {
 		Distros:   []string{"cl"},
 		// TODO: Revisit this flag when updating SELinux policies.
 		Flags: []register.Flag{register.NoEnableSelinux},
+		NativeFuncs: map[string]func() error{
+			"Http": Serve,
+		},
 	})
 }
 
 func withSystemdNspawn(c cluster.TestCluster) {
-	runDevContainerTest(c, defaultScriptTemplateParameters, systemdNspawnScriptBody)
+	runDevContainerTest(c, systemdNspawnScriptBody)
 }
 
 func withDocker(c cluster.TestCluster) {
-	runDevContainerTest(c, defaultScriptTemplateParameters, dockerScriptBody)
+	runDevContainerTest(c, dockerScriptBody)
 }
 
-func runDevContainerTest(c cluster.TestCluster, scriptParameters scriptTemplateParameters, scriptBody string) {
+func runDevContainerTest(c cluster.TestCluster, scriptBody string) {
+	devcontainerURL := kola.DevcontainerURL
+	if kola.DevcontainerFile != "" {
+		// This URL is deterministic as it runs on the started machine.
+		devcontainerURL = "http://localhost:8080"
+	}
+
+	scriptParameters := scriptTemplateParameters{
+		BinhostURLTemplate:        kola.DevcontainerBinhostURL,
+		ImageDirectoryURLTemplate: devcontainerURL,
+	}
+
 	userdata, err := prepareUserData(scriptParameters, scriptBody)
 	if err != nil {
 		c.Fatalf("preparing user data failed: %v", err)
@@ -245,6 +262,11 @@ func runDevContainerTest(c cluster.TestCluster, scriptParameters scriptTemplateP
 	if err != nil {
 		c.Fatalf("creating a machine failed: %v", err)
 	}
+
+	if kola.DevcontainerFile != "" {
+		configureHTTPServer(c, machine)
+	}
+
 	if _, err := c.SSH(machine, "/home/core/main-script"); err != nil {
 		c.Fatalf("main script failed: %v", err)
 	}
@@ -296,4 +318,34 @@ func newMachineWithLargeDisk(c cluster.TestCluster, userData *conf.UserData) (pl
 		return pc.NewMachineWithOptions(userData, options)
 	}
 	return nil, errors.New("unknown cluster type, this test should only be running on qemu or qemu-unpriv platforms")
+}
+
+func Serve() error {
+	httpServer := local.SimpleHTTP{}
+	return httpServer.Serve()
+}
+
+func configureHTTPServer(c cluster.TestCluster, srv platform.Machine) {
+	// manually copy Kolet on the host, as the initial size cluster is 0.
+	kola.ScpKolet(c, strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0])
+
+	in, err := os.Open(kola.DevcontainerFile)
+	if err != nil {
+		c.Fatalf("opening dev container file: %v", err)
+	}
+
+	defer in.Close()
+
+	if err := platform.InstallFile(in, srv, "/var/www/flatcar_developer_container.bin.bz2"); err != nil {
+		c.Fatalf("copying dev container to HTTP server: %v", err)
+	}
+
+	c.MustSSH(srv, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Http", c.H.Name()))
+
+	if err := util.WaitUntilReady(60*time.Second, 5*time.Second, func() (bool, error) {
+		_, _, err := srv.SSH(fmt.Sprintf("curl %s:8080", srv.PrivateIP()))
+		return err == nil, nil
+	}); err != nil {
+		c.Fatal("timed out waiting for http server to become active")
+	}
 }
