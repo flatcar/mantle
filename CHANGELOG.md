@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - organization renaming (`flatcar-linux` -> `flatcar`) ([#372](https://github.com/flatcar/mantle/pull/372), [#374](https://github.com/flatcar/mantle/pull/374))
 - plume: consume images from bincache ([#371](https://github.com/flatcar/mantle/pull/371))
+- sdk: add new subkey ([#418](https://github.com/kinvolk/mantle/pull/418))
 
 ### Removed
 
