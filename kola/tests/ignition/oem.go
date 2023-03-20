@@ -29,20 +29,50 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
 		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 2983},
-		UserData: conf.ContainerLinuxConfig(`storage:
+		MinVersion: semver.Version{Major: 3549},
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
   filesystems:
-     - name: oem
-       mount:
-         device: "/dev/disk/by-label/OEM"
-         format: "btrfs"
+     - device: "/dev/disk/by-label/OEM"
+       format: "btrfs"
+       path: /usr/share/oem
   files:
-    - path: /grub.cfg
-      filesystem: oem
+    - path: /usr/share/oem/grub.cfg
       mode: 0644
+      overwrite: true
       contents:
         inline: |
-          set linux_append="flatcar.autologin"`),
+          set linux_append="flatcar.autologin"
+          # Needed if --qemu-skip-mangle is not set
+          set linux_console="console=ttyS0,115200"
+`),
+	})
+	register.Register(&register.Test{
+		// Check new behavior from https://github.com/flatcar/bootengine/pull/58
+		// to not have to specify the OEM filesystem in Ignition
+		Name:        "cl.ignition.oem.indirect",
+		Run:         reusePartition,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3550},
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /usr/share/oem/grub.cfg
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          set linux_append="flatcar.autologin"
+          # Needed if --qemu-skip-mangle is not set
+          set linux_console="console=ttyS0,115200"
+`),
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.oem.reuse",
@@ -52,6 +82,7 @@ func init() {
 		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 2983},
+		// Using CLC format here also covers the ign-converter case
 		UserData: conf.ContainerLinuxConfig(`storage:
   filesystems:
      - name: oem
@@ -75,6 +106,7 @@ func init() {
 		// different from QEMU.
 		// More details: https://github.com/flatcar/Flatcar/issues/514.
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		// Using CLC format here also covers the ign-converter case
 		UserData: conf.ContainerLinuxConfig(`storage:
   filesystems:
      - name: oem
@@ -106,6 +138,17 @@ func reusePartition(c cluster.TestCluster) {
 		debug := c.MustSSH(c.Machines()[0], `lsblk --output FSTYPE,LABEL,MOUNTPOINT --json; echo ; lsblk`)
 		c.Fatalf("should get btrfs, got: %s\ndebug info: %s", string(out), string(debug))
 	}
+
+	// Test for https://github.com/flatcar/Flatcar/issues/979
+	// Not sure why exactly the second mount is able to reproduce this, I suppose
+	// it is the coredump service DBus hang around initrd-setup-root that contributes
+	// to exposing a different execution trace of the initrd service race.
+	_ = c.MustSSH(c.Machines()[0], `sudo touch /boot/flatcar/first_boot`)
+	err := c.Machines()[0].Reboot()
+	if err != nil {
+		c.Fatalf("Couldn't reboot machine: %v", err)
+	}
+	_ = c.MustSSH(c.Machines()[0], `true`)
 }
 
 // wipeOEM asserts that if the config uses a different fs format with a wipe of the fs we effectively wipe the fs.
