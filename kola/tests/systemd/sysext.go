@@ -4,42 +4,20 @@
 package systemd
 
 import (
-	"bytes"
-	"encoding/base64"
-	"errors"
 	"fmt"
-	"os"
 	"strings"
-	"text/template"
-	"time"
-	"unicode"
 
 	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
-	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform/conf"
-	"github.com/flatcar/mantle/platform/local"
-	"github.com/flatcar/mantle/platform/machine/qemu"
-	"github.com/flatcar/mantle/platform/machine/unprivqemu"
-	"github.com/flatcar/mantle/util"
 )
 
-// BEGIN FOR UTILS
-func trimLeftSpace(contents string) string {
-	return strings.TrimLeftFunc(contents, unicode.IsSpace)
-}
-
-// END FOR UTILS
-
 type (
-	downloadScriptParameters struct {
-		ImageDirectoryURLTemplate string
-	}
-
 	configTemplateParameters struct {
-		DownloadScriptBase64Contents     string
+		DownloadLibraryBase64Contents    string
 		DevContainerScriptBase64Contents string
 		MainScriptBase64Contents         string
 		CheckScriptBase64Contents        string
@@ -47,56 +25,7 @@ type (
 )
 
 var (
-	// BEGIN FOR UTILS
-	downloadScriptTemplate = trimLeftSpace(`
-#!/bin/bash
-
-set -x
-
-set -euo pipefail
-
-output_bin="${1}"
-
-function process_template() {
-        local template="${1}"; shift
-        local arch="${1}"; shift
-        local version="${1}"; shift
-        local result="${template}"
-
-        result="${result//@ARCH@/${arch}}"
-        result="${result//@VERSION@/${version}}"
-
-        echo "${result}"
-}
-
-source /usr/share/flatcar/release
-
-ARCH="${FLATCAR_RELEASE_BOARD/-usr/}"
-VERSION="${FLATCAR_RELEASE_VERSION}"
-IMAGE_URL=$(process_template '{{ .ImageDirectoryURLTemplate }}/flatcar_developer_container.bin.bz2' "${ARCH}" "${VERSION}")
-
-echo "Fetching developer container from ${IMAGE_URL}"
-# Stolen from copy_from_buildcache in ci_automation_common.sh. Not
-# using --output-dir option as this seems to be quite a new addition
-# and curl on older version of Flatcar does not understand it.
-curl --fail --silent --show-error --location --retry-delay 1 --retry 60 \
-        --retry-connrefused --retry-max-time 60 --connect-timeout 20 \
-        --remote-name "${IMAGE_URL}"
-
-bzip2cat=bzcat
-if command -v lbzcat; then
-        bzip2cat=lbzcat
-fi
-
-# The image file takes over 6Gb after normal unpacking, but a lot of
-# it is just zeros. Use cp --sparse=always to avoid unnecessary disk
-# space waste. Especially that we may not have 6Gb of disk space
-# available.
-cp --sparse=always <("${bzip2cat}" flatcar_developer_container.bin.bz2) "${output_bin}"
-`)
-	// END FOR UTILS
-
-	devContainerScript = trimLeftSpace(`
+	devContainerScript = util.TrimLeftSpace(`
 #!/bin/bash
 
 set -x
@@ -122,14 +51,16 @@ printf '%s\n' "${metadata[@]}" >"${metadata_file}"
 mksquashfs /work/sysext_rootfs "/work/oem-test-${version}.raw" -all-root
 `)
 
-	mainScript = trimLeftSpace(`
+	mainScript = util.TrimLeftSpace(`
 #!/bin/bash
 
 set -x
 
 set -euo pipefail
 
-/home/core/download-script.sh flatcar_developer_container.bin
+source /home/core/download-library.sh
+
+download_dev_container_image flatcar_developer_container.bin
 
 # This is where the built sysext will be stored
 workdir="${PWD}/dev-container-workdir-${RANDOM}"
@@ -169,7 +100,7 @@ sudo touch /oem/sysext/active-oem-test
 sudo flatcar-reset --keep-machine-id --keep-paths /var/log
 `)
 
-	checkScript = trimLeftSpace(`
+	checkScript = util.TrimLeftSpace(`
 #!/bin/bash
 
 set -x
@@ -224,15 +155,15 @@ if [[ "${got}" != "${ex}" ]]; then
 fi
 `)
 
-	butaneTemplate = trimLeftSpace(`
+	butaneTemplate = util.TrimLeftSpace(`
 variant: flatcar
 version: 1.0.0
 storage:
   files:
-    - path: /home/core/download-script.sh
-      mode: 0755
+    - path: /home/core/download-library.sh
+      mode: 0644
       contents:
-        source: "data:text/plain;base64,{{ .DownloadScriptBase64Contents }}"
+        source: "data:text/plain;base64,{{ .DownloadLibraryBase64Contents }}"
       user:
         name: core
       group:
@@ -311,7 +242,7 @@ func init() {
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3605},
 		NativeFuncs: map[string]func() error{
-			"Http": Serve,
+			"Http": util.Serve,
 		},
 	})
 }
@@ -363,28 +294,23 @@ func checkSysextCustomDocker(c cluster.TestCluster) {
 }
 
 func checkSysextCustomOEM(c cluster.TestCluster) {
-	// BEGIN COPIED STUFF
-	devcontainerURL := kola.DevcontainerURL
-	if kola.DevcontainerFile != "" {
-		// This URL is deterministic as it runs on the started machine.
-		devcontainerURL = "http://localhost:8080"
+	downloadLibrary, err := util.DevContainerDownloadLibrary()
+	if err != nil {
+		c.Fatalf("creating a dev container download script failed: %v", err)
 	}
-	// END COPIED STUFF
 
-	userdata, err := prepareUserData(devcontainerURL)
+	userdata, err := prepareUserData(downloadLibrary)
 	if err != nil {
 		c.Fatalf("preparing user data failed: %v", err)
 	}
-	// BEGIN COPIED STUFF
-	machine, err := newMachineWithLargeDisk(c, userdata)
+	machine, err := util.NewMachineWithLargeDisk(c, "5G", userdata)
 	if err != nil {
 		c.Fatalf("creating a machine failed: %v", err)
 	}
-
-	if kola.DevcontainerFile != "" {
-		configureHTTPServer(c, machine)
+	err = util.ConfigureDevContainerHTTPServer(c, machine)
+	if err != nil {
+		c.Fatalf("configuring local HTTP server for dev container image failed: %v", err)
 	}
-	// END COPIED STUFF
 
 	if _, err := c.SSH(machine, "/home/core/main-script.sh"); err != nil {
 		c.Fatalf("main script failed: %v", err)
@@ -397,85 +323,20 @@ func checkSysextCustomOEM(c cluster.TestCluster) {
 	}
 }
 
-func prepareUserData(devContainerURL string) (*conf.UserData, error) {
-	scriptParameters := downloadScriptParameters{
-		ImageDirectoryURLTemplate: devContainerURL,
-	}
-	downloadScript, err := executeTemplate(downloadScriptTemplate, "download script", scriptParameters)
-	if err != nil {
-		return nil, err
-	}
-	downloadScriptBase64 := base64.StdEncoding.EncodeToString(([]byte)(downloadScript))
-	mainScriptBase64 := base64.StdEncoding.EncodeToString(([]byte)(mainScript))
-	devContainerScriptBase64 := base64.StdEncoding.EncodeToString(([]byte)(devContainerScript))
-	checkScriptBase64 := base64.StdEncoding.EncodeToString(([]byte)(checkScript))
+func prepareUserData(downloadLibrary string) (*conf.UserData, error) {
+	downloadLibraryBase64 := util.ToBase64(downloadLibrary)
+	mainScriptBase64 := util.ToBase64(mainScript)
+	devContainerScriptBase64 := util.ToBase64(devContainerScript)
+	checkScriptBase64 := util.ToBase64(checkScript)
 	configParameters := configTemplateParameters{
-		DownloadScriptBase64Contents:     downloadScriptBase64,
+		DownloadLibraryBase64Contents:    downloadLibraryBase64,
 		DevContainerScriptBase64Contents: devContainerScriptBase64,
 		MainScriptBase64Contents:         mainScriptBase64,
 		CheckScriptBase64Contents:        checkScriptBase64,
 	}
-	config, err := executeTemplate(butaneTemplate, "butane config", configParameters)
+	config, err := util.ExecNamedTemplate(butaneTemplate, "butane config", configParameters)
 	if err != nil {
 		return nil, err
 	}
 	return conf.Butane(config), nil
 }
-
-// BEGIN COPIED STUFF
-func executeTemplate(contents, name string, parameters any) (string, error) {
-	tmpl, err := template.New(name).Parse(contents)
-	if err != nil {
-		return "", fmt.Errorf("parsing %s as a template failed: %w", name, err)
-	}
-	buf := bytes.Buffer{}
-	if err := tmpl.Execute(&buf, parameters); err != nil {
-		return "", fmt.Errorf("executing %s template failed: %w", name, err)
-	}
-	return buf.String(), nil
-}
-
-func newMachineWithLargeDisk(c cluster.TestCluster, userData *conf.UserData) (platform.Machine, error) {
-	options := platform.MachineOptions{
-		ExtraPrimaryDiskSize: "5G",
-	}
-	switch pc := c.Cluster.(type) {
-	case *qemu.Cluster:
-		return pc.NewMachineWithOptions(userData, options)
-	case *unprivqemu.Cluster:
-		return pc.NewMachineWithOptions(userData, options)
-	}
-	return nil, errors.New("unknown cluster type, this test should only be running on qemu or qemu-unpriv platforms")
-}
-
-func Serve() error {
-	httpServer := local.SimpleHTTP{}
-	return httpServer.Serve()
-}
-
-func configureHTTPServer(c cluster.TestCluster, srv platform.Machine) {
-	// manually copy Kolet on the host, as the initial size cluster is 0.
-	kola.ScpKolet(c, strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0])
-
-	in, err := os.Open(kola.DevcontainerFile)
-	if err != nil {
-		c.Fatalf("opening dev container file: %v", err)
-	}
-
-	defer in.Close()
-
-	if err := platform.InstallFile(in, srv, "/var/www/flatcar_developer_container.bin.bz2"); err != nil {
-		c.Fatalf("copying dev container to HTTP server: %v", err)
-	}
-
-	c.MustSSH(srv, fmt.Sprintf("sudo systemd-run --quiet ./kolet run %s Http", c.H.Name()))
-
-	if err := util.WaitUntilReady(60*time.Second, 5*time.Second, func() (bool, error) {
-		_, _, err := srv.SSH(fmt.Sprintf("curl %s:8080", srv.PrivateIP()))
-		return err == nil, nil
-	}); err != nil {
-		c.Fatal("timed out waiting for http server to become active")
-	}
-}
-
-// END COPIED STUFF
