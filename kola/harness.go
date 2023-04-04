@@ -680,8 +680,8 @@ func findExecDir() string {
 	return filepath.Dir(p)
 }
 
-// ScpKolet searches for a kolet binary and copies it to the machine.
-func ScpKolet(c cluster.TestCluster, mArch string) {
+// UploadKolet searches for a kolet binary and copies it to the machine.
+func UploadKolet(c cluster.TestCluster, mArch string) error {
 	for _, d := range []string{
 		".",
 		findExecDir(),
@@ -691,21 +691,29 @@ func ScpKolet(c cluster.TestCluster, mArch string) {
 		kolet := filepath.Join(d, "kolet")
 		if _, err := os.Stat(kolet); err == nil {
 			if err := c.DropFile(kolet); err != nil {
-				c.Fatalf("dropping kolet binary: %v", err)
+				return fmt.Errorf("dropping kolet binary: %w", err)
 			}
 			// The default SELinux rules do not allow init_t to execute user_home_t
 			if Options.Distribution == "rhcos" || Options.Distribution == "fcos" {
 				for _, machine := range c.Machines() {
 					out, stderr, err := machine.SSH("sudo chcon -t bin_t kolet")
 					if err != nil {
-						c.Fatalf("running chcon on kolet: %s: %s: %v", out, stderr, err)
+						return fmt.Errorf("running chcon on kolet: %s: %s: %w", out, stderr, err)
 					}
 				}
 			}
-			return
+			return nil
 		}
 	}
-	c.Fatalf("Unable to locate kolet binary for %s", mArch)
+	return fmt.Errorf("Unable to locate kolet binary for %s", mArch)
+}
+
+// ScpKolet searches for a kolet binary and copies it to the
+// machine. It's fatal if it fails.
+func ScpKolet(c cluster.TestCluster, mArch string) {
+	if err := UploadKolet(c, mArch); err != nil {
+		c.Fatal(err)
+	}
 }
 
 // CheckConsole checks some console output for badness and returns short
