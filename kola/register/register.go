@@ -74,6 +74,9 @@ type Test struct {
 	// SkipFunc can be used to define if a test should be skip or not based on some
 	// condition on the version, channel, arch and platform.
 	SkipFunc func(version semver.Version, channel, arch, platform string) bool
+
+	// DefaultUser is the user used for SSH connection, it will be created via Ignition when possible.
+	DefaultUser string
 }
 
 // Registered tests live here. Mapping of names to tests.
