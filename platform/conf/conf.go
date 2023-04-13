@@ -73,6 +73,8 @@ type UserData struct {
 	kind      kind
 	data      string
 	extraKeys []*agent.Key // SSH keys to be injected during rendering
+	// user to create.
+	User string
 }
 
 // Conf is a configuration for a Container Linux machine. It may be either a
@@ -89,6 +91,7 @@ type Conf struct {
 	ignitionV33 *v33types.Config
 	cloudconfig *cci.CloudConfig
 	script      string
+	user        string
 }
 
 func Empty() *UserData {
@@ -186,7 +189,7 @@ func (u *UserData) IsIgnitionCompatible() bool {
 // Render parses userdata and returns a new Conf. It returns an error if the
 // userdata can't be parsed.
 func (u *UserData) Render(ctPlatform string) (*Conf, error) {
-	c := &Conf{}
+	c := &Conf{user: u.User}
 
 	renderIgnition := func() error {
 		// Try each known version in turn.  Newer parsers will
@@ -1069,13 +1072,13 @@ func (c *Conf) copyKeysIgnitionV1(keys []*agent.Key) {
 	keyStrs := keysToStrings(keys)
 	for i := range c.ignitionV1.Passwd.Users {
 		user := &c.ignitionV1.Passwd.Users[i]
-		if user.Name == "core" {
+		if user.Name == c.user {
 			user.SSHAuthorizedKeys = append(user.SSHAuthorizedKeys, keyStrs...)
 			return
 		}
 	}
 	c.ignitionV1.Passwd.Users = append(c.ignitionV1.Passwd.Users, v1types.User{
-		Name:              "core",
+		Name:              c.user,
 		SSHAuthorizedKeys: keyStrs,
 	})
 }
@@ -1084,13 +1087,13 @@ func (c *Conf) copyKeysIgnitionV2(keys []*agent.Key) {
 	keyStrs := keysToStrings(keys)
 	for i := range c.ignitionV2.Passwd.Users {
 		user := &c.ignitionV2.Passwd.Users[i]
-		if user.Name == "core" {
+		if user.Name == c.user {
 			user.SSHAuthorizedKeys = append(user.SSHAuthorizedKeys, keyStrs...)
 			return
 		}
 	}
 	c.ignitionV2.Passwd.Users = append(c.ignitionV2.Passwd.Users, v2types.User{
-		Name:              "core",
+		Name:              c.user,
 		SSHAuthorizedKeys: keyStrs,
 	})
 }
@@ -1102,13 +1105,13 @@ func (c *Conf) copyKeysIgnitionV21(keys []*agent.Key) {
 	}
 	for i := range c.ignitionV21.Passwd.Users {
 		user := &c.ignitionV21.Passwd.Users[i]
-		if user.Name == "core" {
+		if user.Name == c.user {
 			user.SSHAuthorizedKeys = append(user.SSHAuthorizedKeys, keyObjs...)
 			return
 		}
 	}
 	c.ignitionV21.Passwd.Users = append(c.ignitionV21.Passwd.Users, v21types.PasswdUser{
-		Name:              "core",
+		Name:              c.user,
 		SSHAuthorizedKeys: keyObjs,
 	})
 }
@@ -1120,13 +1123,13 @@ func (c *Conf) copyKeysIgnitionV22(keys []*agent.Key) {
 	}
 	for i := range c.ignitionV22.Passwd.Users {
 		user := &c.ignitionV22.Passwd.Users[i]
-		if user.Name == "core" {
+		if user.Name == c.user {
 			user.SSHAuthorizedKeys = append(user.SSHAuthorizedKeys, keyObjs...)
 			return
 		}
 	}
 	c.ignitionV22.Passwd.Users = append(c.ignitionV22.Passwd.Users, v22types.PasswdUser{
-		Name:              "core",
+		Name:              c.user,
 		SSHAuthorizedKeys: keyObjs,
 	})
 }
@@ -1138,13 +1141,13 @@ func (c *Conf) copyKeysIgnitionV23(keys []*agent.Key) {
 	}
 	for i := range c.ignitionV23.Passwd.Users {
 		user := &c.ignitionV23.Passwd.Users[i]
-		if user.Name == "core" {
+		if user.Name == c.user {
 			user.SSHAuthorizedKeys = append(user.SSHAuthorizedKeys, keyObjs...)
 			return
 		}
 	}
 	c.ignitionV23.Passwd.Users = append(c.ignitionV23.Passwd.Users, v23types.PasswdUser{
-		Name:              "core",
+		Name:              c.user,
 		SSHAuthorizedKeys: keyObjs,
 	})
 }
@@ -1161,7 +1164,7 @@ func (c *Conf) copyKeysIgnitionV3(keys []*agent.Key) {
 		Passwd: v3types.Passwd{
 			Users: []v3types.PasswdUser{
 				{
-					Name:              "core",
+					Name:              c.user,
 					SSHAuthorizedKeys: keyObjs,
 				},
 			},
@@ -1182,7 +1185,7 @@ func (c *Conf) copyKeysIgnitionV31(keys []*agent.Key) {
 		Passwd: v31types.Passwd{
 			Users: []v31types.PasswdUser{
 				{
-					Name:              "core",
+					Name:              c.user,
 					SSHAuthorizedKeys: keyObjs,
 				},
 			},
@@ -1203,7 +1206,7 @@ func (c *Conf) copyKeysIgnitionV32(keys []*agent.Key) {
 		Passwd: v32types.Passwd{
 			Users: []v32types.PasswdUser{
 				{
-					Name:              "core",
+					Name:              c.user,
 					SSHAuthorizedKeys: keyObjs,
 				},
 			},
@@ -1224,7 +1227,7 @@ func (c *Conf) copyKeysIgnitionV33(keys []*agent.Key) {
 		Passwd: v33types.Passwd{
 			Users: []v33types.PasswdUser{
 				{
-					Name:              "core",
+					Name:              c.user,
 					SSHAuthorizedKeys: keyObjs,
 				},
 			},
