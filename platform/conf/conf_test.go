@@ -15,6 +15,7 @@
 package conf
 
 import (
+	"errors"
 	"net"
 	"strings"
 	"testing"
@@ -61,6 +62,69 @@ func TestConfCopyKey(t *testing.T) {
 		if !strings.Contains(str, "ssh-rsa ") || !strings.Contains(str, " core@default") {
 			t.Errorf("ssh public key not found in config %d: %s", i, str)
 			continue
+		}
+	}
+}
+
+func TestConfAddUserToGroups(t *testing.T) {
+	tests := []struct {
+		u *UserData
+		e error
+	}{
+		{
+			CloudConfig("#cloud-config"),
+			errors.New("missing addUserToGroups implementation for this config type"),
+		},
+		{
+			Ignition(`{ "ignitionVersion": 1 }`),
+			errors.New("missing addUserToGroups implementation for this config type"),
+		},
+		{
+			Ignition(`{ "ignition": { "version": "2.2.0" } }`),
+			errors.New("missing addUserToGroups implementation for this config type"),
+		},
+		{
+			Ignition(`{ "ignition": { "version": "2.1.0" } }`),
+			errors.New("missing addUserToGroups implementation for this config type"),
+		},
+		{
+			Ignition(`{ "ignition": { "version": "2.0.0" } }`),
+			errors.New("missing addUserToGroups implementation for this config type"),
+		},
+		{
+			Ignition(`{ "ignition": { "version": "3.0.0" } }`),
+			nil,
+		},
+		{
+			Ignition(`{ "ignition": { "version": "3.1.0" } }`),
+			nil,
+		},
+		{
+			Ignition(`{ "ignition": { "version": "3.2.0" } }`),
+			nil,
+		},
+		{
+			Ignition(`{ "ignition": { "version": "3.3.0" } }`),
+			nil,
+		},
+		{
+			Butane("variant: flatcar\nversion: 1.0.0"),
+			nil,
+		},
+	}
+
+	for i, tt := range tests {
+		conf, err := tt.u.Render("")
+		if err != nil {
+			t.Errorf("failed to parse config %d: %v", i, err)
+			continue
+		}
+
+		err = conf.AddUserToGroups("test", []string{"sudo"})
+		if tt.e == nil && err != nil {
+			t.Errorf("should get nil error, got: %v", err)
+		} else if tt.e != nil && err == nil {
+			t.Errorf("should get an error, got a nil error")
 		}
 	}
 }

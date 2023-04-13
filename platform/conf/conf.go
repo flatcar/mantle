@@ -1297,3 +1297,110 @@ func AddSSHKeys(userdata *UserData, keys *[]agent.Key) *UserData {
 	}
 	return userdata
 }
+
+// AddUserToGroups add the user to the given groups
+func (c *Conf) AddUserToGroups(user string, groups []string) error {
+	var err error
+
+	if c.ignitionV3 != nil {
+		c.addUserToGroupsV3(user, groups)
+	} else if c.ignitionV31 != nil {
+		c.addUserToGroupsV31(user, groups)
+	} else if c.ignitionV32 != nil {
+		c.addUserToGroupsV32(user, groups)
+	} else if c.ignitionV33 != nil {
+		c.addUserToGroupsV33(user, groups)
+	} else {
+		err = fmt.Errorf("missing addUserToGroups implementation for this config type")
+	}
+
+	return err
+}
+
+func (c *Conf) addUserToGroupsV3(user string, groups []string) {
+	g := []v3types.Group{}
+	for _, group := range groups {
+		g = append(g, v3types.Group(group))
+	}
+
+	newConfig := v3types.Config{
+		Ignition: v3types.Ignition{
+			Version: "3.0.0",
+		},
+		Passwd: v3types.Passwd{
+			Users: []v3types.PasswdUser{
+				{
+					Name:   user,
+					Groups: g,
+				},
+			},
+		},
+	}
+	c.MergeV3(newConfig)
+}
+
+func (c *Conf) addUserToGroupsV31(user string, groups []string) {
+	g := []v31types.Group{}
+	for _, group := range groups {
+		g = append(g, v31types.Group(group))
+	}
+
+	newConfig := v31types.Config{
+		Ignition: v31types.Ignition{
+			Version: "3.1.0",
+		},
+		Passwd: v31types.Passwd{
+			Users: []v31types.PasswdUser{
+				{
+					Name:   user,
+					Groups: g,
+				},
+			},
+		},
+	}
+	c.MergeV31(newConfig)
+}
+
+func (c *Conf) addUserToGroupsV32(user string, groups []string) {
+	g := []v32types.Group{}
+	for _, group := range groups {
+		g = append(g, v32types.Group(group))
+	}
+
+	newConfig := v32types.Config{
+		Ignition: v32types.Ignition{
+			Version: "3.2.0",
+		},
+		Passwd: v32types.Passwd{
+			Users: []v32types.PasswdUser{
+				{
+					Name:   user,
+					Groups: g,
+				},
+			},
+		},
+	}
+	c.MergeV32(newConfig)
+}
+
+func (c *Conf) addUserToGroupsV33(user string, groups []string) {
+	g := []v33types.Group{}
+	for _, group := range groups {
+		g = append(g, v33types.Group(group))
+	}
+
+	newConfig := v33types.Config{
+		Ignition: v33types.Ignition{
+			Version: "3.3.0",
+		},
+		Passwd: v33types.Passwd{
+			Users: []v33types.PasswdUser{
+				{
+					Name:   user,
+					Groups: g,
+				},
+			},
+		},
+	}
+	c.MergeV33(newConfig)
+}
