@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
@@ -66,6 +67,50 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
+	register.Register(&register.Test{
+		Run:     journalUser,
+		Name:    "systemd.journal.user",
+		Distros: []string{"cl"},
+
+		// This test is normally not related to the cloud environment
+		Platforms:   []string{"qemu", "qemu-unpriv"},
+		DefaultUser: "flatcar",
+		ClusterSize: 1,
+		MinVersion:  semver.Version{Major: 3572},
+		UserData: conf.Butane(`variant: flatcar
+version: 1.0.0
+passwd:
+  users:
+    - name: flatcar
+      groups:
+        - systemd-journal
+storage:
+  directories:
+    - path: /etc/systemd/user/default.target.wants
+      mode: 0755
+  files:
+    - path: /etc/systemd/user/hello.service
+      mode: 0644
+      contents:
+        inline: |
+          [Unit]
+          Description=A hello world unit!
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/echo "Foo !"
+
+          [Install]
+          WantedBy=default.target
+  links:
+    - path: /etc/systemd/user/default.target.wants/hello.service
+      target: /etc/systemd/user/hello.service
+      hard: false`),
+	})
+}
+
+func journalUser(c cluster.TestCluster) {
+	c.MustSSH(c.Machines()[0], "journalctl --user --unit hello.service | grep Foo")
 }
 
 // JournalRemote tests that systemd-journal-remote can read log entries from

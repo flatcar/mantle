@@ -53,6 +53,10 @@ func NewBaseCluster(bf *BaseFlight, rconf *RuntimeConfig) (*BaseCluster, error) 
 }
 
 func (bc *BaseCluster) SSHClient(ip string) (*ssh.Client, error) {
+	if bc.rconf.DefaultUser != "" {
+		return bc.UserSSHClient(ip, bc.rconf.DefaultUser)
+	}
+
 	sshClient, err := bc.bf.agent.NewClient(ip)
 	if err != nil {
 		return nil, err
@@ -144,6 +148,13 @@ func (bc *BaseCluster) RenderUserData(userdata *conf.UserData, ignitionVars map[
 		}
 	}
 
+	u := bc.rconf.DefaultUser
+	if u == "" {
+		u = "core"
+	}
+
+	userdata.User = u
+
 	// hacky solution for unified ignition metadata variables
 	if userdata.IsIgnitionCompatible() {
 		for k, v := range ignitionVars {
@@ -158,6 +169,13 @@ func (bc *BaseCluster) RenderUserData(userdata *conf.UserData, ignitionVars map[
 	conf, err := userdata.Render(bc.bf.ctPlatform)
 	if err != nil {
 		return nil, err
+	}
+
+	// By default, the user is added to the sudo group (for initial operations like enabling SELinux).
+	if u != "core" {
+		if err := conf.AddUserToGroups(u, []string{"sudo"}); err != nil {
+			return nil, fmt.Errorf("adding user to group: %w", err)
+		}
 	}
 
 	for _, dropin := range bc.bf.baseopts.SystemdDropins {
