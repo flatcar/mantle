@@ -260,7 +260,7 @@ storage:
               spec:
                 containers:
                 - name: nginx
-                  image: ghcr.io/kinvolk/nginx
+                  image: ghcr.io/flatcar/nginx
                   ports:
                   - containerPort: 80`
 
@@ -350,7 +350,7 @@ metadata:
 spec:
   # Use GH container registry to get rid of Docker limitation.
   registry: ghcr.io
-  imagePath: kinvolk/calico
+  imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
     # Note: The ipPools section cannot be modified post-install.

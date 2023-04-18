@@ -131,6 +131,6 @@ storage:
               spec:
                 containers:
                 - name: nginx
-                  image: ghcr.io/kinvolk/nginx
+                  image: ghcr.io/flatcar/nginx
                   ports:
                   - containerPort: 80

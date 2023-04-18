@@ -79,8 +79,8 @@ func checkSysextCustomDocker(c cluster.TestCluster) {
 		arch = "x86_64"
 	}
 
-	cmdNotWorking := `if docker run --rm ghcr.io/kinvolk/busybox true; then exit 1; fi`
-	cmdWorking := `docker run --rm ghcr.io/kinvolk/busybox echo Hello World`
+	cmdNotWorking := `if docker run --rm ghcr.io/flatcar/busybox true; then exit 1; fi`
+	cmdWorking := `docker run --rm ghcr.io/flatcar/busybox echo Hello World`
 	// First assert that Docker doesn't work because Torcx is disabled
 	_ = c.MustSSH(c.Machines()[0], cmdNotWorking)
 	// We build a custom sysext image locally because we don't host them somewhere yet

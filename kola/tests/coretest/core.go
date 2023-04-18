@@ -155,7 +155,7 @@ func TestDockerEcho() error {
 	//t.Parallel()
 	errc := make(chan error, 1)
 	go func() {
-		c := exec.Command("docker", "run", "ghcr.io/kinvolk/busybox", "echo")
+		c := exec.Command("docker", "run", "ghcr.io/flatcar/busybox", "echo")
 		err := c.Run()
 		errc <- err
 	}()
@@ -174,7 +174,7 @@ func TestDockerPing() error {
 	//t.Parallel()
 	errc := make(chan error, 1)
 	go func() {
-		c := exec.Command("docker", "run", "ghcr.io/kinvolk/busybox", "ping", "-c4", "flatcar.org")
+		c := exec.Command("docker", "run", "ghcr.io/flatcar/busybox", "ping", "-c4", "flatcar.org")
 		err := c.Run()
 		errc <- err
 	}()
