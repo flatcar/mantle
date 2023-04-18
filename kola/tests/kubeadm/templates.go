@@ -117,7 +117,8 @@ storage:
         inline: |
           {
               "log-driver": "journald"
-          }`
+          }
+`
 
 	masterConfig = `systemd:
   units:{{ if .cgroupv1 }}
@@ -262,7 +263,8 @@ storage:
                 - name: nginx
                   image: ghcr.io/flatcar/nginx
                   ports:
-                  - containerPort: 80`
+                  - containerPort: 80
+`
 
 	masterScript = `#!/bin/bash
 set -euo pipefail
@@ -480,5 +482,6 @@ EOF
 systemctl start --quiet coreos-metadata
 ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '(PRIVATE|LOCAL|DYNAMIC)' | cut -d = -f 2)
 
-kubeadm join --config worker-config.yaml --node-name "${ipv4}"`
+kubeadm join --config worker-config.yaml --node-name "${ipv4}"
+`
 )
