@@ -30,6 +30,13 @@ jobs:
           title: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           delete-branch: true
+      - name: Login to GitHub Container Registry (ghcr)
+        if: steps.update-links.outputs.UPDATE_NEEDED == 1
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Mirror calico images to GHCR
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
         env:
