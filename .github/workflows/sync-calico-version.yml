@@ -33,7 +33,6 @@ jobs:
           branch: calico-update-${{ steps.update-links.outputs.CALICO_VERSION }}
           title: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
-          team-reviewers: flatcar/flatcar-maintainers
           delete-branch: true
       - name: Login to GitHub Container Registry (ghcr)
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
