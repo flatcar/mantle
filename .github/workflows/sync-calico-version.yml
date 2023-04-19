@@ -15,10 +15,6 @@ on:
 jobs:
   sync-calico-version:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: write
-      pull-requests: write
     steps:
       - name: Check out scripts
         uses: actions/checkout@v3

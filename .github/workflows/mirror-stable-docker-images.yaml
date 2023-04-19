@@ -14,8 +14,6 @@ on:
 
 jobs:
   mirror-stable-docker-images:
-    permissions:
-      packages: write
     strategy:
       matrix:
         package: [nginx,busybox]
