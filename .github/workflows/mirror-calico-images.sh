@@ -3,7 +3,7 @@
 # This script will mirror the list of Calico images
 # from Docker Hub to GHCR.
 
-set -euo pipefail
+set -exuo pipefail
 
 this_dir=$(dirname "${0}")
 

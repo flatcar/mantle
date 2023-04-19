@@ -3,7 +3,7 @@
 # This generic script aims to mirror an image from Docker hub to another registry.
 # Authentication to the registry must be done before.
 
-set -euo pipefail
+set -exuo pipefail
 
 function fail {
     echo "${*}" >&2
