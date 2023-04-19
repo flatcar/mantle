@@ -1,15 +1,27 @@
-name: Sync Calico version used for getting Tigera Operator manifest
+name: Update Tigera Operator manifest to latest release and sync docker images
 on:
   schedule:
     # run on Monday at 7
     - cron:  '0 7 * * 1'
   workflow_dispatch:
+    inputs:
+      ghcr_org:
+        type: string
+        required: false
+        default: flatcar
+        description: |
+          The name of the GitHub org where the docker images should be pushed.
 
 jobs:
   sync-calico-version:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out scripts
+        uses: actions/checkout@v3
       - name: Update links to Tigera Operator manifest
         id: update-links
         run: .github/workflows/sync-calico-version.sh
@@ -21,5 +33,17 @@ jobs:
           branch: calico-update-${{ steps.update-links.outputs.CALICO_VERSION }}
           title: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
           commit-message: Update calico to ${{ steps.update-links.outputs.CALICO_VERSION }}
-          reviewers: flatcar/flatcar-maintainers
+          team-reviewers: flatcar/flatcar-maintainers
           delete-branch: true
+      - name: Login to GitHub Container Registry (ghcr)
+        if: steps.update-links.outputs.UPDATE_NEEDED == 1
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Mirror calico images to GHCR
+        if: steps.update-links.outputs.UPDATE_NEEDED == 1
+        env:
+          CALICO_VERSION: ${{ steps.update-links.outputs.CALICO_VERSION }}
+        run: .github/workflows/mirror-calico-images.sh ${{ inputs.ghcr_org }} "${CALICO_VERSION}"
