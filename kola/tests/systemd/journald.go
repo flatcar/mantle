@@ -76,7 +76,7 @@ func init() {
 		Platforms:   []string{"qemu", "qemu-unpriv"},
 		DefaultUser: "flatcar",
 		ClusterSize: 1,
-		MinVersion:  semver.Version{Major: 3572},
+		MinVersion:  semver.Version{Major: 3549},
 		UserData: conf.Butane(`variant: flatcar
 version: 1.0.0
 passwd:
