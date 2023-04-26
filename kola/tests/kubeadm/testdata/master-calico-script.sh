@@ -83,8 +83,8 @@ metadata:
   name: default
 spec:
   # Use GH container registry to get rid of Docker limitation.
-  registry: ghcr.io
-  imagePath: kinvolk/calico
+  registry: ghcr.io/
+  imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
     # Note: The ipPools section cannot be modified post-install.

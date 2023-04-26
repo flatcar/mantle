@@ -67,7 +67,7 @@ The easiest way to get started with `kola` is to run a `qemu` test.
 From the pulled sources, `kola` and `kolet` must be compiled:
 
 ```shell
-git clone https://github.com/kinvolk/mantle/
+git clone https://github.com/flatcar/mantle/
 cd mantle
 ./build kola kolet
 ```
@@ -80,8 +80,8 @@ sudo docker run --privileged --net host -v /dev:/dev --rm -it ghcr.io/flatcar/ma
 ```
 
 Finally, a Flatcar image must be available on the system:
-  - from a locally [built](https://kinvolk.io/docs/flatcar-container-linux/latest/reference/developer-guides/sdk-modifying-flatcar/) image
-  - from an official [release](https://kinvolk.io/flatcar-container-linux/releases/)
+  - from a locally [built](https://www.flatcar.org/docs/latest/reference/developer-guides/sdk-modifying-flatcar/) image
+  - from an official [release](https://www.flatcar.org/releases)
 
 ###### Run tests for AMD64
 

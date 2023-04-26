@@ -117,7 +117,8 @@ storage:
         inline: |
           {
               "log-driver": "journald"
-          }`
+          }
+`
 
 	masterConfig = `systemd:
   units:{{ if .cgroupv1 }}
@@ -260,9 +261,10 @@ storage:
               spec:
                 containers:
                 - name: nginx
-                  image: ghcr.io/kinvolk/nginx
+                  image: ghcr.io/flatcar/nginx
                   ports:
-                  - containerPort: 80`
+                  - containerPort: 80
+`
 
 	masterScript = `#!/bin/bash
 set -euo pipefail
@@ -349,8 +351,8 @@ metadata:
   name: default
 spec:
   # Use GH container registry to get rid of Docker limitation.
-  registry: ghcr.io
-  imagePath: kinvolk/calico
+  registry: ghcr.io/
+  imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
     # Note: The ipPools section cannot be modified post-install.
@@ -480,5 +482,6 @@ EOF
 systemctl start --quiet coreos-metadata
 ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '(PRIVATE|LOCAL|DYNAMIC)' | cut -d = -f 2)
 
-kubeadm join --config worker-config.yaml --node-name "${ipv4}"`
+kubeadm join --config worker-config.yaml --node-name "${ipv4}"
+`
 )
