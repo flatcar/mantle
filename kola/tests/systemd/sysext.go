@@ -84,7 +84,7 @@ func checkSysextCustomDocker(c cluster.TestCluster) {
 	// First assert that Docker doesn't work because Torcx is disabled
 	_ = c.MustSSH(c.Machines()[0], cmdNotWorking)
 	// We build a custom sysext image locally because we don't host them somewhere yet
-	_ = c.MustSSH(c.Machines()[0], `git clone https://github.com/flatcar/sysext-bakery.git && git -C sysext-bakery checkout 2d6ab6bdba96476138c7db841e9a4c4ed38bd3fc`)
+	_ = c.MustSSH(c.Machines()[0], `git clone https://github.com/flatcar/sysext-bakery.git && git -C sysext-bakery checkout e68d2fe25c8412f4774477d1d75c40f615145c46`)
 	// Flatcar has no mksquashfs and btrfs is missing a bugfix but at least ext4 works
 	// The first test is for a fixed Docker version, which with the time will get old and older but is still expected to work because users may also "freeze" their Docker version this way
 	_ = c.MustSSH(c.Machines()[0], fmt.Sprintf(`ARCH=%[1]s ONLY_DOCKER=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 docker && ARCH=%[1]s ONLY_CONTAINERD=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 containerd && sudo mv docker.raw containerd.raw /etc/extensions/`, arch))
