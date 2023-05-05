@@ -31,4 +31,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Mirror ${{ matrix.package }} stable image as latest to GHCR
-        run: .github/workflows/mirror-to-ghcr.sh -t latest -o ${{ inputs.ghcr_org }} ${{ matrix.package }} stable
+        env:
+          GHCR_ORG: ${{ inputs.ghcr_org }}
+          PACKAGE: ${{ matrix.package }}
+        run: .github/workflows/mirror-to-ghcr.sh -t latest -o "${GHCR_ORG:-flatcar}" "${PACKAGE}" stable
