@@ -45,4 +45,5 @@ jobs:
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
         env:
           CALICO_VERSION: ${{ steps.update-links.outputs.CALICO_VERSION }}
-        run: .github/workflows/mirror-calico-images.sh ${{ inputs.ghcr_org }} "${CALICO_VERSION}"
+          GHCR_ORG: ${{ inputs.ghcr_org }}
+        run: .github/workflows/mirror-calico-images.sh "${GHCR_ORG:-flatcar}" "${CALICO_VERSION}"
