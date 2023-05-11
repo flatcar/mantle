@@ -15,31 +15,30 @@
 package ignition
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
 )
 
-func init() {
-	register.Register(&register.Test{
-		Name:        "cl.ignition.oem.regular",
-		Run:         reusePartition,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
-		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
-		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3549},
-		UserData: conf.Butane(`---
+const (
+	oemPlaceholder   string = "@OEM@"
+	oldOEMMountpoint string = "/usr/share/oem"
+	newOEMMountpoint string = "/oem"
+
+	regularButaneConfigTemplate string = `---
 variant: flatcar
 version: 1.0.0
 storage:
   filesystems:
      - device: "/dev/disk/by-label/OEM"
        format: "btrfs"
-       path: /usr/share/oem
+       path: @OEM@
   files:
-    - path: /usr/share/oem/grub.cfg
+    - path: @OEM@/grub.cfg
       mode: 0644
       overwrite: true
       contents:
@@ -47,24 +46,13 @@ storage:
           set linux_append="flatcar.autologin"
           # Needed if --qemu-skip-mangle is not set
           set linux_console="console=ttyS0,115200"
-`),
-	})
-	register.Register(&register.Test{
-		// Check new behavior from https://github.com/flatcar/bootengine/pull/58
-		// to not have to specify the OEM filesystem in Ignition
-		Name:        "cl.ignition.oem.indirect",
-		Run:         reusePartition,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
-		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
-		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3550},
-		UserData: conf.Butane(`---
+`
+	indirectButaneConfigTemplate string = `---
 variant: flatcar
 version: 1.0.0
 storage:
   files:
-    - path: /usr/share/oem/grub.cfg
+    - path: @OEM@/grub.cfg
       mode: 0644
       overwrite: true
       contents:
@@ -72,18 +60,8 @@ storage:
           set linux_append="flatcar.autologin"
           # Needed if --qemu-skip-mangle is not set
           set linux_console="console=ttyS0,115200"
-`),
-	})
-	register.Register(&register.Test{
-		Name:        "cl.ignition.oem.reuse",
-		Run:         reusePartition,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
-		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
-		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 2983},
-		// Using CLC format here also covers the ign-converter case
-		UserData: conf.ContainerLinuxConfig(`storage:
+`
+	reuseContainerLinuxConfig string = `storage:
   filesystems:
      - name: oem
        mount:
@@ -95,7 +73,83 @@ storage:
       mode: 0644
       contents:
         inline: |
-          set linux_append="flatcar.autologin"`),
+          set linux_append="flatcar.autologin"`
+)
+
+func withOldOEMMountpoint(template string) string {
+	return strings.Replace(template, oemPlaceholder, oldOEMMountpoint, -1)
+}
+
+func withNewOEMMountpoint(template string) string {
+	return strings.Replace(template, oemPlaceholder, newOEMMountpoint, -1)
+}
+
+func init() {
+	register.Register(&register.Test{
+		Name:        "cl.ignition.oem.regular",
+		Run:         reusePartitionOld,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3549},
+		UserData:   conf.Butane(withOldOEMMountpoint(regularButaneConfigTemplate)),
+	})
+	register.Register(&register.Test{
+		Name:        "cl.ignition.oem.regular.new",
+		Run:         reusePartitionNew,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3603},
+		UserData:   conf.Butane(withNewOEMMountpoint(regularButaneConfigTemplate)),
+	})
+	register.Register(&register.Test{
+		// Check new behavior from https://github.com/flatcar/bootengine/pull/58
+		// to not have to specify the OEM filesystem in Ignition
+		Name:        "cl.ignition.oem.indirect",
+		Run:         reusePartitionOld,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3550},
+		UserData:   conf.Butane(withOldOEMMountpoint(indirectButaneConfigTemplate)),
+	})
+	register.Register(&register.Test{
+		// Check new behavior from https://github.com/flatcar/bootengine/pull/58
+		// to not have to specify the OEM filesystem in Ignition
+		Name:        "cl.ignition.oem.indirect.new",
+		Run:         reusePartitionNew,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3603},
+		UserData:   conf.Butane(withNewOEMMountpoint(indirectButaneConfigTemplate)),
+	})
+	register.Register(&register.Test{
+		Name:        "cl.ignition.oem.reuse",
+		Run:         reusePartitionOld,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 2983},
+		// Using CLC format here also covers the ign-converter case
+		UserData: conf.ContainerLinuxConfig(reuseContainerLinuxConfig),
+	})
+	register.Register(&register.Test{
+		Name:        "cl.ignition.oem.reuse.new",
+		Run:         reusePartitionNew,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3603},
+		// Using CLC format here also covers the ign-converter case
+		UserData: conf.ContainerLinuxConfig(reuseContainerLinuxConfig),
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.oem.wipe",
@@ -125,9 +179,17 @@ storage:
 	})
 }
 
+func reusePartitionOld(c cluster.TestCluster) {
+	reusePartition(c, oldOEMMountpoint)
+}
+
+func reusePartitionNew(c cluster.TestCluster) {
+	reusePartition(c, newOEMMountpoint)
+}
+
 // reusePartition asserts that even if the config uses a different fs format, we keep using `btrfs`.
-func reusePartition(c cluster.TestCluster) {
-	grub := c.MustSSH(c.Machines()[0], `grep -m 1 '^set linux_append="flatcar.autologin"$' /usr/share/oem/grub.cfg`)
+func reusePartition(c cluster.TestCluster, oemMountpoint string) {
+	grub := c.MustSSH(c.Machines()[0], fmt.Sprintf(`grep -m 1 '^set linux_append="flatcar.autologin"$' %s/grub.cfg`, oemMountpoint))
 	if string(grub) != `set linux_append="flatcar.autologin"` {
 		c.Fatalf("did not find written grub entry: %s", string(grub))
 	}

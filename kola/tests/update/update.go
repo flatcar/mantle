@@ -54,13 +54,23 @@ func init() {
 		},
 	})
 	register.Register(&register.Test{
-		Name:        "cl.sysext.boot",
-		Run:         sysextBootLogic,
+		Name:        "cl.sysext.boot.old",
+		Run:         sysextBootLogicOld,
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is uses its own OEM files and shouldn't run on other platforms
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3481},
+		EndVersion: semver.Version{Major: 3603},
+	})
+	register.Register(&register.Test{
+		Name:        "cl.sysext.boot",
+		Run:         sysextBootLogicNew,
+		ClusterSize: 0,
+		Distros:     []string{"cl"},
+		// This test is uses its own OEM files and shouldn't run on other platforms
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3603},
 	})
 }
 
@@ -226,7 +236,15 @@ func splitNewlineEnv(envs string) map[string]string {
 	return m
 }
 
-func sysextBootLogic(c cluster.TestCluster) {
+func sysextBootLogicOld(c cluster.TestCluster) {
+	sysextBootLogic(c, "/usr/share/oem")
+}
+
+func sysextBootLogicNew(c cluster.TestCluster) {
+	sysextBootLogic(c, "/oem")
+}
+
+func sysextBootLogic(c cluster.TestCluster, oemMountpoint string) {
 	// The first test case is to not use Ignition which means that the
 	// set of systemd units in the initrd is different and we also
 	// don't have Ignition mount the OEM partition
@@ -246,33 +264,33 @@ func sysextBootLogic(c cluster.TestCluster) {
 	// b) stored on the OEM partition and gets moved to the rootfs and the new one is moved to the OEM partition
 	_ = c.MustSSH(noIgnition, fmt.Sprintf(`set -euxo pipefail
 sudo systemctl mask --now systemd-sysext ensure-sysext
-sudo mkdir -p /etc/flatcar/sysext /etc/flatcar/oem-sysext /usr/share/oem/sysext /etc/extensions
-echo ID=test | sudo tee /usr/share/oem/oem-release
+sudo mkdir -p /etc/flatcar/sysext /etc/flatcar/oem-sysext %[2]s/sysext /etc/extensions
+echo ID=test | sudo tee %[2]s/oem-release
 echo myext | sudo tee /etc/flatcar/enabled-sysext.conf
-sudo touch /usr/share/oem/sysext/active-oem-test /etc/flatcar/oem-sysext/oem-test-%[1]s.raw /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /etc/flatcar/sysext/flatcar-myext-%[1]s.raw /etc/flatcar/sysext/flatcar-myext-1.2.3.raw
+sudo touch %[2]s/sysext/active-oem-test /etc/flatcar/oem-sysext/oem-test-%[1]s.raw /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /etc/flatcar/sysext/flatcar-myext-%[1]s.raw /etc/flatcar/sysext/flatcar-myext-1.2.3.raw
 sudo ln -fs /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /etc/extensions/oem-test.raw
 sudo ln -fs /etc/flatcar/sysext/flatcar-myext-1.2.3.raw /etc/extensions/flatcar-myext.raw
-`, version))
+`, version, oemMountpoint))
 	if err := noIgnition.Reboot(); err != nil {
 		c.Fatalf("couldn't reboot: %v", err)
 	}
 	// Check that the right symlinks are set up for case "a)" and prepare the next boot
 	_ = c.MustSSH(noIgnition, fmt.Sprintf(`set -euxo pipefail
-[ "$(readlink -f /etc/extensions/oem-test.raw)" = "/usr/share/oem/sysext/oem-test-%[1]s.raw" ] || { echo "OEM symlink wrong"; exit 1 ; }
+[ "$(readlink -f /etc/extensions/oem-test.raw)" = "%[2]s/sysext/oem-test-%[1]s.raw" ] || { echo "OEM symlink wrong"; exit 1 ; }
 [ "$(readlink -f /etc/extensions/flatcar-myext.raw)" = "/etc/flatcar/sysext/flatcar-myext-%[1]s.raw" ] || { echo "Extension symlink wrong"; exit 1; }
-sudo mv /usr/share/oem/sysext/oem-test-%[1]s.raw /etc/flatcar/oem-sysext/
-sudo mv /etc/flatcar/oem-sysext/oem-test-1.2.3.raw /usr/share/oem/sysext/
-sudo ln -fs /usr/share/oem/sysext/oem-test-1.2.3.raw /etc/extensions/oem-test.raw
+sudo mv %[2]s/sysext/oem-test-%[1]s.raw /etc/flatcar/oem-sysext/
+sudo mv /etc/flatcar/oem-sysext/oem-test-1.2.3.raw %[2]s/sysext/
+sudo ln -fs %[2]s/sysext/oem-test-1.2.3.raw /etc/extensions/oem-test.raw
 sudo ln -fs /etc/flatcar/sysext/flatcar-myext-1.2.3.raw /etc/extensions/flatcar-myext.raw
-`, version))
+`, version, oemMountpoint))
 	if err := noIgnition.Reboot(); err != nil {
 		c.Fatalf("couldn't reboot: %v", err)
 	}
 	// Check that the boot logic set up the right sysext symlinks for case "b)"
 	testCmds := fmt.Sprintf(`set -euxo pipefail
-[ "$(readlink -f /etc/extensions/oem-test.raw)" = "/usr/share/oem/sysext/oem-test-%[1]s.raw" ] || { echo "OEM symlink wrong"; exit 1 ; }
+[ "$(readlink -f /etc/extensions/oem-test.raw)" = "%[2]s/sysext/oem-test-%[1]s.raw" ] || { echo "OEM symlink wrong"; exit 1 ; }
 [ "$(readlink -f /etc/extensions/flatcar-myext.raw)" = "/etc/flatcar/sysext/flatcar-myext-%[1]s.raw" ] || { echo "Extension symlink wrong"; exit 1; }
-`, version)
+`, version, oemMountpoint)
 	_ = c.MustSSH(noIgnition, testCmds+`[ -e "/etc/flatcar/oem-sysext/oem-test-1.2.3.raw" ] || { echo "Old sysext didn't get moved to rootfs"; exit 1; }`)
 	noIgnition.Destroy()
 	// The second test case is to use Ignition and Ignition will also

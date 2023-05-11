@@ -199,13 +199,34 @@ storage:
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "systemd.sysext.simple",
-		Run:         checkSysextSimple,
+		Name:        "systemd.sysext.simple.old",
+		Run:         checkSysextSimpleOld,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3185},
+		EndVersion: semver.Version{Major: 3603},
+		UserData: conf.ContainerLinuxConfig(`storage:
+  files:
+    - path: /etc/extensions/test/usr/lib/extension-release.d/extension-release.test
+      contents:
+        inline: |
+          ID=flatcar
+          SYSEXT_LEVEL=1.0
+    - path: /etc/extensions/test/usr/hello-sysext
+      contents:
+        inline: |
+          sysext works`),
+	})
+	register.Register(&register.Test{
+		Name:        "systemd.sysext.simple",
+		Run:         checkSysextSimpleNew,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3603},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
     - path: /etc/extensions/test/usr/lib/extension-release.d/extension-release.test
@@ -240,29 +261,39 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test is uses its own OEM files and shouldn't run on other platforms
 		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3605},
+		MinVersion: semver.Version{Major: 3603},
 		NativeFuncs: map[string]func() error{
 			"Http": util.Serve,
 		},
 	})
 }
 
-func checkHelper(c cluster.TestCluster) {
+func checkHelper(c cluster.TestCluster, oemMountpoint string) {
 	_ = c.MustSSH(c.Machines()[0], `grep -m 1 '^sysext works$' /usr/hello-sysext`)
-	// "mountpoint /usr/share/oem" is too lose for our purposes, because we want to check if the mount point is accessible and "df" only shows these by default
-	target := c.MustSSH(c.Machines()[0], `if [ -e /dev/disk/by-label/OEM ]; then df --output=target | grep /usr/share/oem; fi`)
+	// "mountpoint /oem" (or "/usr/share/oem") is too loose for
+	// our purposes, because we want to check if the mount point
+	// is accessible and "df" only shows these by default
+	target := c.MustSSH(c.Machines()[0], fmt.Sprintf(`if [ -e /dev/disk/by-label/OEM ]; then df --output=target | grep %s; fi`, oemMountpoint))
 	// check against multiple entries which is not wanted
-	if string(target) != "/usr/share/oem" {
-		c.Fatalf("should get /usr/share/oem, got %q", string(target))
+	if string(target) != oemMountpoint {
+		c.Fatalf("should get %q, got %q", oemMountpoint, string(target))
 	}
 }
 
-func checkSysextSimple(c cluster.TestCluster) {
+func checkSysextSimpleOld(c cluster.TestCluster) {
+	checkSysextSimple(c, "/usr/share/oem")
+}
+
+func checkSysextSimpleNew(c cluster.TestCluster) {
+	checkSysextSimple(c, "/oem")
+}
+
+func checkSysextSimple(c cluster.TestCluster, oemMountpoint string) {
 	// First check directly after boot
-	checkHelper(c)
+	checkHelper(c, oemMountpoint)
 	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext`)
 	// Second check after reloading the extensions (e.g., to add/remove/update them)
-	checkHelper(c)
+	checkHelper(c, oemMountpoint)
 }
 
 func checkSysextCustomDocker(c cluster.TestCluster) {
