@@ -75,7 +75,7 @@ var (
 	// testConfig holds params for various kubernetes releases
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
-		"v1.26.0": map[string]interface{}{
+		"v1.26.5": map[string]interface{}{
 			"MinMajorVersion": 3374,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.20.2",
@@ -92,22 +92,22 @@ var (
 			"DownloadDir":    "/opt/bin",
 			"PodSubnet":      "192.168.0.0/17",
 			"arm64": map[string]string{
-				"KubeadmSum": "b4a4d206b3140ba907397e7ea9177262c6f6d06ec86855579d26f207d16f43ed603a4132076168fd4e2559d6abb60c50964e3884d69236b201d477cd180e56af",
-				"KubeletSum": "b9a75c086d41c4cf2c8a6f9875f48a3e3da5a72863ffec28300448dbd7b2a1d42f128180494825eb506efac514df4f616f0052bd81ef70675b50734dc70d7949",
+				"KubeadmSum": "46c9f489062bdb84574703f7339d140d7e42c9c71b367cd860071108a3c1d38fabda2ef69f9c0ff88f7c80e88d38f96ab2248d4c9a6c9c60b0a4c20fd640d0db",
+				"KubeletSum": "0e4ee1f23bf768c49d09beb13a6b5fad6efc8e3e685e7c5610188763e3af55923fb46158b5e76973a0f9a055f9b30d525b467c53415f965536adc2f04d9cf18d",
 				"CRIctlSum":  "4c7e4541123cbd6f1d6fec1f827395cd58d65716c0998de790f965485738b6d6257c0dc46fd7f66403166c299f6d5bf9ff30b6e1ff9afbb071f17005e834518c",
 				"CNISum":     "6b5df61a53601926e4b5a9174828123d555f592165439f541bc117c68781f41c8bd30dccd52367e406d104df849bcbcfb72d9c4bafda4b045c59ce95d0ca0742",
-				"KubectlSum": "ced35f756bfbfb4edd15ee839c555b600032ebcf3caeb6fd639223de5a546103f99fead5c3bb6ed4a4b1ee3884980d6b73fa0cb21441767531bb30f11e0ea60e",
+				"KubectlSum": "3672fda0beebbbd636a2088f427463cbad32683ea4fbb1df61650552e63846b6a47db803ccb70c3db0a8f24746a23a5632bdc15a3fb78f4f7d833e7f86763c2a",
 			},
 			"amd64": map[string]string{
-				"KubeadmSum": "934bf6176dd74e74ebc6056d3b65e741847923ca91f7b58d7f00df565c5034e3764c8b785cb39a7e0a9c779a4fe40ab5b0d123b23b2e531f34e99daf9abb3bc8",
-				"KubeletSum": "b147e0f072577e3b13f8fea51bc69fe4149cb63056d9f89aee2ef3a74ddbdc3261d9ad91236ff2549b2e8b8a816ef409a183fe27dd9ac8b8b2242ff2922cb2a4",
+				"KubeadmSum": "1c324cd645a7bf93d19d24c87498d9a17878eb1cc927e2680200ffeab2f85051ddec47d85b79b8e774042dc6726299ad3d7caf52c060701f00deba30dc33f660",
+				"KubeletSum": "40daf2a9b9e666c14b10e627da931bd79978628b1f23ef6429c1cb4fcba261f86ccff440c0dbb0070ee760fe55772b4fd279c4582dfbb17fa30bc94b7f00126b",
 				"CRIctlSum":  "a3a2c02a90b008686c20babaf272e703924db2a3e2a0d4e2a7c81d994cbc68c47458a4a354ecc243af095b390815c7f203348b9749351ae817bd52a522300449",
 				"CNISum":     "4d0ed0abb5951b9cf83cba938ef84bdc5b681f4ac869da8143974f6a53a3ff30c666389fa462b9d14d30af09bf03f6cdf77598c572f8fb3ea00cecdda467a48d",
-				"KubectlSum": "0be35f107a13bef00822586fa9ad7154d4149c2168f2835c3b9cb7218156bff549c83b5af6052836fc0b34c896f895943952926253cb4253405f7e528b835977",
+				"KubectlSum": "97840854134909d75a1a2563628cc4ba632067369ce7fc8a8a1e90a387d32dd7bfd73f4f5b5a82ef842088e7470692951eb7fc869c5f297dd740f855672ee628",
 			},
 			"cgroupv1": false,
 		},
-		"v1.25.0": map[string]interface{}{
+		"v1.25.10": map[string]interface{}{
 			"MinMajorVersion": 3033,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.19.1",
@@ -124,22 +124,22 @@ var (
 			"DownloadDir":    "/opt/bin",
 			"PodSubnet":      "192.168.0.0/17",
 			"arm64": map[string]string{
-				"KubeadmSum": "2d59890912a7286c3597f50a88a3d19d47fc989847dd3832730ca1f4b782fb0deb7f7b5704042ab5836c3e87e2f466d14a0967afc3de06da697b0199f8fe60ad",
-				"KubeletSum": "fb2bbfb0240cb40b75bf1279a176075725dc97a23f1fc399efb3da5cdf25edf1673957c132a5dfa00a6987bf93fde579e11098261a1df7a56c59f1e089669cc3",
+				"KubeadmSum": "daab8965a4f617d1570d04c031ab4d55fff6aa13a61f0e4045f2338947f9fb0ee3a80fdee57cfe86db885390595460342181e1ec52b89f127ef09c393ae3db7f",
+				"KubeletSum": "7b872a34d86e8aa75455a62a20f5cf16426de2ae54ffb8e0250fead920838df818201b8512c2f8bf4c939e5b21babab371f3a48803e2e861da9e6f8cdd022324",
 				"CRIctlSum":  "ebd055e9b2888624d006decd582db742131ed815d059d529ba21eaf864becca98a84b20a10eec91051b9d837c6855d28d5042bf5e9a454f4540aec6b82d37e96",
 				"CNISum":     "6b5df61a53601926e4b5a9174828123d555f592165439f541bc117c68781f41c8bd30dccd52367e406d104df849bcbcfb72d9c4bafda4b045c59ce95d0ca0742",
-				"KubectlSum": "3b212169122b29afafa94c75bb066cb3205196a6fb184d97e41afbc112208dad1cf8e924357e3e4f6c02eba2fcc74e46089396091eba96f3fadad4c47121501e",
+				"KubectlSum": "733208fa18e683adcd80c621d3be1a1ba35340ff656b78c86068b544045d8710ee100d0ff8df3bf55f607b1863d374f634f2d10b2d37e2be90e2b20dd1cc92ab",
 			},
 			"amd64": map[string]string{
-				"KubeadmSum": "dc0715bb8b33efc56cd531b44c423d24eb27d0d4a2e69041ec29267fa88480a62974bdfa40eeb07082e1d3663b5dd3e21cfe04522e4950ac72474710ed734458",
-				"KubeletSum": "73f735394f1651bf95500627ccb264725a0c89fa4394103f272665aaecfefab89ecb1dfd91833bfd25c9e32d37640a0926cb030fb0dfa583555a8e4006602b8d",
+				"KubeadmSum": "43b8f213f1732c092e34008d5334e6622a6603f7ec5890c395ac911d50069d0dc11a81fa38436df40fc875a10fee6ee13aa285c017f1de210171065e847c99c5",
+				"KubeletSum": "82b36a0b83a1d48ef1f70e3ed2a263b3ce935304cdc0606d194b290217fb04f98628b0d82e200b51ccf5c05c718b2476274ae710bb143fffe28dc6bbf8407d54",
 				"CRIctlSum":  "961188117863ca9af5b084e84691e372efee93ad09daf6a0422e8d75a5803f394d8968064f7ca89f14e8973766201e731241f32538cf2c8d91f0233e786302df",
 				"CNISum":     "4d0ed0abb5951b9cf83cba938ef84bdc5b681f4ac869da8143974f6a53a3ff30c666389fa462b9d14d30af09bf03f6cdf77598c572f8fb3ea00cecdda467a48d",
-				"KubectlSum": "fac91d79079672954b9ae9f80b9845fbf373e1c4d3663a84cc1538f89bf70cb85faee1bcd01b6263449f4a2995e7117e1c85ed8e5f137732650e8635b4ecee09",
+				"KubectlSum": "9006cd791c99f5421c09ae8f6029fdd0ea4608909f590dea41ba4dd5c500440272e9ece21489d1f192966717987251ded5394ea1dd4c5d091b700ac1c8cfa392",
 			},
 			"cgroupv1": false,
 		},
-		"v1.24.1": map[string]interface{}{
+		"v1.24.14": map[string]interface{}{
 			"MinMajorVersion":  3033,
 			"FlannelVersion":   "v0.18.1",
 			"CiliumVersion":    "1.12.1",
@@ -150,18 +150,18 @@ var (
 			"DownloadDir":      "/opt/bin",
 			"PodSubnet":        "192.168.0.0/17",
 			"arm64": map[string]string{
-				"KubeadmSum": "171ad33a0ffed8ae0bc78a48b12bd1575a03e221de4ca079e60d46689373c298a95bc95a156ea235f5e4f6c4fe714740277ee57e8f0f267b2eeb77f569039ad9",
-				"KubeletSum": "f774044d65ebcf07143fb482fbe69c8836287d862c740c9e4804c92060d17867f77625fef0c1a0d2a358745520f5e67bd41b7fcf68756ab105ced9e26c84c881",
+				"KubeadmSum": "7b0079e6cbf3a66baf89001afb3d243fa802056b19c02bbafe03582a50d7ad232db0b9ed985ca5a5407771514da6da9dd998b0af6bfce375d167c2826070dc85",
+				"KubeletSum": "777f39e4976da82cfe3b5e2c8406d0329987b8a41fd11fed5e92625c8d71eaaf44a9f46762e4e67414f8bdd8fd5293a459e603ade726cd5a37fc5d8158d94e6c",
 				"CRIctlSum":  "ebd055e9b2888624d006decd582db742131ed815d059d529ba21eaf864becca98a84b20a10eec91051b9d837c6855d28d5042bf5e9a454f4540aec6b82d37e96",
 				"CNISum":     "6b5df61a53601926e4b5a9174828123d555f592165439f541bc117c68781f41c8bd30dccd52367e406d104df849bcbcfb72d9c4bafda4b045c59ce95d0ca0742",
-				"KubectlSum": "ae4e316e1127b7189cdd08980729dea0e20946431c8caec07f79ea43dc34e4f161bb687c5cdf306fb032e6a3537597b9d31cfa416ad0bfc85abd0c0f8d11c66d",
+				"KubectlSum": "2e1d1ee65e22e541334bdde3d53ab9fab1094fe45804e21c472d1d1dec84bc4304e7d555d03c9bed07c2989d829bf163c97d97cf310291d757537ff7f0b7dfc1",
 			},
 			"amd64": map[string]string{
-				"KubeadmSum": "4a825ba96997bca7fc1b3a2a4867026632cf3298709685270333452b5d755176c4891c1cfdd589e162d8af0b43aaf956c71455e4cf886ff0d767196eadb9766e",
-				"KubeletSum": "553695adcd0229f680f9edf6afcbbeefc051c77fba6c8ff82644852877c15d422801b5453a09e2fb7ddb4894c713dfe4755562711c302800f985a457a0cbb7c3",
+				"KubeadmSum": "26e3aa8e328b96b133ebe94838cf9a4da33dd3f60f792dfd38fbcc8d398a6814b0abc233abcf09b4d724e90d4b89aab595111a23f59a15053377ee220ceaf8e1",
+				"KubeletSum": "53ae6489451d041effdc63ab47b23a31e074b8ff946d2dd8400eeff9007e6830b7a31cf772eacd3fed061d92653d8c5a68213a664b69fafb6e887b4926b734d6",
 				"CRIctlSum":  "961188117863ca9af5b084e84691e372efee93ad09daf6a0422e8d75a5803f394d8968064f7ca89f14e8973766201e731241f32538cf2c8d91f0233e786302df",
 				"CNISum":     "4d0ed0abb5951b9cf83cba938ef84bdc5b681f4ac869da8143974f6a53a3ff30c666389fa462b9d14d30af09bf03f6cdf77598c572f8fb3ea00cecdda467a48d",
-				"KubectlSum": "db7e24076f2cbc5bae9033c736048a87c820757af3473cbe583ef7831ad046a9ceeb9e40325e381d193f37ac28f4d6926c8e2fb36ff6029f661b090d8aa15470",
+				"KubectlSum": "3ec6e321be772291cc6396bd10079f66ac6e690d776108fe2f24724ed51a0557a764228c45aa597a991733c04d052179b220ce8cdedc70c2783621a8925d1945",
 			},
 			"cgroupv1": false,
 		},
@@ -175,11 +175,11 @@ etcd:
 
 func init() {
 	testConfigCgroupV1 := map[string]map[string]interface{}{}
-	testConfigCgroupV1["v1.24.1"] = map[string]interface{}{}
-	for k, v := range testConfig["v1.24.1"] {
-		testConfigCgroupV1["v1.24.1"][k] = v
+	testConfigCgroupV1["v1.24.14"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.24.14"] {
+		testConfigCgroupV1["v1.24.14"][k] = v
 	}
-	testConfigCgroupV1["v1.24.1"]["cgroupv1"] = true
+	testConfigCgroupV1["v1.24.14"]["cgroupv1"] = true
 
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
