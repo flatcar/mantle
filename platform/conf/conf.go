@@ -15,9 +15,13 @@
 package conf
 
 import (
+	"bufio"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/textproto"
 	"net/url"
 	"os"
 	"reflect"
@@ -52,6 +56,7 @@ import (
 	ignvalidate "github.com/flatcar/ignition/config/validate"
 	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/crypto/ssh/agent"
+	"gopkg.in/yaml.v3"
 )
 
 type kind int
@@ -63,6 +68,7 @@ const (
 	kindContainerLinuxConfig
 	kindScript
 	kindButane
+	kindMultipartMime
 )
 
 var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/conf")
@@ -80,23 +86,31 @@ type UserData struct {
 // Conf is a configuration for a Container Linux machine. It may be either a
 // coreos-cloudconfig or an ignition configuration.
 type Conf struct {
-	ignitionV1  *v1types.Config
-	ignitionV2  *v2types.Config
-	ignitionV21 *v21types.Config
-	ignitionV22 *v22types.Config
-	ignitionV23 *v23types.Config
-	ignitionV3  *v3types.Config
-	ignitionV31 *v31types.Config
-	ignitionV32 *v32types.Config
-	ignitionV33 *v33types.Config
-	cloudconfig *cci.CloudConfig
-	script      string
-	user        string
+	ignitionV1    *v1types.Config
+	ignitionV2    *v2types.Config
+	ignitionV21   *v21types.Config
+	ignitionV22   *v22types.Config
+	ignitionV23   *v23types.Config
+	ignitionV3    *v3types.Config
+	ignitionV31   *v31types.Config
+	ignitionV32   *v32types.Config
+	ignitionV33   *v33types.Config
+	cloudconfig   *cci.CloudConfig
+	script        string
+	multipartMime *MultipartUserdata
+	user          string
 }
 
 func Empty() *UserData {
 	return &UserData{
 		kind: kindEmpty,
+	}
+}
+
+func MultipartMimeConfig(data string) *UserData {
+	return &UserData{
+		kind: kindMultipartMime,
+		data: data,
 	}
 }
 
@@ -135,6 +149,32 @@ func Script(data string) *UserData {
 	}
 }
 
+func decompressIfGzipped(data []byte) []byte {
+	if reader, err := gzip.NewReader(bytes.NewReader(data)); err == nil {
+		uncompressedData, err := ioutil.ReadAll(reader)
+		reader.Close()
+		if err == nil {
+			return uncompressedData
+		} else {
+			return data
+		}
+	} else {
+		return data
+	}
+}
+
+func isMultipartMime(userdata []byte) bool {
+	userdata = decompressIfGzipped(userdata)
+	mimeReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(userdata)))
+	header, err := mimeReader.ReadMIMEHeader()
+	if err != nil {
+		return false
+	}
+	contentType := header.Get("Content-Type")
+
+	return strings.Contains(contentType, "multipart/mixed")
+}
+
 func Unknown(data string) *UserData {
 	u := &UserData{
 		data: data,
@@ -149,6 +189,10 @@ func Unknown(data string) *UserData {
 	case ignerr.ErrScript:
 		u.kind = kindScript
 	default:
+		if isMultipartMime([]byte(data)) {
+			u.kind = kindMultipartMime
+			break
+		}
 		// Guess whether this is an Ignition config or a CLC.
 		// This treats an invalid Ignition config as a CLC, and a
 		// CLC in the JSON subset of YAML as an Ignition config.
@@ -291,6 +335,12 @@ func (u *UserData) Render(ctPlatform string) (*Conf, error) {
 	case kindScript:
 		// pass through scripts unmodified, you are on your own.
 		c.script = u.data
+	case kindMultipartMime:
+		data, err := NewMultipartUserdata(u.data)
+		if err != nil {
+			return nil, err
+		}
+		c.multipartMime = data
 	case kindIgnition:
 		err := renderIgnition()
 		if err != nil {
@@ -388,6 +438,9 @@ func (c *Conf) String() string {
 		return c.cloudconfig.String()
 	} else if c.script != "" {
 		return c.script
+	} else if c.multipartMime != nil {
+		data, _ := c.multipartMime.Serialize()
+		return data
 	}
 
 	return ""
@@ -1245,6 +1298,27 @@ func (c *Conf) copyKeysScript(keys []*agent.Key) {
 	c.script = strings.Replace(c.script, "@SSH_KEYS@", keyString, -1)
 }
 
+func (c *Conf) copyKeysMultipartMime(keys []*agent.Key) {
+	keysAsStrings := keysToStrings(keys)
+	header := textproto.MIMEHeader{
+		"Content-Type":              []string{"text/cloud-config; charset=\"us-ascii\""},
+		"MIME-Version":              []string{"1.0"},
+		"Content-Transfer-Encoding": []string{"7bit"},
+		"Content-Disposition":       []string{"attachment; filename=\"testing-keys.yaml\""},
+	}
+
+	udata := map[string][]string{
+		"ssh_authorized_keys": keysAsStrings,
+	}
+
+	asYaml, err := yaml.Marshal(udata)
+	if err != nil {
+		plog.Errorf("failed to marshal yaml: %v", err)
+		return
+	}
+	c.multipartMime.AddPart(header, asYaml)
+}
+
 // CopyKeys copies public keys from agent ag into the configuration to the
 // appropriate configuration section for the core user.
 func (c *Conf) CopyKeys(keys []*agent.Key) {
@@ -1270,6 +1344,8 @@ func (c *Conf) CopyKeys(keys []*agent.Key) {
 		c.copyKeysCloudConfig(keys)
 	} else if c.script != "" {
 		c.copyKeysScript(keys)
+	} else if c.multipartMime != nil {
+		c.copyKeysMultipartMime(keys)
 	}
 }
 
