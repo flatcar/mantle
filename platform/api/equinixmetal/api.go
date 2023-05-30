@@ -291,7 +291,7 @@ func (a *API) CreateOrUpdateDevice(hostname string, conf *conf.Conf, console Con
 	}
 
 	// The Ignition config can't go in userdata via coreos.config.url=https://metadata.packet.net/userdata because Ignition supplies an Accept header that metadata.packet.net finds 406 Not Acceptable.
-	// It can't go in userdata via coreos.oem.id=packet because the EquinixMetal OEM expects unit files in /usr/share/oem which the PXE image doesn't have.
+	// It can't go in userdata via coreos.oem.id=packet because the EquinixMetal OEM expects unit files in /oem (or /usr/share/oem) which the PXE image doesn't have.
 	userdataName, userdataURL, err := a.uploadObject(hostname, "application/vnd.coreos.ignition+json", []byte(userdata))
 	if err != nil {
 		return nil, err
@@ -499,7 +499,7 @@ systemctl --no-block isolate reboot.target
 		},
 		Storage: ignition.Storage{
 			Files: []ignition.File{
-				ignition.File{
+				{
 					Filesystem: "root",
 					Path:       "/userdata",
 					Contents: ignition.FileContents{
@@ -510,7 +510,7 @@ systemctl --no-block isolate reboot.target
 					},
 					Mode: 0644,
 				},
-				ignition.File{
+				{
 					Filesystem: "root",
 					Path:       "/noop.ign",
 					Contents: ignition.FileContents{
@@ -521,7 +521,7 @@ systemctl --no-block isolate reboot.target
 					},
 					Mode: 0644,
 				},
-				ignition.File{
+				{
 					Filesystem: "root",
 					Path:       "/root/bin/coreos-cloudinit",
 					Contents: ignition.FileContents{
@@ -532,7 +532,7 @@ systemctl --no-block isolate reboot.target
 					},
 					Mode: 0755,
 				},
-				ignition.File{
+				{
 					Filesystem: "root",
 					Path:       "/opt/installer",
 					Contents: ignition.FileContents{
@@ -547,27 +547,27 @@ systemctl --no-block isolate reboot.target
 		},
 		Systemd: ignition.Systemd{
 			Units: []ignition.SystemdUnit{
-				ignition.SystemdUnit{
+				{
 					// don't appear to be running while install is in progress
 					Name: "sshd.socket",
 					Mask: true,
 				},
-				ignition.SystemdUnit{
+				{
 					// future-proofing
 					Name: "sshd.service",
 					Mask: true,
 				},
-				ignition.SystemdUnit{
+				{
 					// allow remote detection of install in progress
 					Name:     "discard.socket",
 					Enable:   true,
 					Contents: discardSocketUnit,
 				},
-				ignition.SystemdUnit{
+				{
 					Name:     "discard@.service",
 					Contents: discardServiceUnit,
 				},
-				ignition.SystemdUnit{
+				{
 					Name:     "flatcar-install.service",
 					Enable:   true,
 					Contents: installUnit,

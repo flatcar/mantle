@@ -16,19 +16,25 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 )
 
 func ExecTemplate(tmplStr string, tmplData interface{}) (string, error) {
-	var out bytes.Buffer
+	return ExecNamedTemplate(tmplStr, "", tmplData)
+}
 
-	tmpl, err := template.New("").Parse(tmplStr)
+func ExecNamedTemplate(contents, name string, parameters any) (string, error) {
+	if name == "" {
+		name = "unnamed stuff"
+	}
+	tmpl, err := template.New(name).Parse(contents)
 	if err != nil {
-		return out.String(), err
+		return "", fmt.Errorf("parsing %s as a template failed: %w", name, err)
 	}
-
-	if err := tmpl.Execute(&out, tmplData); err != nil {
-		return out.String(), err
+	buf := bytes.Buffer{}
+	if err := tmpl.Execute(&buf, parameters); err != nil {
+		return "", fmt.Errorf("executing %s template failed: %w", name, err)
 	}
-	return out.String(), nil
+	return buf.String(), nil
 }

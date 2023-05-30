@@ -9,8 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - `DefaultUser` parameter when registering a test to use a user different from `core` ([#424](https://github.com/flatcar/mantle/pull/424))
+- `systemd.sysext.custom-oem` for testing the activation of the OEM sysext image ([#423](https://github.com/flatcar/mantle/pull/423))
 
 ### Change
+
+- Some tests dealing with OEM partition were duplicated or adapted for the OEM partition mountpoint move. The older versions of Flatcar will run tests for the old mountpoint location, the new enough versions - for both mountpoint locations. ([#423](https://github.com/flatcar/mantle/pull/423))
 
 ### Removed
 
