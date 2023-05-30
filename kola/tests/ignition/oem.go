@@ -89,7 +89,7 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
 		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3603},
+		MinVersion: semver.Version{Major: 3620},
 		UserData:   conf.Butane(withNewOEMMountpoint(regularButaneConfigTemplate)),
 	})
 	register.Register(&register.Test{
@@ -113,7 +113,7 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
 		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3603},
+		MinVersion: semver.Version{Major: 3620},
 		UserData:   conf.Butane(withNewOEMMountpoint(indirectButaneConfigTemplate)),
 	})
 	register.Register(&register.Test{
