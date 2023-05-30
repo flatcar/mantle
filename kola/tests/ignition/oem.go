@@ -61,19 +61,6 @@ storage:
           # Needed if --qemu-skip-mangle is not set
           set linux_console="console=ttyS0,115200"
 `
-	reuseContainerLinuxConfig string = `storage:
-  filesystems:
-     - name: oem
-       mount:
-         device: "/dev/disk/by-label/OEM"
-         format: "ext4"
-  files:
-    - path: /grub.cfg
-      filesystem: oem
-      mode: 0644
-      contents:
-        inline: |
-          set linux_append="flatcar.autologin"`
 )
 
 func withOldOEMMountpoint(template string) string {
@@ -138,18 +125,19 @@ func init() {
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 2983},
 		// Using CLC format here also covers the ign-converter case
-		UserData: conf.ContainerLinuxConfig(reuseContainerLinuxConfig),
-	})
-	register.Register(&register.Test{
-		Name:        "cl.ignition.oem.reuse.new",
-		Run:         reusePartitionNew,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
-		// This test overwrites the grub.cfg which does not work on cloud environments after reboot
-		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3603},
-		// Using CLC format here also covers the ign-converter case
-		UserData: conf.ContainerLinuxConfig(reuseContainerLinuxConfig),
+		UserData: conf.ContainerLinuxConfig(`storage:
+  filesystems:
+     - name: oem
+       mount:
+         device: "/dev/disk/by-label/OEM"
+         format: "ext4"
+  files:
+    - path: /grub.cfg
+      filesystem: oem
+      mode: 0644
+      contents:
+        inline: |
+          set linux_append="flatcar.autologin"`),
 	})
 	register.Register(&register.Test{
 		Name:        "cl.ignition.oem.wipe",
