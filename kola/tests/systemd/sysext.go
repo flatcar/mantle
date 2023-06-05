@@ -317,7 +317,7 @@ func checkSysextCustomDocker(c cluster.TestCluster) {
 	// We should now be able to use Docker
 	_ = c.MustSSH(c.Machines()[0], cmdWorking)
 	// The next test is with a recent Docker version, here the one from the Flatcar image to couple it to something that doesn't change under our feet
-	version := string(c.MustSSH(c.Machines()[0], `bzcat /usr/share/licenses/licenses.json.bz2 | grep -m 1 -o 'app-emulation/docker[^:]*' | cut -d - -f 3`))
+	version := string(c.MustSSH(c.Machines()[0], `bzcat /usr/share/licenses/licenses.json.bz2 | grep -m 1 -o 'app-\(containers\|emulation\)/docker-[0-9][^:]*' | cut -d - -f 3`))
 	_ = c.MustSSH(c.Machines()[0], fmt.Sprintf(`ONLY_DOCKER=1 FORMAT=ext4 ARCH=%[2]s sysext-bakery/create_docker_sysext.sh %[1]s docker && ONLY_CONTAINERD=1 FORMAT=ext4 ARCH=%[2]s sysext-bakery/create_docker_sysext.sh %[1]s containerd && sudo mv docker.raw containerd.raw /etc/extensions/`, version, arch))
 	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext && sudo systemctl restart docker containerd`)
 	// We should now still be able to use Docker
