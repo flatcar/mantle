@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
@@ -183,7 +184,7 @@ chmod 600 ~core/.ssh/authorized_keys`),
 		UserData:    conf.MultipartMimeConfig(multipartMimeUserdata),
 		Distros:     []string{"cl"},
 		Platforms:   []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3620},
+		MinVersion:  semver.Version{Major: 3620},
 	})
 }
 
