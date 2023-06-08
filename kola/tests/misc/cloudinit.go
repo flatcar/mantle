@@ -232,7 +232,7 @@ func CloudInitMultipartMime(c cluster.TestCluster) {
 
 	// All files should have the same content (42). These files should have been created by the cloud-config part
 	// that declares the write_files option.
-	c.MustSSH(m, `for f in $(ls /tmp/kola_*); do OUT=$(cat $f); if [ "$OUT" != 42 ]; then exit 1; fi; done`)
+	c.MustSSH(m, `for f in /tmp/kola_*; do OUT=$(cat $f); if [ "$OUT" != 42 ]; then exit 1; fi; done`)
 	// Check that the x-shellscript part was executed.
 	c.MustSSH(m, "test -f /coreos-cloudinit_multipart.txt")
 	c.MustSSH(m, "test -f /kola_undercover")
