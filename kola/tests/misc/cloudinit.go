@@ -183,6 +183,7 @@ chmod 600 ~core/.ssh/authorized_keys`),
 		UserData:    conf.MultipartMimeConfig(multipartMimeUserdata),
 		Distros:     []string{"cl"},
 		Platforms:   []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3620},
 	})
 }
 
