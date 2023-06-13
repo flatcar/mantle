@@ -135,9 +135,10 @@ func (a *API) resolveImage(ctx context.Context, imageSpec string) (godo.DropletC
 	}
 
 	// resolve to user image ID
-	image, err := a.GetUserImage(ctx, imageSpec, true)
-	if err == nil {
-		return godo.DropletCreateImage{ID: image.ID}, nil
+	images, err := a.GetUserImages(ctx, imageSpec, true)
+	// we assume than GetUserImages returns at least one image at this point.
+	if err == nil && len(images) >= 1 {
+		return godo.DropletCreateImage{ID: images[0].ID}, nil
 	}
 
 	return godo.DropletCreateImage{}, fmt.Errorf("couldn't resolve image %q in %v", imageSpec, a.opts.Region)
@@ -260,8 +261,8 @@ func (a *API) DeleteDroplet(ctx context.Context, dropletID int) error {
 	return nil
 }
 
-func (a *API) GetUserImage(ctx context.Context, imageName string, inRegion bool) (*godo.Image, error) {
-	var ret *godo.Image
+func (a *API) GetUserImages(ctx context.Context, imageName string, inRegion bool) ([]godo.Image, error) {
+	var ret []godo.Image
 	var regionMessage string
 	if inRegion {
 		regionMessage = fmt.Sprintf(" in %v", a.opts.Region)
@@ -284,10 +285,7 @@ func (a *API) GetUserImage(ctx context.Context, imageName string, inRegion bool)
 				if inRegion && region != a.opts.Region {
 					continue
 				}
-				if ret != nil {
-					return nil, fmt.Errorf("found multiple images named %q%s", imageName, regionMessage)
-				}
-				ret = &image
+				ret = append(ret, image)
 				break
 			}
 		}
