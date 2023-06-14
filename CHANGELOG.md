@@ -11,10 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `DefaultUser` parameter when registering a test to use a user different from `core` ([#424](https://github.com/flatcar/mantle/pull/424))
 - `systemd.sysext.custom-oem` for testing the activation of the OEM sysext image ([#423](https://github.com/flatcar/mantle/pull/423))
 
-### Change
+### Changed
 
 - Some tests dealing with OEM partition were duplicated or adapted for the OEM partition mountpoint move. The older versions of Flatcar will run tests for the old mountpoint location, the new enough versions - for both mountpoint locations. ([#423](https://github.com/flatcar/mantle/pull/423))
 - The `systemd.sysext.custom-docker` test now tries to figure out the distributed Docker version by searching for both `app-emulation/docker` and `app-containers/docker` package information. The older versions of Flatcar use the former, the new versions will use the latter ([#438](https://github.com/flatcar/mantle/pull/438))
+- DigitalOcean now supports deleting images with the same name ([#440](https://github.com/flatcar/mantle/pull/440))
 
 ### Removed
 

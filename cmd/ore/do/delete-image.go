@@ -57,13 +57,15 @@ func deleteImage() error {
 
 	ctx := context.Background()
 
-	image, err := API.GetUserImage(ctx, imageName, false)
+	images, err := API.GetUserImages(ctx, imageName, false)
 	if err != nil {
 		return err
 	}
 
-	if err := API.DeleteImage(ctx, image.ID); err != nil {
-		return err
+	for _, image := range images {
+		if err := API.DeleteImage(ctx, image.ID); err != nil {
+			return fmt.Errorf("deleting image with ID %d: %w", image.ID, err)
+		}
 	}
 
 	return nil
