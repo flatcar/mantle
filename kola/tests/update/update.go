@@ -17,6 +17,7 @@ package update
 import (
 	"bufio"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -71,6 +72,15 @@ func init() {
 		// This test is uses its own OEM files and shouldn't run on other platforms
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3603},
+	})
+	register.Register(&register.Test{
+		Name:        "cl.sysext.fallbackdownload",
+		Run:         sysextFallbackDownload,
+		ClusterSize: 0,
+		Distros:     []string{"cl"},
+		// This test is uses its own OEM files and shouldn't run on other platforms
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3620},
 	})
 }
 
@@ -336,4 +346,47 @@ systemd:
 	}
 	_ = c.MustSSH(withIgnition, testCmds)
 	withIgnition.Destroy()
+}
+
+func sysextFallbackDownload(c cluster.TestCluster) {
+	// The first test case is to not use Ignition which means that the
+	// set of systemd units in the initrd is different and we also
+	// don't have Ignition mount the OEM partition
+	m, err := c.NewMachine(nil)
+	if err != nil {
+		c.Fatalf("creating test machine: %v", err)
+	}
+
+	// Check that we don't have an OEM sysext image
+	_ = c.MustSSH(m, `test ! -e /etc/extensions/oem-qemu.raw`)
+
+	version := string(c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	if version == "" {
+		c.Fatalf("Assertion for version string failed")
+	}
+
+	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
+
+	client := &http.Client{
+		Timeout: time.Second * 60,
+	}
+	// For simplicity, only support bincache (which is also used for release builds), the test will be skipped on GitHub PRs
+	// The URL comes from bootengine:dracut/99setup-root/initrd-setup-root-after-ignition where it would be oem-qemu.raw
+	// but here we instead test for version.txt to still run the test if oem-qemu.raw is missing for unknown reasons
+	reply, err := client.Head(fmt.Sprintf("https://bincache.flatcar-linux.net/images/%s/%s/version.txt", arch, version))
+	if err != nil || reply.StatusCode != 200 {
+		c.Skip("pre-check failed (URL not found?)")
+	}
+
+	_ = c.MustSSH(m, `sudo mkdir -p /oem/sysext && sudo touch /oem/sysext/active-oem-qemu && echo ID=qemu | sudo tee /oem/oem-release > /dev/null`)
+
+	c.Logf("Rebooting test machine")
+
+	if err = m.Reboot(); err != nil {
+		c.Fatalf("reboot failed: %v", err)
+	}
+
+	// test -e resolves the symlink and checks that the target also exists
+	_ = c.MustSSH(m, `test -e /etc/extensions/oem-qemu.raw`)
+	m.Destroy()
 }
