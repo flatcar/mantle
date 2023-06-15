@@ -75,6 +75,38 @@ var (
 	// testConfig holds params for various kubernetes releases
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
+		"v1.27.2": map[string]interface{}{
+			"MinMajorVersion": 3374,
+			// from https://github.com/flannel-io/flannel/releases
+			"FlannelVersion": "v0.22.0",
+			// from https://github.com/cilium/cilium/releases
+			"CiliumVersion": "1.12.5",
+			// from https://github.com/cilium/cilium-cli/releases
+			"CiliumCLIVersion": "v0.12.12",
+			// from https://github.com/containernetworking/plugins/releases
+			"CNIVersion": "v1.3.0",
+			// from https://github.com/kubernetes-sigs/cri-tools/releases
+			"CRIctlVersion": "v1.27.0",
+			// from https://github.com/kubernetes/release/releases
+			"ReleaseVersion": "v0.15.1",
+			"DownloadDir":    "/opt/bin",
+			"PodSubnet":      "192.168.0.0/17",
+			"arm64": map[string]string{
+				"KubeadmSum": "45b3100984c979ba0f1c0df8f4211474c2d75ebe916e677dff5fc8e3b3697cf7a953da94e356f39684cc860dff6878b772b7514c55651c2f866d9efeef23f970",
+				"KubeletSum": "71857ff499ae135fa478e1827a0ed8865e578a8d2b1e25876e914fd0beba03733801c0654bcd4c0567bafeb16887dafb2dbbe8d1116e6ea28dcd8366c142d348",
+				"CRIctlSum":  "db062e43351a63347871e7094115be2ae3853afcd346d47f7b51141da8c3202c2df58d2e17359322f632abcb37474fd7fdb3b7aadbc5cfd5cf6d3bad040b6251",
+				"CNISum":     "b2b7fb74f1b3cb8928f49e5bf9d4bc686e057e837fac3caf1b366d54757921dba80d70cc010399b274d136e8dee9a25b1ad87cdfdc4ffcf42cf88f3e8f99587a",
+				"KubectlSum": "14be61ec35669a27acf2df0380afb85b9b42311d50ca1165718421c5f605df1119ec9ae314696a674051712e80deeaa65e62d2d62ed4d107fe99d0aaf419dafc",
+			},
+			"amd64": map[string]string{
+				"KubeadmSum": "f40216b7d14046931c58072d10c7122934eac5a23c08821371f8b08ac1779443ad11d3458a4c5dcde7cf80fc600a9fefb14b1942aa46a52330248d497ca88836",
+				"KubeletSum": "a283da2224d456958b2cb99b4f6faf4457c4ed89e9e95f37d970c637f6a7f64ff4dd4d2bfce538759b2d2090933bece599a285ef8fd132eb383fece9a3941560",
+				"CRIctlSum":  "aa622325bf05520939f9e020d7a28ab48ac23e2fae6f47d5a4e52174c88c1ebc31b464853e4fd65bd8f5331f330a6ca96fd370d247d3eeaed042da4ee2d1219a",
+				"CNISum":     "5d0324ca8a3c90c680b6e1fddb245a2255582fa15949ba1f3c6bb7323df9d3af754dae98d6e40ac9ccafb2999c932df2c4288d418949a4915d928eb23c090540",
+				"KubectlSum": "857e67001e74840518413593d90c6e64ad3f00d55fa44ad9a8e2ed6135392c908caff7ec19af18cbe10784b8f83afe687a0bc3bacbc9eee984cdeb9c0749cb83",
+			},
+			"cgroupv1": false,
+		},
 		"v1.26.5": map[string]interface{}{
 			"MinMajorVersion": 3374,
 			// from https://github.com/flannel-io/flannel/releases
