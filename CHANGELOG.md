@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - `DefaultUser` parameter when registering a test to use a user different from `core` ([#424](https://github.com/flatcar/mantle/pull/424))
 - `systemd.sysext.custom-oem` for testing the activation of the OEM sysext image ([#423](https://github.com/flatcar/mantle/pull/423))
+- Kubernetes 1.27 tests ([#441](https://github.com/flatcar/mantle/pull/441))
 
 ### Changed
 
