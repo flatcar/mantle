@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `DefaultUser` parameter when registering a test to use a user different from `core` ([#424](https://github.com/flatcar/mantle/pull/424))
 - `systemd.sysext.custom-oem` for testing the activation of the OEM sysext image ([#423](https://github.com/flatcar/mantle/pull/423))
 - Kubernetes 1.27 tests ([#441](https://github.com/flatcar/mantle/pull/441))
+- Add tests for testing the installation/integrity of the NVIDIA drivers ([#433](https://github.com/flatcar/mantle/pull/433))
 
 ### Changed
 
@@ -67,7 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ignition v3 support and tests ([#301](https://github.com/flatcar-linux/mantle/pull/301), [#311](https://github.com/flatcar-linux/mantle/pull/311))
 - Butane config support ([#318](https://github.com/flatcar-linux/mantle/pull/318))
 - GCP: support testing with GVNIC ([#322](https://github.com/flatcar-linux/mantle/pull/322))
-- `networkd` Ignition translation test ([#344](https://github.com/flatcar-linux/mantle/pull/334)) 
+- `networkd` Ignition translation test ([#344](https://github.com/flatcar-linux/mantle/pull/334))
 - kola test `cl.misc.falco` that tests falco kmod building ([#339](https://github.com/flatcar-linux/mantle/pull/339))
 - Kubernetes test for release 1.24.1 ([#337](https://github.com/flatcar-linux/mantle/pull/337))
 - Added storage abstraction for Equinix Metal tests (SSH can be used in addition of Google Cloud Storage) ([#340](https://github.com/flatcar-linux/mantle/pull/340))
