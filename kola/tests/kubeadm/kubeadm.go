@@ -235,7 +235,7 @@ func init() {
 					major = 3140
 				}
 
-				if CNI == "flannel" || CNI == "cilium" {
+				if CNI == "flannel" {
 					flags = append(flags, register.NoEnableSelinux)
 				}
 
