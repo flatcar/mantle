@@ -9,9 +9,11 @@ RUN bash -c 'cd /usr/src/mantle && ./build ; mv bin bin-amd64 ; CGO_ENABLED=0 GO
 
 # See comment above about golang:1.20 why debian:12 is set here
 FROM docker.io/library/debian:12
-RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y qemu-utils qemu-system-x86 qemu-system-aarch64 qemu-efi-aarch64 seabios ovmf lbzip2 sudo dnsmasq gnupg2 git curl iptables nftables dns-root-data ca-certificates sqlite3 jq awscli azure-cli
+RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y qemu-utils qemu-system-x86 qemu-system-aarch64 qemu-efi-aarch64 seabios ovmf lbzip2 sudo dnsmasq gnupg2 git curl iptables nftables dns-root-data ca-certificates sqlite3 jq awscli azure-cli make
 # from https://cloud.google.com/storage/docs/gsutil_install#deb
 RUN echo "deb http://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list && curl -fsSLo /etc/apt/trusted.gpg.d/cloud.google.gpg https://dl.k8s.io/apt/doc/apt-key.gpg && apt-get update -y && apt-get install --no-install-recommends -y python3 && apt-get install -y google-cloud-cli
+# install packer
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --yes --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-keyring.gpg && echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/hashicorp-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/hashicorp.list && apt-get update -y && apt-get install --no-install-recommends -y packer
 COPY --from=builder-amd64 /usr/src/mantle/bin-amd64 /usr/local/bin-amd64
 COPY --from=builder-amd64 /usr/src/mantle/bin-arm64 /usr/local/bin-arm64
 RUN bash -c 'if [ "$(uname -m)" == "x86_64" ]; then rm -rf /usr/local/bin /usr/local/bin-arm64 ; mv /usr/local/bin-amd64 /usr/local/bin ; else rm -rf /usr/local/bin /usr/local/bin-amd64 ; mv /usr/local/bin-arm64 /usr/local/bin ; fi'
