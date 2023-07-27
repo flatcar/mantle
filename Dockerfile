@@ -9,7 +9,7 @@ RUN bash -c 'cd /usr/src/mantle && ./build ; mv bin bin-amd64 ; CGO_ENABLED=0 GO
 
 # See comment above about golang:1.20 why debian:12 is set here
 FROM docker.io/library/debian:12
-RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y qemu-utils qemu-system-x86 qemu-system-aarch64 qemu-efi-aarch64 seabios ovmf lbzip2 sudo dnsmasq gnupg2 git curl iptables nftables dns-root-data ca-certificates sqlite3 jq awscli azure-cli make
+RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y qemu-utils qemu-system-x86 qemu-system-aarch64 qemu-efi-aarch64 seabios ovmf lbzip2 sudo dnsmasq gnupg2 git curl iptables nftables dns-root-data ca-certificates sqlite3 jq awscli azure-cli make python3-pip
 # from https://cloud.google.com/storage/docs/gsutil_install#deb
 RUN echo "deb http://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list && curl -fsSLo /etc/apt/trusted.gpg.d/cloud.google.gpg https://dl.k8s.io/apt/doc/apt-key.gpg && apt-get update -y && apt-get install --no-install-recommends -y python3 && apt-get install -y google-cloud-cli
 # install packer
