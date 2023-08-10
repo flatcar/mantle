@@ -511,6 +511,16 @@ func dockerContainerdRestart(c cluster.TestCluster) {
 
 	testContainerdUp(c)
 
+	if err := util.Retry(5, 5*time.Second, func() error {
+		if _, err := c.SSH(m, "docker run -d ghcr.io/flatcar/busybox sleep infinity"); err != nil {
+			return fmt.Errorf("running docker container: %w", err)
+		}
+
+		return nil
+	}); err != nil {
+		c.Fatalf("unable to run docker container: %v", err)
+	}
+
 	// kill it
 	c.MustSSH(m, "sudo kill "+string(pid))
 
@@ -536,6 +546,16 @@ func dockerContainerdRestart(c cluster.TestCluster) {
 
 	// verify it came back and docker knows about it
 	testContainerdUp(c)
+
+	if err := util.Retry(5, 5*time.Second, func() error {
+		if _, err := c.SSH(m, "docker run -d ghcr.io/flatcar/busybox sleep infinity"); err != nil {
+			return fmt.Errorf("running docker container: %w", err)
+		}
+
+		return nil
+	}); err != nil {
+		c.Fatalf("unable to run docker container: %v", err)
+	}
 }
 
 func testContainerdUp(c cluster.TestCluster) {
