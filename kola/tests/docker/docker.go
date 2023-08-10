@@ -504,11 +504,6 @@ func dockerUserNoCaps(c cluster.TestCluster) {
 func dockerContainerdRestart(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	pid := c.MustSSH(m, "systemctl show containerd -p MainPID --value")
-	if string(pid) == "0" {
-		c.Fatalf("Could not find containerd pid")
-	}
-
 	testContainerdUp(c)
 
 	if err := util.Retry(5, 5*time.Second, func() error {
@@ -521,40 +516,49 @@ func dockerContainerdRestart(c cluster.TestCluster) {
 		c.Fatalf("unable to run docker container: %v", err)
 	}
 
-	// kill it
-	c.MustSSH(m, "sudo kill "+string(pid))
+	// kill it.
+	// * SIGTERM is the default kill signal
+	// * SIGHUP has been seen to be used by third party tools to restart containerd
+	for _, signal := range []string{"SIGTERM", "SIGHUP"} {
+		pid := c.MustSSH(m, "systemctl show containerd -p MainPID --value")
+		if string(pid) == "0" {
+			c.Fatalf("Could not find containerd pid")
+		}
 
-	// retry polling its state
-	util.Retry(12, 6*time.Second, func() error {
-		state := c.MustSSH(m, "systemctl show containerd -p SubState --value")
-		switch string(state) {
-		case "running":
+		c.MustSSH(m, fmt.Sprintf("sudo kill -%s %s", signal, string(pid)))
+
+		// retry polling its state
+		util.Retry(12, 6*time.Second, func() error {
+			state := c.MustSSH(m, "systemctl show containerd -p SubState --value")
+			switch string(state) {
+			case "running":
+				return nil
+			case "stopped", "exited", "failed":
+				c.Fatalf("containerd entered stopped state")
+			}
+			return fmt.Errorf("containerd failed to restart with signal: %s", signal)
+		})
+
+		// verify systemd started it and that it's pid is different
+		newPid := c.MustSSH(m, "systemctl show containerd -p MainPID --value")
+		if string(newPid) == "0" {
+			c.Fatalf("Containerd is not running (could not find pid) after signal: %s", signal)
+		} else if string(newPid) == string(pid) {
+			c.Fatalf("Old and new pid's are the same. containerd did not die after signal: %s", signal)
+		}
+
+		// verify it came back and docker knows about it
+		testContainerdUp(c)
+
+		if err := util.Retry(5, 5*time.Second, func() error {
+			if _, err := c.SSH(m, "docker run -d ghcr.io/flatcar/busybox sleep infinity"); err != nil {
+				return fmt.Errorf("running docker container: %w", err)
+			}
+
 			return nil
-		case "stopped", "exited", "failed":
-			c.Fatalf("containerd entered stopped state")
+		}); err != nil {
+			c.Fatalf("unable to run docker container: %v after killing containerd with signal: %s", err, signal)
 		}
-		return fmt.Errorf("containerd failed to restart")
-	})
-
-	// verify systemd started it and that it's pid is different
-	newPid := c.MustSSH(m, "systemctl show containerd -p MainPID --value")
-	if string(newPid) == "0" {
-		c.Fatalf("Containerd is not running (could not find pid)")
-	} else if string(newPid) == string(pid) {
-		c.Fatalf("Old and new pid's are the same. containerd did not die")
-	}
-
-	// verify it came back and docker knows about it
-	testContainerdUp(c)
-
-	if err := util.Retry(5, 5*time.Second, func() error {
-		if _, err := c.SSH(m, "docker run -d ghcr.io/flatcar/busybox sleep infinity"); err != nil {
-			return fmt.Errorf("running docker container: %w", err)
-		}
-
-		return nil
-	}); err != nil {
-		c.Fatalf("unable to run docker container: %v", err)
 	}
 }
 
