@@ -55,6 +55,48 @@ func init() {
 		},
 	})
 	register.Register(&register.Test{
+		Name:        "cl.update.oem",
+		Run:         oemPayload,
+		ClusterSize: 1,
+		NativeFuncs: map[string]func() error{
+			"Omaha": Serve,
+		},
+		Distros: []string{"cl"},
+		// This test uses its own OEM files and shouldn't run on other platforms
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// This test can only run if the update payload to test is given.
+			// The image passed must also be an old release that does not have
+			// the OEM sysext setup because we want to test the migration path
+			// (see scripts/ci-automation/vendor-testing/qemu_update.sh)
+			return kola.UpdatePayloadFile == ""
+		},
+		// This test is expected to run on a very old version as start image
+		UserData: conf.ContainerLinuxConfig(`storage:
+  filesystems:
+    - name: oem
+      mount:
+        device: "/dev/disk/by-label/OEM"
+        format: "ext4"
+  files:
+    - path: /oem-release
+      filesystem: oem
+      contents:
+        inline: |
+          ID=azure
+    - path: /python/shouldbedeleted
+      filesystem: oem
+      contents:
+        inline: |
+          should be deleted because its part of the Azure OEM cleanup paths
+    - path: /etc/systemd/system/waagent.service
+      contents:
+        inline: |
+          [Service]
+          ExecStart=/bin/echo "should be deleted because its part of the Azure OEM cleanup paths"
+`),
+	})
+	register.Register(&register.Test{
 		Name:        "cl.sysext.boot.old",
 		Run:         sysextBootLogicOld,
 		ClusterSize: 0,
@@ -244,6 +286,46 @@ func splitNewlineEnv(envs string) map[string]string {
 		m[spl[0]] = spl[1]
 	}
 	return m
+}
+
+func oemPayload(c cluster.TestCluster) {
+	// This test first consumes a payload locally given to kola
+	// and then also uses this payload again with flatcar-update,
+	// where the OEM extension will be fallback downloaded from
+	// bincache during the postinst hook, and then after the reboot
+	// there is a final update to itself with flatcar-update where
+	// the OEM extension is passed expliclitly and the machine
+	// reboots once more to migrate to the sysext OEM setup.
+	m := c.Machines()[0]
+	// The instance should now host its own update with a kolet
+	addr := configureOmahaServer(c, m)
+	configureMachineForUpdate(c, m, addr)
+	tutil.AssertBootedUsr(c, m, "USR-A")
+	// Updating will fail if there is no payload on bincache,
+	// so don't expect this to work for local or GitHub Action builds
+	updateMachine(c, m)
+	tutil.AssertBootedUsr(c, m, "USR-B")
+	tutil.InvalidateUsrPartition(c, m, "USR-A")
+	// Check that the instance is not yet migrated
+	_ = c.MustSSH(m, `test -e /oem/python/shouldbedeleted && test -e /etc/systemd/system/waagent.service`)
+	_ = c.MustSSH(m, `test ! -e /oem/sysext/active-oem-azure`)
+	version := string(c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	if version == "" {
+		c.Fatalf("Assertion for version string failed")
+	}
+	_ = c.MustSSH(m, `test -e /oem/sysext/oem-azure-`+version+`.raw`)
+	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
+	_ = c.MustSSH(m, `curl -fsSLO --retry-delay 1 --retry 60 --retry-connrefused --retry-max-time 60 --connect-timeout 20 https://bincache.flatcar-linux.net/images/`+arch+`/`+version+`/flatcar_test_update-oem-azure.gz`)
+	_ = c.MustSSH(m, `sudo flatcar-update --to-version `+version+` --to-payload /updates/update.gz --extension ./flatcar_test_update-oem-azure.gz --disable-afterwards --force-dev-key`)
+	c.Logf("Rebooting test machine after flatcar-update run (2nd reboot)")
+	if err := m.Reboot(); err != nil {
+		c.Fatalf("reboot failed: %v", err)
+	}
+	tutil.AssertBootedUsr(c, m, "USR-A")
+	// Check that the instance has migrated
+	_ = c.MustSSH(m, `test ! -e /oem/python/shouldbedeleted && test ! -e /etc/systemd/system/waagent.service`)
+	_ = c.MustSSH(m, `test -e /oem/sysext/active-oem-azure`)
+	_ = c.MustSSH(m, `systemd-sysext status --json=pretty | jq --raw-output '.[] | select(.hierarchy == "/usr") | .extensions[]' | grep -q oem-azure`)
 }
 
 func sysextBootLogicOld(c cluster.TestCluster) {

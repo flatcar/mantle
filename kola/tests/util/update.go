@@ -31,8 +31,8 @@ func AssertBootedUsr(c cluster.TestCluster, m platform.Machine, usr string) {
 }
 
 func GetUsrDeviceNode(c cluster.TestCluster, m platform.Machine) string {
-	// find /usr dev
-	usrdev := c.MustSSH(m, "findmnt -no SOURCE /usr")
+	// find /usr dev (-f to see the first mount, not the sysext overlay mount)
+	usrdev := c.MustSSH(m, "findmnt -fno SOURCE /usr")
 
 	// XXX: if the /usr dev is /dev/mapper/usr, we're on a verity enabled
 	// image, so use dmsetup to find the real device.
