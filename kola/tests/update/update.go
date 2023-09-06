@@ -453,8 +453,8 @@ func sysextFallbackDownload(c cluster.TestCluster) {
 		Timeout: time.Second * 60,
 	}
 	// For simplicity, only support bincache (which is also used for release builds), the test will be skipped on GitHub PRs
-	// The URL comes from bootengine:dracut/99setup-root/initrd-setup-root-after-ignition where it would be oem-qemu.raw
-	// but here we instead test for version.txt to still run the test if oem-qemu.raw is missing for unknown reasons
+	// The URL comes from bootengine:dracut/99setup-root/initrd-setup-root-after-ignition where it would be flatcar_test_update-oem-qemu.gz
+	// but here we instead test for version.txt to still run and fail the test if that file is missing for unknown reasons
 	reply, err := client.Head(fmt.Sprintf("https://bincache.flatcar-linux.net/images/%s/%s/version.txt", arch, version))
 	if err != nil || reply.StatusCode != 200 {
 		c.Skip("pre-check failed (URL not found?)")
