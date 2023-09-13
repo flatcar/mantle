@@ -555,6 +555,7 @@ func (a *API) UploadImage(name, path string) (string, error) {
 
 			return image.Status == images.ImageStatusActive, nil
 		}); err != nil {
+			a.DeleteImage(image.ID)
 			return "", fmt.Errorf("getting image active: %w", err)
 		}
 
