@@ -38,8 +38,8 @@ func verifyNvidiaInstallation(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
 	nvidiaStatusRetry := func() error {
-		out, err := c.SSH(m, "systemctl is-active nvidia.service")
-		if !bytes.Contains(out, []byte("inactive")) {
+		out, err := c.SSH(m, "systemctl status nvidia.service")
+		if !bytes.Contains(out, []byte("active (exited)")) {
 			return fmt.Errorf("nvidia.service: %q: %v", out, err)
 		}
 		return nil
