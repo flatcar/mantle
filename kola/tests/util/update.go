@@ -16,7 +16,6 @@ package util
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/platform"
@@ -31,14 +30,9 @@ func AssertBootedUsr(c cluster.TestCluster, m platform.Machine, usr string) {
 }
 
 func GetUsrDeviceNode(c cluster.TestCluster, m platform.Machine) string {
-	// find /usr dev (-f to see the first mount, not the sysext overlay mount)
-	usrdev := c.MustSSH(m, "findmnt -fno SOURCE /usr")
-
-	// XXX: if the /usr dev is /dev/mapper/usr, we're on a verity enabled
-	// image, so use dmsetup to find the real device.
-	if strings.TrimSpace(string(usrdev)) == "/dev/mapper/usr" {
-		usrdev = c.MustSSH(m, "echo -n /dev/$(sudo dmsetup info --noheadings -Co blkdevs_used usr)")
-	}
+	// The rootdev tool finds the backing block dev better than, e.g.,
+	// findmnt -fno SOURCE /usr and/or dmsetup info --noheadings -Co blkdevs_used usr
+	usrdev := c.MustSSH(m, "rootdev -s /usr")
 
 	return string(usrdev)
 }
