@@ -19,10 +19,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform"
 )
+
+var seBoolean = "container_use_nfs"
 
 func init() {
 	register.Register(&register.Test{
@@ -40,6 +43,15 @@ func init() {
 		Distros:     []string{"cl", "fcos", "rhcos"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// Workaround to set the SELinux boolean name based of the Flatcar version.
+			// Note: it works only if we test '*'
+			if version.LessThan(semver.Version{Major: 3733}) {
+				seBoolean = "virt_use_nfs"
+			}
+
+			return false
+		},
 	})
 	register.Register(&register.Test{
 		Run:         SelinuxBooleanPersist,
@@ -48,6 +60,15 @@ func init() {
 		Distros:     []string{"fcos", "rhcos"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// Workaround to set the SELinux boolean name based of the Flatcar version.
+			// Note: it works only if we test '*'
+			if version.LessThan(semver.Version{Major: 3733}) {
+				seBoolean = "virt_use_nfs"
+			}
+
+			return false
+		},
 	})
 	register.Register(&register.Test{
 		Run:         SelinuxManage,
@@ -155,8 +176,6 @@ func SelinuxEnforce(c cluster.TestCluster) {
 
 // SelinuxBoolean checks that you can tweak a boolean in the current session
 func SelinuxBoolean(c cluster.TestCluster) {
-	seBoolean := "virt_use_nfs"
-
 	m := c.Machines()[0]
 
 	tempBoolState, err := getSelinuxBooleanState(c, m, seBoolean)
@@ -186,8 +205,6 @@ func SelinuxBoolean(c cluster.TestCluster) {
 // SelinuxBooleanPersist checks that you can tweak a boolean and have it
 // persist across reboots
 func SelinuxBooleanPersist(c cluster.TestCluster) {
-	seBoolean := "virt_use_nfs"
-
 	m := c.Machines()[0]
 
 	persistBoolState, err := getSelinuxBooleanState(c, m, seBoolean)
