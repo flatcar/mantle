@@ -39,6 +39,9 @@ var amiCache struct {
 
 	stableOnce sync.Once
 	stableAMIs *releaseAMIs
+
+	ltsOnce sync.Once
+	ltsAMIs *releaseAMIs
 }
 
 // resolveAMI is used to minimize network requests while allowing resolution of
@@ -77,6 +80,11 @@ func resolveAMI(ami string, region string) string {
 			amiCache.stableAMIs = resolveChannel(ami)
 		})
 		channelAmis = amiCache.stableAMIs
+	case "lts":
+		amiCache.ltsOnce.Do(func() {
+			amiCache.ltsAMIs = resolveChannel(ami)
+		})
+		channelAmis = amiCache.ltsAMIs
 	default:
 		return ami
 	}
