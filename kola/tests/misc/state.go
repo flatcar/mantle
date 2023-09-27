@@ -75,13 +75,13 @@ func OverlayCleanup(c cluster.TestCluster) {
 	// special cases are recreating a directory but empty, deleting a file, deleting a directory,
 	// and recreating a directory with same contents plus a new file.
 	// /etc/sssd should have the same permissions but the only difference is that the overlay
-	// will add the overlay.opaque xattr, /etc/samba is an empty directory as of now but the test
-	// would also be valid if it had contents, /etc/bash/bashrc must exist for the test to work
-	// and the contents should get frozen and not touched by the cleanup because here we recreate
-	// the folder (and add a new file in it) which means that the lowerdir folder isn't used
+	// will add the overlay.opaque xattr, /etc/samba is an empty directory in case of samba <= 4.15,
+	// but the test would also be valid if it had contents, /etc/bash/bashrc must exist for the test
+	// to work and the contents should get frozen and not touched by the cleanup because here we
+	// recreate the folder (and add a new file in it) which means that the lowerdir folder isn't used
 	// and deleting equal contents would not result in it being available.
 	// All these files should not be part of the tmpfiles rules for the test to work.
-	_ = c.MustSSH(m, `sudo rm -r /etc/sssd && sudo mkdir /etc/sssd && sudo chmod 700 /etc/sssd && sudo rm /etc/kexec.conf && sudo rm -r /etc/samba && sudo rm -r /etc/bash && sudo cp -a /usr/share/flatcar/etc/bash /etc/bash && sudo touch /etc/bash/hello`)
+	_ = c.MustSSH(m, `sudo rm -r /etc/sssd && sudo mkdir /etc/sssd && sudo chmod 700 /etc/sssd && sudo rm /etc/kexec.conf && sudo rm -rf /etc/samba && sudo rm -r /etc/bash && sudo cp -a /usr/share/flatcar/etc/bash /etc/bash && sudo touch /etc/bash/hello`)
 
 	// The migration path for old machines with a full /etc and the cleanup of unwanted duplicates/
 	// upcopies can be tested the same way by copying duplicates to /etc and then rebooting to

@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 ### Fixed
+- Remove /etc/samba with an -f option in `cl.overlay.cleanup` for samba 4.18+ ([#455](https://github.com/flatcar/mantle/pull/455))
 
 ## [v0.20.0] - 16/03/2023
 ### Security
