@@ -124,21 +124,45 @@ func (ap *AzureProfile) AsOptions() []Options {
 	return o
 }
 
+type SubFilter struct {
+	name string
+	id   string
+}
+
+func FilterByName(name string) SubFilter {
+	return SubFilter{name: name}
+}
+func FilterByID(id string) SubFilter {
+	return SubFilter{id: id}
+}
+func (s *SubFilter) IsEmpty() bool {
+	return s.name == "" && s.id == ""
+}
+func (s *SubFilter) Matches(opts *Options) bool {
+	if s.name != "" && opts.SubscriptionName == s.name {
+		return true
+	}
+	if s.id != "" && opts.SubscriptionID == s.id {
+		return true
+	}
+	return false
+}
+
 // SubscriptionOptions returns the name subscription in the Azure profile as a Options struct.
 // If the subscription name is "", the first subscription is returned.
 // If there are no subscriptions or the named subscription is not found, SubscriptionOptions returns nil.
-func (ap *AzureProfile) SubscriptionOptions(name string) *Options {
+func (ap *AzureProfile) SubscriptionOptions(filter SubFilter) *Options {
 	opts := ap.AsOptions()
 
 	if len(opts) == 0 {
 		return nil
 	}
 
-	if name == "" {
+	if filter.IsEmpty() {
 		return &opts[0]
 	} else {
 		for _, o := range ap.AsOptions() {
-			if o.SubscriptionName == name {
+			if filter.Matches(&o) {
 				return &o
 			}
 		}

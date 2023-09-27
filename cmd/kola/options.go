@@ -122,6 +122,7 @@ func init() {
 	sv(&kola.AzureOptions.VnetSubnetName, "azure-vnet-subnet-name", "", "Use a pre-existing virtual network for created instances. Specify as vnet-name/subnet-name. If subnet name is omitted then \"default\" is assumed")
 	bv(&kola.AzureOptions.UseGallery, "azure-use-gallery", false, "Use gallery image instead of managed image")
 	bv(&kola.AzureOptions.UsePrivateIPs, "azure-use-private-ips", false, "Assume nodes are reachable using private IP addresses")
+	bv(&kola.AzureOptions.UseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")

@@ -5,6 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/storage v1.27.0
 	github.com/Azure/azure-sdk-for-go v56.2.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.19
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
 	github.com/aws/aws-sdk-go v1.44.46
@@ -54,7 +55,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.11.19 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.2 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
