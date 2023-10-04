@@ -71,6 +71,17 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			Sku:       &a.Opts.Sku,
 			Version:   &a.Opts.Version,
 		}
+		if a.Opts.Version == "latest" {
+			var top int32 = 1
+			list, err := a.vmImgClient.List(context.TODO(), a.Opts.Location, a.Opts.Publisher, a.Opts.Offer, a.Opts.Sku, "", &top, "name desc")
+			if err != nil {
+				plog.Warningf("failed to get image list: %v; continuing", err)
+			} else if list.Value == nil || len(*list.Value) == 0 || (*list.Value)[0].Name == nil {
+				plog.Warningf("no images found; continuing")
+			} else {
+				a.Opts.Version = *(*list.Value)[0].Name
+			}
+		}
 		// lookup plan information for image
 		imgInfo, err := a.vmImgClient.Get(context.TODO(), a.Opts.Location, *imgRef.Publisher, *imgRef.Offer, *imgRef.Sku, *imgRef.Version)
 		if err == nil && imgInfo.Plan != nil {

@@ -15,6 +15,7 @@
 package azure
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -27,8 +28,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2021-01-01/subscriptions"
 	armStorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-01-01/storage"
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/coreos/pkg/capnslog"
 
@@ -58,40 +61,36 @@ type Network struct {
 	subnet network.Subnet
 }
 
-// New creates a new Azure client. If no publish settings file is provided or
-// can't be parsed, an anonymous client is created.
-func New(opts *Options) (*API, error) {
-	conf := management.DefaultConfig()
-	conf.APIVersion = "2015-04-01"
-
-	if opts.ManagementURL != "" {
-		conf.ManagementURL = opts.ManagementURL
-	}
-
-	if opts.StorageEndpointSuffix == "" {
-		opts.StorageEndpointSuffix = storage.DefaultBaseURL
-	}
-
+func setOptsFromProfile(opts *Options) error {
 	profiles, err := internalAuth.ReadAzureProfile(opts.AzureProfile)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't read Azure profile: %v", err)
-	}
-
-	subOpts := profiles.SubscriptionOptions(opts.AzureSubscription)
-	if subOpts == nil {
-		return nil, fmt.Errorf("Azure subscription named %q doesn't exist in %q", opts.AzureSubscription, opts.AzureProfile)
+		return fmt.Errorf("couldn't read Azure profile: %v", err)
 	}
 
 	if os.Getenv("AZURE_AUTH_LOCATION") == "" {
 		if opts.AzureAuthLocation == "" {
 			user, err := user.Current()
 			if err != nil {
-				return nil, err
+				return err
 			}
 			opts.AzureAuthLocation = filepath.Join(user.HomeDir, internalAuth.AzureAuthPath)
 		}
 		// TODO: Move to Flight once built to allow proper unsetting
 		os.Setenv("AZURE_AUTH_LOCATION", opts.AzureAuthLocation)
+	}
+
+	var subOpts *internalAuth.Options
+	if opts.AzureSubscription == "" {
+		settings, err := auth.GetSettingsFromFile()
+		if err != nil {
+			return err
+		}
+		subOpts = profiles.SubscriptionOptions(internalAuth.FilterByID(settings.GetSubscriptionID()))
+	} else {
+		subOpts = profiles.SubscriptionOptions(internalAuth.FilterByName(opts.AzureSubscription))
+	}
+	if subOpts == nil {
+		return fmt.Errorf("Azure subscription named %q doesn't exist in %q", opts.AzureSubscription, opts.AzureProfile)
 	}
 
 	if opts.SubscriptionID == "" {
@@ -112,6 +111,37 @@ func New(opts *Options) (*API, error) {
 
 	if opts.StorageEndpointSuffix == "" {
 		opts.StorageEndpointSuffix = subOpts.StorageEndpointSuffix
+	}
+
+	return nil
+}
+
+// New creates a new Azure client. If no publish settings file is provided or
+// can't be parsed, an anonymous client is created.
+func New(opts *Options) (*API, error) {
+	var err error
+	conf := management.DefaultConfig()
+	conf.APIVersion = "2015-04-01"
+
+	if opts.ManagementURL != "" {
+		conf.ManagementURL = opts.ManagementURL
+	}
+
+	if opts.StorageEndpointSuffix == "" {
+		opts.StorageEndpointSuffix = storage.DefaultBaseURL
+	}
+
+	if !opts.UseIdentity {
+		err = setOptsFromProfile(opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get options from azure profile: %w", err)
+		}
+	} else {
+		subid, err := msiGetSubscriptionID()
+		if err != nil {
+			return nil, fmt.Errorf("failed to query subscription id: %w", err)
+		}
+		opts.SubscriptionID = subid
 	}
 
 	var client management.Client
@@ -137,50 +167,95 @@ func New(opts *Options) (*API, error) {
 	return api, nil
 }
 
+func (a *API) newAuthorizer(baseURI string) (autorest.Authorizer, error) {
+	if !a.Opts.UseIdentity {
+		return auth.NewAuthorizerFromFile(baseURI)
+	}
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	return settings.GetMSI().Authorizer()
+}
+
+func msiGetSubscriptionID() (string, error) {
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return "", err
+	}
+	subid := settings.GetSubscriptionID()
+	if subid != "" {
+		return subid, nil
+	}
+	auther, err := settings.GetMSI().Authorizer()
+	if err != nil {
+		return "", err
+	}
+	client := subscriptions.NewClient()
+	client.Authorizer = auther
+	iter, err := client.ListComplete(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("failed to list subscriptions: %w", err)
+	}
+	for sub := iter.Value(); iter.NotDone(); iter.Next() {
+		// this should never happen
+		if sub.SubscriptionID == nil {
+			continue
+		}
+		if subid != "" {
+			return "", fmt.Errorf("multiple subscriptions found; pass one explicitly using the %s environment variable", auth.SubscriptionID)
+		}
+		subid = *sub.SubscriptionID
+	}
+	if subid == "" {
+		return "", fmt.Errorf("no subscriptions found; pass one explicitly using the %s environment variable", auth.SubscriptionID)
+	}
+	plog.Infof("Using subscription %s", subid)
+	return subid, nil
+}
+
 func (a *API) SetupClients() error {
-	auther, err := auth.NewAuthorizerFromFile(resources.DefaultBaseURI)
+	auther, err := a.newAuthorizer(resources.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	settings, err := auth.GetSettingsFromFile()
-	if err != nil {
-		return err
-	}
-	a.rgClient = resources.NewGroupsClient(settings.GetSubscriptionID())
+	subid := a.Opts.SubscriptionID
+
+	a.rgClient = resources.NewGroupsClient(subid)
 	a.rgClient.Authorizer = auther
 
-	a.depClient = resources.NewDeploymentsClient(settings.GetSubscriptionID())
+	a.depClient = resources.NewDeploymentsClient(subid)
 	a.depClient.Authorizer = auther
 
-	auther, err = auth.NewAuthorizerFromFile(compute.DefaultBaseURI)
+	auther, err = a.newAuthorizer(compute.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.imgClient = compute.NewImagesClient(settings.GetSubscriptionID())
+	a.imgClient = compute.NewImagesClient(subid)
 	a.imgClient.Authorizer = auther
-	a.compClient = compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
+	a.compClient = compute.NewVirtualMachinesClient(subid)
 	a.compClient.Authorizer = auther
-	a.vmImgClient = compute.NewVirtualMachineImagesClient(settings.GetSubscriptionID())
+	a.vmImgClient = compute.NewVirtualMachineImagesClient(subid)
 	a.vmImgClient.Authorizer = auther
 
-	auther, err = auth.NewAuthorizerFromFile(network.DefaultBaseURI)
+	auther, err = a.newAuthorizer(network.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.netClient = network.NewVirtualNetworksClient(settings.GetSubscriptionID())
+	a.netClient = network.NewVirtualNetworksClient(subid)
 	a.netClient.Authorizer = auther
-	a.subClient = network.NewSubnetsClient(settings.GetSubscriptionID())
+	a.subClient = network.NewSubnetsClient(subid)
 	a.subClient.Authorizer = auther
-	a.ipClient = network.NewPublicIPAddressesClient(settings.GetSubscriptionID())
+	a.ipClient = network.NewPublicIPAddressesClient(subid)
 	a.ipClient.Authorizer = auther
-	a.intClient = network.NewInterfacesClient(settings.GetSubscriptionID())
+	a.intClient = network.NewInterfacesClient(subid)
 	a.intClient.Authorizer = auther
 
-	auther, err = auth.NewAuthorizerFromFile(armStorage.DefaultBaseURI)
+	auther, err = a.newAuthorizer(armStorage.DefaultBaseURI)
 	if err != nil {
 		return err
 	}
-	a.accClient = armStorage.NewAccountsClient(settings.GetSubscriptionID())
+	a.accClient = armStorage.NewAccountsClient(subid)
 	a.accClient.Authorizer = auther
 
 	return nil

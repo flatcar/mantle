@@ -112,8 +112,8 @@ func init() {
 	sv(&kola.AzureOptions.BlobURL, "azure-blob-url", "", "Azure source page blob to be copied from a public/SAS URL, recommended way (from \"plume pre-release\" or \"ore azure upload-blob-arm\")")
 	sv(&kola.AzureOptions.ImageFile, "azure-image-file", "", "Azure image file (local image to upload in the temporary kola resource group)")
 	sv(&kola.AzureOptions.DiskURI, "azure-disk-uri", "", "Azure disk uri (custom images)")
-	sv(&kola.AzureOptions.Publisher, "azure-publisher", "CoreOS", "Azure image publisher (default \"CoreOS\"")
-	sv(&kola.AzureOptions.Offer, "azure-offer", "CoreOS", "Azure image offer (default \"CoreOS\"")
+	sv(&kola.AzureOptions.Publisher, "azure-publisher", "kinvolk", "Azure image publisher (default \"kinvolk\"")
+	sv(&kola.AzureOptions.Offer, "azure-offer", "flatcar-container-linux-free", "Azure image offer (default \"flatcar-container-linux-free\"")
 	sv(&kola.AzureOptions.Sku, "azure-sku", "alpha", "Azure image sku/channel (default \"alpha\"")
 	sv(&kola.AzureOptions.Version, "azure-version", "", "Azure image version")
 	sv(&kola.AzureOptions.Location, "azure-location", "westus", "Azure location (default \"westus\"")
@@ -122,6 +122,7 @@ func init() {
 	sv(&kola.AzureOptions.VnetSubnetName, "azure-vnet-subnet-name", "", "Use a pre-existing virtual network for created instances. Specify as vnet-name/subnet-name. If subnet name is omitted then \"default\" is assumed")
 	bv(&kola.AzureOptions.UseGallery, "azure-use-gallery", false, "Use gallery image instead of managed image")
 	bv(&kola.AzureOptions.UsePrivateIPs, "azure-use-private-ips", false, "Assume nodes are reachable using private IP addresses")
+	bv(&kola.AzureOptions.UseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")

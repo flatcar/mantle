@@ -35,6 +35,7 @@ var (
 	azureAuth         string
 	azureSubscription string
 	azureLocation     string
+	useIdentity       bool
 
 	api *azure.API
 )
@@ -43,10 +44,12 @@ func init() {
 	cli.WrapPreRun(Azure, preauth)
 
 	sv := Azure.PersistentFlags().StringVar
+	bv := Azure.PersistentFlags().BoolVar
 	sv(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	sv(&azureAuth, "azure-auth", "", "Azure auth location (default \"~/"+auth.AzureAuthPath+"\")")
 	sv(&azureSubscription, "azure-subscription", "", "Azure subscription name. If unset, the first is used.")
 	sv(&azureLocation, "azure-location", "westus", "Azure location (default \"westus\")")
+	bv(&useIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 }
 
 func preauth(cmd *cobra.Command, args []string) error {
@@ -57,6 +60,7 @@ func preauth(cmd *cobra.Command, args []string) error {
 		AzureAuthLocation: azureAuth,
 		AzureSubscription: azureSubscription,
 		Location:          azureLocation,
+		UseIdentity:       useIdentity,
 	})
 	if err != nil {
 		plog.Fatalf("Failed to create Azure API: %v", err)
