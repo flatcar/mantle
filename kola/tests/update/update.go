@@ -452,7 +452,12 @@ func sysextFallbackDownload(c cluster.TestCluster) {
 	client := &http.Client{
 		Timeout: time.Second * 60,
 	}
-	// For simplicity, only support bincache (which is also used for release builds), the test will be skipped on GitHub PRs
+	// Check that we are on a dev build. Overwriting the pub key with a bind mount won't work for the initrd.
+	keySum := string(c.MustSSH(m, `md5sum /usr/share/update_engine/update-payload-key.pub.pem | cut -d " " -f 1`))
+	if keySum != "7192addf4a7f890c0057d21653eff2ea" {
+		c.Skip("Test skipped, only dev builds are supported")
+	}
+	// For simplicity, only support bincache, the test will be skipped on GitHub PRs and release builds.
 	// The URL comes from bootengine:dracut/99setup-root/initrd-setup-root-after-ignition where it would be flatcar_test_update-oem-qemu.gz
 	// but here we instead test for version.txt to still run and fail the test if that file is missing for unknown reasons
 	reply, err := client.Head(fmt.Sprintf("https://bincache.flatcar-linux.net/images/%s/%s/version.txt", arch, version))
