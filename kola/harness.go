@@ -565,6 +565,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 		NoSSHKeyInUserData: t.HasFlag(register.NoSSHKeyInUserData),
 		NoSSHKeyInMetadata: t.HasFlag(register.NoSSHKeyInMetadata),
 		NoEnableSelinux:    t.HasFlag(register.NoEnableSelinux),
+		NoDisableUpdates:   t.HasFlag(register.NoDisableUpdates),
 		SSHRetries:         Options.SSHRetries,
 		SSHTimeout:         Options.SSHTimeout,
 		DefaultUser:        t.DefaultUser,

@@ -585,7 +585,8 @@ func (c *Conf) addFileV3(path, filesystem, contents string, mode int) {
 			Files: []v3types.File{
 				{
 					Node: v3types.Node{
-						Path: path,
+						Path:      path,
+						Overwrite: &[]bool{true}[0],
 					},
 					FileEmbedded1: v3types.FileEmbedded1{
 						Contents: v3types.FileContents{
@@ -610,7 +611,8 @@ func (c *Conf) addFileV31(path, filesystem, contents string, mode int) {
 			Files: []v31types.File{
 				{
 					Node: v31types.Node{
-						Path: path,
+						Path:      path,
+						Overwrite: &[]bool{true}[0],
 					},
 					FileEmbedded1: v31types.FileEmbedded1{
 						Contents: v31types.Resource{
@@ -635,7 +637,8 @@ func (c *Conf) addFileV32(path, filesystem, contents string, mode int) {
 			Files: []v32types.File{
 				{
 					Node: v32types.Node{
-						Path: path,
+						Path:      path,
+						Overwrite: &[]bool{true}[0],
 					},
 					FileEmbedded1: v32types.FileEmbedded1{
 						Contents: v32types.Resource{
@@ -660,7 +663,8 @@ func (c *Conf) addFileV33(path, filesystem, contents string, mode int) {
 			Files: []v33types.File{
 				{
 					Node: v33types.Node{
-						Path: path,
+						Path:      path,
+						Overwrite: &[]bool{true}[0],
 					},
 					FileEmbedded1: v33types.FileEmbedded1{
 						Contents: v33types.Resource{
@@ -707,6 +711,41 @@ func (c *Conf) addFileCloudConfig(path, filesystem, contents string, mode int) {
 	})
 }
 
+func (c *Conf) addFileScript(path, filesystem, contents string, mode int) {
+	c.script += fmt.Sprintf(`
+cat <<EOF > %s
+%s
+EOF
+chmod %o %s
+`, path, contents, mode, path)
+}
+
+func (c *Conf) addFileMultipartMime(path, filesystem, contents string, mode int) {
+	header := textproto.MIMEHeader{
+		"Content-Type":              []string{"text/cloud-config; charset=\"us-ascii\""},
+		"MIME-Version":              []string{"1.0"},
+		"Content-Transfer-Encoding": []string{"7bit"},
+		"Content-Disposition":       []string{"attachment; filename=\"testing-keys.yaml\""},
+	}
+	cc := cci.CloudConfig{
+		WriteFiles: []cci.File{
+			cci.File{
+				Content:            contents,
+				Owner:              "root",
+				Path:               path,
+				RawFilePermissions: fmt.Sprintf("%#o", mode),
+			},
+		},
+	}
+	asYaml, err := yaml.Marshal(cc)
+	if err != nil {
+		plog.Errorf("failed to marshal yaml: %v", err)
+		return
+	}
+	c.multipartMime.AddPart(header, asYaml)
+
+}
+
 func (c *Conf) AddFile(path, filesystem, contents string, mode int) {
 	if c.ignitionV33 != nil {
 		c.addFileV33(path, filesystem, contents, mode)
@@ -728,8 +767,12 @@ func (c *Conf) AddFile(path, filesystem, contents string, mode int) {
 		c.addFileV1(path, filesystem, contents, mode)
 	} else if c.cloudconfig != nil {
 		c.addFileCloudConfig(path, filesystem, contents, mode)
+	} else if c.multipartMime != nil {
+		c.addFileMultipartMime(path, filesystem, contents, mode)
+	} else if c.script != "" {
+		c.addFileScript(path, filesystem, contents, mode)
 	} else {
-		panic(fmt.Errorf("unimplemented case in AddFile"))
+		panic(fmt.Errorf("unimplemented case in AddFile (conf.Empty not supported on purpose"))
 	}
 }
 
@@ -1346,6 +1389,8 @@ func (c *Conf) CopyKeys(keys []*agent.Key) {
 		c.copyKeysScript(keys)
 	} else if c.multipartMime != nil {
 		c.copyKeysMultipartMime(keys)
+	} else {
+		panic(fmt.Errorf("unimplemented case in CopyKeys (conf.Empty not supported on purpose"))
 	}
 }
 
