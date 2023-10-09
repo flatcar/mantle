@@ -33,6 +33,7 @@ const (
 	NoEnableSelinux                     // don't enable selinux when starting or rebooting a machine
 	NoKernelPanicCheck                  // don't check console output for kernel panic
 	NoVerityCorruptionCheck             // don't check console output for verity corruption
+	NoDisableUpdates                    // don't disable usage of the public update server
 )
 
 // Test provides the main test abstraction for kola. The run function is

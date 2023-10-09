@@ -191,6 +191,12 @@ func (bc *BaseCluster) RenderUserData(userdata *conf.UserData, ignitionVars map[
 		conf.CopyKeys(keys)
 	}
 
+	// disable the public update server by default
+	if !bc.rconf.NoDisableUpdates {
+		conf.AddFile("/etc/flatcar/update.conf", "root", `SERVER=disabled
+`, 0644)
+	}
+
 	// disable Zincati & Pinger by default
 	if bc.Distribution() == "fcos" {
 		conf.AddFile("/etc/fedora-coreos-pinger/config.d/90-disable-reporting.toml", "root", `[reporting]

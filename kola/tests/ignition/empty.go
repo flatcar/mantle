@@ -32,7 +32,10 @@ func init() {
 		ClusterSize:      1,
 		ExcludePlatforms: []string{"qemu", "esx"},
 		Distros:          []string{"cl"},
-		UserData:         conf.Empty(),
+		// The userdata injection of disabling the update server won't work
+		// for an empty config, we still take care of doing later it via SSH
+		Flags:    []register.Flag{register.NoDisableUpdates, register.NoSSHKeyInUserData},
+		UserData: conf.Empty(),
 		// Should run on all cloud environments
 	})
 	// Tests for https://github.com/coreos/bugs/issues/1981
@@ -59,5 +62,7 @@ func init() {
 	})
 }
 
-func empty(_ cluster.TestCluster) {
+func empty(c cluster.TestCluster) {
+	m := c.Machines()[0]
+	_ = c.MustSSH(m, "echo SERVER=disabled | sudo tee /etc/flatcar/update.conf")
 }

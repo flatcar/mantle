@@ -39,8 +39,13 @@ func init() {
 		ClusterSize: 3,
 		// When cl.etcd-member.discovery runs on all clouds to test CLC IP templating, we can skip running this
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		// This test already specifies the update.conf file in the userdata.
+		// Disabling of the public server is done explicitly.
+		Flags: []register.Flag{register.NoDisableUpdates},
 		UserData: conf.ContainerLinuxConfig(`locksmith:
   reboot_strategy: etcd-lock
+update:
+  server: disabled
 etcd:
   version:                     3.5.0
   listen_client_urls:          http://0.0.0.0:2379
@@ -60,8 +65,11 @@ etcd:
 		Distros:   []string{"cl"},
 	})
 	register.Register(&register.Test{
-		Name:        "coreos.locksmith.tls",
-		Run:         locksmithTLS,
+		Name: "coreos.locksmith.tls",
+		Run:  locksmithTLS,
+		// This test already specifies the update.conf file in the userdata.
+		// Disabling of the public server is done explicitly.
+		Flags:       []register.Flag{register.NoDisableUpdates},
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
@@ -95,7 +103,7 @@ etcd:
       {
         "filesystem": "root",
         "path": "/etc/coreos/update.conf",
-        "contents": { "source": "data:,REBOOT_STRATEGY=etcd-lock%0A" },
+        "contents": { "source": "data:,REBOOT_STRATEGY=etcd-lock%0ASERVER=disabled%0A" },
         "mode": 420
       },
       {
