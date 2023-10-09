@@ -50,7 +50,7 @@ type Machine interface {
 	PrivateIP() string
 
 	// RuntimeConf returns the cluster's runtime configuration.
-	RuntimeConf() RuntimeConfig
+	RuntimeConf() *RuntimeConfig
 
 	// SSHClient establishes a new SSH connection to the machine.
 	SSHClient() (*ssh.Client, error)

@@ -103,7 +103,7 @@ func (om *machine) PrivateIP() string {
 	return om.IP()
 }
 
-func (om *machine) RuntimeConf() platform.RuntimeConfig {
+func (om *machine) RuntimeConf() *platform.RuntimeConfig {
 	return om.cluster.RuntimeConf()
 }
 

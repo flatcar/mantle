@@ -283,8 +283,8 @@ func (bc *BaseCluster) Name() string {
 	return bc.name
 }
 
-func (bc *BaseCluster) RuntimeConf() RuntimeConfig {
-	return *bc.rconf
+func (bc *BaseCluster) RuntimeConf() *RuntimeConfig {
+	return bc.rconf
 }
 
 func (bc *BaseCluster) ConsoleOutput() map[string]string {
