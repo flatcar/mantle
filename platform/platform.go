@@ -113,6 +113,9 @@ type Cluster interface {
 	// IgnitionVersion returns the version of Ignition supported by the
 	// cluster
 	IgnitionVersion() string
+
+	// RuntimeConf returns a pointer to the runtime configuration.
+	RuntimeConf() *RuntimeConfig
 }
 
 // Flight represents a group of Clusters within a single platform.
