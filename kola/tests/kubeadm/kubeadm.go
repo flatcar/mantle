@@ -368,6 +368,32 @@ func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machi
 		return nil, fmt.Errorf("unable to create etcd node: %w", err)
 	}
 
+	v := string(c.MustSSH(etcdNode, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	if v == "" {
+		c.Fatalf("Assertion for version string failed")
+	}
+
+	version, err := semver.NewVersion(v)
+	if err != nil {
+		c.Fatalf("unable to create semver version from %s: %v", version, err)
+	}
+
+	// For Cilium CNI, we enforce SELinux only for version >= 3745 because the SELinux policies update (container_t/spc_t) is not yet
+	// propagated through all the channels.
+	// The etcd node will run with enforced SELinux anyway but we want to test SELinux on the worker / master nodes.
+	cni, ok := params["CNI"]
+	if !ok {
+		c.Fatal("unable to get CNI value")
+	}
+
+	if cni == "cilium" && version.LessThan(semver.Version{Major: 3745}) {
+		r := c.RuntimeConf()
+		if r != nil {
+			plog.Infof("Setting SELinux to permissive mode")
+			r.NoEnableSelinux = true
+		}
+	}
+
 	if err := etcd.GetClusterHealth(c, etcdNode, 1); err != nil {
 		return nil, fmt.Errorf("unable to get etcd node health: %w", err)
 	}
