@@ -45,7 +45,7 @@ func (gm *machine) PrivateIP() string {
 	return gm.intIP
 }
 
-func (gm *machine) RuntimeConf() platform.RuntimeConfig {
+func (gm *machine) RuntimeConf() *platform.RuntimeConfig {
 	return gm.gc.RuntimeConf()
 }
 

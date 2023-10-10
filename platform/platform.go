@@ -50,7 +50,7 @@ type Machine interface {
 	PrivateIP() string
 
 	// RuntimeConf returns the cluster's runtime configuration.
-	RuntimeConf() RuntimeConfig
+	RuntimeConf() *RuntimeConfig
 
 	// SSHClient establishes a new SSH connection to the machine.
 	SSHClient() (*ssh.Client, error)
@@ -113,6 +113,9 @@ type Cluster interface {
 	// IgnitionVersion returns the version of Ignition supported by the
 	// cluster
 	IgnitionVersion() string
+
+	// RuntimeConf returns a pointer to the runtime configuration.
+	RuntimeConf() *RuntimeConfig
 }
 
 // Flight represents a group of Clusters within a single platform.

@@ -54,8 +54,12 @@ var (
 					_ = c.MustSSH(controller, "/opt/bin/cilium uninstall")
 					version := params["CiliumVersion"].(string)
 					cidr := params["PodSubnet"].(string)
-					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait --wait-duration 1m", cidr, version)
-					_ = c.MustSSH(controller, cmd)
+					cmd := fmt.Sprintf("/opt/bin/cilium install --config enable-endpoint-routes=true --config cluster-pool-ipv4-cidr=%s --version=%s --encryption=ipsec --wait=false --restart-unmanaged-pods=false --rollback=false", cidr, version)
+					_, _ = c.SSH(controller, cmd)
+					patch := `{ grep -q svirt_lxc_file_t /etc/selinux/mcs/contexts/lxc_contexts && /opt/bin/kubectl --namespace kube-system patch daemonset/cilium -p '{"spec":{"template":{"spec":{"containers":[{"name":"cilium-agent","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}],"initContainers":[{"name":"mount-cgroup","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"apply-sysctl-overwrites","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}},{"name":"clean-cilium-state","securityContext":{"seLinuxOptions":{"level":"s0","type":"unconfined_t"}}}]}}}}'; } || true`
+					_ = c.MustSSH(controller, patch)
+					status := "/opt/bin/cilium status --wait --wait-duration 1m"
+					_ = c.MustSSH(controller, status)
 				},
 			},
 		},
@@ -366,6 +370,32 @@ func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machi
 	etcdNode, err := c.NewMachine(etcdConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create etcd node: %w", err)
+	}
+
+	v := string(c.MustSSH(etcdNode, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	if v == "" {
+		c.Fatalf("Assertion for version string failed")
+	}
+
+	version, err := semver.NewVersion(v)
+	if err != nil {
+		c.Fatalf("unable to create semver version from %s: %v", version, err)
+	}
+
+	// For Cilium CNI, we enforce SELinux only for version >= 3745 because the SELinux policies update (container_t/spc_t) is not yet
+	// propagated through all the channels.
+	// The etcd node will run with enforced SELinux anyway but we want to test SELinux on the worker / master nodes.
+	cni, ok := params["CNI"]
+	if !ok {
+		c.Fatal("unable to get CNI value")
+	}
+
+	if cni == "cilium" && version.LessThan(semver.Version{Major: 3745}) {
+		r := c.RuntimeConf()
+		if r != nil {
+			plog.Infof("Setting SELinux to permissive mode")
+			r.NoEnableSelinux = true
+		}
 	}
 
 	if err := etcd.GetClusterHealth(c, etcdNode, 1); err != nil {

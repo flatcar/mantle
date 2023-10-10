@@ -44,7 +44,7 @@ func (dm *machine) PrivateIP() string {
 	return dm.privateIP
 }
 
-func (dm *machine) RuntimeConf() platform.RuntimeConfig {
+func (dm *machine) RuntimeConf() *platform.RuntimeConfig {
 	return dm.cluster.RuntimeConf()
 }
 

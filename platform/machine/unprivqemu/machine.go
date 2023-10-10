@@ -46,7 +46,7 @@ func (m *machine) PrivateIP() string {
 	return m.privateAddr
 }
 
-func (m *machine) RuntimeConf() platform.RuntimeConfig {
+func (m *machine) RuntimeConf() *platform.RuntimeConfig {
 	return m.qc.RuntimeConf()
 }
 
