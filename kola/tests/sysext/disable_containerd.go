@@ -1,4 +1,4 @@
-// Copyright 2017 CoreOS, Inc.
+// Copyright 2023 The Flatcar Maintainers.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,38 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package torcx
+
+package sysext
 
 import (
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
 )
 
 func init() {
-	// Regression test for https://github.com/coreos/bugs/issues/2079
-	// Note: it would be preferable to not conflate docker + torcx in this
-	// testing, but rather to use a standalone torcx package/profile
 	register.Register(&register.Test{
-		Run:         torcxEnable,
+		Run:         containerdDisable,
 		ClusterSize: 1,
-		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
-		Name:      "torcx.enable-service",
-		UserData: conf.ContainerLinuxConfig(`
-systemd:
-  units:
-  - name: docker.service
-    enable: true
+		Name:      "sysext.disable-containerd",
+        // Only releases after 3745 ship sysext
+		MinVersion: semver.Version{Major: 3746},
+		UserData: conf.Butane(`
+variant: flatcar
+version: 1.0.0
+storage:
+  links:
+  - path: /etc/extensions/app-containers_containerd.raw
+    target: /dev/null
+    hard: false
+    overwrite: true
 `),
 		Distros: []string{"cl"},
 	})
 }
 
-func torcxEnable(c cluster.TestCluster) {
+func containerdDisable(c cluster.TestCluster) {
 	m := c.Machines()[0]
-	output := c.MustSSH(m, `systemctl is-enabled docker`)
-	if string(output) != "enabled" {
-		c.Errorf("expected enabled, got %v", output)
+	output := c.MustSSH(m,
+            `test ! -f /usr/bin/containerd || echo "ERROR"`)
+	if string(output) == "ERROR" {
+		c.Errorf("/usr/bin/containerd exists even when sysext is disabled!")
 	}
 }

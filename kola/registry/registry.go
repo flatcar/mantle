@@ -18,7 +18,7 @@ import (
 	_ "github.com/flatcar/mantle/kola/tests/packages"
 	_ "github.com/flatcar/mantle/kola/tests/podman"
 	_ "github.com/flatcar/mantle/kola/tests/rpmostree"
+	_ "github.com/flatcar/mantle/kola/tests/sysext"
 	_ "github.com/flatcar/mantle/kola/tests/systemd"
-	_ "github.com/flatcar/mantle/kola/tests/torcx"
 	_ "github.com/flatcar/mantle/kola/tests/update"
 )

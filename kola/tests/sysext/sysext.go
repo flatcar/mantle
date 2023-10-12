@@ -1,7 +1,7 @@
 // Copyright The Mantle Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package systemd
+package sysext
 
 import (
 	"fmt"
@@ -199,7 +199,7 @@ storage:
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "systemd.sysext.simple.old",
+		Name:        "sysext.simple.old",
 		Run:         checkSysextSimpleOld,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
@@ -220,7 +220,7 @@ func init() {
           sysext works`),
 	})
 	register.Register(&register.Test{
-		Name:        "systemd.sysext.simple",
+		Name:        "sysext.simple",
 		Run:         checkSysextSimpleNew,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
@@ -240,7 +240,7 @@ func init() {
           sysext works`),
 	})
 	register.Register(&register.Test{
-		Name:        "systemd.sysext.custom-docker",
+		Name:        "sysext.custom-docker",
 		Run:         checkSysextCustomDocker,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
@@ -255,7 +255,7 @@ func init() {
     - path: /etc/extensions/containerd-flatcar`),
 	})
 	register.Register(&register.Test{
-		Name:        "systemd.sysext.custom-oem",
+		Name:        "sysext.custom-oem",
 		Run:         checkSysextCustomOEM,
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
