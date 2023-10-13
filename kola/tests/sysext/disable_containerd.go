@@ -35,7 +35,7 @@ variant: flatcar
 version: 1.0.0
 storage:
   links:
-  - path: /etc/extensions/app-containers_containerd.raw
+  - path: /etc/extensions/containerd-flatcar.raw
     target: /dev/null
     hard: false
     overwrite: true

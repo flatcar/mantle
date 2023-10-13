@@ -35,7 +35,7 @@ variant: flatcar
 version: 1.0.0
 storage:
   links:
-  - path: /etc/extensions/app-containers_docker.raw
+  - path: /etc/extensions/docker-flatcar.raw
     target: /dev/null
     hard: false
     overwrite: true
