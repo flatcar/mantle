@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // This test originated as torcx test and is kept to shield against
 // similar activation issues with sysext.
 
@@ -37,8 +36,8 @@ func init() {
 		Run:         dockerEnable,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
-		Name:      "docker.enable-service.torcx",
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Name:       "docker.enable-service.torcx",
 		EndVersion: semver.Version{Major: 3745},
 		UserData: conf.Butane(`
 variant: flatcar
@@ -55,8 +54,8 @@ systemd:
 		Run:         dockerEnable,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
-		Name:      "docker.enable-service.sysext",
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Name:       "docker.enable-service.sysext",
 		MinVersion: semver.Version{Major: 3746},
 		UserData: conf.Butane(`
 variant: flatcar

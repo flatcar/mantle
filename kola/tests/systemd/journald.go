@@ -125,7 +125,7 @@ func journalUser(c cluster.TestCluster) {
 		}
 
 		if strings.Contains(string(log), "Foo") {
-			return nil;
+			return nil
 		}
 
 		return fmt.Errorf("Waiting for log output...")

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package sysext
 
 import (
@@ -26,9 +25,9 @@ func init() {
 	register.Register(&register.Test{
 		Run:         containerdDisable,
 		ClusterSize: 1,
-		Platforms: []string{"qemu", "qemu-unpriv"},
-		Name:      "sysext.disable-containerd",
-        // Only releases after 3745 ship sysext
+		Platforms:   []string{"qemu", "qemu-unpriv"},
+		Name:        "sysext.disable-containerd",
+		// Only releases after 3745 ship sysext
 		MinVersion: semver.Version{Major: 3746},
 		UserData: conf.Butane(`
 variant: flatcar
@@ -47,7 +46,7 @@ storage:
 func containerdDisable(c cluster.TestCluster) {
 	m := c.Machines()[0]
 	output := c.MustSSH(m,
-            `test ! -f /usr/bin/containerd || echo "ERROR"`)
+		`test ! -f /usr/bin/containerd || echo "ERROR"`)
 	if string(output) == "ERROR" {
 		c.Errorf("/usr/bin/containerd exists even when sysext is disabled!")
 	}

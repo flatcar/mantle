@@ -87,14 +87,13 @@ func execsnoopTest(c cluster.TestCluster) {
 	_ = c.MustSSH(m, fmt.Sprintf("docker logs %s", containerName))
 	_ = c.MustSSH(m, fmt.Sprintf("docker top %s", containerName))
 
-
 	plog.Infof("getting logs from %s container", containerName)
 	if err := util.Retry(10, 2*time.Second, func() error {
 		logs, err := c.SSH(m, fmt.Sprintf("sudo cat $(docker inspect --format='{{.LogPath}}' %s)", containerName))
 		if err != nil {
 			c.Fatalf("unable to run SSH command: %v", err)
 		}
-		dockerLogs:= bytes.Split(logs, []byte("\n"))
+		dockerLogs := bytes.Split(logs, []byte("\n"))
 
 		// we have the headers of the table
 		// then 2 lines for docker ps and the torcx call if torcx is used

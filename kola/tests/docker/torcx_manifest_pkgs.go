@@ -39,10 +39,10 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
-            // Releases after 3745 don't ship torcx at all (these use sysext)
-            if ( 0 < version.Compare(semver.Version{Major: 3745}) ) {
-                return true
-            }
+			// Releases after 3745 don't ship torcx at all (these use sysext)
+			if (0 < version.Compare(semver.Version{Major: 3745})) {
+				return true
+			}
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 			// Let's skip this test for < 3034 on ESX.
