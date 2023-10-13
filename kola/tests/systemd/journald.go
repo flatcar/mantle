@@ -1,4 +1,5 @@
 // Copyright 2015 CoreOS, Inc.
+// Copyright 2023 the Flatcar Maintainers.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,6 +90,8 @@ storage:
     - path: /etc/systemd/user/default.target.wants
       mode: 0755
   files:
+    - path: /var/lib/systemd/linger/flatcar
+      mode: 0644
     - path: /etc/systemd/user/hello.service
       mode: 0644
       contents:
@@ -110,7 +113,25 @@ storage:
 }
 
 func journalUser(c cluster.TestCluster) {
-	c.MustSSH(c.Machines()[0], "journalctl --user --unit hello.service | grep Foo")
+	if err := util.Retry(10, 2*time.Second, func() error {
+		cmd := "journalctl --user"
+		log, e := c.SSH(c.Machines()[0], cmd)
+		if e != nil {
+			return fmt.Errorf("Did not get expexted log output from '%s': %v", cmd, e)
+		}
+
+		if len(log) == 0 {
+			return fmt.Errorf("Waiting for log output...")
+		}
+
+		if strings.Contains(string(log), "Foo") {
+			return nil;
+		}
+
+		return fmt.Errorf("Waiting for log output...")
+	}); err != nil {
+		c.Fatalf("Unable to find 'Foo' in user journal: %v", err)
+	}
 }
 
 // JournalRemote tests that systemd-journal-remote can read log entries from
