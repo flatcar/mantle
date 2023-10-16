@@ -29,12 +29,17 @@ func init() {
 		Name:        "sysext.disable-containerd",
 		// Only releases after 3745 ship sysext
 		MinVersion: semver.Version{Major: 3746},
+		// We also disable our vendor docker sysext since it depends on the containerd sysext.
 		UserData: conf.Butane(`
 variant: flatcar
 version: 1.0.0
 storage:
   links:
   - path: /etc/extensions/containerd-flatcar.raw
+    target: /dev/null
+    hard: false
+    overwrite: true
+  - path: /etc/extensions/docker-flatcar.raw
     target: /dev/null
     hard: false
     overwrite: true

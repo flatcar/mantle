@@ -227,6 +227,7 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3603},
+		EndVersion: semver.Version{Major: 3745},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
     - path: /etc/extensions/test/usr/lib/extension-release.d/extension-release.test
@@ -240,19 +241,39 @@ func init() {
           sysext works`),
 	})
 	register.Register(&register.Test{
-		Name:        "sysext.custom-docker",
+		Name:        "sysext.custom-docker.torcx",
 		Run:         checkSysextCustomDocker,
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3185},
+		EndVersion: semver.Version{Major: 3745},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
     - path: /etc/systemd/system-generators/torcx-generator
   directories:
     - path: /etc/extensions/docker-flatcar
     - path: /etc/extensions/containerd-flatcar`),
+	})
+	register.Register(&register.Test{
+		Name:        "sysext.custom-docker.sysext",
+		Run:         checkSysextCustomDocker,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 3746},
+		UserData: conf.Butane(`
+variant: flatcar
+version: 1.0.0
+storage:
+  links:
+  - path: /etc/extensions/docker-flatcar.raw
+    target: /dev/null
+    hard: false
+    overwrite: true
+`),
 	})
 	register.Register(&register.Test{
 		Name:        "sysext.custom-oem",
