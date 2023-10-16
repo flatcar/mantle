@@ -115,9 +115,9 @@ storage:
 func journalUser(c cluster.TestCluster) {
 	if err := util.Retry(10, 2*time.Second, func() error {
 		cmd := "journalctl --user"
-		log, e := c.SSH(c.Machines()[0], cmd)
-		if e != nil {
-			return fmt.Errorf("Did not get expexted log output from '%s': %v", cmd, e)
+		log, err := c.SSH(c.Machines()[0], cmd)
+		if err != nil {
+			return fmt.Errorf("Did not get expexted log output from '%s': %v", cmd, err)
 		}
 
 		if len(log) == 0 {
