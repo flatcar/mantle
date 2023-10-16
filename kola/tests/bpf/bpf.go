@@ -63,7 +63,7 @@ func execsnoopTest(c cluster.TestCluster) {
 	if err := util.Retry(10, 2*time.Second, func() error {
 
 		// Run 'docker ps' to trigger log output. Execsnoop won't print anything, not even the header,
-		// efore it's been triggered for the first time.
+		// before it's been triggered for the first time.
 		_ = c.MustSSH(m, "docker ps")
 
 		// we first assert that the container is running and then the process too.

@@ -128,7 +128,7 @@ func journalUser(c cluster.TestCluster) {
 			return nil
 		}
 
-		return fmt.Errorf("Waiting for log output...")
+		return fmt.Errorf("Waiting for log output containing 'Foo'...")
 	}); err != nil {
 		c.Fatalf("Unable to find 'Foo' in user journal: %v", err)
 	}
