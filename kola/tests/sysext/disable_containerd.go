@@ -16,8 +16,10 @@ func init() {
 		ClusterSize: 1,
 		Platforms:   []string{"qemu", "qemu-unpriv"},
 		Name:        "sysext.disable-containerd",
-		// Only releases after 3745 ship sysext
-		MinVersion: semver.Version{Major: 3746},
+		// Sysext containerd was introduced after release 3760.
+		// NOTE that 3761 is a developer version which was never released.
+		// However, the next largest Alpha major release shipped sysext.
+		MinVersion: semver.Version{Major: 3761},
 		// We also disable our vendor docker sysext since it depends on the containerd sysext.
 		UserData: conf.Butane(`
 variant: flatcar

@@ -227,7 +227,6 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3603},
-		EndVersion: semver.Version{Major: 3745},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
     - path: /etc/extensions/test/usr/lib/extension-release.d/extension-release.test
@@ -248,7 +247,8 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3185},
-		EndVersion: semver.Version{Major: 3745},
+		// Torcx was retired after release 3760.
+		EndVersion: semver.Version{Major: 3760},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
     - path: /etc/systemd/system-generators/torcx-generator
@@ -262,8 +262,11 @@ func init() {
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
-		MinVersion: semver.Version{Major: 3746},
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		// Sysext docker was introduced after release 3760.
+		// NOTE that 3761 is a developer version which was never released.
+		// However, the next largest Alpha major release shipped sysext.
+		MinVersion: semver.Version{Major: 3761},
 		UserData: conf.Butane(`
 variant: flatcar
 version: 1.0.0
