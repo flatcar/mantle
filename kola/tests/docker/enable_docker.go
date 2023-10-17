@@ -36,9 +36,10 @@ func init() {
 		Run:         dockerEnable,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
-		Name:       "docker.enable-service.torcx",
-		EndVersion: semver.Version{Major: 3745},
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		Name:      "docker.enable-service.torcx",
+		// Torcx was retired after release 3760.
+		EndVersion: semver.Version{Major: 3760},
 		UserData: conf.Butane(`
 variant: flatcar
 version: 1.0.0
@@ -79,5 +80,5 @@ storage:
 
 func dockerEnable(c cluster.TestCluster) {
 	m := c.Machines()[0]
-        c.AssertCmdOutputContains(m, "systemctl is-enabled docker", "enabled")
+	c.AssertCmdOutputContains(m, "systemctl is-enabled docker", "enabled")
 }
