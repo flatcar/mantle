@@ -48,83 +48,78 @@ func init() {
 }
 
 func execsnoopTest(c cluster.TestCluster) {
-	c.Run("filter name and args", func(c cluster.TestCluster) {
-		m := c.Machines()[0]
-		containerName := "execsnoop"
+	m := c.Machines()[0]
+	containerName := "execsnoop"
 
-		// filter commands with `docker ps`
-		plog.Infof("running %s container", containerName)
-		cmd := fmt.Sprintf(cmdPrefix, containerName, "/usr/share/bcc/tools/execsnoop -n docker -l ps")
-		if _, err := c.SSH(m, cmd); err != nil {
-			c.Fatalf("unable to run SSH command '%s': %v", cmd, err)
+	// filter commands with `docker ps`
+	plog.Infof("running %s container", containerName)
+	cmd := fmt.Sprintf(cmdPrefix, containerName, "/usr/share/bcc/tools/execsnoop -n docker -l ps")
+	if _, err := c.SSH(m, cmd); err != nil {
+		c.Fatalf("unable to run SSH command '%s': %v", cmd, err)
+	}
+
+	// wait for the container and the `execsnoop` command to be correctly started before
+	// generating traffic.
+	if err := util.Retry(10, 2*time.Second, func() error {
+
+		// Run 'docker ps' to trigger log output. Execsnoop won't print anything, not even the header,
+		// before it's been triggered for the first time.
+		_ = c.MustSSH(m, "docker ps")
+
+		// we first assert that the container is running and then the process too.
+		// it's not possible to use `docker top...` command because it's the execsnoop itself who takes some time to start.
+		logs, err := c.SSH(m, fmt.Sprintf("sudo cat $(docker inspect --format='{{.LogPath}}' %s)", containerName))
+		if err != nil {
+			return fmt.Errorf("getting running process: %w", err)
 		}
 
-		// wait for the container and the `execsnoop` command to be correctly started before
-		// generating traffic.
-		if err := util.Retry(10, 2*time.Second, func() error {
-			_ = c.MustSSH(m, "docker ps")
-
-			// we first assert that the container is running and then the process too.
-			// it's not possible to use `docker top...` command because it's the execsnoop itself who takes some time to start.
-			logs, err := c.SSH(m, fmt.Sprintf("sudo cat $(docker inspect --format='{{.LogPath}}' %s)", containerName))
-			if err != nil {
-				return fmt.Errorf("getting running process: %w", err)
-			}
-
-			if len(logs) > 0 {
-				return nil
-			}
-
-			return fmt.Errorf("no logs, the service has not started yet properly")
-		}); err != nil {
-			c.Fatalf("unable to get container ready: %v", err)
+		if len(logs) > 0 {
+			return nil
 		}
 
-		// generate some "traffic"
-		_ = c.MustSSH(m, "docker info")
-		_ = c.MustSSH(m, fmt.Sprintf("docker logs %s", containerName))
-		_ = c.MustSSH(m, fmt.Sprintf("docker top %s", containerName))
+		return fmt.Errorf("no logs, the service has not started yet properly")
+	}); err != nil {
+		c.Fatalf("unable to get container ready: %v", err)
+	}
 
-		plog.Infof("getting logs from %s container", containerName)
+	// generate some "traffic"
+	_ = c.MustSSH(m, "docker info")
+	_ = c.MustSSH(m, fmt.Sprintf("docker logs %s", containerName))
+	_ = c.MustSSH(m, fmt.Sprintf("docker top %s", containerName))
+
+	plog.Infof("getting logs from %s container", containerName)
+	if err := util.Retry(10, 2*time.Second, func() error {
 		logs, err := c.SSH(m, fmt.Sprintf("sudo cat $(docker inspect --format='{{.LogPath}}' %s)", containerName))
 		if err != nil {
 			c.Fatalf("unable to run SSH command: %v", err)
 		}
-
-		l := Log{}
 		dockerLogs := bytes.Split(logs, []byte("\n"))
-		if len(dockerLogs) != 3 {
-			// we have the headers of the table
-			// then 2 lines for docker ps and the torcx call
-			c.Fatalf("docker logs should hold 3 values. Got: %d", len(dockerLogs))
+
+		// we have the headers of the table
+		// then 2 lines for docker ps and the torcx call if torcx is used
+		if len(dockerLogs) < 2 {
+			return fmt.Errorf("Waiting for execsnoop log entries")
 		}
 
-		execFound := false
+		l := Log{}
 		for _, log := range dockerLogs {
-			if len(log) == 0 {
-				continue
-			}
 
 			if err := json.Unmarshal(log, &l); err != nil {
-				c.Fatalf("unable to unmarshal log: %v", err)
+				return fmt.Errorf("Transient error unmarshalling docker log: %v", err)
 			}
-			plog.Infof("handling log %v", l)
-
 			if l.Stream == "stderr" {
-				c.Fatal("stream should not log to 'stderr'")
+				return fmt.Errorf("Transient error: stream should not log to 'stderr'")
 			}
-
 			if strings.Contains(l.Log, "docker info") || strings.Contains(l.Log, "docker top") || strings.Contains(l.Log, "docker logs") {
 				c.Fatal("log should not contain 'docker info' or 'docker top' or 'docker logs'")
 			}
 
 			if strings.Contains(l.Log, "docker ps") {
-				execFound = true
+				return nil
 			}
 		}
-
-		if !execFound {
-			c.Fatal("did not get 'docker ps' in the logs")
-		}
-	})
+		return fmt.Errorf("Waiting for execsnoop log entries")
+	}); err != nil {
+		c.Fatalf("Unable to find 'docker ps' log lines in execsnoop logs: %v", err)
+	}
 }

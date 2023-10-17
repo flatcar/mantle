@@ -1,4 +1,5 @@
 // Copyright 2016 CoreOS, Inc.
+// Copyright 2023 by the Flatcar Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +22,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/harness"
 	"github.com/flatcar/mantle/platform"
+)
+
+var (
+	logger = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/cluster")
 )
 
 // TestCluster embedds a Cluster to provide platform independant helper
@@ -56,6 +62,7 @@ func (t *TestCluster) Run(name string, f func(c TestCluster)) bool {
 // RunNative runs a registered NativeFunc on a remote machine
 func (t *TestCluster) RunNative(funcName string, m platform.Machine) bool {
 	command := fmt.Sprintf("./kolet run %q %q", t.H.Name(), funcName)
+	logger.Infof("RunNative: running command %s", command)
 	return t.Run(funcName, func(c TestCluster) {
 		client, err := m.SSHClient()
 		if err != nil {
@@ -110,11 +117,19 @@ func (t *TestCluster) DropFile(localPath string) error {
 // This ensures the output will be correctly accumulated under the correct
 // test.
 func (t *TestCluster) SSH(m platform.Machine, cmd string) ([]byte, error) {
+	logger.Infof("SSH: running command: %s", cmd)
 	stdout, stderr, err := m.SSH(cmd)
 
 	if len(stderr) > 0 {
 		for _, line := range strings.Split(string(stderr), "\n") {
 			t.Log(line)
+			logger.Debugf("SSH: stderr: %s", line)
+		}
+	}
+
+	if len(stdout) > 0 {
+		for _, line := range strings.Split(string(stdout), "\n") {
+			logger.Debugf("SSH: stdout: %s", line)
 		}
 	}
 
