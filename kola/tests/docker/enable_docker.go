@@ -79,8 +79,5 @@ storage:
 
 func dockerEnable(c cluster.TestCluster) {
 	m := c.Machines()[0]
-	output := c.MustSSH(m, `systemctl is-enabled docker`)
-	if string(output) != "enabled" {
-		c.Errorf("expected enabled, got %v", output)
-	}
+        c.AssertCmdOutputContains(m, "systemctl is-enabled docker", "enabled")
 }
