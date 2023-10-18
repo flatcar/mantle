@@ -36,10 +36,12 @@ files=( $(git grep 'Source: https://raw\.githubusercontent\.com/projectcalico/ca
 # - download the new manifest
 new_link="https://raw.githubusercontent.com/projectcalico/calico/${calico_version}/manifests/custom-resources.yaml"
 wget "${new_link}"
+sed -i 's/[[:space:]]*$//' custom-resources.yaml
 mv custom-resources.yaml throw-away/custom-resources-new.yaml
 # - download the old version of manifest
 old_link=$(git grep -nA1 -e 'cat << EOF > calico.yaml' -- kola/tests/kubeadm/templates.go | tail -n 1 | sed -e 's/^.*Source: //')
 wget "${old_link}"
+sed -i 's/[[:space:]]*$//' custom-resources.yaml
 mv custom-resources.yaml throw-away/custom-resources-old.yaml
 # - for each of the using files do
 for file in "${files[@]}"; do
