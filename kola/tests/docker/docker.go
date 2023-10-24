@@ -254,6 +254,8 @@ func dockerBaseTests(c cluster.TestCluster) {
 	c.Run("resources", dockerResources)
 	c.Run("networks-reliably", dockerNetworksReliably)
 	c.Run("user-no-caps", dockerUserNoCaps)
+	// This prevents regression like: https://github.com/flatcar/Flatcar/issues/1203
+	c.Run("ownership", dockerOwnership)
 }
 
 // using a simple container, exercise various docker options that set resource
@@ -706,5 +708,20 @@ docker run -v "/etc/misc:/opt" --rm ghcr.io/flatcar/busybox true`
 
 	if string(out) != "world" {
 		c.Fatal("/etc/misc/hello should holds 'world'")
+	}
+}
+
+// Reported by a user: a regression on stable
+// that causes ownernship being lost when exporting a Docker
+// container.
+// https://github.com/flatcar/Flatcar/issues/1203
+func dockerOwnership(c cluster.TestCluster) {
+	m := c.Machines()[0]
+
+	runOwnership := c.MustSSH(m, `docker run --name ownership ghcr.io/flatcar/nginx stat -c "%u/%g" /etc/shadow`)
+	exportOwnership := c.MustSSH(m, `docker export ownership | tar tv etc/shadow | awk '{print $2}'`)
+
+	if string(runOwnership) != string(exportOwnership) {
+		c.Fatalf("ownership should be conserved between run and export of Docker containers. Got: %s and %s", runOwnership, exportOwnership)
 	}
 }
