@@ -286,8 +286,8 @@ func kubeadmBaseTest(c cluster.TestCluster, params map[string]interface{}) {
 	}
 
 	c.Run("node readiness", func(c cluster.TestCluster) {
-		// we let some times to the cluster to be fully booted
-		if err := util.Retry(10, 10*time.Second, func() error {
+		// Wait up to 3 min (36*5 = 180s) for nginx. The test can be flaky on overcommitted platforms.
+		if err := util.Retry(36, 5*time.Second, func() error {
 			// notice the extra space before "Ready", it's to not catch
 			// "NotReady" nodes
 			out := c.MustSSH(kubectl, "/opt/bin/kubectl get nodes | grep \" Ready\"| wc -l")
@@ -307,7 +307,8 @@ func kubeadmBaseTest(c cluster.TestCluster, params map[string]interface{}) {
 			c.Fatalf("unable to deploy nginx: %v", err)
 		}
 
-		if err := util.Retry(10, 10*time.Second, func() error {
+		// Wait up to 3 min (36*5 = 180s) for nginx. The test can be flaky on overcommitted platforms.
+		if err := util.Retry(36, 5*time.Second, func() error {
 			out := c.MustSSH(kubectl, "/opt/bin/kubectl get deployments -o json | jq '.items | .[] | .status.readyReplicas'")
 			readyCnt := string(out)
 			if readyCnt != "1" {
