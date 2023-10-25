@@ -142,11 +142,24 @@ passwd:
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		// Note: copied verbatim from https://github.com/coreos/docs/blob/master/os/mounting-storage.md#creating-and-mounting-a-btrfs-volume-file
-		UserData: conf.ContainerLinuxConfig(`
+		// Added explicit btrfs driver selection because overlay2 is the default for btrfs FS in docker 23 and above
+		UserData: conf.Butane(`
+variant: flatcar
+version: 1.0.0
+
+storage:
+  files:
+  - path: /etc/docker/daemon.json
+    contents:
+      inline: |
+        {
+          "storage-driver": "btrfs"
+        }
+
 systemd:
   units:
     - name: format-var-lib-docker.service
-      enable: true
+      enabled: true
       contents: |
         [Unit]
         Before=docker.service var-lib-docker.mount
@@ -158,7 +171,7 @@ systemd:
         [Install]
         WantedBy=multi-user.target
     - name: var-lib-docker.mount
-      enable: true
+      enabled: true
       contents: |
         [Unit]
         Before=docker.service
