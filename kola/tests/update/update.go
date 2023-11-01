@@ -55,6 +55,25 @@ func init() {
 		},
 	})
 	register.Register(&register.Test{
+		Name:        "cl.update.docker-btrfs-compat",
+		Run:         btrfs_compat,
+		ClusterSize: 1,
+		NativeFuncs: map[string]func() error{
+			"Omaha": Serve,
+		},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		// This test verifies preservation of storage driver "btrfs" for docker.
+		// Docker releases before v23 defaulted to btrfs if the docker can only run if the update payload to test is given.
+		// The image passed must also be a release lower than or equal to 3760.0.0
+		// because newer versions ship docker 24.
+		EndVersion: semver.Version{Major: 3760},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			return kola.UpdatePayloadFile == ""
+		},
+		Distros: []string{"cl"},
+	})
+	register.Register(&register.Test{
 		Name:        "cl.update.oem",
 		Run:         oemPayload,
 		ClusterSize: 1,
@@ -141,13 +160,13 @@ func Serve() error {
 	return omahawrapper.Serve()
 }
 
-func payload(c cluster.TestCluster) {
+func payloadPrepareMachine(conf *conf.UserData, c cluster.TestCluster) (string, platform.Machine) {
 	addr := configureOmahaServer(c, c.Machines()[0])
 
 	// create the actual test machine, the machine
 	// that is created by the test registration is
 	// used to host the omaha server
-	m, err := c.NewMachine(nil)
+	m, err := c.NewMachine(conf)
 	if err != nil {
 		c.Fatalf("creating test machine: %v", err)
 	}
@@ -156,13 +175,14 @@ func payload(c cluster.TestCluster) {
 	// via SSH to allow for testing versions which predate
 	// Ignition
 	configureMachineForUpdate(c, m, addr)
-
 	tutil.AssertBootedUsr(c, m, "USR-A")
 
+	return addr, m
+}
+
+func payloadPerformUpdate(addr string, m platform.Machine, c cluster.TestCluster) {
 	updateMachine(c, m)
-
 	tutil.AssertBootedUsr(c, m, "USR-B")
-
 	tutil.InvalidateUsrPartition(c, m, "USR-A")
 
 	/*
@@ -174,10 +194,60 @@ func payload(c cluster.TestCluster) {
 		We configure again to inject the dev-pub-key to correctly verify the downloaded payload
 	*/
 	configureMachineForUpdate(c, m, addr)
-
 	updateMachine(c, m)
-
 	tutil.AssertBootedUsr(c, m, "USR-A")
+}
+
+func payload(c cluster.TestCluster) {
+	addr, m := payloadPrepareMachine(nil, c)
+	payloadPerformUpdate(addr, m, c)
+}
+
+func btrfs_compat(c cluster.TestCluster) {
+	conf := conf.ContainerLinuxConfig(`
+systemd:
+  units:
+    - name: format-var-lib-docker.service
+      enabled: true
+      contents: |
+        [Unit]
+        Before=docker.service var-lib-docker.mount
+        ConditionPathExists=!/var/lib/docker.btrfs
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/truncate --size=25G /var/lib/docker.btrfs
+        ExecStart=/usr/sbin/mkfs.btrfs /var/lib/docker.btrfs
+        [Install]
+        WantedBy=multi-user.target
+    - name: var-lib-docker.mount
+      enabled: true
+      contents: |
+        [Unit]
+        Before=docker.service
+        After=format-var-lib-docker.service
+        Requires=format-var-lib-docker.service
+        [Install]
+        RequiredBy=docker.service
+        [Mount]
+        What=/var/lib/docker.btrfs
+        Where=/var/lib/docker
+        Type=btrfs
+        Options=loop,discard`)
+
+	addr, m := payloadPrepareMachine(conf, c)
+
+	// We need to populate the docker storage.
+	// If empty, docker 23 and above will silently switch to the 'overlay2' driver.
+	// If populated, docker SHOULD preserve the btrfs driver. That's what we test for later.
+	c.MustSSH(m, `docker info | grep 'Storage Driver: btrfs' || { echo "ERROR: expected BTRFS storage driver"; docker info; exit 1; }`)
+	c.MustSSH(m, `docker run -i --name docker_btrfs_driver_test alpine ls /`)
+
+	payloadPerformUpdate(addr, m, c)
+
+	c.MustSSH(m, `docker info | grep 'Storage Driver: btrfs' || { echo "ERROR: expected BTRFS storage driver"; docker info; exit 1; }`)
+
+	c.MustSSH(m, `docker image ls | grep alpine || { echo "ERROR: Container image 'alpine' disappeared after update"; docker image ls; exit 1; } `)
+	c.MustSSH(m, `docker ps --all | grep docker_btrfs_driver_test || { echo "ERROR: Container 'docker_btrfs_driver_test' disappeared after update"; docker ps --all; exit 1; } `)
 }
 
 func configureOmahaServer(c cluster.TestCluster, srv platform.Machine) string {
