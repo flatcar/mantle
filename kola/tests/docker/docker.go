@@ -188,6 +188,29 @@ systemd:
 	})
 
 	register.Register(&register.Test{
+		Run:         func(c cluster.TestCluster) { testDockerInfo("devicemapper", c) },
+		ClusterSize: 1,
+		Name:        "docker.devicemapper-storage",
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		// Added explicit devicemapper driver selection to override overlay2 default
+		UserData: conf.Butane(`
+variant: flatcar
+version: 1.0.0
+
+storage:
+  files:
+  - path: /etc/docker/daemon.json
+    contents:
+      inline: |
+        {
+          "storage-driver": "devicemapper"
+        }
+`),
+		Distros: []string{"cl"},
+	})
+
+	register.Register(&register.Test{
 		// For a while we shipped /usr/lib/coreos/dockerd as the execstart of the
 		// docker systemd unit.
 		// This test verifies backwards compatibility with that unit to ensure
