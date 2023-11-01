@@ -33,7 +33,6 @@ import (
 	"github.com/flatcar/mantle/platform/api/gcloud"
 	"github.com/flatcar/mantle/sdk"
 	"github.com/flatcar/mantle/storage"
-	"github.com/flatcar/mantle/storage/index"
 )
 
 var (
@@ -111,61 +110,61 @@ func runCLRelease(cmd *cobra.Command, args []string) error {
 		doGCE(ctx, client, gcs, &spec)
 	}
 
-	// Make Azure images public.
-	doAzure(ctx, client, src, &spec)
+	//// Make Azure images public.
+	//doAzure(ctx, client, src, &spec)
 
-	// Make AWS images public.
-	doAWS(ctx, client, src, &spec)
+	//// Make AWS images public.
+	//doAWS(ctx, client, src, &spec)
 
-	for _, dSpec := range spec.Destinations {
-		dst, err := storage.NewBucket(client, dSpec.BaseURL)
-		if err != nil {
-			plog.Fatal(err)
-		}
-		dst.WriteDryRun(releaseDryRun)
+	//for _, dSpec := range spec.Destinations {
+	//dst, err := storage.NewBucket(client, dSpec.BaseURL)
+	//if err != nil {
+	//plog.Fatal(err)
+	//}
+	//dst.WriteDryRun(releaseDryRun)
 
-		// Fetch parent directories non-recursively to re-index it later.
-		for _, prefix := range dSpec.ParentPrefixes() {
-			if err := dst.FetchPrefix(ctx, prefix, false); err != nil {
-				plog.Fatal(err)
-			}
-		}
+	//// Fetch parent directories non-recursively to re-index it later.
+	//for _, prefix := range dSpec.ParentPrefixes() {
+	//if err := dst.FetchPrefix(ctx, prefix, false); err != nil {
+	//plog.Fatal(err)
+	//}
+	//}
 
-		// Fetch and sync each destination directory.
-		for _, prefix := range dSpec.FinalPrefixes() {
-			if err := dst.FetchPrefix(ctx, prefix, true); err != nil {
-				plog.Fatal(err)
-			}
+	//// Fetch and sync each destination directory.
+	//for _, prefix := range dSpec.FinalPrefixes() {
+	//if err := dst.FetchPrefix(ctx, prefix, true); err != nil {
+	//plog.Fatal(err)
+	//}
 
-			sync := index.NewSyncIndexJob(src, dst)
-			sync.DestinationPrefix(prefix)
-			sync.DirectoryHTML(dSpec.DirectoryHTML)
-			sync.IndexHTML(dSpec.IndexHTML)
-			sync.Delete(true)
-			if dSpec.Title != "" {
-				sync.Name(dSpec.Title)
-			}
-			if err := sync.Do(ctx); err != nil {
-				plog.Fatal(err)
-			}
-		}
+	//sync := index.NewSyncIndexJob(src, dst)
+	//sync.DestinationPrefix(prefix)
+	//sync.DirectoryHTML(dSpec.DirectoryHTML)
+	//sync.IndexHTML(dSpec.IndexHTML)
+	//sync.Delete(true)
+	//if dSpec.Title != "" {
+	//sync.Name(dSpec.Title)
+	//}
+	//if err := sync.Do(ctx); err != nil {
+	//plog.Fatal(err)
+	//}
+	//}
 
-		// Now refresh the parent directory indexes.
-		for _, prefix := range dSpec.ParentPrefixes() {
-			parent := index.NewIndexJob(dst)
-			parent.Prefix(prefix)
-			parent.DirectoryHTML(dSpec.DirectoryHTML)
-			parent.IndexHTML(dSpec.IndexHTML)
-			parent.Recursive(false)
-			parent.Delete(true)
-			if dSpec.Title != "" {
-				parent.Name(dSpec.Title)
-			}
-			if err := parent.Do(ctx); err != nil {
-				plog.Fatal(err)
-			}
-		}
-	}
+	//// Now refresh the parent directory indexes.
+	//for _, prefix := range dSpec.ParentPrefixes() {
+	//parent := index.NewIndexJob(dst)
+	//parent.Prefix(prefix)
+	//parent.DirectoryHTML(dSpec.DirectoryHTML)
+	//parent.IndexHTML(dSpec.IndexHTML)
+	//parent.Recursive(false)
+	//parent.Delete(true)
+	//if dSpec.Title != "" {
+	//parent.Name(dSpec.Title)
+	//}
+	//if err := parent.Do(ctx); err != nil {
+	//plog.Fatal(err)
+	//}
+	//}
+	//}
 
 	return nil
 }
@@ -353,19 +352,19 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		pendings = append(pendings, pending)
 	}
 
-	if spec.GCE.Limit > 0 && len(oldImages) > spec.GCE.Limit {
-		plog.Noticef("Pruning %d GCE images.", len(oldImages)-spec.GCE.Limit)
-		for _, old := range oldImages[spec.GCE.Limit:] {
-			plog.Noticef("Deleting old image %s", old.Name)
-			pending, err := api.DeleteImage(old.Name)
-			if err != nil {
-				plog.Fatal(err)
-			}
-			pending.Interval = 1 * time.Second
-			pending.Timeout = 0
-			pendings = append(pendings, pending)
-		}
-	}
+	//if spec.GCE.Limit > 0 && len(oldImages) > spec.GCE.Limit {
+	//plog.Noticef("Pruning %d GCE images.", len(oldImages)-spec.GCE.Limit)
+	//for _, old := range oldImages[spec.GCE.Limit:] {
+	//plog.Noticef("Deleting old image %s", old.Name)
+	//pending, err := api.DeleteImage(old.Name)
+	//if err != nil {
+	//plog.Fatal(err)
+	//}
+	//pending.Interval = 1 * time.Second
+	//pending.Timeout = 0
+	//pendings = append(pendings, pending)
+	//}
+	//}
 
 	plog.Infof("Waiting on %d operations.", len(pendings))
 	for _, pending := range pendings {
