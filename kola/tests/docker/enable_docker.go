@@ -40,9 +40,7 @@ func init() {
 		Name:      "docker.enable-service.torcx",
 		// Torcx was retired after release 3760.
 		EndVersion: semver.Version{Major: 3760},
-		UserData: conf.Butane(`
-variant: flatcar
-version: 1.0.0
+		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:
   - name: docker.service
