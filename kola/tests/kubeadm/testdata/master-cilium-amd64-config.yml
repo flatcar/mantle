@@ -61,7 +61,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubeadm
+          url: https://dl.k8s.io/release/v1.21.0/bin/linux/amd64/kubeadm
           verification:
             hash:
               function: sha512
@@ -71,7 +71,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubelet
+          url: https://dl.k8s.io/release/v1.21.0/bin/linux/amd64/kubelet
           verification:
             hash:
               function: sha512
@@ -81,7 +81,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl
+          url: https://dl.k8s.io/release/v1.21.0/bin/linux/amd64/kubectl
           verification:
             hash:
               function: sha512
