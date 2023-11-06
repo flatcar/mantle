@@ -89,7 +89,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubeadm
+          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubeadm
           verification:
             hash:
               function: sha512
@@ -99,7 +99,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubelet
+          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubelet
           verification:
             hash:
               function: sha512
@@ -191,7 +191,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubeadm
+          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubeadm
           verification:
             hash:
               function: sha512
@@ -201,7 +201,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubelet
+          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubelet
           verification:
             hash:
               function: sha512
@@ -211,7 +211,7 @@ storage:
       mode: 0755
       contents:
         remote:
-          url: https://storage.googleapis.com/kubernetes-release/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubectl
+          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubectl
           verification:
             hash:
               function: sha512
