@@ -171,38 +171,6 @@ var (
 			},
 			"cgroupv1": false,
 		},
-		"v1.25.10": map[string]interface{}{
-			"MinMajorVersion": 3033,
-			// from https://github.com/flannel-io/flannel/releases
-			"FlannelVersion": "v0.19.1",
-			// from https://github.com/cilium/cilium/releases
-			"CiliumVersion": "1.12.1",
-			// from https://github.com/cilium/cilium-cli/releases
-			"CiliumCLIVersion": "v0.12.2",
-			// from https://github.com/containernetworking/plugins/releases
-			"CNIVersion": "v1.1.1",
-			// from https://github.com/kubernetes-sigs/cri-tools/releases
-			"CRIctlVersion": "v1.24.2",
-			// from https://github.com/kubernetes/release/releases
-			"ReleaseVersion": "v0.14.0",
-			"DownloadDir":    "/opt/bin",
-			"PodSubnet":      "192.168.0.0/17",
-			"arm64": map[string]string{
-				"KubeadmSum": "daab8965a4f617d1570d04c031ab4d55fff6aa13a61f0e4045f2338947f9fb0ee3a80fdee57cfe86db885390595460342181e1ec52b89f127ef09c393ae3db7f",
-				"KubeletSum": "7b872a34d86e8aa75455a62a20f5cf16426de2ae54ffb8e0250fead920838df818201b8512c2f8bf4c939e5b21babab371f3a48803e2e861da9e6f8cdd022324",
-				"CRIctlSum":  "ebd055e9b2888624d006decd582db742131ed815d059d529ba21eaf864becca98a84b20a10eec91051b9d837c6855d28d5042bf5e9a454f4540aec6b82d37e96",
-				"CNISum":     "6b5df61a53601926e4b5a9174828123d555f592165439f541bc117c68781f41c8bd30dccd52367e406d104df849bcbcfb72d9c4bafda4b045c59ce95d0ca0742",
-				"KubectlSum": "733208fa18e683adcd80c621d3be1a1ba35340ff656b78c86068b544045d8710ee100d0ff8df3bf55f607b1863d374f634f2d10b2d37e2be90e2b20dd1cc92ab",
-			},
-			"amd64": map[string]string{
-				"KubeadmSum": "43b8f213f1732c092e34008d5334e6622a6603f7ec5890c395ac911d50069d0dc11a81fa38436df40fc875a10fee6ee13aa285c017f1de210171065e847c99c5",
-				"KubeletSum": "82b36a0b83a1d48ef1f70e3ed2a263b3ce935304cdc0606d194b290217fb04f98628b0d82e200b51ccf5c05c718b2476274ae710bb143fffe28dc6bbf8407d54",
-				"CRIctlSum":  "961188117863ca9af5b084e84691e372efee93ad09daf6a0422e8d75a5803f394d8968064f7ca89f14e8973766201e731241f32538cf2c8d91f0233e786302df",
-				"CNISum":     "4d0ed0abb5951b9cf83cba938ef84bdc5b681f4ac869da8143974f6a53a3ff30c666389fa462b9d14d30af09bf03f6cdf77598c572f8fb3ea00cecdda467a48d",
-				"KubectlSum": "9006cd791c99f5421c09ae8f6029fdd0ea4608909f590dea41ba4dd5c500440272e9ece21489d1f192966717987251ded5394ea1dd4c5d091b700ac1c8cfa392",
-			},
-			"cgroupv1": false,
-		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
@@ -213,11 +181,11 @@ etcd:
 
 func init() {
 	testConfigCgroupV1 := map[string]map[string]interface{}{}
-	testConfigCgroupV1["v1.25.10"] = map[string]interface{}{}
-	for k, v := range testConfig["v1.25.10"] {
-		testConfigCgroupV1["v1.25.10"][k] = v
+	testConfigCgroupV1["v1.26.5"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.26.5"] {
+		testConfigCgroupV1["v1.26.5"][k] = v
 	}
-	testConfigCgroupV1["v1.25.10"]["cgroupv1"] = true
+	testConfigCgroupV1["v1.26.5"]["cgroupv1"] = true
 
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
