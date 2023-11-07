@@ -143,13 +143,11 @@ passwd:
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		// Note: copied verbatim from https://github.com/coreos/docs/blob/master/os/mounting-storage.md#creating-and-mounting-a-btrfs-volume-file
 		// Added explicit btrfs driver selection because overlay2 is the default for btrfs FS in docker 23 and above
-		UserData: conf.Butane(`
-variant: flatcar
-version: 1.0.0
-
+		UserData: conf.ContainerLinuxConfig(`
 storage:
   files:
   - path: /etc/docker/daemon.json
+    filesystem: root
     contents:
       inline: |
         {
@@ -159,7 +157,7 @@ storage:
 systemd:
   units:
     - name: format-var-lib-docker.service
-      enabled: true
+      enable: true
       contents: |
         [Unit]
         Before=docker.service var-lib-docker.mount
@@ -171,7 +169,7 @@ systemd:
         [Install]
         WantedBy=multi-user.target
     - name: var-lib-docker.mount
-      enabled: true
+      enable: true
       contents: |
         [Unit]
         Before=docker.service
@@ -188,6 +186,7 @@ systemd:
 	})
 
 	register.Register(&register.Test{
+		MinVersion:  semver.Version{Major: 3034},
 		Run:         func(c cluster.TestCluster) { testDockerInfo("devicemapper", c) },
 		ClusterSize: 1,
 		Name:        "docker.devicemapper-storage",
