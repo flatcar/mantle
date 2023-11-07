@@ -188,6 +188,7 @@ systemd:
 	})
 
 	register.Register(&register.Test{
+		MinVersion:  semver.Version{Major: 3034},
 		Run:         func(c cluster.TestCluster) { testDockerInfo("devicemapper", c) },
 		ClusterSize: 1,
 		Name:        "docker.devicemapper-storage",
