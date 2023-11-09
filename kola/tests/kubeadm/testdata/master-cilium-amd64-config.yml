@@ -155,3 +155,39 @@ storage:
                   image: ghcr.io/flatcar/nginx
                   ports:
                   - containerPort: 80
+    - path: /home/core/nfs-pod.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: test-pod-1
+          spec:
+            containers:
+              - name: test
+                image: ghcr.io/flatcar/nginx
+                volumeMounts:
+                  - name: config
+                    mountPath: /test
+            volumes:
+              - name: config
+                persistentVolumeClaim:
+                  claimName: test-dynamic-volume-claim
+    - path: /home/core/nfs-pvc.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          kind: PersistentVolumeClaim
+          apiVersion: v1
+          metadata:
+            name: test-dynamic-volume-claim
+          spec:
+            storageClassName: "nfs"
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: 100Mi

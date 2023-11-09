@@ -292,6 +292,38 @@ func kubeadmBaseTest(c cluster.TestCluster, params map[string]interface{}) {
 		}
 	})
 
+	c.Run("NFS deployment", func(c cluster.TestCluster) {
+		if _, err := c.SSH(kubectl, "/opt/bin/helm repo add nfs-ganesha-server-and-external-provisioner https://kubernetes-sigs.github.io/nfs-ganesha-server-and-external-provisioner/"); err != nil {
+			c.Fatalf("unable to add helm NFS repo: %v", err)
+		}
+
+		if _, err := c.SSH(kubectl, "/opt/bin/helm install nfs-server-provisioner nfs-ganesha-server-and-external-provisioner/nfs-server-provisioner --set 'storageClass.mountOptions={nfsvers=4.2}'"); err != nil {
+			c.Fatalf("unable to install NFS Helm Chart: %v", err)
+		}
+
+		// Manifests have been deployed through Ignition
+		if _, err := c.SSH(kubectl, "/opt/bin/kubectl apply -f nfs-pod.yaml -f nfs-pvc.yaml"); err != nil {
+			c.Fatalf("unable to create NFS pod and pvc: %v", err)
+		}
+
+		// Wait up to 3 min (36*5 = 180s). The test can be flaky on overcommitted platforms.
+		if err := util.Retry(36, 5*time.Second, func() error {
+			out, err := c.SSH(kubectl, `/opt/bin/kubectl get pod/test-pod-1 -o json | jq '.status.containerStatuses[] | select (.name == "test") | .ready'`)
+			if err != nil {
+				return fmt.Errorf("getting container status: %v", err)
+			}
+
+			ready := string(out)
+			if ready != "true" {
+				return fmt.Errorf("'test' pod should be ready, got: %s", ready)
+			}
+
+			return nil
+		}); err != nil {
+			c.Fatalf("nginx pod with NFS is not deployed: %v", err)
+		}
+	})
+
 	// this should not fail, we always have the CNI present at this step.
 	cni, ok := params["CNI"]
 	if !ok {
