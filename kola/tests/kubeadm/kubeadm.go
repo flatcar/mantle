@@ -76,6 +76,7 @@ var (
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
 		"v1.28.1": map[string]interface{}{
+			"HelmVersion":     "v3.13.2",
 			"MinMajorVersion": 3374,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.22.0",
@@ -108,6 +109,7 @@ var (
 			"cgroupv1": false,
 		},
 		"v1.27.2": map[string]interface{}{
+			"HelmVersion":     "v3.13.2",
 			"MinMajorVersion": 3374,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.22.0",
@@ -140,6 +142,7 @@ var (
 			"cgroupv1": false,
 		},
 		"v1.26.5": map[string]interface{}{
+			"HelmVersion":     "v3.13.2",
 			"MinMajorVersion": 3374,
 			// from https://github.com/flannel-io/flannel/releases
 			"FlannelVersion": "v0.20.2",

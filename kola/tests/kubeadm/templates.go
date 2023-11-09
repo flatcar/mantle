@@ -162,6 +162,21 @@ storage:
         ExecStart=/usr/bin/rm "/opt/crictl-${CRICTL_VERSION}-linux-{{ .Arch }}.tar.gz"
         [Install]
         WantedBy=multi-user.target
+    - name: prepare-helm.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Unpack helm to /opt/bin
+        ConditionPathExists=!/opt/bin/helm
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        Restart=on-failure
+        ExecStartPre=/usr/bin/mkdir --parents "{{ .DownloadDir }}"
+        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz" --directory "{{ .DownloadDir }}" --strip-components=1 --no-same-owner
+        ExecStart=/usr/bin/rm "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz"
+        [Install]
+        WantedBy=multi-user.target
 storage:
   files:{{ if .cgroupv1 }}
     - path: /etc/flatcar-cgroupv1
@@ -216,6 +231,12 @@ storage:
             hash:
               function: sha512
               sum: {{ index (index . .Arch) "KubectlSum" }}
+    - path: /opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: https://get.helm.sh/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
     - path: /etc/docker/daemon.json
       filesystem: root
       mode: 0644
