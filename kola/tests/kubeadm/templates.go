@@ -162,6 +162,21 @@ storage:
         ExecStart=/usr/bin/rm "/opt/crictl-${CRICTL_VERSION}-linux-{{ .Arch }}.tar.gz"
         [Install]
         WantedBy=multi-user.target
+    - name: prepare-helm.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Unpack helm to /opt/bin
+        ConditionPathExists=!/opt/bin/helm
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        Restart=on-failure
+        ExecStartPre=/usr/bin/mkdir --parents "{{ .DownloadDir }}"
+        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz" --directory "{{ .DownloadDir }}" --strip-components=1 --no-same-owner
+        ExecStart=/usr/bin/rm "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz"
+        [Install]
+        WantedBy=multi-user.target
 storage:
   files:{{ if .cgroupv1 }}
     - path: /etc/flatcar-cgroupv1
@@ -216,6 +231,12 @@ storage:
             hash:
               function: sha512
               sum: {{ index (index . .Arch) "KubectlSum" }}
+    - path: /opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
+      filesystem: root
+      mode: 0755
+      contents:
+        remote:
+          url: https://get.helm.sh/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
     - path: /etc/docker/daemon.json
       filesystem: root
       mode: 0644
@@ -264,6 +285,42 @@ storage:
                   image: ghcr.io/flatcar/nginx
                   ports:
                   - containerPort: 80
+    - path: /home/core/nfs-pod.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: test-pod-1
+          spec:
+            containers:
+              - name: test
+                image: ghcr.io/flatcar/nginx
+                volumeMounts:
+                  - name: config
+                    mountPath: /test
+            volumes:
+              - name: config
+                persistentVolumeClaim:
+                  claimName: test-dynamic-volume-claim
+    - path: /home/core/nfs-pvc.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          kind: PersistentVolumeClaim
+          apiVersion: v1
+          metadata:
+            name: test-dynamic-volume-claim
+          spec:
+            storageClassName: "nfs"
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: 100Mi
 `
 
 	masterScript = `#!/bin/bash
