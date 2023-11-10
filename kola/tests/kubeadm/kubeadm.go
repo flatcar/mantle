@@ -28,6 +28,7 @@ import (
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/kola/tests/etcd"
+	tutil "github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/util"
@@ -422,9 +423,19 @@ func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machi
 		return nil, fmt.Errorf("unable to render container linux config for master: %w", err)
 	}
 
-	master, err := c.NewMachine(conf.ContainerLinuxConfig(masterCfg.String()))
-	if err != nil {
-		return nil, fmt.Errorf("unable to create master node: %w", err)
+	var master, worker platform.Machine
+	p := c.Platform()
+	isQemu := p == "qemu" || p == "qemu-unpriv"
+	if isQemu {
+		master, err = tutil.NewMachineWithLargeDisk(c, "5G", conf.ContainerLinuxConfig(masterCfg.String()))
+		if err != nil {
+			return nil, fmt.Errorf("unable to create master node with large disk: %w", err)
+		}
+	} else {
+		master, err = c.NewMachine(conf.ContainerLinuxConfig(masterCfg.String()))
+		if err != nil {
+			return nil, fmt.Errorf("unable to create master node: %w", err)
+		}
 	}
 
 	out, err := c.SSH(master, "sudo /home/core/install.sh")
@@ -449,9 +460,16 @@ func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machi
 		return nil, fmt.Errorf("unable to render container linux config for master: %w", err)
 	}
 
-	worker, err := c.NewMachine(conf.ContainerLinuxConfig(workerCfg.String()))
-	if err != nil {
-		return nil, fmt.Errorf("unable to create worker node: %w", err)
+	if isQemu {
+		worker, err = tutil.NewMachineWithLargeDisk(c, "5G", conf.ContainerLinuxConfig(workerCfg.String()))
+		if err != nil {
+			return nil, fmt.Errorf("unable to create worker node with large disk: %w", err)
+		}
+	} else {
+		worker, err = c.NewMachine(conf.ContainerLinuxConfig(workerCfg.String()))
+		if err != nil {
+			return nil, fmt.Errorf("unable to create worker node: %w", err)
+		}
 	}
 
 	out, err = c.SSH(worker, "sudo /home/core/install.sh")
