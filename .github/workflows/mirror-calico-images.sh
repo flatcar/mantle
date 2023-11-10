@@ -19,6 +19,8 @@ images=(
   calico/cni
   calico/node
   calico/kube-controllers
+  calico/csi
+  calico/node-driver-registrar
 )
 
 # we iterate over the images we want to mirror
