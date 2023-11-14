@@ -9,6 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
 	github.com/aws/aws-sdk-go v1.44.46
+	github.com/brightbox/gobrightbox/v2 v2.2.0
 	github.com/coreos/butane v0.14.1-0.20220401164106-6b5239299226
 	github.com/coreos/coreos-cloudinit v1.11.0
 	github.com/coreos/go-iptables v0.5.0
@@ -40,11 +41,11 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2
 	go.etcd.io/etcd/server/v3 v3.5.2
 	go.uber.org/zap v1.17.0
-	golang.org/x/crypto v0.14.0
-	golang.org/x/net v0.17.0
-	golang.org/x/oauth2 v0.11.0
-	golang.org/x/sys v0.13.0
-	golang.org/x/text v0.13.0
+	golang.org/x/crypto v0.15.0
+	golang.org/x/net v0.18.0
+	golang.org/x/oauth2 v0.14.0
+	golang.org/x/sys v0.14.0
+	golang.org/x/text v0.14.0
 	google.golang.org/api v0.126.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -115,10 +116,10 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
