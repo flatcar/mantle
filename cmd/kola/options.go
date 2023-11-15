@@ -40,7 +40,7 @@ var (
 	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "azure", "do", "esx", "external", "gce", "openstack", "equinixmetal", "qemu", "qemu-unpriv"}
+	kolaPlatforms      = []string{"aws", "azure", "brightbox", "do", "esx", "external", "gce", "openstack", "equinixmetal", "qemu", "qemu-unpriv"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings      = []string{"basic", "pro"}
@@ -227,6 +227,12 @@ func init() {
 	sv(&kola.QEMUOptions.BIOSImage, "qemu-bios", "", "BIOS to use for QEMU vm")
 	bv(&kola.QEMUOptions.UseVanillaImage, "qemu-skip-mangle", false, "don't modify CL disk image to capture console log")
 	sv(&kola.QEMUOptions.ExtraBaseDiskSize, "qemu-grow-base-disk-by", "", "grow base disk by the given size in bytes, following optional 1024-based suffixes are allowed: b (ignored), k, K, M, G, T")
+
+	// BrightBox specific options
+	sv(&kola.BrightboxOptions.ClientID, "brightbox-client-id", "", "Brightbox client ID")
+	sv(&kola.BrightboxOptions.ClientSecret, "brightbox-client-secret", "", "Brightbox client secret")
+	sv(&kola.BrightboxOptions.Image, "brightbox-image", "", "Brightbox image ref")
+	sv(&kola.BrightboxOptions.ServerType, "brightbox-server-type", "2gb.ssd", "Brightbox server type")
 }
 
 // Sync up the command line options if there is dependency
@@ -245,6 +251,7 @@ func syncOptions() error {
 	kola.AWSOptions.Board = board
 	kola.EquinixMetalOptions.Board = board
 	kola.EquinixMetalOptions.GSOptions = &kola.GCEOptions
+	kola.BrightboxOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {

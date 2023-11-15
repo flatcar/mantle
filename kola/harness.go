@@ -40,6 +40,7 @@ import (
 	"github.com/flatcar/mantle/platform"
 	awsapi "github.com/flatcar/mantle/platform/api/aws"
 	azureapi "github.com/flatcar/mantle/platform/api/azure"
+	brightboxapi "github.com/flatcar/mantle/platform/api/brightbox"
 	doapi "github.com/flatcar/mantle/platform/api/do"
 	equinixmetalapi "github.com/flatcar/mantle/platform/api/equinixmetal"
 	esxapi "github.com/flatcar/mantle/platform/api/esx"
@@ -48,6 +49,7 @@ import (
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/aws"
 	"github.com/flatcar/mantle/platform/machine/azure"
+	"github.com/flatcar/mantle/platform/machine/brightbox"
 	"github.com/flatcar/mantle/platform/machine/do"
 	"github.com/flatcar/mantle/platform/machine/equinixmetal"
 	"github.com/flatcar/mantle/platform/machine/esx"
@@ -65,6 +67,7 @@ var (
 	Options             = platform.Options{}
 	AWSOptions          = awsapi.Options{Options: &Options}          // glue to set platform options from main
 	AzureOptions        = azureapi.Options{Options: &Options}        // glue to set platform options from main
+	BrightboxOptions    = brightboxapi.Options{Options: &Options}    // glue to set platform options from main
 	DOOptions           = doapi.Options{Options: &Options}           // glue to set platform options from main
 	ESXOptions          = esxapi.Options{Options: &Options}          // glue to set platform options from main
 	ExternalOptions     = external.Options{Options: &Options}        // glue to set platform options from main
@@ -225,6 +228,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = aws.NewFlight(&AWSOptions)
 	case "azure":
 		flight, err = azure.NewFlight(&AzureOptions)
+	case "brightbox":
+		flight, err = brightbox.NewFlight(&BrightboxOptions)
 	case "do":
 		flight, err = do.NewFlight(&DOOptions)
 	case "esx":
