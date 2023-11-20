@@ -161,6 +161,8 @@ func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	threshold := time.Now().Add(-gracePeriod)
 	// TODO: CloudIP has no creation date for now.
 	// We can't safely delete "old" cloud IPs.
+	// NOTE: Currently, cloud IPs removal is implemented as an independant
+	// 'ore' subcommand.
 
 	servers, err := a.client.Servers(ctx)
 	if err != nil {
@@ -231,4 +233,20 @@ func (a *API) UploadImage(ctx context.Context, name, URL string) (string, error)
 	}
 
 	return img.ID, nil
+}
+
+// RemoveCloudIPs remove any left overs IPs.
+func (a *API) RemoveCloudIPs(ctx context.Context) error {
+	cloudIPs, err := a.client.CloudIPs(ctx)
+	if err != nil {
+		return fmt.Errorf("getting cloud IPs: %w", err)
+	}
+
+	for _, cloudIP := range cloudIPs {
+		if err := a.DeleteCloudIP(ctx, cloudIP.ID); err != nil {
+			return fmt.Errorf("deleting cloud IP: %w", err)
+		}
+	}
+
+	return nil
 }
