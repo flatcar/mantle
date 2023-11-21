@@ -250,3 +250,23 @@ func (a *API) RemoveCloudIPs(ctx context.Context) error {
 
 	return nil
 }
+
+// RemoveServers remove any left overs servers before running a test.
+func (a *API) RemoveServers(ctx context.Context) error {
+	servers, err := a.client.Servers(ctx)
+	if err != nil {
+		return fmt.Errorf("getting servers: %w", err)
+	}
+
+	for _, server := range servers {
+		if server.Status == serverstatus.Deleted {
+			continue
+		}
+
+		if err := a.DeleteServer(ctx, server.ID); err != nil {
+			return fmt.Errorf("deleting server: %w", err)
+		}
+	}
+
+	return nil
+}
