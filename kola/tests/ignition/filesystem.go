@@ -21,6 +21,7 @@ import (
 	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform/conf"
 )
 
@@ -322,6 +323,17 @@ systemd:
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3033},
 	})
+
+	register.Register(&register.Test{
+		// Note: As long as the initrd does not mount /var for early
+		// preparations, the resulting system has a few issues, so this setup is
+		// not fully supported yet
+		Name:        "cl.ignition.partition_on_boot_disk",
+		Run:         testPartitionOnBootDisk,
+		ClusterSize: 0,
+		Distros:     []string{"cl"},
+		Platforms:   []string{"qemu", "qemu-unpriv"},
+	})
 }
 
 var ext4NoClobberV2_1 = conf.Ignition(`{
@@ -436,4 +448,49 @@ func testSwapActivation(c cluster.TestCluster) {
 	if size != swapSize {
 		c.Fatalf("swap's size should be: %s, got %s", swapSize, size)
 	}
+}
+
+var rootDiskExtraPartition = conf.ContainerLinuxConfig(`
+storage:
+  disks:
+  - device: /dev/disk/by-id/virtio-primary-disk
+    partitions:
+    - label: VAR
+      number: 10
+      start: '9GiB'
+  filesystems:
+  - name: VAR
+    mount:
+      device: /dev/disk/by-partlabel/VAR
+      format: xfs
+      label: VAR
+  files:
+  - filesystem: VAR
+    path: /hello
+    mode: 0644
+    contents:
+      inline: world
+  - filesystem: root
+    path: /etc/fstab
+    mode: 0644
+    contents:
+      inline: |
+        /dev/disk/by-label/VAR /var xfs defaults 0 0
+`)
+
+func testPartitionOnBootDisk(c cluster.TestCluster) {
+	m, err := util.NewMachineWithLargeDisk(c, "10G", rootDiskExtraPartition)
+	if err != nil {
+		c.Fatal(err)
+	}
+	out := c.MustSSH(m, "lsblk -f")
+	c.Logf("lsblk -f:\n%s", out)
+	out = c.MustSSH(m, "findmnt")
+	c.Logf("findmnt:\n%s", out)
+
+	c.MustSSH(m, "mountpoint /var")
+	c.MustSSH(m, "ls -la /dev/disk/by-partlabel/VAR")
+	c.MustSSH(m, "ls -la /dev/disk/by-label/VAR")
+	c.AssertCmdOutputContains(m, "findmnt /var", "xfs")
+	c.AssertCmdOutputContains(m, "cat /var/hello", "world")
 }
