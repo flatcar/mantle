@@ -325,6 +325,9 @@ systemd:
 	})
 
 	register.Register(&register.Test{
+		// Note: As long as the initrd does not mount /var for early
+		// preparations, the resulting system has a few issues, so this setup is
+		// not fully supported yet
 		Name:        "cl.ignition.partition_on_boot_disk",
 		Run:         testPartitionOnBootDisk,
 		ClusterSize: 0,
@@ -456,18 +459,23 @@ storage:
       number: 10
       start: '9GiB'
   filesystems:
-  - name: var
+  - name: VAR
     mount:
       device: /dev/disk/by-partlabel/VAR
       format: xfs
-      label: var
+      label: VAR
   files:
+  - filesystem: VAR
+    path: /hello
+    mode: 0644
+    contents:
+      inline: world
   - filesystem: root
     path: /etc/fstab
     mode: 0644
     contents:
       inline: |
-        /dev/disk/by-label/var /var xfs defaults 0 0
+        /dev/disk/by-label/VAR /var xfs defaults 0 0
 `)
 
 func testPartitionOnBootDisk(c cluster.TestCluster) {
@@ -482,6 +490,7 @@ func testPartitionOnBootDisk(c cluster.TestCluster) {
 
 	c.MustSSH(m, "mountpoint /var")
 	c.MustSSH(m, "ls -la /dev/disk/by-partlabel/VAR")
-	c.MustSSH(m, "ls -la /dev/disk/by-label/var")
+	c.MustSSH(m, "ls -la /dev/disk/by-label/VAR")
 	c.AssertCmdOutputContains(m, "findmnt /var", "xfs")
+	c.AssertCmdOutputContains(m, "cat /var/hello", "world")
 }
