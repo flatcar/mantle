@@ -365,6 +365,11 @@ curl --retry-delay 1 \
 # kubelet config for both controller and worker
 cgroup=$(docker info | awk '/Cgroup Driver/ { print $3}')
 
+{{ if eq .Platform "do" }}
+systemctl start --quiet coreos-metadata
+ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '(PUBLIC|LOCAL|DYNAMIC)' | cut -d = -f 2)
+{{ end }}
+
 # we create the kubeadm config
 # plugin-volume-dir and flex-volume-plugin-dir are required since /usr is read-only mounted
 # etcd is also defined as external. The provided one has some issues with docker and selinux
@@ -379,6 +384,10 @@ kind: InitConfiguration
 nodeRegistration:
   kubeletExtraArgs:
     volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+{{ if eq .Platform "do" }}
+    # On Digital Ocean, the private node IP is not reachable from one node to the other - let's use the public one.
+    node-ip: "${ipv4}"
+{{ end }}
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
@@ -412,6 +421,12 @@ spec:
   imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
+{{ if eq .Platform "do" }}
+    # On Digital Ocean, there is two network interfaces: eth0 and eth1
+    # We use the one with a public IP (eth0)
+    nodeAddressAutodetectionV4:
+      interface: eth0
+{{ end }}
     # Note: The ipPools section cannot be modified post-install.
     ipPools:
     - blockSize: 26
@@ -537,7 +552,7 @@ cat << EOF > worker-config.yaml
 EOF
 
 systemctl start --quiet coreos-metadata
-ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '(PRIVATE|LOCAL|DYNAMIC)' | cut -d = -f 2)
+ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '({{ if eq .Platform "do" }}PUBLIC{{ else }}PRIVATE{{ end }}|LOCAL|DYNAMIC)' | cut -d = -f 2)
 
 kubeadm join --config worker-config.yaml --node-name "${ipv4}"
 `
