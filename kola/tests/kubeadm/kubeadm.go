@@ -257,6 +257,7 @@ func init() {
 
 // kubeadmBaseTest asserts that the cluster is up and running
 func kubeadmBaseTest(c cluster.TestCluster, params map[string]interface{}) {
+	params["Platform"] = c.Platform()
 	params["Arch"] = strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
 	kubectl, err := setup(c, params)
 	if err != nil {

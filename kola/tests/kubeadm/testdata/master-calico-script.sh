@@ -40,6 +40,8 @@ curl --retry-delay 1 \
 # kubelet config for both controller and worker
 cgroup=$(docker info | awk '/Cgroup Driver/ { print $3}')
 
+
+
 # we create the kubeadm config
 # plugin-volume-dir and flex-volume-plugin-dir are required since /usr is read-only mounted
 # etcd is also defined as external. The provided one has some issues with docker and selinux
@@ -54,6 +56,7 @@ kind: InitConfiguration
 nodeRegistration:
   kubeletExtraArgs:
     volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
@@ -87,6 +90,7 @@ spec:
   imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
+
     # Note: The ipPools section cannot be modified post-install.
     ipPools:
     - blockSize: 26
