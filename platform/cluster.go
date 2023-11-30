@@ -191,6 +191,15 @@ func (bc *BaseCluster) RenderUserData(userdata *conf.UserData, ignitionVars map[
 		conf.CopyKeys(keys)
 	}
 
+	if !bc.rconf.NoEnableSelinux && !bc.rconf.LateSelinux {
+		conf.AddFile("/etc/flatcar/update.conf", "root", `SELINUX=enforcing
+SELINUXTYPE=mcs
+`, 0644)
+		// These files used to be deleted but empty files should work, too
+		conf.AddFile("/etc/audit/rules.d/80-selinux.rules", "root", ``, 0644)
+		conf.AddFile("/etc/audit/rules.d/99-default.rules", "root", ``, 0644)
+	}
+
 	// disable the public update server by default
 	if !bc.rconf.NoDisableUpdates {
 		conf.AddFile("/etc/flatcar/update.conf", "root", `SERVER=disabled
