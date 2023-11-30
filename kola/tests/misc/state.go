@@ -60,7 +60,8 @@ func init() {
 
 // Check that the overlay doesn't have unexpected upcopies, e.g., due to
 // systemd-tmpfiles recreating the files/dirs or similar. Also check
-// that duplicates get removed on reboot.
+// that duplicates get removed on reboot. We also want certain files
+// to be recreated, e.g., those with a tmpfile rule.
 func OverlayCleanup(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
@@ -83,6 +84,9 @@ func OverlayCleanup(c cluster.TestCluster) {
 	// All these files should not be part of the tmpfiles rules for the test to work.
 	_ = c.MustSSH(m, `sudo rm -r /etc/sssd && sudo mkdir /etc/sssd && sudo chmod 700 /etc/sssd && sudo rm /etc/kexec.conf && sudo rm -rf /etc/samba && sudo rm -r /etc/bash && sudo cp -a /usr/share/flatcar/etc/bash /etc/bash && sudo touch /etc/bash/hello`)
 
+	// Test that /etc/resolv.conf will be recreated when removed
+	_ = c.MustSSH(m, `sudo rm /etc/resolv.conf`)
+
 	// The migration path for old machines with a full /etc and the cleanup of unwanted duplicates/
 	// upcopies can be tested the same way by copying duplicates to /etc and then rebooting to
 	// check that they get cleaned up.
@@ -93,6 +97,7 @@ func OverlayCleanup(c cluster.TestCluster) {
 
 	_ = c.MustSSH(m, fmt.Sprintf(overlayCheck, "after reboot"))
 	_ = c.MustSSH(m, `if sudo test -e /etc/sssd/sssd.conf || test -e /etc/kexec.conf || test -e /etc/samba || test ! -e /etc/bash/hello || test ! -e /etc/bash/bashrc ; then echo "Deletion or modification lost: $_" ; exit 1; fi`)
+	_ = c.MustSSH(m, `if test ! -e /etc/resolv.conf ; then echo "Files with tmpfile rule not recreated: $_" ; exit 1; fi && if ! sudo unshare -m bash -c 'umount /etc && test ! -e /etc/resolv.conf'; then echo "File with tmpfile rule exists as upcopy: $_"; exit 1; fi`)
 }
 
 // Check the OS reset logic with flatcar-reset to be able to
