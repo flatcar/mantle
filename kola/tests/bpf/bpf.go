@@ -16,7 +16,7 @@ import (
 )
 
 // cmdPrefix is a temporary hack to pull `bcc` tools into Flatcar
-const cmdPrefix = "docker run -d --name %s -v /lib/modules:/lib/modules -v /sys/kernel/debug:/sys/kernel/debug -v /sys/fs/cgroup:/sys/fs/cgroup -v /sys/fs/bpf:/sys/fs/bpf --privileged --net host --pid host quay.io/iovisor/bcc %s"
+const cmdPrefix = "docker run -d --name %s -v /lib/modules:/lib/modules -v /sys/kernel/debug:/sys/kernel/debug -v /sys/fs/cgroup:/sys/fs/cgroup -v /sys/fs/bpf:/sys/fs/bpf --privileged --net host --pid host ghcr.io/flatcar/bcc %s"
 
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/bpf")
@@ -40,8 +40,6 @@ func init() {
 		// required while SELinux policy is not correcly updated to support
 		// `bpf` and `perfmon` permission.
 		Flags: []register.Flag{register.NoEnableSelinux},
-		// exclude `arm64` while `quay.io/iovisor/bcc` does not have `arm64` support.
-		Architectures: []string{"amd64"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
