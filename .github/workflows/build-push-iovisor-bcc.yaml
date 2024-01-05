@@ -22,8 +22,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        repository: ader1990/bcc
-        ref: fix_debian_changelog
+        repository: iovisor/bcc
+        ref: master
         fetch-depth: 0
         fetch-tags: true
     - name: Set up QEMU
