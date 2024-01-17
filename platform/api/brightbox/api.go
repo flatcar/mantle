@@ -220,7 +220,7 @@ func (a *API) UploadImage(ctx context.Context, name, URL string) (string, error)
 	}
 
 	// It usually takes around 20 seconds to extract the image.
-	if err := util.WaitUntilReady(2*time.Minute, 5*time.Second, func() (bool, error) {
+	if err := util.WaitUntilReady(5*time.Minute, 5*time.Second, func() (bool, error) {
 		image, err := a.client.Image(ctx, img.ID)
 		if err != nil {
 			return false, fmt.Errorf("getting image status: %w", err)
