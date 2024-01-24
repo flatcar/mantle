@@ -39,6 +39,13 @@ type Machine struct {
 	PublicIPName     string
 }
 
+func (a *API) getAvset() string {
+	if a.Opts.AvailabilitySet == "" {
+		return ""
+	}
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/availabilitySets/%s", a.Opts.SubscriptionID, a.Opts.ResourceGroup, a.Opts.AvailabilitySet)
+}
+
 func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, ip *network.PublicIPAddress, nic *network.Interface) compute.VirtualMachine {
 	osProfile := compute.OSProfile{
 		AdminUsername: util.StrToPtr("core"),
@@ -154,6 +161,11 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 			plog.Infof("using custom data")
 			vm.VirtualMachineProperties.OsProfile.CustomData = &ud
 		}
+	}
+
+	availabilitySetID := a.getAvset()
+	if availabilitySetID != "" {
+		vm.VirtualMachineProperties.AvailabilitySet = &compute.SubResource{ID: &availabilitySetID}
 	}
 
 	return vm
