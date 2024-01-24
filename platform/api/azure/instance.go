@@ -149,6 +149,11 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 		}
 	}
 
+	availabilitySetID := a.Opts.AvailabilitySetID
+	if availabilitySetID != "" {
+		vm.VirtualMachineProperties.AvailabilitySet = &compute.SubResource{ID: &availabilitySetID}
+	}
+
 	return vm
 }
 
