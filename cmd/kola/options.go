@@ -124,6 +124,7 @@ func init() {
 	bv(&kola.AzureOptions.UsePrivateIPs, "azure-use-private-ips", false, "Assume nodes are reachable using private IP addresses")
 	bv(&kola.AzureOptions.UseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 	sv(&kola.AzureOptions.ResourceGroup, "azure-resource-group", "", "Deploy resources in an existing resource group")
+	sv(&kola.AzureOptions.AvailabilitySetID, "azure-availability-set-id", "", "Deploy instances with an existing availibity set")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")
