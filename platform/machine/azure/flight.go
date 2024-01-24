@@ -84,9 +84,15 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		blobName := imageName + ".vhd"
 		container := "temp"
 
-		af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
-		if err != nil {
-			return nil, err
+		rg := opts.ResourceGroup
+		if rg != "" {
+			af.ImageResourceGroup = rg
+			plog.Infof("Using existing resource group: %s", rg)
+		} else {
+			af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		af.ImageStorageAccount, err = af.Api.CreateStorageAccount(af.ImageResourceGroup)
@@ -177,9 +183,15 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		ac.StorageAccount = af.ImageStorageAccount
 		ac.Network = af.Network
 	} else {
-		ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
-		if err != nil {
-			return nil, err
+		rg := af.Api.Opts.ResourceGroup
+		if rg != "" {
+			ac.ResourceGroup = rg
+			plog.Infof("Using existing resource group: %s", rg)
+		} else {
+			ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		ac.StorageAccount, err = af.Api.CreateStorageAccount(ac.ResourceGroup)
@@ -203,7 +215,10 @@ func (af *flight) Destroy() {
 	af.BaseFlight.Destroy()
 
 	if af.ImageResourceGroup != "" {
-		if e := af.Api.TerminateResourceGroup(af.ImageResourceGroup); e != nil {
+		// If the resource group is provided via the command line, we need to delete the resources created inside
+		// but we keep the resource group itself.
+		keepResourceGroup := af.Api.Opts.ResourceGroup != ""
+		if e := af.Api.TerminateResourceGroup(af.ImageResourceGroup, keepResourceGroup); e != nil {
 			plog.Errorf("Deleting image resource group %v: %v", af.ImageResourceGroup, e)
 		}
 	}

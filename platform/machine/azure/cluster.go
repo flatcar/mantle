@@ -90,7 +90,10 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 func (ac *cluster) Destroy() {
 	ac.BaseCluster.Destroy()
 	if ac.ResourceGroup != ac.flight.ImageResourceGroup {
-		if e := ac.flight.Api.TerminateResourceGroup(ac.ResourceGroup); e != nil {
+		// If the resource group is provided via the command line, we need to delete the resources created inside
+		// but we keep the resource group itself.
+		keepResourceGroup := ac.flight.Api.Opts.ResourceGroup != ""
+		if e := ac.flight.Api.TerminateResourceGroup(ac.ResourceGroup, keepResourceGroup); e != nil {
 			plog.Errorf("Deleting resource group %v: %v", ac.ResourceGroup, e)
 		}
 	}
