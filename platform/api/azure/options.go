@@ -53,4 +53,6 @@ type Options struct {
 	UseUserData bool
 	// ResourceGroup is an existing resource group to deploy resources in.
 	ResourceGroup string
+	// AvailabilitySetID is an existing availability set to deploy the instance in.
+	AvailabilitySetID string
 }
