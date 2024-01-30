@@ -38,23 +38,28 @@ import (
 	internalAuth "github.com/flatcar/mantle/auth"
 )
 
+const (
+	APIVersion = "2023-09-01"
+)
+
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/api/azure")
 )
 
 type API struct {
-	client      management.Client
-	rgClient    resources.GroupsClient
-	depClient   resources.DeploymentsClient
-	imgClient   compute.ImagesClient
-	compClient  compute.VirtualMachinesClient
-	vmImgClient compute.VirtualMachineImagesClient
-	netClient   network.VirtualNetworksClient
-	subClient   network.SubnetsClient
-	ipClient    network.PublicIPAddressesClient
-	intClient   network.InterfacesClient
-	accClient   armStorage.AccountsClient
-	Opts        *Options
+	client          management.Client
+	rgClient        resources.GroupsClient
+	depClient       resources.DeploymentsClient
+	resourcesClient resources.Client
+	imgClient       compute.ImagesClient
+	compClient      compute.VirtualMachinesClient
+	vmImgClient     compute.VirtualMachineImagesClient
+	netClient       network.VirtualNetworksClient
+	subClient       network.SubnetsClient
+	ipClient        network.PublicIPAddressesClient
+	intClient       network.InterfacesClient
+	accClient       armStorage.AccountsClient
+	Opts            *Options
 }
 
 type Network struct {
@@ -121,7 +126,7 @@ func setOptsFromProfile(opts *Options) error {
 func New(opts *Options) (*API, error) {
 	var err error
 	conf := management.DefaultConfig()
-	conf.APIVersion = "2015-04-01"
+	conf.APIVersion = APIVersion
 
 	if opts.ManagementURL != "" {
 		conf.ManagementURL = opts.ManagementURL
@@ -227,6 +232,9 @@ func (a *API) SetupClients() error {
 	a.depClient = resources.NewDeploymentsClient(subid)
 	a.depClient.Authorizer = auther
 
+	a.resourcesClient = resources.NewClient(subid)
+	a.resourcesClient.Authorizer = auther
+
 	auther, err = a.newAuthorizer(compute.DefaultBaseURI)
 	if err != nil {
 		return err
@@ -290,7 +298,7 @@ func (a *API) GC(gracePeriod time.Duration) error {
 				return fmt.Errorf("error parsing time: %v", err)
 			}
 			if !timeCreated.After(durationAgo) {
-				if err = a.TerminateResourceGroup(*l.Name); err != nil {
+				if err = a.TerminateResourceGroup(*l.Name, false); err != nil {
 					return err
 				}
 			}
