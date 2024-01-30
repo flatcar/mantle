@@ -16,6 +16,7 @@ package azure
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
@@ -41,17 +42,45 @@ func (a *API) CreateResourceGroup(prefix string) (string, error) {
 	return name, nil
 }
 
-func (a *API) TerminateResourceGroup(name string) error {
-	resp, err := a.rgClient.CheckExistence(context.TODO(), name)
-	if err != nil {
+// keepResourceGroup can be used to terminate all the resources created in the group but keep the group itself.
+func (a *API) TerminateResourceGroup(name string, keepResourceGroup bool) error {
+	if !keepResourceGroup {
+		resp, err := a.rgClient.CheckExistence(context.TODO(), name)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != 204 {
+			return nil
+		}
+
+		_, err = a.rgClient.Delete(context.TODO(), name)
 		return err
 	}
-	if resp.StatusCode != 204 {
-		return nil
+
+	// Get the list of resources to delete in the group
+	listResult, err := a.resourcesClient.ListByResourceGroup(context.TODO(), name, "", "", nil)
+	if err != nil {
+		return fmt.Errorf("listing by resource group: %v", err)
 	}
 
-	_, err = a.rgClient.Delete(context.TODO(), name)
-	return err
+	for _, value := range listResult.Values() {
+		id := *value.ID
+		t := *value.Type
+
+		if id != "" && t != "" {
+			if t == a.Opts.ResourceToKeep {
+				continue
+			}
+
+			if _, err := a.resourcesClient.DeleteByID(context.TODO(), id, APIVersion); err != nil {
+				return fmt.Errorf("deleting resource %s: %v", id, err)
+			}
+
+			plog.Infof("deleted collected resource: kind: %s", *value.Type)
+		}
+	}
+
+	return nil
 }
 
 func (a *API) ListResourceGroups(filter string) (resources.GroupListResult, error) {
