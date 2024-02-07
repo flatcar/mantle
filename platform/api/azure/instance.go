@@ -158,6 +158,13 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 }
 
 func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, network Network) (*Machine, error) {
+	// HACK: only VMs are created in the user supplied resource group, kola still manages a resource group
+	// for the gallery and storage account.
+	vmResourceGroup := resourceGroup
+	if a.Opts.ResourceGroup != "" {
+		vmResourceGroup = a.Opts.ResourceGroup
+	}
+
 	subnet := network.subnet
 
 	ip, err := a.createPublicIP(resourceGroup)
@@ -179,22 +186,31 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	vmParams := a.getVMParameters(name, userdata, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), ip, nic)
 	plog.Infof("Creating Instance %s", name)
 
-	future, err := a.compClient.CreateOrUpdate(context.TODO(), resourceGroup, name, vmParams)
+	clean := func() {
+		_, _ = a.compClient.Delete(context.TODO(), vmResourceGroup, name, &forceDelete)
+		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)
+		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, *ip.Name)
+	}
+
+	future, err := a.compClient.CreateOrUpdate(context.TODO(), vmResourceGroup, name, vmParams)
 	if err != nil {
+		clean()
 		return nil, err
 	}
 	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
 	if err != nil {
+		clean()
 		return nil, err
 	}
 	_, err = future.Result(a.compClient)
 	if err != nil {
+		clean()
 		return nil, err
 	}
 	plog.Infof("Instance %s created", name)
 
 	err = util.WaitUntilReady(5*time.Minute, 10*time.Second, func() (bool, error) {
-		vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, "")
+		vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, "")
 		if err != nil {
 			return false, err
 		}
@@ -207,13 +223,11 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	})
 	plog.Infof("Instance %s ready", name)
 	if err != nil {
-		_, _ = a.compClient.Delete(context.TODO(), resourceGroup, name, &forceDelete)
-		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)
-		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, *ip.Name)
+		clean()
 		return nil, fmt.Errorf("waiting for machine to become active: %v", err)
 	}
 
-	vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, "")
+	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, "")
 	if err != nil {
 		return nil, err
 	}
@@ -243,6 +257,11 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 // TerminateInstance deletes a VM created by CreateInstance. Public IP, NIC and
 // OS disk are deleted automatically together with the VM.
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
+	// HACK: see comment in CreateInstance
+	if a.Opts.ResourceGroup != "" {
+		resourceGroup = a.Opts.ResourceGroup
+	}
+
 	future, err := a.compClient.Delete(context.TODO(), resourceGroup, machine.ID, &forceDelete)
 	if err != nil {
 		return err
@@ -259,6 +278,11 @@ func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 }
 
 func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {
+	// HACK: see comment in CreateInstance
+	vmResourceGroup := resourceGroup
+	if a.Opts.ResourceGroup != "" {
+		vmResourceGroup = a.Opts.ResourceGroup
+	}
 	kr, err := a.GetStorageServiceKeysARM(storageAccount, resourceGroup)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving storage service keys: %v", err)
@@ -270,7 +294,7 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 	k := *kr.Keys
 	key := *k[0].Value
 
-	vm, err := a.compClient.Get(context.TODO(), resourceGroup, name, compute.InstanceViewTypesInstanceView)
+	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, compute.InstanceViewTypesInstanceView)
 	if err != nil {
 		return nil, fmt.Errorf("could not get VM: %v", err)
 	}
