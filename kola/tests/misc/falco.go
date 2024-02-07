@@ -22,8 +22,8 @@ func init() {
 
 func loadFalco(c cluster.TestCluster) {
 	// load the falco binary
-	// TODO: first supported version will be 0.33.0, but use master tag for now
-	c.MustSSH(c.Machines()[0], "docker run --rm --privileged -v /root/.falco:/root/.falco -v /proc:/host/proc:ro -v /boot:/host/boot:ro -v /lib/modules:/host/lib/modules:ro -v /usr:/host/usr:ro -v /etc:/host/etc:ro falcosecurity/falco-driver-loader:master")
+	// TODO: master or 0.37.0 is broken for Flatcar, especially when we update glibc to 2.38
+	c.MustSSH(c.Machines()[0], "docker run --rm --privileged -v /root/.falco:/root/.falco -v /proc:/host/proc:ro -v /boot:/host/boot:ro -v /lib/modules:/host/lib/modules:ro -v /usr:/host/usr:ro -v /etc:/host/etc:ro falcosecurity/falco-driver-loader:0.36.2")
 	// Build must succeed and falco must be running
 	c.MustSSH(c.Machines()[0], "dmesg | grep falco")
 	c.MustSSH(c.Machines()[0], "lsmod | grep falco")
