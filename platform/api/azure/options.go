@@ -55,6 +55,4 @@ type Options struct {
 	ResourceGroup string
 	// AvailabilitySetID is an existing availability set to deploy the instance in.
 	AvailabilitySetID string
-	// ResourceToKeep is a resource to keep when cleaning an existing ResourceGroup.
-	ResourceToKeep string
 }
