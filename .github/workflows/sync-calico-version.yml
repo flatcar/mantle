@@ -21,12 +21,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Check out scripts
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Update links to Tigera Operator manifest
         id: update-links
         run: .github/workflows/sync-calico-version.sh
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v6
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -36,7 +36,7 @@ jobs:
           delete-branch: true
       - name: Login to GitHub Container Registry (ghcr)
         if: steps.update-links.outputs.UPDATE_NEEDED == 1
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
