@@ -76,8 +76,12 @@ func (a *API) UploadObjectExt(r io.Reader, bucket, path string, force bool, poli
 		Body:   r,
 		Bucket: aws.String(bucket),
 		Key:    aws.String(path),
-		ACL:    aws.String(policy),
 	}
+
+	if policy != "" {
+		input.ACL = aws.String(policy)
+	}
+
 	if max_age >= 0 {
 		input.CacheControl = aws.String(fmt.Sprintf("max-age=%d", max_age))
 	}
