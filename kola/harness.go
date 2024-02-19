@@ -46,6 +46,7 @@ import (
 	esxapi "github.com/flatcar/mantle/platform/api/esx"
 	gcloudapi "github.com/flatcar/mantle/platform/api/gcloud"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
+	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/aws"
 	"github.com/flatcar/mantle/platform/machine/azure"
@@ -57,6 +58,7 @@ import (
 	"github.com/flatcar/mantle/platform/machine/gcloud"
 	"github.com/flatcar/mantle/platform/machine/openstack"
 	"github.com/flatcar/mantle/platform/machine/qemu"
+	"github.com/flatcar/mantle/platform/machine/scaleway"
 	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 	"github.com/flatcar/mantle/system"
 )
@@ -75,6 +77,7 @@ var (
 	OpenStackOptions    = openstackapi.Options{Options: &Options}    // glue to set platform options from main
 	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
 	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
+	ScalewayOptions     = scalewayapi.Options{Options: &Options}     // glue to set platform options from main
 
 	TestParallelism        int    //glue var to set test parallelism from main
 	TAPFile                string // if not "", write TAP results here
@@ -246,6 +249,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = qemu.NewFlight(&QEMUOptions)
 	case "qemu-unpriv":
 		flight, err = unprivqemu.NewFlight(&QEMUOptions)
+	case "scaleway":
+		flight, err = scaleway.NewFlight(&ScalewayOptions)
 	default:
 		err = fmt.Errorf("invalid platform %q", pltfrm)
 	}
