@@ -40,7 +40,7 @@ var (
 	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "azure", "brightbox", "do", "esx", "external", "gce", "openstack", "equinixmetal", "qemu", "qemu-unpriv"}
+	kolaPlatforms      = []string{"aws", "azure", "brightbox", "do", "esx", "external", "gce", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings      = []string{"basic", "pro"}
@@ -233,6 +233,16 @@ func init() {
 	sv(&kola.BrightboxOptions.ClientSecret, "brightbox-client-secret", "", "Brightbox client secret")
 	sv(&kola.BrightboxOptions.Image, "brightbox-image", "", "Brightbox image ref")
 	sv(&kola.BrightboxOptions.ServerType, "brightbox-server-type", "2gb.ssd", "Brightbox server type")
+
+	// Scaleway specific options
+	sv(&kola.ScalewayOptions.OrganizationID, "scaleway-organization-id", "", "Scaleway organization ID")
+	sv(&kola.ScalewayOptions.ProjectID, "scaleway-project-id", "", "Scaleway organization ID")
+	sv(&kola.ScalewayOptions.Region, "scaleway-region", "fr-par", "Scaleway region")
+	sv(&kola.ScalewayOptions.Zone, "scaleway-zone", "fr-par-1", "Scaleway region")
+	sv(&kola.ScalewayOptions.AccessKey, "scaleway-access-key", "", "Scaleway credentials access key")
+	sv(&kola.ScalewayOptions.SecretKey, "scaleway-secret-key", "", "Scaleway credentials secret key")
+	sv(&kola.ScalewayOptions.Image, "scaleway-image", "", "Scaleway image ID")
+	sv(&kola.ScalewayOptions.InstanceType, "scaleway-instance-type", "DEV1-S", "Scaleway instance type")
 }
 
 // Sync up the command line options if there is dependency
@@ -252,6 +262,7 @@ func syncOptions() error {
 	kola.EquinixMetalOptions.Board = board
 	kola.EquinixMetalOptions.GSOptions = &kola.GCEOptions
 	kola.BrightboxOptions.Board = board
+	kola.ScalewayOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
