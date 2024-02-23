@@ -15,13 +15,15 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
+	"net/textproto"
 	"reflect"
 	"regexp"
 	"strings"
 	"unicode"
 
-	"github.com/coreos/yaml"
+	"gopkg.in/yaml.v3"
 )
 
 // CloudConfig encapsulates the entire cloud-config configuration file and maps
@@ -37,10 +39,10 @@ type CloudConfig struct {
 }
 
 type CoreOS struct {
-	Etcd      Etcd      `yaml:"etcd"`
-	Etcd2     Etcd2     `yaml:"etcd2"`
+	Etcd      Etcd      `yaml:"etcd"      deprecated:"etcd is no longer shipped in Container Linux"`
+	Etcd2     Etcd2     `yaml:"etcd2"     deprecated:"etcd2 is no longer shipped in Container Linux"`
 	Flannel   Flannel   `yaml:"flannel"`
-	Fleet     Fleet     `yaml:"fleet"`
+	Fleet     Fleet     `yaml:"fleet"     deprecated:"fleet is no longer shipped in Container Linux"`
 	Locksmith Locksmith `yaml:"locksmith"`
 	OEM       OEM       `yaml:"oem"`
 	Update    Update    `yaml:"update"`
@@ -56,13 +58,22 @@ func IsCloudConfig(userdata string) bool {
 	return (header == "#cloud-config")
 }
 
+func IsMultipartMime(userdata string) bool {
+	bufioReader := bufio.NewReader(strings.NewReader(userdata))
+	textProtoReader := textproto.NewReader(bufioReader)
+	header, err := textProtoReader.ReadMIMEHeader()
+	if err != nil {
+		return false
+	}
+
+	contentType := header.Get("Content-Type")
+	return strings.Contains(contentType, "multipart/mixed")
+}
+
 // NewCloudConfig instantiates a new CloudConfig from the given contents (a
 // string of YAML), returning any error encountered. It will ignore unknown
 // fields but log encountering them.
 func NewCloudConfig(contents string) (*CloudConfig, error) {
-	yaml.UnmarshalMappingKeyTransform = func(nameIn string) (nameOut string) {
-		return strings.Replace(nameIn, "-", "_", -1)
-	}
 	var cfg CloudConfig
 	err := yaml.Unmarshal([]byte(contents), &cfg)
 	return &cfg, err
