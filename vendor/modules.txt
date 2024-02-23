@@ -211,9 +211,6 @@ github.com/coreos/butane/config/openshift/v4_9/result
 github.com/coreos/butane/config/rhcos/v0_1
 github.com/coreos/butane/config/util
 github.com/coreos/butane/translate
-# github.com/coreos/coreos-cloudinit v1.11.0
-## explicit
-github.com/coreos/coreos-cloudinit/config
 # github.com/coreos/go-iptables v0.5.0
 ## explicit
 github.com/coreos/go-iptables/iptables
@@ -269,9 +266,6 @@ github.com/coreos/vcontext/report
 github.com/coreos/vcontext/tree
 github.com/coreos/vcontext/validate
 github.com/coreos/vcontext/yaml
-# github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269
-## explicit
-github.com/coreos/yaml
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -293,6 +287,9 @@ github.com/flatcar/container-linux-config-transpiler/config/templating
 github.com/flatcar/container-linux-config-transpiler/config/types
 github.com/flatcar/container-linux-config-transpiler/config/types/util
 github.com/flatcar/container-linux-config-transpiler/internal/util
+# github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
+## explicit; go 1.20
+github.com/flatcar/coreos-cloudinit/config
 # github.com/flatcar/ignition v0.36.2
 ## explicit; go 1.16
 github.com/flatcar/ignition/config/shared/errors

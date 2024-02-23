@@ -29,7 +29,6 @@ import (
 
 	butane "github.com/coreos/butane/config"
 	"github.com/coreos/butane/config/common"
-	cci "github.com/coreos/coreos-cloudinit/config"
 	ign3err "github.com/coreos/ignition/v2/config/shared/errors"
 	v3 "github.com/coreos/ignition/v2/config/v3_0"
 	v3types "github.com/coreos/ignition/v2/config/v3_0/types"
@@ -42,6 +41,7 @@ import (
 	ign3validate "github.com/coreos/ignition/v2/config/validate"
 	"github.com/coreos/pkg/capnslog"
 	ct "github.com/flatcar/container-linux-config-transpiler/config"
+	cci "github.com/flatcar/coreos-cloudinit/config"
 	ignerr "github.com/flatcar/ignition/config/shared/errors"
 	v1 "github.com/flatcar/ignition/config/v1"
 	v1types "github.com/flatcar/ignition/config/v1/types"

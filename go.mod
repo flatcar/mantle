@@ -11,7 +11,6 @@ require (
 	github.com/aws/aws-sdk-go v1.44.46
 	github.com/brightbox/gobrightbox/v2 v2.2.0
 	github.com/coreos/butane v0.14.1-0.20220401164106-6b5239299226
-	github.com/coreos/coreos-cloudinit v1.11.0
 	github.com/coreos/go-iptables v0.5.0
 	github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
 	github.com/coreos/go-semver v0.3.0
@@ -20,6 +19,7 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/digitalocean/godo v1.45.0
 	github.com/flatcar/container-linux-config-transpiler v0.9.4
+	github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
 	github.com/flatcar/ignition v0.36.2
 	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.3
@@ -72,7 +72,6 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/coreos/vcontext v0.0.0-20220326205524-7fcaf69e7050 // indirect
-	github.com/coreos/yaml v0.0.0-20141224210557-6b16a5714269 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
