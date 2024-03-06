@@ -62,7 +62,7 @@ type API struct {
 	ec2         *ec2.EC2
 	iam         *iam.IAM
 	marketplace *marketplacecatalog.MarketplaceCatalog
-	s3          *s3.S3
+	S3          *s3.S3
 	opts        *Options
 }
 
@@ -98,7 +98,7 @@ func New(opts *Options) (*API, error) {
 		ec2:         ec2.New(sess),
 		marketplace: marketplacecatalog.New(sess),
 		iam:         iam.New(sess),
-		s3:          s3.New(sess),
+		S3:          s3.New(sess),
 		opts:        opts,
 	}
 

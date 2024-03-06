@@ -55,10 +55,10 @@ func (a *API) UploadObject(r io.Reader, bucket, path string, force bool) error {
 
 // UploadObjectExt uploads an object to S3 with more control over options.
 func (a *API) UploadObjectExt(r io.Reader, bucket, path string, force bool, policy string, contentType string, max_age int) error {
-	s3uploader := s3manager.NewUploaderWithClient(a.s3)
+	s3uploader := s3manager.NewUploaderWithClient(a.S3)
 
 	if !force {
-		_, err := a.s3.HeadObject(&s3.HeadObjectInput{
+		_, err := a.S3.HeadObject(&s3.HeadObjectInput{
 			Bucket: &bucket,
 			Key:    &path,
 		})
@@ -76,8 +76,12 @@ func (a *API) UploadObjectExt(r io.Reader, bucket, path string, force bool, poli
 		Body:   r,
 		Bucket: aws.String(bucket),
 		Key:    aws.String(path),
-		ACL:    aws.String(policy),
 	}
+
+	if policy != "" {
+		input.ACL = aws.String(policy)
+	}
+
 	if max_age >= 0 {
 		input.CacheControl = aws.String(fmt.Sprintf("max-age=%d", max_age))
 	}
@@ -95,7 +99,7 @@ func (a *API) UploadObjectExt(r io.Reader, bucket, path string, force bool, poli
 
 func (a *API) DeleteObject(bucket, path string) error {
 	plog.Infof("Deleting s3://%v/%v", bucket, path)
-	_, err := a.s3.DeleteObject(&s3.DeleteObjectInput{
+	_, err := a.S3.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(path),
 	})
@@ -106,7 +110,7 @@ func (a *API) DeleteObject(bucket, path string) error {
 }
 
 func (a *API) InitializeBucket(bucket string) error {
-	_, err := a.s3.CreateBucket(&s3.CreateBucketInput{
+	_, err := a.S3.CreateBucket(&s3.CreateBucketInput{
 		Bucket: &bucket,
 	})
 	if err != nil {
@@ -121,7 +125,7 @@ func (a *API) InitializeBucket(bucket string) error {
 
 // This will modify the ACL on Objects to one of the canned ACL policies
 func (a *API) PutObjectAcl(bucket, path, policy string) error {
-	_, err := a.s3.PutObjectAcl(&s3.PutObjectAclInput{
+	_, err := a.S3.PutObjectAcl(&s3.PutObjectAclInput{
 		ACL:    aws.String(policy),
 		Bucket: aws.String(bucket),
 		Key:    aws.String(path),
@@ -138,7 +142,7 @@ func (a *API) CopyObject(srcBucket, srcPath, destBucket, destPath, policy string
 	if err != nil {
 		return fmt.Errorf("creating destination bucket: %v", err)
 	}
-	_, err = a.s3.CopyObject(&s3.CopyObjectInput{
+	_, err = a.S3.CopyObject(&s3.CopyObjectInput{
 		ACL:        aws.String(policy),
 		CopySource: aws.String(url.QueryEscape(fmt.Sprintf("%s/%s", srcBucket, srcPath))),
 		Bucket:     aws.String(destBucket),
@@ -156,7 +160,7 @@ func (a *API) CopyObject(srcBucket, srcPath, destBucket, destPath, policy string
 
 // Copies all objects in srcBucket to destBucket with a given canned ACL policy
 func (a *API) CopyBucket(srcBucket, prefix, destBucket, policy string) error {
-	objects, err := a.s3.ListObjects(&s3.ListObjectsInput{
+	objects, err := a.S3.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(srcBucket),
 		Prefix: aws.String(prefix),
 	})
@@ -183,7 +187,7 @@ func (a *API) CopyBucket(srcBucket, prefix, destBucket, policy string) error {
 // TODO: bikeshed this name
 // modifies the ACL of all objects of a given prefix in srcBucket to a given canned ACL policy
 func (a *API) UpdateBucketObjectsACL(srcBucket, prefix, policy string) error {
-	objects, err := a.s3.ListObjects(&s3.ListObjectsInput{
+	objects, err := a.S3.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(srcBucket),
 		Prefix: aws.String(prefix),
 	})
