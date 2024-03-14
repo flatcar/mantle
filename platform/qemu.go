@@ -36,6 +36,7 @@ import (
 type MachineOptions struct {
 	AdditionalDisks      []Disk
 	ExtraPrimaryDiskSize string
+	SoftwareTPMSocket    string
 }
 
 type Disk struct {
@@ -346,6 +347,14 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		"-object", "rng-random,filename=/dev/urandom,id=rng0",
 		"-device", "virtio-rng-pci,rng=rng0",
 	)
+
+	if options.SoftwareTPMSocket != "" {
+		qmCmd = append(qmCmd,
+			"-chardev", fmt.Sprintf("socket,id=chrtpm,path=%v", options.SoftwareTPMSocket),
+			"-tpmdev", "emulator,id=tpm0,chardev=chrtpm",
+			"-device", "tpm-tis,tpmdev=tpm0",
+		)
+	}
 
 	if isIgnition {
 		qmCmd = append(qmCmd,

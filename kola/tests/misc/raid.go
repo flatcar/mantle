@@ -15,12 +15,12 @@
 package misc
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/kola/tests/util"
+	tutil "github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/qemu"
@@ -262,62 +262,8 @@ func DataOnRaid(c cluster.TestCluster, userData *conf.UserData) {
 	checkIfMountpointIsRaid(c, m, "/var/lib/data")
 }
 
-type lsblkOutput struct {
-	Blockdevices []blockdevice `json:"blockdevices"`
-}
-
-type blockdevice struct {
-	Name       string  `json:"name"`
-	Type       string  `json:"type"`
-	Mountpoint *string `json:"mountpoint"`
-	// Mountpoints holds all mountpoints relevant for the device
-	// it aims to replace `Mountpoint` from util-linux-2.37.
-	Mountpoints []string      `json:"mountpoints"`
-	Children    []blockdevice `json:"children"`
-}
-
-// checkIfMountpointIsRaid will check if a given machine has a device of type
-// raid1 mounted at the given mountpoint. If it does not, the test is failed.
 func checkIfMountpointIsRaid(c cluster.TestCluster, m platform.Machine, mountpoint string) {
-	output := c.MustSSH(m, "lsblk --json")
-
-	l := lsblkOutput{}
-	err := json.Unmarshal(output, &l)
-	if err != nil {
-		c.Fatalf("couldn't unmarshal lsblk output: %v", err)
-	}
-
-	foundRoot := checkIfMountpointIsRaidWalker(c, l.Blockdevices, mountpoint)
-	if !foundRoot {
-		c.Fatalf("didn't find root mountpoint in lsblk output")
-	}
-}
-
-// checkIfMountpointIsRaidWalker will iterate over bs and recurse into its
-// children, looking for a device mounted at / with type raid1. true is returned
-// if such a device is found. The test is failed if a device of a different type
-// is found to be mounted at /.
-func checkIfMountpointIsRaidWalker(c cluster.TestCluster, bs []blockdevice, mountpoint string) bool {
-	for _, b := range bs {
-		// >= util-linux-2.37
-		for _, mnt := range b.Mountpoints {
-			if mnt == mountpoint && isValidRaidType(b.Type) {
-				return true
-			}
-		}
-
-		if b.Mountpoint != nil && *b.Mountpoint == mountpoint {
-			if !isValidRaidType(b.Type) {
-				c.Fatalf("invalid raid type, device %q is mounted at %q with type %q", b.Name, mountpoint, b.Type)
-			}
-			return true
-		}
-		foundRoot := checkIfMountpointIsRaidWalker(c, b.Children, mountpoint)
-		if foundRoot {
-			return true
-		}
-	}
-	return false
+	tutil.CheckMountpoint(c, m, mountpoint, func(b tutil.Blockdevice) bool { return isValidRaidType(b.Type) })
 }
 
 // isValidRaidType checks if the given type string is one of the possible
