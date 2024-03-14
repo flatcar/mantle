@@ -349,10 +349,19 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 	)
 
 	if options.SoftwareTPMSocket != "" {
+		var tpm string
+		switch board {
+		case "amd64-usr":
+			tpm = "tpm-tis"
+		case "arm64-usr":
+			tpm = "tpm-tis-device"
+		default:
+			panic(board)
+		}
 		qmCmd = append(qmCmd,
 			"-chardev", fmt.Sprintf("socket,id=chrtpm,path=%v", options.SoftwareTPMSocket),
 			"-tpmdev", "emulator,id=tpm0,chardev=chrtpm",
-			"-device", "tpm-tis,tpmdev=tpm0",
+			"-device", fmt.Sprintf("%s,tpmdev=tpm0", tpm),
 		)
 	}
 
