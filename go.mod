@@ -8,6 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.19
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Microsoft/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
+	github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14
 	github.com/aws/aws-sdk-go v1.44.46
 	github.com/brightbox/gobrightbox/v2 v2.2.0
 	github.com/coreos/butane v0.14.1-0.20220401164106-6b5239299226
@@ -32,7 +33,7 @@ require (
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.10
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
@@ -41,10 +42,10 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2
 	go.etcd.io/etcd/server/v3 v3.5.2
 	go.uber.org/zap v1.17.0
-	golang.org/x/crypto v0.17.0
-	golang.org/x/net v0.18.0
+	golang.org/x/crypto v0.21.0
+	golang.org/x/net v0.21.0
 	golang.org/x/oauth2 v0.14.0
-	golang.org/x/sys v0.15.0
+	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.126.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -65,7 +66,6 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559 // indirect
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
-	github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/clarketm/json v1.17.1 // indirect
@@ -95,10 +95,10 @@ require (
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/lestrrat-go/backoff/v2 v2.0.8 // indirect
-	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
+	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
-	github.com/lestrrat-go/jwx v1.2.26 // indirect
+	github.com/lestrrat-go/jwx v1.2.29 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -125,7 +125,7 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
