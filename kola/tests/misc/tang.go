@@ -3,7 +3,6 @@ package misc
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -168,7 +167,7 @@ func init() {
 }
 
 func tangTest(c cluster.TestCluster, tangIP net.IP, tangPort int, userData *conf.UserData, mountpoint string) {
-	terminateTangServer, err := startTang(tangIP, tangPort)
+	terminateTangServer, err := startTang(c, tangIP, tangPort)
 	if err != nil {
 		c.Fatalf("could not start Tang server: %v", err)
 	}
@@ -235,7 +234,7 @@ func getIP() (net.IP, error) {
 	return nil, errors.New("failed to find an IP of a running network interface")
 }
 
-func startTang(ip net.IP, port int) (func(), error) {
+func startTang(c cluster.TestCluster, ip net.IP, port int) (func(), error) {
 	keyDirectory, err := makeTangKeyDirectory()
 	if err != nil {
 		return nil, err
@@ -250,7 +249,7 @@ func startTang(ip net.IP, port int) (func(), error) {
 		// ListenAndServe always returns a non-nil error. ErrServerClosed on graceful close
 		err := srv.ListenAndServe()
 		if err != http.ErrServerClosed {
-			log.Fatalf("Tang server returned error: %v", err)
+			c.Errorf("Tang server returned error: %v", err)
 		}
 	}()
 
