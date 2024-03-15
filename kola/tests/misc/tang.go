@@ -172,6 +172,7 @@ func tangTest(c cluster.TestCluster, tangIP net.IP, tangPort int, userData *conf
 	if err != nil {
 		c.Fatalf("could not start Tang server: %v", err)
 	}
+	plog.Debugf("Started tang on %s:%d", tangIP, tangPort)
 	defer terminateTangServer()
 
 	options := platform.MachineOptions{
@@ -220,6 +221,9 @@ func getIP() (net.IP, error) {
 	for _, networkInterface := range networkInterfaces {
 		addresses, err := networkInterface.Addrs()
 		if err != nil {
+			continue
+		}
+		if len(addresses) == 0 {
 			continue
 		}
 		ipAddress, ok := addresses[0].(*net.IPNet)
