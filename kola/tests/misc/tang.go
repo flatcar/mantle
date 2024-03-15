@@ -3,7 +3,6 @@ package misc
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -119,23 +118,14 @@ func init() {
 	// If this causes issues in the future, we could alternatively add another TAP interface to the bridge and let
 	// the Tang server bind to its IP. That would require the Tang setup to happen outside of these tests and
 	// introduce complexity in different parts of the code base.
-	tangPort := 8007
 	tangIP, err := getIP()
 	if err != nil {
 		fmt.Printf("failed to find IP for the Tang server to bind to: %v\n", err)
 		return
 	}
 
-	rootConfig, err := util.ExecTemplate(IgnitionConfigRootTang, map[string]string{
-		"TangIP":   fmt.Sprintf("%v", tangIP),
-		"TangPort": strconv.Itoa(tangPort),
-	})
-	if err != nil {
-		fmt.Printf("failed to execute template: %v\n", err)
-		return
-	}
 	runRootTang := func(c cluster.TestCluster) {
-		tangTest(c, tangIP, tangPort, conf.Ignition(rootConfig), "/")
+		tangTest(c, tangIP, IgnitionConfigRootTang, "/")
 	}
 	register.Register(&register.Test{
 		Run:         runRootTang,
@@ -146,16 +136,8 @@ func init() {
 		MinVersion:  semver.Version{Major: 3880},
 	})
 
-	nonRootConfig, err := util.ExecTemplate(IgnitionConfigNonRootTang, map[string]string{
-		"TangIP":   fmt.Sprintf("%v", tangIP),
-		"TangPort": strconv.Itoa(tangPort),
-	})
-	if err != nil {
-		fmt.Printf("failed to execute template: %v\n", err)
-		return
-	}
 	runNonRootTang := func(c cluster.TestCluster) {
-		tangTest(c, tangIP, tangPort, conf.Ignition(nonRootConfig), "/mnt/data")
+		tangTest(c, tangIP, IgnitionConfigNonRootTang, "/mnt/data")
 	}
 	register.Register(&register.Test{
 		Run:         runNonRootTang,
@@ -167,12 +149,23 @@ func init() {
 	})
 }
 
-func tangTest(c cluster.TestCluster, tangIP net.IP, tangPort int, userData *conf.UserData, mountpoint string) {
-	terminateTangServer, err := startTang(tangIP, tangPort)
+func tangTest(c cluster.TestCluster, tangIP net.IP, ignitionTemplate string, mountpoint string) {
+	terminateTangServer, tangPort, err := startTang(c, tangIP)
 	if err != nil {
 		c.Fatalf("could not start Tang server: %v", err)
 	}
+	c.Logf("Started tang on %s:%d", tangIP, tangPort)
 	defer terminateTangServer()
+
+	ignition, err := util.ExecTemplate(ignitionTemplate, map[string]string{
+		"TangIP":   fmt.Sprintf("%v", tangIP),
+		"TangPort": strconv.Itoa(tangPort),
+	})
+	if err != nil {
+		fmt.Printf("failed to execute template: %v\n", err)
+		return
+	}
+	userData := conf.Ignition(ignition)
 
 	options := platform.MachineOptions{
 		AdditionalDisks: []platform.Disk{
@@ -222,6 +215,9 @@ func getIP() (net.IP, error) {
 		if err != nil {
 			continue
 		}
+		if len(addresses) == 0 {
+			continue
+		}
 		ipAddress, ok := addresses[0].(*net.IPNet)
 		if ok && networkInterface.Flags&net.FlagRunning != 0 && !ipAddress.IP.IsLoopback() && ipAddress.IP.To4() != nil {
 			return ipAddress.IP, nil
@@ -231,22 +227,28 @@ func getIP() (net.IP, error) {
 	return nil, errors.New("failed to find an IP of a running network interface")
 }
 
-func startTang(ip net.IP, port int) (func(), error) {
+func startTang(c cluster.TestCluster, ip net.IP) (func(), int, error) {
 	keyDirectory, err := makeTangKeyDirectory()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	srv := tang.NewServer()
 	keySet, _ := tang.ReadKeys(keyDirectory)
 	srv.Keys = keySet
-	srv.Addr = fmt.Sprintf("%v:%v", ip, port)
+	srv.Addr = fmt.Sprintf("%v:0", ip)
+
+	listener, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to setup listener: %w", err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
 
 	go func() {
 		// ListenAndServe always returns a non-nil error. ErrServerClosed on graceful close
-		err := srv.ListenAndServe()
+		err := srv.Serve(listener)
 		if err != http.ErrServerClosed {
-			log.Fatalf("Tang server returned error: %v", err)
+			c.Errorf("Tang server returned error: %v", err)
 		}
 	}()
 
@@ -257,7 +259,7 @@ func startTang(ip net.IP, port int) (func(), error) {
 		}
 	}
 
-	return terminateTangServer, nil
+	return terminateTangServer, port, nil
 }
 
 func makeTangKeyDirectory() (string, error) {

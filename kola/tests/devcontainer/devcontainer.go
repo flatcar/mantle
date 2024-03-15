@@ -54,6 +54,7 @@ if [[ "${EXPECTED_VERSION}" != "${FLATCAR_RELEASE_VERSION}" ]]; then
 fi
 
 export PORTAGE_BINHOST="${PORTAGE_BINHOST}"
+export FEATURES="-ipc-sandbox -network-sandbox"
 emerge-gitclone
 emerge --getbinpkg --verbose coreos-sources
 zcat /proc/config.gz >/usr/src/linux/.config
