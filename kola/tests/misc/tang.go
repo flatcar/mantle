@@ -1,12 +1,10 @@
 package misc
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/coreos/go-semver/semver"
@@ -43,7 +41,7 @@ const (
 					"clevis": {
 						"tang": [
 							{
-								"url": "http://{{ .TangIP }}:{{ .TangPort }}",
+								"url": "http://{{ .TangEndpoint }}",
 								"thumbprint": "HkwVNDeKhzaVqWhXtXwEIGNILRZt4cBWWb0kI1-a0NM"
 							}
 						]
@@ -86,7 +84,7 @@ const (
 					"clevis": {
 						"tang": [
 							{
-								"url": "http://{{ .TangIP }}:{{ .TangPort }}",
+								"url": "http://{{ .TangEndpoint }}",
 								"thumbprint": "HkwVNDeKhzaVqWhXtXwEIGNILRZt4cBWWb0kI1-a0NM"
 							}
 						]
@@ -113,19 +111,8 @@ const (
 )
 
 func init() {
-	// The Tang server started here will bind to an IP of a networking interface in the root networking namespace.
-	// This works because traffic from inside the QEMU VM to that IP will be routed to the host.
-	// If this causes issues in the future, we could alternatively add another TAP interface to the bridge and let
-	// the Tang server bind to its IP. That would require the Tang setup to happen outside of these tests and
-	// introduce complexity in different parts of the code base.
-	tangIP, err := getIP()
-	if err != nil {
-		fmt.Printf("failed to find IP for the Tang server to bind to: %v\n", err)
-		return
-	}
-
 	runRootTang := func(c cluster.TestCluster) {
-		tangTest(c, tangIP, IgnitionConfigRootTang, "/")
+		tangTest(c, IgnitionConfigRootTang, "/")
 	}
 	register.Register(&register.Test{
 		Run:         runRootTang,
@@ -137,7 +124,7 @@ func init() {
 	})
 
 	runNonRootTang := func(c cluster.TestCluster) {
-		tangTest(c, tangIP, IgnitionConfigNonRootTang, "/mnt/data")
+		tangTest(c, IgnitionConfigNonRootTang, "/mnt/data")
 	}
 	register.Register(&register.Test{
 		Run:         runNonRootTang,
@@ -149,17 +136,22 @@ func init() {
 	})
 }
 
-func tangTest(c cluster.TestCluster, tangIP net.IP, ignitionTemplate string, mountpoint string) {
-	terminateTangServer, tangPort, err := startTang(c, tangIP)
+func tangTest(c cluster.TestCluster, ignitionTemplate string, mountpoint string) {
+	qc := c.Cluster.(*qemu.Cluster)
+	listener, err := qc.NewListenerInsideClusterNS()
+	if err != nil {
+		c.Fatalf("could not create Tang listener: %v", err)
+	}
+	tangEp := (*listener).Addr().String()
+	terminateTangServer, err := startTang(&c, *listener)
 	if err != nil {
 		c.Fatalf("could not start Tang server: %v", err)
 	}
-	c.Logf("Started tang on %s:%d", tangIP, tangPort)
+	c.Logf("Started tang on %s", tangEp)
 	defer terminateTangServer()
 
 	ignition, err := util.ExecTemplate(ignitionTemplate, map[string]string{
-		"TangIP":   fmt.Sprintf("%v", tangIP),
-		"TangPort": strconv.Itoa(tangPort),
+		"TangEndpoint": tangEp,
 	})
 	if err != nil {
 		fmt.Printf("failed to execute template: %v\n", err)
@@ -205,44 +197,14 @@ func checkIfMountpointIsEncrypted(c cluster.TestCluster, m platform.Machine, mou
 	util.CheckMountpoint(c, m, mountpoint, func(b util.Blockdevice) bool { return b.Type == "crypt" })
 }
 
-func getIP() (net.IP, error) {
-	networkInterfaces, err := net.Interfaces()
+func startTang(c *cluster.TestCluster, listener net.Listener) (func(), error) {
+	keyDirectory, err := makeTangKeyDirectory()
 	if err != nil {
 		return nil, err
 	}
-	for _, networkInterface := range networkInterfaces {
-		addresses, err := networkInterface.Addrs()
-		if err != nil {
-			continue
-		}
-		if len(addresses) == 0 {
-			continue
-		}
-		ipAddress, ok := addresses[0].(*net.IPNet)
-		if ok && networkInterface.Flags&net.FlagRunning != 0 && !ipAddress.IP.IsLoopback() && ipAddress.IP.To4() != nil {
-			return ipAddress.IP, nil
-		}
-	}
-
-	return nil, errors.New("failed to find an IP of a running network interface")
-}
-
-func startTang(c cluster.TestCluster, ip net.IP) (func(), int, error) {
-	keyDirectory, err := makeTangKeyDirectory()
-	if err != nil {
-		return nil, 0, err
-	}
-
 	srv := tang.NewServer()
 	keySet, _ := tang.ReadKeys(keyDirectory)
 	srv.Keys = keySet
-	srv.Addr = fmt.Sprintf("%v:0", ip)
-
-	listener, err := net.Listen("tcp", srv.Addr)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to setup listener: %w", err)
-	}
-	port := listener.Addr().(*net.TCPAddr).Port
 
 	go func() {
 		// ListenAndServe always returns a non-nil error. ErrServerClosed on graceful close
@@ -259,7 +221,7 @@ func startTang(c cluster.TestCluster, ip net.IP) (func(), int, error) {
 		}
 	}
 
-	return terminateTangServer, port, nil
+	return terminateTangServer, nil
 }
 
 func makeTangKeyDirectory() (string, error) {
