@@ -93,6 +93,20 @@ func (lc *LocalCluster) GetOmahaHostPort() (string, error) {
 	return net.JoinHostPort(lc.hostIP(), port), nil
 }
 
+func (lc *LocalCluster) NewListenerInsideClusterNS() (*net.Listener, error) {
+	nsExit, err := ns.Enter(lc.flight.nshandle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enter cluster ns: %w", err)
+	}
+	defer nsExit()
+	addr := fmt.Sprintf("%s:%d", lc.hostIP(), 0)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup listener: %w", err)
+	}
+	return &listener, nil
+}
+
 func (lc *LocalCluster) NewTap(bridge string) (*TunTap, error) {
 	nsExit, err := ns.Enter(lc.flight.nshandle)
 	if err != nil {
