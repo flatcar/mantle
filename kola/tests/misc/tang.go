@@ -29,14 +29,13 @@ const (
 			"version": "3.3.0"
 		},
 		"kernelArguments": {
-			"shouldExist": ["rd.luks.name=12345678-9abc-def0-1234-56789abcdef0=rootencrypted", "rd.networkd=1", "systemd.mask=systemd-cryptsetup@rootencrypted.service"]
+			"shouldExist": ["rd.networkd=1"]
 		},
 		"storage": {
 			"luks": [
 				{
 					"name": "rootencrypted",
 					"device": "/dev/disk/by-partlabel/ROOT",
-					"uuid": "12345678-9abc-def0-1234-56789abcdef0",
 					"wipeVolume": true,
 					"clevis": {
 						"tang": [
@@ -120,7 +119,7 @@ func init() {
 		Platforms:   []string{"qemu"},
 		Name:        "cl.tang.root",
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3880},
+		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
 
 	runNonRootTang := func(c cluster.TestCluster) {
@@ -132,7 +131,7 @@ func init() {
 		Platforms:   []string{"qemu"},
 		Name:        "cl.tang.nonroot",
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3880},
+		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
 }
 
