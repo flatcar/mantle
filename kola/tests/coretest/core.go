@@ -322,27 +322,38 @@ func TestServicesActive() error {
 	return servicesActive([]string{
 		"multi-user.target",
 		"docker.socket",
-		"systemd-timesyncd.service",
 		"update-engine.service",
+	}, []string{
+		"systemd-timesyncd.service",
+		"chronyd.service",
+		"ntpd.service",
 	})
 }
 
 func TestServicesActiveCoreOS() error {
 	return servicesActive([]string{
 		"multi-user.target",
-	})
+	}, []string{})
 }
 
-func servicesActive(units []string) error {
+func servicesActive(allOf []string, anyOf []string) error {
 	//t.Parallel()
-	for _, unit := range units {
+	for _, unit := range allOf {
 		c := exec.Command("systemctl", "is-active", unit)
 		err := c.Run()
 		if err != nil {
-			return fmt.Errorf("Services Active: %v", err)
+			return fmt.Errorf("services Active: %s: %v", unit, err)
 		}
 	}
-	return nil
+	var err error
+	for _, unit := range anyOf {
+		c := exec.Command("systemctl", "is-active", unit)
+		err = c.Run()
+		if err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("no NTP service active: %v", err)
 }
 
 func TestServicesDisabledRHCOS() error {

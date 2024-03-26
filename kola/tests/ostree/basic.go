@@ -212,7 +212,7 @@ func ostreeRemoteTest(c cluster.TestCluster) {
 		osRemoteListSplit := strings.Split(string(osRemoteListOut), "\n")
 		// should have original remote + newly added remote
 		if len(osRemoteListSplit) != initialRemotesNum+1 {
-			c.Fatalf(`Did not find expected amount of ostree remotes: %q. Expected %d`, string(osRemoteListOut), osRemoteListSplit)
+			c.Fatalf(`Did not find expected amount of ostree remotes: %q. Expected %d`, string(osRemoteListOut), len(osRemoteListSplit))
 		}
 
 		var remoteFound bool = false

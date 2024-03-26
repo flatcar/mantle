@@ -123,7 +123,7 @@ func localGadgetTest(c cluster.TestCluster) {
 
 	tmpl, err := template.New("user-data").Parse(config)
 	if err != nil {
-		c.Fatalf("parsing user-data: %w", err)
+		c.Fatalf("parsing user-data: %v", err)
 	}
 
 	c.Run("dns gadget", func(c cluster.TestCluster) {
@@ -133,7 +133,7 @@ func localGadgetTest(c cluster.TestCluster) {
 
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, gadget); err != nil {
-			c.Fatalf("rendering user-data: %w", err)
+			c.Fatalf("rendering user-data: %v", err)
 		}
 
 		node, err := c.NewMachine(conf.ContainerLinuxConfig(buf.String()))
