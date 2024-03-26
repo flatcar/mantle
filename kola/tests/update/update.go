@@ -113,6 +113,10 @@ func init() {
         inline: |
           [Service]
           ExecStart=/bin/echo "should be deleted because its part of the Azure OEM cleanup paths"
+systemd:
+  units:
+    - name: chronyd.service
+      mask: true
 `),
 	})
 	register.Register(&register.Test{
