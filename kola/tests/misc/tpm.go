@@ -24,15 +24,11 @@ const (
 			"timeouts": {},
 			"version": "3.3.0"
 		},
-		"kernelArguments": {
-			"shouldExist": ["rd.luks.name=12345678-9abc-def0-1234-56789abcdef0=rootencrypted", "systemd.mask=systemd-cryptsetup@rootencrypted.service"]
-		},
 		"storage": {
 			"luks": [
 				{
 					"name": "rootencrypted",
 					"device": "/dev/disk/by-partlabel/ROOT",
-					"uuid": "12345678-9abc-def0-1234-56789abcdef0",
 					"wipeVolume": true,
 					"clevis": {
 						"tpm2": true
@@ -106,7 +102,7 @@ func init() {
 		Platforms:   []string{"qemu"},
 		Name:        "cl.tpm.root",
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3880},
+		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
 
 	runNonRootTPM := func(c cluster.TestCluster) {
@@ -118,7 +114,7 @@ func init() {
 		Platforms:   []string{"qemu"},
 		Name:        "cl.tpm.nonroot",
 		Distros:     []string{"cl"},
-		MinVersion:  semver.Version{Major: 3880},
+		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
 }
 
