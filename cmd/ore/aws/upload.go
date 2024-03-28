@@ -85,7 +85,7 @@ func init() {
 }
 
 func defaultBucketNameForRegion(region string) string {
-	return fmt.Sprintf("coreos-dev-ami-import-%s", region)
+	return fmt.Sprintf("flatcar-kola-ami-import-%s", region)
 }
 
 func defaultUploadFile() string {

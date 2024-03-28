@@ -234,7 +234,7 @@ func writeFile(api *storage.Service, bucket, filename, destname string) error {
 		Name:        destname,
 		ContentType: "application/x-gzip",
 	})
-	req.PredefinedAcl("authenticatedRead")
+	req.PredefinedAcl("projectPrivate")
 	req.Media(file)
 
 	if _, err := req.Do(); err != nil {
