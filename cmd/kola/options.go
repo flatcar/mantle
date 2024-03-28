@@ -155,10 +155,10 @@ func init() {
 	sv(&kola.ExternalOptions.DeprovisioningCmds, "external-deprovisioning-cmds", "", "External platform deprovisioning commands ran on management SSH host. Has access to the variable IPADDR to identify the node.")
 
 	// gce-specific options
-	sv(&kola.GCEOptions.Image, "gce-image", "projects/coreos-cloud/global/images/family/coreos-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
+	sv(&kola.GCEOptions.Image, "gce-image", "projects/kinvolk-public/global/images/family/flatcar-alpha", "GCE image, full api endpoints names are accepted if resource is in a different project")
 	sv(&kola.GCEOptions.Project, "gce-project", "flatcar-212911", "GCE project name")
 	sv(&kola.GCEOptions.Zone, "gce-zone", "us-central1-a", "GCE zone name")
-	sv(&kola.GCEOptions.MachineType, "gce-machinetype", "n1-standard-1", "GCE machine type")
+	sv(&kola.GCEOptions.MachineType, "gce-machinetype", "t2d-standard-1", "GCE machine type")
 	sv(&kola.GCEOptions.DiskType, "gce-disktype", "pd-ssd", "GCE disk type")
 	sv(&kola.GCEOptions.Network, "gce-network", "default", "GCE network")
 	bv(&kola.GCEOptions.GVNIC, "gce-gvnic", false, "Use gVNIC instead of default virtio-net network device")
