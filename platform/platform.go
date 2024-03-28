@@ -182,6 +182,7 @@ type RuntimeConfig struct {
 	AllowFailedUnits   bool          // don't fail CheckMachine if a systemd unit has failed
 	SSHRetries         int           // see SSHRetries field in Options
 	SSHTimeout         time.Duration // see SSHTimeout field in Options
+	LateSelinux        bool          // see LateSelinux field in Options
 
 	// DefaultUser is the user used for SSH connection, it will be created via Ignition when possible.
 	DefaultUser string
