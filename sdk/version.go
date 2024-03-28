@@ -17,6 +17,7 @@ package sdk
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -24,6 +25,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/google/go-shlex"
 )
 
 const (
@@ -37,38 +40,31 @@ type Versions struct {
 	SDKVersion string
 }
 
-func unquote(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-	for _, q := range []byte{'\'', '"'} {
-		if s[0] == q && s[len(s)-1] == q {
-			return s[1 : len(s)-1]
+func parseVersions(r io.Reader, prefix string) (ver Versions, err error) {
+	l := shlex.NewLexer(r)
+	for {
+		token, err2 := l.Next()
+		if err2 != nil {
+			if err2 == io.EOF {
+				break
+			}
+			err = err2
+			return
 		}
-	}
-	return s
-}
-
-func parseVersions(f *os.File, prefix string) (ver Versions, err error) {
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.SplitN(scanner.Text(), "=", 2)
+		line := strings.SplitN(token, "=", 2)
 		if len(line) != 2 {
 			continue
 		}
 		switch line[0] {
 		case prefix + "VERSION":
-			ver.Version = unquote(line[1])
+			ver.Version = line[1]
 		case prefix + "VERSION_ID":
-			ver.VersionID = unquote(line[1])
+			ver.VersionID = line[1]
 		case prefix + "BUILD_ID":
-			ver.BuildID = unquote(line[1])
+			ver.BuildID = line[1]
 		case prefix + "SDK_VERSION":
-			ver.SDKVersion = unquote(line[1])
+			ver.SDKVersion = line[1]
 		}
-	}
-	if err = scanner.Err(); err != nil {
-		return
 	}
 
 	if ver.VersionID == "" {
@@ -78,6 +74,10 @@ func parseVersions(f *os.File, prefix string) (ver Versions, err error) {
 	}
 
 	return
+}
+
+func ParseFlatcarVersions(r io.Reader) (Versions, error) {
+	return parseVersions(r, "FLATCAR_")
 }
 
 func OSRelease(root string) (ver Versions, err error) {
@@ -114,7 +114,7 @@ func VersionsFromDir(dir string) (ver Versions, err error) {
 	}
 	defer f.Close()
 
-	ver, err = parseVersions(f, "FLATCAR_")
+	ver, err = ParseFlacarVersions(f)
 	if ver.SDKVersion == "" {
 		err = fmt.Errorf("Missing FLATCAR_SDK_VERSION in %s", f.Name())
 	}
