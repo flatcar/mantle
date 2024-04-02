@@ -190,6 +190,7 @@ func writeProps() error {
 	}
 	type EquinixMetal struct {
 		Facility              string `json:"facility"`
+		Metro                 string `json:"metro"`
 		Plan                  string `json:"plan"`
 		InstallerImageBaseURL string `json:"installer"`
 		ImageURL              string `json:"image"`
@@ -256,6 +257,7 @@ func writeProps() error {
 		},
 		EquinixMetal: EquinixMetal{
 			Facility:              kola.EquinixMetalOptions.Facility,
+			Metro:                 kola.EquinixMetalOptions.Metro,
 			Plan:                  kola.EquinixMetalOptions.Plan,
 			InstallerImageBaseURL: kola.EquinixMetalOptions.InstallerImageBaseURL,
 			ImageURL:              kola.EquinixMetalOptions.ImageURL,
