@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -96,7 +97,7 @@ func runUpload(cmd *cobra.Command, args []string) {
 	}
 
 	uploadBucket = gsURL.Host
-	uploadImageName = strings.TrimPrefix(gsURL.Path+"/"+uploadImageName, "/")
+	uploadImageName = strings.TrimPrefix(path.Join(gsURL.Path, uploadImageName), "/")
 	// create equivalent image names for GS and GCE
 	imageNameGCE := gceSanitize(uploadImageName)
 	imageNameGS := uploadImageName + ".tar.gz"
