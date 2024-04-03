@@ -87,8 +87,6 @@ type Options struct {
 	// Project UUID (overrides config profile)
 	Project string
 
-	// EquinixMetal location code
-	Facility string
 	// Slug of the device type (e.g. "baremetal_0")
 	Plan string
 	// e.g. http://alpha.release.flatcar-linux.net/amd64-usr/current
@@ -641,15 +639,9 @@ func (a *API) createDevice(hostname, ipxeScriptURL, id string) (*packngo.Device,
 			plog.Infof("device rebooted: %s", id)
 		} else {
 			plog.Infof("Recycling is not possible, creating a new instance")
-			// if the Metro is set, we set the Facility to empty string in order
-			// to not conflict with Metro value.
-			if a.opts.Metro != "" {
-				a.opts.Facility = ""
-			}
 
 			device, response, err = a.c.Devices.Create(&packngo.DeviceCreateRequest{
 				ProjectID:     a.opts.Project,
-				Facility:      []string{a.opts.Facility},
 				Plan:          a.opts.Plan,
 				BillingCycle:  "hourly",
 				Hostname:      hostname,

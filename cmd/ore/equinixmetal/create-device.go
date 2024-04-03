@@ -39,7 +39,7 @@ var (
 
 func init() {
 	EquinixMetal.AddCommand(cmdCreateDevice)
-	cmdCreateDevice.Flags().StringVar(&options.Facility, "facility", "sjc1", "facility code")
+	cmdCreateDevice.Flags().StringVar(&options.Metro, "metro", "DC", "metro code")
 	cmdCreateDevice.Flags().StringVar(&options.Plan, "plan", "", "plan slug (default board-dependent, e.g. \"baremetal_0\")")
 	cmdCreateDevice.Flags().StringVar(&options.Board, "board", "amd64-usr", "Container Linux board")
 	cmdCreateDevice.Flags().StringVar(&options.InstallerImageBaseURL, "installer-image-base-url", "", "installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
