@@ -84,7 +84,15 @@
           {
             "name": "DiskControllerTypes",
             "value": "NVMe,SCSI"
-          }
+          },
+          {
+            "name": "SecurityType",
+            "value": "[if(equals(parameters('hyperVGeneration'), 'V2'), 'TrustedLaunchSupported', 'None')]"
+          },
+          {
+            "name": "IsAcceleratedNetworkSupported",
+	    "value": "true"
+	  }
         ]
       },
       "type": "Microsoft.Compute/galleries/images"
