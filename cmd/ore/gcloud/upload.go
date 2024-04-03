@@ -38,6 +38,7 @@ var (
 		Run:   runUpload,
 	}
 
+	keepBlob        bool
 	uploadBucket    string
 	uploadImageName string
 	uploadBoard     string
@@ -56,6 +57,7 @@ func init() {
 		"path_to_flatcar_image (build with: ./image_to_vm.sh --format=gce ...)")
 	cmdUpload.Flags().BoolVar(&uploadForce, "force", false, "overwrite existing GS and GCE images without prompt")
 	cmdUpload.Flags().BoolVar(&uploadPublic, "public", false, "Set public ACLs on image")
+	cmdUpload.Flags().BoolVar(&keepBlob, "keep-blob", false, "Keep the blob after the image is created (default: false)")
 	GCloud.AddCommand(cmdUpload)
 }
 
@@ -191,6 +193,15 @@ func runUpload(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Creating GCE image failed: %v\n", err)
 		os.Exit(1)
+	}
+
+	if !keepBlob {
+		err = storageAPI.Objects.Delete(uploadBucket, imageNameGS).Do()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Deleting uploaded object failed: %v\n", err)
+		} else {
+			fmt.Printf("Removed uploaded %v from gs://%v\n", imageNameGS, uploadBucket)
+		}
 	}
 }
 
