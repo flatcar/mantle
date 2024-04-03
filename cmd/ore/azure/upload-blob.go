@@ -64,7 +64,7 @@ func init() {
 
 func defaultUploadFile() string {
 	build := sdk.BuildRoot()
-	return build + "/images/amd64-usr/latest/coreos_production_azure_image.vhd"
+	return build + "/images/amd64-usr/latest/flatcar_production_azure_image.vhd"
 }
 
 func runUploadBlob(cmd *cobra.Command, args []string) {
@@ -73,7 +73,7 @@ func runUploadBlob(cmd *cobra.Command, args []string) {
 		if err != nil {
 			plog.Fatalf("Unable to get version from image directory, provide a -blob-name flag or include a version.txt in the image directory: %v\n", err)
 		}
-		ubo.blob = fmt.Sprintf("Container-Linux-dev-%s-%s.vhd", os.Getenv("USER"), ver.Version)
+		ubo.blob = fmt.Sprintf("flatcar-dev-%s-%s.vhd", os.Getenv("USER"), ver.Version)
 	}
 
 	if err := api.SetupClients(); err != nil {
