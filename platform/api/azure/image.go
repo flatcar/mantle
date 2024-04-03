@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
 )
 
@@ -171,7 +171,7 @@ func (a *API) CreateImage(name, resourceGroup, blobURI string) (compute.Image, e
 			StorageProfile: &compute.ImageStorageProfile{
 				OsDisk: &compute.ImageOSDisk{
 					OsType:  compute.OperatingSystemTypesLinux,
-					OsState: compute.OperatingSystemStateTypesGeneralized,
+					OsState: compute.Generalized,
 					BlobURI: &blobURI,
 				},
 			},

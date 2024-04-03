@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 
 	"github.com/flatcar/mantle/util"
@@ -123,7 +123,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 						ID: nic.ID,
 						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
 							Primary:      util.BoolToPtr(true),
-							DeleteOption: compute.DeleteOptionsDelete,
+							DeleteOption: compute.Delete,
 						},
 					},
 				},
