@@ -48,7 +48,7 @@ var (
 
 func init() {
 	build := sdk.BuildRoot()
-	cmdUpload.Flags().StringVar(&uploadBucket, "bucket", "gs://users.developer.core-os.net", "gs://bucket/prefix/ prefix defaults to $USER")
+	cmdUpload.Flags().StringVar(&uploadBucket, "bucket", "gs://flatcar-jenkins", "gs://bucket/prefix/ prefix defaults to developer/$USER")
 	cmdUpload.Flags().StringVar(&uploadImageName, "name", "", "name for uploaded image, defaults to COREOS_VERSION")
 	cmdUpload.Flags().StringVar(&uploadBoard, "board", "amd64-usr", "board used for naming with default prefix only")
 	cmdUpload.Flags().StringVar(&uploadFile, "file",
@@ -88,10 +88,11 @@ func runUpload(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "URL missing bucket name %v\n", uploadBucket)
 		os.Exit(1)
 	}
-	// if prefix not specified default name to gs://bucket/$USER/$BOARD/$VERSION
+	// if prefix not specified default name to gs://bucket/developer/$USER/$BOARD/$VERSION
 	if gsURL.Path == "" {
 		if user := os.Getenv("USER"); user != "" {
-			gsURL.Path = "/" + os.Getenv("USER")
+			gsURL.Path = "/developer"
+			gsURL.Path += "/" + os.Getenv("USER")
 			gsURL.Path += "/" + uploadBoard
 		}
 	}

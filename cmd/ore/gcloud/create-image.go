@@ -54,7 +54,7 @@ func init() {
 	cmdCreateImage.Flags().StringVar(&createImageVersion, "version",
 		"", "OS build version")
 	cmdCreateImage.Flags().StringVar(&createImageRoot, "source-root",
-		"gs://users.developer.core-os.net/"+user+"/boards",
+		"gs://flatcar-jenkins/developer/"+user+"/boards",
 		"Storage URL prefix")
 	cmdCreateImage.Flags().StringVar(&createImageName, "source-name",
 		"flatcar_production_gce.tar.gz",
