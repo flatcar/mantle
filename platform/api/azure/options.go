@@ -40,6 +40,8 @@ type Options struct {
 	UseIdentity      bool
 	UsePrivateIPs    bool
 
+	DiskController string
+
 	SubscriptionName string
 	SubscriptionID   string
 

@@ -137,6 +137,13 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 		},
 	}
 
+	switch a.Opts.DiskController {
+	case "nvme":
+		vm.VirtualMachineProperties.StorageProfile.DiskControllerType = compute.NVMe
+	case "scsi":
+		vm.VirtualMachineProperties.StorageProfile.DiskControllerType = compute.SCSI
+	}
+
 	// I don't think it would be an issue to have empty user-data set but better
 	// to be safe than sorry.
 	if ud != "" {
