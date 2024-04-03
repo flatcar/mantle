@@ -42,6 +42,7 @@ func init() {
 }
 
 func preauth(cmd *cobra.Command, args []string) error {
+	cli.StartLogging(cmd)
 	plog.Printf("Creating Azure API...")
 
 	a, err := azure.New(&azure.Options{
