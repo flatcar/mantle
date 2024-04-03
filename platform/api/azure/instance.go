@@ -155,6 +155,18 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		},
 	}
 
+	if a.Opts.HyperVGeneration == string(armcompute.HyperVGenerationTypeV2) &&
+		(a.Opts.UseGallery || strings.Contains(a.Opts.DiskURI, "galleries")) &&
+		a.Opts.Board == "amd64-usr" {
+		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
+			SecurityType: to.Ptr(armcompute.SecurityTypesTrustedLaunch),
+			UefiSettings: &armcompute.UefiSettings{
+				SecureBootEnabled: to.Ptr(false),
+				VTpmEnabled:       to.Ptr(true),
+			},
+		}
+	}
+
 	switch a.Opts.DiskController {
 	case "nvme":
 		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesNVMe)
