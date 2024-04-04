@@ -79,7 +79,13 @@
             "max": 16,
             "min": 1
           }
-        }
+        },
+        "features": [
+          {
+            "name": "DiskControllerTypes",
+            "value": "NVMe,SCSI"
+          }
+        ]
       },
       "type": "Microsoft.Compute/galleries/images"
     },
