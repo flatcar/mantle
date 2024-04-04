@@ -17,7 +17,37 @@ import (
 	"github.com/flatcar/mantle/util"
 )
 
-const (
+var (
+	// For now Ignition has no systemd-cryptenroll support and a helper service is used
+	IgnitionConfigRootCryptenroll = conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  luks:
+  - name: rootencrypted
+    wipe_volume: true
+    device: "/dev/disk/by-partlabel/ROOT"
+  filesystems:
+    - device: /dev/mapper/rootencrypted
+      format: ext4
+      label: ROOT
+systemd:
+  units:
+    - name: cryptenroll-helper.service
+      enabled: true
+      contents: |
+        [Unit]
+        ConditionFirstBoot=true
+        OnFailure=emergency.target
+        OnFailureJobMode=isolate
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=systemd-cryptenroll --tpm2-device=auto --unlock-key-file=/etc/luks/rootencrypted --wipe-slot=0 /dev/disk/by-partlabel/ROOT
+        ExecStart=rm /etc/luks/rootencrypted
+        [Install]
+        WantedBy=multi-user.target
+`)
 	IgnitionConfigRootTPM = `{
 		"ignition": {
 			"config": {},
@@ -93,6 +123,18 @@ const (
 )
 
 func init() {
+	runRootTPMCryptenroll := func(c cluster.TestCluster) {
+		tpmTest(c, IgnitionConfigRootCryptenroll, "/")
+	}
+	register.Register(&register.Test{
+		Run:         runRootTPMCryptenroll,
+		ClusterSize: 0,
+		Platforms:   []string{"qemu"},
+		Name:        "cl.tpm.root-cryptenroll",
+		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
+	})
+
 	runRootTPM := func(c cluster.TestCluster) {
 		tpmTest(c, conf.Ignition(IgnitionConfigRootTPM), "/")
 	}
