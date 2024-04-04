@@ -96,8 +96,8 @@ func VerityCorruption(c cluster.TestCluster) {
 	// get usr device, probably vda3
 	usrdev := util.GetUsrDeviceNode(c, m)
 
-	// write zero bytes to first 10 MB
-	c.MustSSH(m, fmt.Sprintf(`sudo dd if=/dev/zero of=%s bs=1M count=10 status=none`, usrdev))
+	// write zero bytes to first 100 MB
+	c.MustSSH(m, fmt.Sprintf(`sudo dd if=/dev/zero of=%s bs=1M count=100 status=none`, usrdev))
 
 	// make sure we flush everything so the filesystem has to go through to the device backing verity before fetching a file from /usr
 	// (done in one execution because after flushing command itself runs the corruption could already be detected,
