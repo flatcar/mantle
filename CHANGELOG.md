@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `systemd.sysext.custom-oem` for testing the activation of the OEM sysext image ([#423](https://github.com/flatcar/mantle/pull/423))
 - Kubernetes 1.27 tests ([#441](https://github.com/flatcar/mantle/pull/441))
 - Add tests for testing the installation/integrity of the NVIDIA drivers ([#433](https://github.com/flatcar/mantle/pull/433))
+- `--azure-disk-controller` parameter for selecting a disk controller for an Azure VM ([#517](https://github.com/flatcar/mantle/pull/517))
 
 ### Changed
 

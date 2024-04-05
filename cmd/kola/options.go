@@ -123,6 +123,7 @@ func init() {
 	bv(&kola.AzureOptions.UseGallery, "azure-use-gallery", false, "Use gallery image instead of managed image")
 	bv(&kola.AzureOptions.UsePrivateIPs, "azure-use-private-ips", false, "Assume nodes are reachable using private IP addresses")
 	bv(&kola.AzureOptions.UseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
+	sv(&kola.AzureOptions.DiskController, "azure-disk-controller", "default", "Use a specific disk-controller for storage (default \"default\", also \"nvme\" and \"scsi\")")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")
