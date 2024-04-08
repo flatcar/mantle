@@ -154,6 +154,10 @@ func New(opts *Options) (*API, error) {
 		client = management.NewAnonymousClient()
 	}
 
+	if opts.AvailabilitySet != "" && opts.ResourceGroup == "" {
+		return nil, fmt.Errorf("ResourceGroup must match AvailabilitySet")
+	}
+
 	api := &API{
 		client: client,
 		Opts:   opts,

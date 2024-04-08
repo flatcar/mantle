@@ -51,6 +51,10 @@ type Options struct {
 
 	// Azure Storage API endpoint suffix. If unset, the Azure SDK default will be used.
 	StorageEndpointSuffix string
-	// UseUserData can be use to enable custom data only or user-data only.
+	// UseUserData can be used to enable custom data only or user-data only.
 	UseUserData bool
+	// ResourceGroup is an existing resource group to deploy resources in.
+	ResourceGroup string
+	// AvailabilitySet is an existing availability set to deploy the instance in.
+	AvailabilitySet string
 }
