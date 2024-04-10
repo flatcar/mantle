@@ -36,6 +36,7 @@ import (
 type MachineOptions struct {
 	AdditionalDisks      []Disk
 	ExtraPrimaryDiskSize string
+	EnableTPM            bool
 	SoftwareTPMSocket    string
 }
 
@@ -348,7 +349,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		"-device", "virtio-rng-pci,rng=rng0",
 	)
 
-	if options.SoftwareTPMSocket != "" {
+	if options.EnableTPM {
 		var tpm string
 		switch board {
 		case "amd64-usr":

@@ -1,7 +1,6 @@
 package misc
 
 import (
-	"os"
 	"time"
 
 	"github.com/coreos/go-semver/semver"
@@ -9,7 +8,6 @@ import (
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
-	"github.com/flatcar/mantle/platform/local"
 	"github.com/flatcar/mantle/platform/machine/qemu"
 	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 )
@@ -307,23 +305,14 @@ func init() {
 }
 
 func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, variant string) {
-	swtpmDir, err := os.MkdirTemp("", "swtpm-")
-	if err != nil {
-		c.Fatalf("mkdir: %v", err)
-	}
-	swtpm, err := local.NewSwtpm(swtpmDir)
-	if err != nil {
-		c.Fatalf("could not start software TPM emulation: %v", err)
-	}
-	defer swtpm.Stop()
-
 	options := platform.MachineOptions{
 		AdditionalDisks: []platform.Disk{
 			{Size: "520M", DeviceOpts: []string{"serial=secondary"}},
 		},
-		SoftwareTPMSocket: swtpm.SocketPath(),
+		EnableTPM: true,
 	}
 	var m platform.Machine
+	var err error
 	switch pc := c.Cluster.(type) {
 	// These cases have to be separated because otherwise the golang compiler doesn't type-check
 	// the case bodies using the proper subtype of `pc`.

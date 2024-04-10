@@ -3,7 +3,6 @@ package local
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/system/exec"
@@ -43,11 +42,8 @@ func (swtpm *SoftwareTPM) Stop() {
 	if err := swtpm.process.Kill(); err != nil {
 		plog.Errorf("Error killing swtpm: %v", err)
 	}
-	// To be double sure that we do not delete the wrong directory, check that "tpm" occurs in the directory path we delete.
-	if strings.Contains(swtpm.dir, "tpm") {
-		plog.Debugf("Delete swtpm temporary directory %v", swtpm.dir)
-		os.RemoveAll(swtpm.dir)
-	}
+	plog.Debugf("Delete swtpm temporary directory %v", swtpm.dir)
+	os.RemoveAll(swtpm.dir)
 }
 
 func (swtpm *SoftwareTPM) SocketPath() string {
