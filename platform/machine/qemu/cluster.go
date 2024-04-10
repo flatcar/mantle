@@ -43,6 +43,9 @@ type Cluster struct {
 func (qc *Cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
 	options := platform.MachineOptions{
 		ExtraPrimaryDiskSize: qc.flight.opts.ExtraBaseDiskSize,
+		// Use for 'kola spawn'; test cases should pass true through
+		// NewMachineWithOptions()
+		EnableTPM: qc.flight.opts.EnableTPM,
 	}
 	return qc.NewMachineWithOptions(userdata, options)
 }

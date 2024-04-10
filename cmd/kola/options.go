@@ -227,6 +227,7 @@ func init() {
 	sv(&kola.QEMUOptions.BIOSImage, "qemu-bios", "", "BIOS to use for QEMU vm")
 	bv(&kola.QEMUOptions.UseVanillaImage, "qemu-skip-mangle", false, "don't modify CL disk image to capture console log")
 	sv(&kola.QEMUOptions.ExtraBaseDiskSize, "qemu-grow-base-disk-by", "", "grow base disk by the given size in bytes, following optional 1024-based suffixes are allowed: b (ignored), k, K, M, G, T")
+	bv(&kola.QEMUOptions.EnableTPM, "qemu-tpm", false, "enable TPM device in QEMU. Requires installing swtpm. Use only with 'kola spawn', test cases are responsible for creating a VM with TPM explicitly.")
 
 	// BrightBox specific options
 	sv(&kola.BrightboxOptions.ClientID, "brightbox-client-id", "", "Brightbox client ID")
