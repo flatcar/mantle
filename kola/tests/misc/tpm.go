@@ -1,21 +1,17 @@
 package misc
 
 import (
-	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/coreos/go-semver/semver"
-	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/local"
 	"github.com/flatcar/mantle/platform/machine/qemu"
 	"github.com/flatcar/mantle/platform/machine/unprivqemu"
-	"github.com/flatcar/mantle/system/exec"
-	"github.com/flatcar/mantle/util"
 )
 
 const (
@@ -311,17 +307,21 @@ func init() {
 }
 
 func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, variant string) {
-	swtpm, err := startSwtpm()
+	swtpmDir, err := os.MkdirTemp("", "swtpm-")
+	if err != nil {
+		c.Fatalf("mkdir: %v", err)
+	}
+	swtpm, err := local.NewSwtpm(swtpmDir)
 	if err != nil {
 		c.Fatalf("could not start software TPM emulation: %v", err)
 	}
-	defer swtpm.stop()
+	defer swtpm.Stop()
 
 	options := platform.MachineOptions{
 		AdditionalDisks: []platform.Disk{
 			{Size: "520M", DeviceOpts: []string{"serial=secondary"}},
 		},
-		SoftwareTPMSocket: swtpm.socketPath,
+		SoftwareTPMSocket: swtpm.SocketPath(),
 	}
 	var m platform.Machine
 	switch pc := c.Cluster.(type) {
@@ -368,48 +368,5 @@ func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, 
 			c.Fatalf("could not reboot machine: %v", err)
 		}
 		checkIfMountpointIsEncrypted(c, m, "/")
-	}
-}
-
-type softwareTPM struct {
-	process    *exec.ExecCmd
-	socketPath string
-	dir        string
-}
-
-func startSwtpm() (*softwareTPM, error) {
-	swtpm := &softwareTPM{}
-
-	swtpmDir, err := os.MkdirTemp("", "swtpm-")
-	if err != nil {
-		return nil, err
-	}
-	swtpm.dir = swtpmDir
-	swtpm.socketPath = fmt.Sprintf("%v/swtpm-sock", swtpm.dir)
-
-	swtpm.process = exec.Command("swtpm", "socket", "--tpmstate", fmt.Sprintf("dir=%v", swtpm.dir), "--ctrl", fmt.Sprintf("type=unixio,path=%v", swtpm.socketPath), "--tpm2")
-	out, err := swtpm.process.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	go util.LogFrom(capnslog.INFO, out)
-
-	if err = swtpm.process.Start(); err != nil {
-		return nil, err
-	}
-
-	plog.Debugf("swtpm PID: %v", swtpm.process.Pid())
-
-	return swtpm, nil
-}
-
-func (swtpm *softwareTPM) stop() {
-	if err := swtpm.process.Kill(); err != nil {
-		plog.Errorf("Error killing swtpm: %v", err)
-	}
-	// To be double sure that we do not delete the wrong directory, check that "tpm" occurs in the directory path we delete.
-	if strings.Contains(swtpm.dir, "tpm") {
-		plog.Debugf("Delete swtpm temporary directory %v", swtpm.dir)
-		os.RemoveAll(swtpm.dir)
 	}
 }
