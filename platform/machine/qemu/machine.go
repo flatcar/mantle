@@ -32,6 +32,7 @@ type machine struct {
 	journal     *platform.Journal
 	consolePath string
 	console     string
+	swtpm       *local.SoftwareTPM
 }
 
 func (m *machine) ID() string {
@@ -70,7 +71,9 @@ func (m *machine) Destroy() {
 	if err := m.qemu.Kill(); err != nil {
 		plog.Errorf("Error killing instance %v: %v", m.ID(), err)
 	}
-
+	if m.swtpm != nil {
+		m.swtpm.Stop()
+	}
 	m.journal.Destroy()
 
 	if buf, err := ioutil.ReadFile(m.consolePath); err == nil {

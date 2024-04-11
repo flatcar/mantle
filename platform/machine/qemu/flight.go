@@ -44,6 +44,8 @@ type Options struct {
 
 	ExtraBaseDiskSize string
 
+	EnableTPM bool
+
 	*platform.Options
 }
 

@@ -43,6 +43,9 @@ type Cluster struct {
 func (qc *Cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
 	options := platform.MachineOptions{
 		ExtraPrimaryDiskSize: qc.flight.opts.ExtraBaseDiskSize,
+		// Use for 'kola spawn'; test cases should pass true through
+		// NewMachineWithOptions()
+		EnableTPM: qc.flight.opts.EnableTPM,
 	}
 	return qc.NewMachineWithOptions(userdata, options)
 }
@@ -111,6 +114,20 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 		consolePath: filepath.Join(dir, "console.txt"),
 	}
 
+	var swtpm *local.SoftwareTPM
+	if options.EnableTPM {
+		swtpm, err = local.NewSwtpm(filepath.Join(dir, "tpm"))
+		if err != nil {
+			return nil, fmt.Errorf("starting swtpm: %v", err)
+		}
+		options.SoftwareTPMSocket = swtpm.SocketPath()
+		defer func() {
+			if swtpm != nil {
+				swtpm.Stop()
+			}
+		}()
+	}
+
 	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, qc.flight.opts.BIOSImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
 	if err != nil {
 		return nil, err
@@ -149,6 +166,9 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 	if err = qm.qemu.Start(); err != nil {
 		return nil, err
 	}
+
+	// from this point on Destroy() is responsible for cleaning up swtpm
+	qm.swtpm, swtpm = swtpm, nil
 
 	plog.Debugf("qemu PID (manual cleanup needed if --remove=false): %v", qm.qemu.Pid())
 
