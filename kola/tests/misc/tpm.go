@@ -31,9 +31,9 @@ variant: flatcar
 version: 1.0.0
 storage:
   luks:
-  - name: rootencrypted
-    wipe_volume: true
-    device: "/dev/disk/by-partlabel/ROOT"
+    - name: rootencrypted
+      wipe_volume: true
+      device: "/dev/disk/by-partlabel/ROOT"
   filesystems:
     - device: /dev/mapper/rootencrypted
       format: ext4
@@ -69,9 +69,9 @@ storage:
         inline: |
           SERVER=disabled
   luks:
-  - name: rootencrypted
-    wipe_volume: true
-    device: "/dev/disk/by-partlabel/ROOT"
+    - name: rootencrypted
+      wipe_volume: true
+      device: "/dev/disk/by-partlabel/ROOT"
   filesystems:
     - device: /dev/mapper/rootencrypted
       format: ext4
@@ -133,9 +133,9 @@ storage:
           # remove the PCR binding for every run
           systemd-cryptenroll --tpm2-device=auto --unlock-key-file=/etc/luks/rootencrypted-bind --wipe-slot=tpm2 --tpm2-pcrs= /dev/disk/by-partlabel/ROOT
   luks:
-  - name: rootencrypted
-    wipe_volume: true
-    device: "/dev/disk/by-partlabel/ROOT"
+    - name: rootencrypted
+      wipe_volume: true
+      device: "/dev/disk/by-partlabel/ROOT"
   filesystems:
     - device: /dev/mapper/rootencrypted
       format: ext4
