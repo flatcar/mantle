@@ -164,8 +164,6 @@ func init() {
 					}
 				}
 
-				cni := CNI
-
 				register.Register(&register.Test{
 					Name:    fmt.Sprintf("kubeadm.%s.%s%s.base", version, CNI, cgroupSuffix),
 					Distros: []string{"cl"},
@@ -181,11 +179,7 @@ func init() {
 						// * LTS (3033) does not have the network-kargs service pulled in:
 						// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 						// Let's skip this test for < 3034 on ESX
-						// * For Cilium Calico/CNI on Brightbox:
-                                                // unprocessable_entity: User data is too long (maximum is 16384 characters)
-                                                // Should be reenabled once we switch to Butane provisioning because of internal compression.
-						return (version.LessThan(semver.Version{Major: 3034}) && platform == "esx") ||
-							(platform == "brightbox" && (cni == "cilium" || cni == "calico"))
+						return (version.LessThan(semver.Version{Major: 3034}) && platform == "esx")
 					},
 				})
 			}
