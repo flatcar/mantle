@@ -31,6 +31,7 @@ require (
 	github.com/packethost/packngo v0.21.0
 	github.com/pborman/uuid v1.2.0
 	github.com/pin/tftp v2.1.0+incompatible
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.23
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 	github.com/stretchr/testify v1.9.0
@@ -135,6 +136,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 replace github.com/Microsoft/azure-vhd-utils => github.com/kinvolk/azure-vhd-utils v0.0.0-20210818134022-97083698b75f
