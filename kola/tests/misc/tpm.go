@@ -252,18 +252,19 @@ func init() {
 		Run:         runRootTPMCryptenroll,
 		ClusterSize: 0,
 		Platforms:   []string{"qemu"},
-		Name:        "cl.tpm.root-cryptenroll",
+		Name:        "cl.tpm.root-ce",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
 	runRootTPMCryptenrollPcrNoUpdate := func(c cluster.TestCluster) {
 		tpmTest(c, IgnitionConfigRootCryptenrollPcrNoUpdate, "/", VariantNoUpdate)
 	}
+	// The test names are part of the UNIX socket path which is limited to 108 chars
 	register.Register(&register.Test{
 		Run:         runRootTPMCryptenrollPcrNoUpdate,
 		ClusterSize: 0,
 		Platforms:   []string{"qemu"},
-		Name:        "cl.tpm.root-cryptenroll-pcr-noupdate",
+		Name:        "cl.tpm.root-ce-pcr-noupd",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
@@ -274,7 +275,7 @@ func init() {
 		Run:         runRootTPMCryptenrollPcrWithUpdate,
 		ClusterSize: 0,
 		Platforms:   []string{"qemu"},
-		Name:        "cl.tpm.root-cryptenroll-pcr-withupdate",
+		Name:        "cl.tpm.root-ce-pcr-w-upd",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
