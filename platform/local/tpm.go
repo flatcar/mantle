@@ -20,7 +20,7 @@ func NewSwtpm(dir string) (*SoftwareTPM, error) {
 
 	os.Mkdir(dir, 0700)
 	swtpm.dir = dir
-	swtpm.socketPath = fmt.Sprintf("%v/sock", swtpm.dir)
+	swtpm.socketPath = fmt.Sprintf("%v/sk", swtpm.dir)
 
 	swtpm.process = exec.Command("swtpm", "socket", "--tpmstate", fmt.Sprintf("dir=%v", swtpm.dir), "--ctrl", fmt.Sprintf("type=unixio,path=%v", swtpm.socketPath), "--tpm2")
 	out, err := swtpm.process.StderrPipe()
