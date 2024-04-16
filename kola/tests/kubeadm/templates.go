@@ -14,7 +14,10 @@
 package kubeadm
 
 var (
-	workerConfig = `systemd:
+	workerConfig = `---
+variant: flatcar
+version: 1.0.0
+systemd:
   units:
 {{ if .cgroupv1 }}
     - name: containerd.service
@@ -24,243 +27,77 @@ var (
           [Service]
           Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml
 {{ end }}
-    - name: prepare-cni-plugins.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Unpack CNI plugins to /opt/cni/bin
-        ConditionPathExists=!/opt/cni/bin
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Restart=on-failure
-        Environment=CNI_VERSION={{ .CNIVersion }}
-        ExecStartPre=/usr/bin/mkdir --parents /opt/cni/bin
-        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz" --directory /opt/cni/bin --no-same-owner
-        ExecStartPre=/usr/bin/chcon -R /opt/cni -t svirt_lxc_file_t
-        ExecStart=/usr/bin/rm "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz"
-        [Install]
-        WantedBy=multi-user.target
-    - name: prepare-critools.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Unpack CRI tools to /opt/bin
-        ConditionPathExists=!/opt/bin/crictl
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Restart=on-failure
-        Environment=CRICTL_VERSION={{ .CRIctlVersion }}
-        Environment=DOWNLOAD_DIR={{ .DownloadDir}}
-        ExecStartPre=/usr/bin/mkdir --parents "${DOWNLOAD_DIR}"
-        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/crictl-${CRICTL_VERSION}-linux-{{ .Arch }}.tar.gz" --directory "${DOWNLOAD_DIR}" --no-same-owner
-        ExecStart=/usr/bin/rm "/opt/crictl-${CRICTL_VERSION}-linux-{{ .Arch }}.tar.gz"
-        [Install]
-        WantedBy=multi-user.target
 storage:
+  links:
+    - target: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
+      path: /etc/extensions/kubernetes.raw
+      hard: false
   files:
 {{ if .cgroupv1 }}
     - path: /etc/flatcar-cgroupv1
       mode: 0444
 {{ end }}
-    - path: /opt/cni-plugins-linux-{{ .Arch }}-{{ .CNIVersion }}.tgz
-      filesystem: root
-      mode: 0644
-      contents:
-        remote:
-          url: https://github.com/containernetworking/plugins/releases/download/{{ .CNIVersion }}/cni-plugins-linux-{{ .Arch }}-{{ .CNIVersion }}.tgz
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "CNISum" }}
-    - path: /opt/crictl-{{ .CRIctlVersion }}-linux-{{ .Arch }}.tar.gz
-      filesystem: root
-      mode: 0644
-      contents:
-        remote:
-          url: https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ .CRIctlVersion }}/crictl-{{ .CRIctlVersion }}-linux-{{ .Arch }}.tar.gz
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "CRIctlSum" }}
-    - path: {{ .DownloadDir }}/kubeadm
-      filesystem: root
-      mode: 0755
-      contents:
-        remote:
-          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubeadm
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "KubeadmSum" }}
-    - path: {{ .DownloadDir }}/kubelet
-      filesystem: root
-      mode: 0755
-      contents:
-        remote:
-          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubelet
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "KubeletSum" }}
     - path: /home/core/install.sh
-      filesystem: root
       mode: 0755
       contents:
-        remote:
-          url: "data:text/plain;base64,{{ .WorkerScript }}"
-    - path: /etc/docker/daemon.json
-      filesystem: root
-      mode: 0644
+        source: "data:text/plain;base64,{{ .WorkerScript }}"
+    - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
-        inline: |
-          {
-              "log-driver": "journald"
-          }
+        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64"}}x86-64{{ else }}arm64{{ end }}.raw
 `
 
-	masterConfig = `systemd:
+	masterConfig = `---
+variant: flatcar
+version: 1.0.0
+systemd:
   units:{{ if .cgroupv1 }}
-    - name: containerd.service
-      dropins:
-      - name: 10-use-cgroupfs.conf
-        contents: |
-          [Service]
-          Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml{{ end }}
-    - name: prepare-cni-plugins.service
-      enabled: true
+  - name: containerd.service
+    dropins:
+    - name: 10-use-cgroupfs.conf
       contents: |
-        [Unit]
-        Description=Unpack CNI plugins to /opt/cni/bin
-        ConditionPathExists=!/opt/cni/bin
         [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Restart=on-failure
-        Environment=CNI_VERSION={{ .CNIVersion }}
-        ExecStartPre=/usr/bin/mkdir --parents /opt/cni/bin
-        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz" --directory /opt/cni/bin --no-same-owner
-        ExecStartPre=/usr/bin/chcon -R /opt/cni -t svirt_lxc_file_t
-        ExecStart=/usr/bin/rm "/opt/cni-plugins-linux-{{ .Arch }}-${CNI_VERSION}.tgz"
-        [Install]
-        WantedBy=multi-user.target
-    - name: prepare-critools.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Unpack CRI tools to /opt/bin
-        ConditionPathExists=!/opt/bin/crictl
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Restart=on-failure
-        Environment=CRICTL_VERSION={{ .CRIctlVersion }}
-        Environment=DOWNLOAD_DIR={{ .DownloadDir}}
-        ExecStartPre=/usr/bin/mkdir --parents "${DOWNLOAD_DIR}"
-        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/crictl-${CRICTL_VERSION}-linux-{{ .Arch }}.tar.gz" --directory "${DOWNLOAD_DIR}" --no-same-owner
-        ExecStart=/usr/bin/rm "/opt/crictl-${CRICTL_VERSION}-linux-{{ .Arch }}.tar.gz"
-        [Install]
-        WantedBy=multi-user.target
-    - name: prepare-helm.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Unpack helm to /opt/bin
-        ConditionPathExists=!/opt/bin/helm
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Restart=on-failure
-        ExecStartPre=/usr/bin/mkdir --parents "{{ .DownloadDir }}"
-        ExecStartPre=/usr/bin/tar -v --extract --file "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz" --directory "{{ .DownloadDir }}" --strip-components=1 --no-same-owner
-        ExecStart=/usr/bin/rm "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz"
-        [Install]
-        WantedBy=multi-user.target
+        Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml{{ end }}
+  - name: prepare-helm.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Unpack helm to /opt/bin
+      ConditionPathExists=!/opt/bin/helm
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      Restart=on-failure
+      ExecStartPre=/usr/bin/mkdir --parents "{{ .DownloadDir }}"
+      ExecStartPre=/usr/bin/tar -v --extract --file "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz" --directory "{{ .DownloadDir }}" --strip-components=1 --no-same-owner
+      ExecStart=/usr/bin/rm "/opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz"
+      [Install]
+      WantedBy=multi-user.target
 storage:
+  links:
+    - target: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
+      path: /etc/extensions/kubernetes.raw
+      hard: false
   files:{{ if .cgroupv1 }}
     - path: /etc/flatcar-cgroupv1
       mode: 0444{{ end }}
-    - path: /opt/cni-plugins-linux-{{ .Arch }}-{{ .CNIVersion }}.tgz
-      filesystem: root
-      mode: 0644
-      contents:
-        remote:
-          url: https://github.com/containernetworking/plugins/releases/download/{{ .CNIVersion }}/cni-plugins-linux-{{ .Arch }}-{{ .CNIVersion }}.tgz
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "CNISum" }}
-    - path: /opt/crictl-{{ .CRIctlVersion }}-linux-{{ .Arch }}.tar.gz
-      filesystem: root
-      mode: 0644
-      contents:
-        remote:
-          url: https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ .CRIctlVersion }}/crictl-{{ .CRIctlVersion }}-linux-{{ .Arch }}.tar.gz
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "CRIctlSum" }}
-    - path: {{ .DownloadDir }}/kubeadm
-      filesystem: root
-      mode: 0755
-      contents:
-        remote:
-          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubeadm
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "KubeadmSum" }}
-    - path: {{ .DownloadDir }}/kubelet
-      filesystem: root
-      mode: 0755
-      contents:
-        remote:
-          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubelet
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "KubeletSum" }}
-    - path: {{ .DownloadDir }}/kubectl
-      filesystem: root
-      mode: 0755
-      contents:
-        remote:
-          url: https://dl.k8s.io/release/{{ .Release }}/bin/linux/{{ .Arch }}/kubectl
-          verification:
-            hash:
-              function: sha512
-              sum: {{ index (index . .Arch) "KubectlSum" }}
     - path: /opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
-      filesystem: root
       mode: 0755
       contents:
-        remote:
-          url: https://get.helm.sh/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
-    - path: /etc/docker/daemon.json
-      filesystem: root
-      mode: 0644
+        source: https://get.helm.sh/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
+    - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
-        inline: |
-          {
-              "log-driver": "journald"
-          }
-{{ if eq .CNI "cilium" }}
+        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64"}}x86-64{{ else }}arm64{{ end }}.raw
+  {{ if eq .CNI "cilium" }}
     - path: {{ .DownloadDir }}/cilium.tar.gz
-      filesystem: root
       mode: 0755
       contents:
-        remote:
-          url: https://github.com/cilium/cilium-cli/releases/download/{{ .CiliumCLIVersion }}/cilium-linux-{{ .Arch }}.tar.gz
-{{ end }}
+        source: https://github.com/cilium/cilium-cli/releases/download/{{ .CiliumCLIVersion }}/cilium-linux-{{ .Arch }}.tar.gz
+  {{ end }}
     - path: /home/core/install.sh
-      filesystem: root
       mode: 0755
       contents:
-        remote:
-          url: "data:text/plain;base64,{{ .MasterScript }}"
+        source: "data:text/plain;base64,{{ .MasterScript }}"
     - path: /home/core/nginx.yaml
-      filesystem: root
       mode: 0644
       contents:
         inline: |
@@ -286,7 +123,6 @@ storage:
                   ports:
                   - containerPort: 80
     - path: /home/core/nfs-pod.yaml
-      filesystem: root
       mode: 0644
       contents:
         inline: |
@@ -306,7 +142,6 @@ storage:
                 persistentVolumeClaim:
                   claimName: test-dynamic-volume-claim
     - path: /home/core/nfs-pvc.yaml
-      filesystem: root
       mode: 0644
       contents:
         inline: |
@@ -325,40 +160,6 @@ storage:
 
 	masterScript = `#!/bin/bash
 set -euo pipefail
-
-export RELEASE_VERSION={{ .ReleaseVersion }}
-export DOWNLOAD_DIR={{ .DownloadDir }}
-export PATH="${PATH}:${DOWNLOAD_DIR}"
-
-# create the required directory
-mkdir --parent \
-    /etc/systemd/system/kubelet.service.d \
-    ${HOME}/.kube \
-    /home/core/.kube
-
-# we download and install the various requirements:
-# * kubelet service and kubeadm dropin
-    
-curl --retry-delay 1 \
-    --retry 60 \
-    --retry-connrefused \
-    --retry-max-time 60 \
-    --connect-timeout 20 \
-    --fail \
-    -sSL \
-    "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service" |
-    sed "s:/usr/bin:${DOWNLOAD_DIR}:g" > /etc/systemd/system/kubelet.service
-    
-curl --retry-delay 1 \
-    --retry 60 \
-    --retry-connrefused \
-    --retry-max-time 60 \
-    --connect-timeout 20 \
-    --fail \
-    -sSL \
-    "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf" |
-    sed "s:/usr/bin:${DOWNLOAD_DIR}:g" > /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-
 
 # we get the node cgroup driver
 # in order to pass the params to the
@@ -449,10 +250,10 @@ EOF
 {{ end }}
 
 {
-    systemctl enable --quiet --now kubelet
     kubeadm config images pull
     kubeadm init --config kubeadm-config.yaml
-    cp /etc/kubernetes/admin.conf $HOME/.kube/config
+    mkdir --parent "${HOME}"/.kube /home/core/.kube
+    cp /etc/kubernetes/admin.conf "${HOME}"/.kube/config
     cp /etc/kubernetes/admin.conf /home/core/.kube/config
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
@@ -510,42 +311,6 @@ EOF
 
 	workerScript = `#!/bin/bash
 set -euo pipefail
-
-export RELEASE_VERSION={{ .ReleaseVersion }}
-export DOWNLOAD_DIR={{ .DownloadDir }}
-export PATH="${PATH}:${DOWNLOAD_DIR}"
-
-# create the required directory
-mkdir --parent \
-    /opt/cni/bin \
-    /etc/systemd/system/kubelet.service.d
-
-# we download and install the various requirements
-# * kubelet service and kubeadm dropin
-
-curl --retry-delay 1 \
-    --retry 60 \
-    --retry-connrefused \
-    --retry-max-time 60 \
-    --connect-timeout 20 \
-    --fail \
-    -sSL \
-    "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service" |
-    sed "s:/usr/bin:${DOWNLOAD_DIR}:g" |
-    tee /etc/systemd/system/kubelet.service
-
-curl --retry-delay 1 \
-    --retry 60 \
-    --retry-connrefused \
-    --retry-max-time 60 \
-    --connect-timeout 20 \
-    --fail \
-    -sSL \
-    "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf" |
-    sed "s:/usr/bin:${DOWNLOAD_DIR}:g" |
-    tee /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-
-systemctl enable --now kubelet
 
 cat << EOF > worker-config.yaml
 {{ .WorkerConfig }}

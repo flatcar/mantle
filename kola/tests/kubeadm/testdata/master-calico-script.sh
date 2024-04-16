@@ -1,40 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-export RELEASE_VERSION=v0.4.0
-export DOWNLOAD_DIR=/opt/bin
-export PATH="${PATH}:${DOWNLOAD_DIR}"
-
-# create the required directory
-mkdir --parent \
-    /etc/systemd/system/kubelet.service.d \
-    ${HOME}/.kube \
-    /home/core/.kube
-
-# we download and install the various requirements:
-# * kubelet service and kubeadm dropin
-    
-curl --retry-delay 1 \
-    --retry 60 \
-    --retry-connrefused \
-    --retry-max-time 60 \
-    --connect-timeout 20 \
-    --fail \
-    -sSL \
-    "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service" |
-    sed "s:/usr/bin:${DOWNLOAD_DIR}:g" > /etc/systemd/system/kubelet.service
-    
-curl --retry-delay 1 \
-    --retry 60 \
-    --retry-connrefused \
-    --retry-max-time 60 \
-    --connect-timeout 20 \
-    --fail \
-    -sSL \
-    "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf" |
-    sed "s:/usr/bin:${DOWNLOAD_DIR}:g" > /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-
-
 # we get the node cgroup driver
 # in order to pass the params to the
 # kubelet config for both controller and worker
@@ -113,10 +79,10 @@ EOF
 
 
 {
-    systemctl enable --quiet --now kubelet
     kubeadm config images pull
     kubeadm init --config kubeadm-config.yaml
-    cp /etc/kubernetes/admin.conf $HOME/.kube/config
+    mkdir --parent "${HOME}"/.kube /home/core/.kube
+    cp /etc/kubernetes/admin.conf "${HOME}"/.kube/config
     cp /etc/kubernetes/admin.conf /home/core/.kube/config
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
