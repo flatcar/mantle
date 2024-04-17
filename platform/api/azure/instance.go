@@ -155,9 +155,13 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		},
 	}
 
-	if a.Opts.HyperVGeneration == string(armcompute.HyperVGenerationTypeV2) &&
-		(a.Opts.UseGallery || strings.Contains(a.Opts.DiskURI, "galleries")) &&
-		a.Opts.Board == "amd64-usr" {
+	if a.Opts.TrustedLaunch {
+		if a.Opts.HyperVGeneration != string(armcompute.HyperVGenerationTypeV2) {
+			plog.Warningf("TrustedLaunch is only supported for HyperVGeneration v2; ignoring")
+		}
+		if a.Opts.Board != "amd64-usr" {
+			plog.Warningf("TrustedLaunch is only supported for amd64-usr; ignoring")
+		}
 		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
 			SecurityType: to.Ptr(armcompute.SecurityTypesTrustedLaunch),
 			UefiSettings: &armcompute.UefiSettings{

@@ -52,6 +52,7 @@ type Options struct {
 	KolaVnet         string
 	UseGallery       bool
 	UsePrivateIPs    bool
+	TrustedLaunch    bool
 
 	DiskController string
 
