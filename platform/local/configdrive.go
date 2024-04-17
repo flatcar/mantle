@@ -22,10 +22,11 @@ import (
 )
 
 // MakeConfigDrive creates a config drive directory tree under outputDir
-// and returns the path to the top level directory.
+// and returns the sub dir path to the top level directory, relative to
+// outputDir.
 func MakeConfigDrive(userdata *conf.Conf, outputDir string) (string, error) {
-	drivePath := path.Join(outputDir, "config-2")
-	userPath := path.Join(drivePath, "openstack/latest/user_data")
+	drivePath := "config-2"
+	userPath := path.Join(outputDir, drivePath, "openstack/latest/user_data")
 
 	if err := os.MkdirAll(path.Dir(userPath), 0777); err != nil {
 		os.RemoveAll(drivePath)

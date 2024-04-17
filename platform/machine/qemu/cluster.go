@@ -88,10 +88,11 @@ ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=`+ip+`\nCOREOS_CUST
 ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 `, false)
 
+	// confPath is relative to the machine folder
 	var confPath string
 	if conf.IsIgnition() {
-		confPath = filepath.Join(dir, "ignition.json")
-		if err := conf.WriteFile(confPath); err != nil {
+		confPath = "ignition.json"
+		if err := conf.WriteFile(filepath.Join(dir, confPath)); err != nil {
 			return nil, err
 		}
 	} else {
@@ -111,16 +112,17 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 		id:          id,
 		netif:       netif,
 		journal:     journal,
-		consolePath: filepath.Join(dir, "console.txt"),
+		consolePath: "console.txt",
+		subDir:      dir,
 	}
 
 	var swtpm *local.SoftwareTPM
 	if options.EnableTPM {
-		swtpm, err = local.NewSwtpm(filepath.Join(dir, "tpm"))
+		swtpm, err = local.NewSwtpm(qm.subDir, "tpm")
 		if err != nil {
 			return nil, fmt.Errorf("starting swtpm: %v", err)
 		}
-		options.SoftwareTPMSocket = swtpm.SocketPath()
+		options.SoftwareTPMSocket = swtpm.SocketRelativePathFromTestDir()
 		defer func() {
 			if swtpm != nil {
 				swtpm.Stop()
@@ -128,6 +130,8 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 		}()
 	}
 
+	// This uses path arguments with path values being
+	// relative to the folder created for this machine
 	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, qc.flight.opts.BIOSImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
 	if err != nil {
 		return nil, err
@@ -152,9 +156,12 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 	fdnum += 1
 	extraFiles = append(extraFiles, tap.File)
 
-	plog.Debugf("NewMachine: %q, %q, %q", qmCmd, qm.IP(), qm.PrivateIP())
+	plog.Debugf("NewMachine: %q, cwd: %q, %q, %q", qmCmd, qm.subDir, qm.IP(), qm.PrivateIP())
 
-	qm.qemu = qm.qc.NewCommand(qmCmd[0], qmCmd[1:]...)
+	// Set qemu's current working directory to the machine folder
+	// so that we can use short relative links for the UNIX sockets
+	// without hitting the 108 char limit.
+	qm.qemu = qm.qc.NewCommand(qm.subDir, qmCmd[0], qmCmd[1:]...)
 
 	qc.mu.Unlock()
 

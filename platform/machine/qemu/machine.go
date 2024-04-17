@@ -16,6 +16,7 @@ package qemu
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
 
@@ -32,6 +33,7 @@ type machine struct {
 	journal     *platform.Journal
 	consolePath string
 	console     string
+	subDir      string
 	swtpm       *local.SoftwareTPM
 }
 
@@ -76,7 +78,7 @@ func (m *machine) Destroy() {
 	}
 	m.journal.Destroy()
 
-	if buf, err := ioutil.ReadFile(m.consolePath); err == nil {
+	if buf, err := ioutil.ReadFile(filepath.Join(m.subDir, m.consolePath)); err == nil {
 		m.console = string(buf)
 	} else {
 		plog.Errorf("Error reading console for instance %v: %v", m.ID(), err)

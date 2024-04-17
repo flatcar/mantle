@@ -26,8 +26,16 @@ type Cmd struct {
 }
 
 func Command(ns netns.NsHandle, name string, arg ...string) *Cmd {
+	return CommandWithDir(nil, ns, name, arg...)
+}
+
+func CommandWithDir(dir *string, ns netns.NsHandle, name string, arg ...string) *Cmd {
+	cmd := exec.Command(name, arg...)
+	if dir != nil {
+		cmd.Dir = *dir
+	}
 	return &Cmd{
-		ExecCmd:  exec.Command(name, arg...),
+		ExecCmd:  cmd,
 		NsHandle: ns,
 	}
 }

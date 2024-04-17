@@ -40,8 +40,8 @@ type LocalCluster struct {
 	OmahaServer OmahaWrapper
 }
 
-func (lc *LocalCluster) NewCommand(name string, arg ...string) exec.Cmd {
-	cmd := ns.Command(lc.flight.nshandle, name, arg...)
+func (lc *LocalCluster) NewCommand(dir string, name string, arg ...string) exec.Cmd {
+	cmd := ns.CommandWithDir(&dir, lc.flight.nshandle, name, arg...)
 	return cmd
 }
 
