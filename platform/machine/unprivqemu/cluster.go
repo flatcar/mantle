@@ -31,6 +31,7 @@ import (
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/local"
 	"github.com/flatcar/mantle/system/exec"
 	"github.com/flatcar/mantle/util"
 )
@@ -50,7 +51,7 @@ type Cluster struct {
 }
 
 func (qc *Cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
-	return qc.NewMachineWithOptions(userdata, platform.MachineOptions{})
+	return qc.NewMachineWithOptions(userdata, platform.MachineOptions{EnableTPM: qc.flight.opts.EnableTPM})
 }
 
 func (qc *Cluster) NewMachineWithOptions(userdata *conf.UserData, options platform.MachineOptions) (platform.Machine, error) {
@@ -106,8 +107,8 @@ Scope=link
 DHCP=no
 LinkLocalAddressing=no
 `, 0644)
-		confPath = filepath.Join(dir, "ignition.json")
-		if err := conf.WriteFile(confPath); err != nil {
+		confPath = "ignition.json"
+		if err := conf.WriteFile(filepath.Join(dir, confPath)); err != nil {
 			return nil, err
 		}
 	} else if conf.IsEmpty() {
@@ -124,10 +125,26 @@ LinkLocalAddressing=no
 		qc:          qc,
 		id:          id,
 		journal:     journal,
-		consolePath: filepath.Join(dir, "console.txt"),
+		consolePath: "console.txt",
 		privateAddr: privateAddr,
+		subDir:      dir,
 	}
 
+	var swtpm *local.SoftwareTPM
+	if options.EnableTPM {
+		swtpm, err = local.NewSwtpm(qm.subDir, "tpm")
+		if err != nil {
+			return nil, fmt.Errorf("starting swtpm: %v", err)
+		}
+		options.SoftwareTPMSocket = swtpm.SocketRelativePathFromTestDir()
+		defer func() {
+			if swtpm != nil {
+				swtpm.Stop()
+			}
+		}()
+	}
+	// This uses path arguments with path values being
+	// relative to the folder created for this machine
 	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, qc.flight.opts.BIOSImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
 	if err != nil {
 		return nil, err
@@ -146,7 +163,7 @@ LinkLocalAddressing=no
 
 	plog.Debugf("NewMachine: %q", qmCmd)
 
-	qm.qemu = exec.Command(qmCmd[0], qmCmd[1:]...)
+	qm.qemu = exec.CommandWithDir(&qm.subDir, qmCmd[0], qmCmd[1:]...)
 
 	qc.mu.Unlock()
 
@@ -159,6 +176,8 @@ LinkLocalAddressing=no
 		return nil, err
 	}
 
+	// from this point on Destroy() is responsible for cleaning up swtpm
+	qm.swtpm, swtpm = swtpm, nil
 	plog.Debugf("qemu PID (manual cleanup needed if --remove=false): %v", qm.qemu.Pid())
 
 	pid := strconv.Itoa(qm.qemu.Pid())
