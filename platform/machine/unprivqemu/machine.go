@@ -16,10 +16,12 @@ package unprivqemu
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
 
 	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/local"
 	"github.com/flatcar/mantle/system/exec"
 )
 
@@ -30,6 +32,8 @@ type machine struct {
 	journal     *platform.Journal
 	consolePath string
 	console     string
+	subDir      string
+	swtpm       *local.SoftwareTPM
 	ip          string
 	privateAddr string
 }
@@ -71,9 +75,12 @@ func (m *machine) Destroy() {
 		plog.Errorf("Error killing instance %v: %v", m.ID(), err)
 	}
 
+	if m.swtpm != nil {
+		m.swtpm.Stop()
+	}
 	m.journal.Destroy()
 
-	if buf, err := ioutil.ReadFile(m.consolePath); err == nil {
+	if buf, err := ioutil.ReadFile(filepath.Join(m.subDir, m.consolePath)); err == nil {
 		m.console = string(buf)
 	} else {
 		plog.Errorf("Error reading console for instance %v: %v", m.ID(), err)

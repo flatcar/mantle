@@ -132,7 +132,11 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 
 	// This uses path arguments with path values being
 	// relative to the folder created for this machine
-	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, qc.flight.opts.BIOSImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
+	biosImage, err := filepath.Abs(qc.flight.opts.BIOSImage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to canonicalize bios path: %v", err)
+	}
+	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, biosImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
 	if err != nil {
 		return nil, err
 	}

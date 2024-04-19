@@ -55,13 +55,25 @@ type ExecCmd struct {
 }
 
 func Command(name string, arg ...string) *ExecCmd {
-	return CommandContext(context.Background(), name, arg...)
+	return CommandWithDir(nil, name, arg...)
+}
+
+func CommandWithDir(dir *string, name string, arg ...string) *ExecCmd {
+	return CommandContextWithDir(dir, context.Background(), name, arg...)
 }
 
 func CommandContext(ctx context.Context, name string, arg ...string) *ExecCmd {
+	return CommandContextWithDir(nil, ctx, name, arg...)
+}
+
+func CommandContextWithDir(dir *string, ctx context.Context, name string, arg ...string) *ExecCmd {
 	ctx, cancel := context.WithCancel(ctx)
+	cmd := exec.CommandContext(ctx, name, arg...)
+	if dir != nil {
+		cmd.Dir = *dir
+	}
 	return &ExecCmd{
-		Cmd:    exec.CommandContext(ctx, name, arg...),
+		Cmd:    cmd,
 		cancel: cancel,
 	}
 }
