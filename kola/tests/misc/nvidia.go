@@ -3,8 +3,10 @@ package misc
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
@@ -28,13 +30,19 @@ func init() {
 		Platforms:     []string{"azure"},
 		Architectures: []string{"amd64"},
 		Flags:         []register.Flag{register.NoEnableSelinux},
+		SkipFunc:      skipOnNonGpu,
 	})
 }
 
-func verifyNvidiaInstallation(c cluster.TestCluster) {
-	if kola.AzureOptions.Size != "Standard_NC6s_v3" {
-		c.Skip("skipping due to wrong instance size")
+func skipOnNonGpu(version semver.Version, channel, arch, platform string) bool {
+	// N stands for GPU instance obviously :)
+	if platform == "azure" && strings.Contains(kola.AzureOptions.Size, "N") {
+		return false
 	}
+	return true
+}
+
+func verifyNvidiaInstallation(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
 	nvidiaStatusRetry := func() error {
