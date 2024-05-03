@@ -89,6 +89,7 @@ func DeadLinks(c cluster.TestCluster) {
 		"/run/systemd",
 		"/run/udev/links",
 		"/run/udev/watch",
+		"/run/user/500/systemd/units",
 		"/sys",
 		"/var/lib/docker",
 		"/var/lib/rkt",
