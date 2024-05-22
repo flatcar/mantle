@@ -209,7 +209,7 @@ EOF
 
 {{ if eq .CNI "calico" }}
 cat << EOF > calico.yaml
-# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/custom-resources.yaml
+# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
 # This section includes base Calico installation configuration.
 # For more information, see: https://docs.tigera.io/calico/latest/reference/installation/api#operator.tigera.io/v1.Installation
 apiVersion: operator.tigera.io/v1
@@ -228,9 +228,9 @@ spec:
     nodeAddressAutodetectionV4:
       interface: eth0
 {{ end }}
-    # Note: The ipPools section cannot be modified post-install.
     ipPools:
-    - blockSize: 26
+    - name: default-ipv4-ippool
+      blockSize: 26
       cidr: {{ .PodSubnet }}
       encapsulation: VXLANCrossSubnet
       natOutgoing: Enabled
@@ -258,7 +258,7 @@ EOF
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
 {{ if eq .CNI "calico" }}
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
     # calico.yaml uses Installation and APIServer CRDs, so make sure that they are established.
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/installations.operator.tigera.io
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/apiservers.operator.tigera.io
