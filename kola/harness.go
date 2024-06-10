@@ -45,6 +45,7 @@ import (
 	equinixmetalapi "github.com/flatcar/mantle/platform/api/equinixmetal"
 	esxapi "github.com/flatcar/mantle/platform/api/esx"
 	gcloudapi "github.com/flatcar/mantle/platform/api/gcloud"
+	hetznerapi "github.com/flatcar/mantle/platform/api/hetzner"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
 	"github.com/flatcar/mantle/platform/conf"
@@ -56,6 +57,7 @@ import (
 	"github.com/flatcar/mantle/platform/machine/esx"
 	"github.com/flatcar/mantle/platform/machine/external"
 	"github.com/flatcar/mantle/platform/machine/gcloud"
+	"github.com/flatcar/mantle/platform/machine/hetzner"
 	"github.com/flatcar/mantle/platform/machine/openstack"
 	"github.com/flatcar/mantle/platform/machine/qemu"
 	"github.com/flatcar/mantle/platform/machine/scaleway"
@@ -78,6 +80,7 @@ var (
 	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
 	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
 	ScalewayOptions     = scalewayapi.Options{Options: &Options}     // glue to set platform options from main
+	HetznerOptions      = hetznerapi.Options{Options: &Options}      // glue to set platform options from main
 
 	TestParallelism        int    //glue var to set test parallelism from main
 	TAPFile                string // if not "", write TAP results here
@@ -241,6 +244,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = external.NewFlight(&ExternalOptions)
 	case "gce":
 		flight, err = gcloud.NewFlight(&GCEOptions)
+	case "hetzner":
+		flight, err = hetzner.NewFlight(&HetznerOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
 	case "equinixmetal":

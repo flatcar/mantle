@@ -40,7 +40,7 @@ var (
 	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "azure", "brightbox", "do", "esx", "external", "gce", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
+	kolaPlatforms      = []string{"aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings      = []string{"basic", "pro"}
@@ -244,6 +244,12 @@ func init() {
 	sv(&kola.ScalewayOptions.SecretKey, "scaleway-secret-key", "", "Scaleway credentials secret key")
 	sv(&kola.ScalewayOptions.Image, "scaleway-image", "", "Scaleway image ID")
 	sv(&kola.ScalewayOptions.InstanceType, "scaleway-instance-type", "DEV1-S", "Scaleway instance type")
+
+	// Hetzner specific options
+	sv(&kola.HetznerOptions.Token, "hetzner-token", "", "Hetzner token for client authentication")
+	sv(&kola.HetznerOptions.Location, "hetzner-location", "fsn1-dc8", "Hetzner location name")
+	sv(&kola.HetznerOptions.Image, "hetzner-image", "", "Hetzner image ID")
+	sv(&kola.HetznerOptions.InstanceType, "hetzner-instance-type", "cx11", "Hetzner instance type")
 }
 
 // Sync up the command line options if there is dependency
@@ -264,6 +270,7 @@ func syncOptions() error {
 	kola.EquinixMetalOptions.GSOptions = &kola.GCEOptions
 	kola.BrightboxOptions.Board = board
 	kola.ScalewayOptions.Board = board
+	kola.HetznerOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
