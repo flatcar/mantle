@@ -134,13 +134,11 @@ func runRun(cmd *cobra.Command, args []string) {
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		plog.Fatal(err)
 	}
 
 	if runErr != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", runErr)
-		os.Exit(1)
+		plog.Fatal(runErr)
 	}
 }
 

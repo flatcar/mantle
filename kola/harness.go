@@ -432,7 +432,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 
 		version, err := getClusterSemver(flight, outputDir)
 		if err != nil {
-			plog.Fatal(err)
+			return fmt.Errorf("getClusterSemver: %w	", err)
 		}
 
 		// If the version is > 3033, we can safely use user-data instead of custom-data for
@@ -453,7 +453,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		// one more filter pass now that we know real version
 		tests, err = FilterTests(tests, patterns, channel, offering, pltfrm, *version)
 		if err != nil {
-			plog.Fatal(err)
+			return fmt.Errorf("FilterTests: %v", err)
 		}
 	}
 
