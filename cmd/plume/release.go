@@ -53,6 +53,7 @@ func init() {
 	cmdRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
 	cmdRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
+	cmdRelease.Flags().BoolVar(&azureUseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 	cmdRelease.Flags().StringVar(&gceReleaseKey, "gce-release-key", "", "GCE key file for releases")
 	cmdRelease.Flags().BoolVarP(&releaseDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
@@ -394,6 +395,7 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 			AzureProfile:      azureProfile,
 			AzureAuthLocation: azureAuth,
 			AzureSubscription: environment.SubscriptionName,
+			UseIdentity:       azureUseIdentity,
 		})
 		if err != nil {
 			plog.Fatalf("failed to create Azure API: %v", err)
