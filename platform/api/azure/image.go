@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/flatcar/mantle/sdk"
+
 	"github.com/Azure/azure-sdk-for-go/services/classic/management"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
@@ -203,17 +205,10 @@ func (a *API) resolveImage() error {
 		return fmt.Errorf("unable to fetch release bucket %v version: %v", a.Opts.Sku, err)
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := strings.SplitN(scanner.Text(), "=", 2)
-		if len(line) != 2 {
-			continue
-		}
-		if line[0] == "FLATCAR_VERSION" {
-			a.Opts.Version = line[1]
-			return nil
-		}
+	versions, err := sdk.ParseFlatcarVersions(resp.Body)
+	if err != nil {
+		return fmt.Errorf("couldn't parse version.txt: %v", err)
 	}
-
-	return fmt.Errorf("couldn't find FLATCAR_VERSION in version.txt")
+	a.Opts.Version = versions.Version
+	return nil
 }
