@@ -116,11 +116,7 @@ var (
 			"cgroupv1":         false,
 		},
 	}
-	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
-	etcdConfig = conf.ContainerLinuxConfig(`
-etcd:
-  advertise_client_urls: http://{PRIVATE_IPV4}:2379
-  listen_client_urls: http://0.0.0.0:2379`)
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 )
 
 func init() {
@@ -307,6 +303,16 @@ func render(s string, p map[string]interface{}, b bool) (*bytes.Buffer, error) {
 func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machine, error) {
 	plog.Infof("creating etcd node")
 
+	var ip string = "PRIVATE_IPV4"
+	if c.Platform() == "hetzner" {
+		ip = "PUBLIC_IPV4"
+	}
+
+	etcdConfig := conf.ContainerLinuxConfig(fmt.Sprintf(`
+etcd:
+  advertise_client_urls: http://{%s}:2379
+  listen_client_urls: http://0.0.0.0:2379`, ip))
+
 	etcdNode, err := c.NewMachine(etcdConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create etcd node: %w", err)
@@ -342,7 +348,11 @@ func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machi
 		return nil, fmt.Errorf("unable to get etcd node health: %w", err)
 	}
 
-	params["Endpoints"] = []string{fmt.Sprintf("http://%s:2379", etcdNode.PrivateIP())}
+	if c.Platform() == "hetzner" {
+		params["Endpoints"] = []string{fmt.Sprintf("http://%s:2379", etcdNode.IP())}
+	} else {
+		params["Endpoints"] = []string{fmt.Sprintf("http://%s:2379", etcdNode.PrivateIP())}
+	}
 
 	plog.Infof("creating master node")
 
