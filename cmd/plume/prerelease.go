@@ -83,6 +83,8 @@ var (
 	publishMarketplace bool
 	// username is the default user on instances launched by AWS Marketplace.
 	username string
+	// azureUseIdentity is a bool to use managed identity for authentication
+	azureUseIdentity bool
 )
 
 type imageMetadataAbstract struct {
@@ -117,6 +119,7 @@ func init() {
 	cmdPreRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdPreRelease.Flags().StringVar(&azureCategory, "azure-category", "", "Azure category (empty/pro)")
 	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
+	cmdPreRelease.Flags().BoolVar(&azureUseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 	cmdPreRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPreRelease.Flags().StringVar(&verifyKeyFile,
 		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.")
@@ -314,6 +317,7 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 			AzureProfile:      azureProfile,
 			AzureAuthLocation: azureAuth,
 			AzureSubscription: environment.SubscriptionName,
+			UseIdentity:       azureUseIdentity,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create Azure API: %v", err)
