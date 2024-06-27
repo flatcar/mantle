@@ -28,8 +28,9 @@ import (
 	"sort"
 	"strings"
 
-	azurestorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-01-01/storage"
-	"github.com/Microsoft/azure-vhd-utils/vhdcore/validator"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
+	"github.com/flatcar/azure-vhd-utils/op"
+	"github.com/flatcar/azure-vhd-utils/vhdcore/validator"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	gs "google.golang.org/api/storage/v1"
@@ -65,8 +66,6 @@ var (
 	selectedPlatforms  []string
 	selectedDistro     string
 	force              bool
-	azureProfile       string
-	azureAuth          string
 	azureTestContainer string
 	azureCategory      string
 	awsCredentialsFile string
@@ -83,8 +82,6 @@ var (
 	publishMarketplace bool
 	// username is the default user on instances launched by AWS Marketplace.
 	username string
-	// azureUseIdentity is a bool to use managed identity for authentication
-	azureUseIdentity bool
 )
 
 type imageMetadataAbstract struct {
@@ -115,11 +112,8 @@ func init() {
 	cmdPreRelease.Flags().StringSliceVar(&selectedPlatforms, "platform", platformList, "platform to pre-release")
 	cmdPreRelease.Flags().StringVar(&selectedDistro, "system", "cl", "DEPRECATED - system to pre-release")
 	cmdPreRelease.Flags().BoolVar(&force, "force", false, "Replace existing images")
-	cmdPreRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
-	cmdPreRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdPreRelease.Flags().StringVar(&azureCategory, "azure-category", "", "Azure category (empty/pro)")
 	cmdPreRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
-	cmdPreRelease.Flags().BoolVar(&azureUseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 	cmdPreRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdPreRelease.Flags().StringVar(&verifyKeyFile,
 		"verify-key", "", "path to ASCII-armored PGP public key to be used in verifying download signatures.")
@@ -241,34 +235,30 @@ func getCLImageFile(client *http.Client, src *storage.Bucket, fileName string) (
 	return imagePath, nil
 }
 
-func uploadAzureBlob(spec *channelSpec, api *azure.API, storageKeys azurestorage.AccountListKeysResult, vhdfile, container, blobName string) error {
+func uploadAzureBlob(client *service.Client, spec *channelSpec, vhdfile, container, blobName string) error {
 	specAzure := spec.Azure
 	if azureCategory == "pro" {
 		specAzure = spec.AzurePremium
 	}
 
-	for _, key := range *storageKeys.Keys {
-		blobExists, err := api.BlobExists(specAzure.StorageAccount, *key.Value, container, blobName)
-		if err != nil {
-			return fmt.Errorf("failed to check if file %q in account %q container %q exists: %v", vhdfile, specAzure.StorageAccount, container, err)
-		}
+	blobExists, err := azure.BlobExists(client, container, blobName)
+	if err != nil {
+		return fmt.Errorf("failed to check if file %q in account %q container %q exists: %w", vhdfile, specAzure.StorageAccount, container, err)
+	}
 
-		if blobExists {
-			if !force {
-				return nil
-			} else {
-				if err := api.DeleteBlob(specAzure.StorageAccount, *key.Value, container, blobName); err != nil {
-					return err
-				}
-			}
+	if blobExists {
+		if !force {
+			return nil
 		}
+		if err := azure.DeleteBlob(client, container, blobName); err != nil {
+			return err
+		}
+	}
 
-		if err := api.UploadBlob(specAzure.StorageAccount, *key.Value, vhdfile, container, blobName, false); err != nil {
-			if _, ok := err.(azure.BlobExistsError); !ok {
-				return fmt.Errorf("uploading file %q to account %q container %q failed: %v", vhdfile, specAzure.StorageAccount, container, err)
-			}
+	if err := azure.UploadBlob(client, vhdfile, container, blobName, false); err != nil {
+		if !op.ErrorIsAnyOf(err, op.BlobAlreadyExists) {
+			return fmt.Errorf("uploading file %q to account %q container %q failed: %w", vhdfile, specAzure.StorageAccount, container, err)
 		}
-		break
 	}
 	return nil
 }
@@ -314,10 +304,7 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 	for _, environment := range specAzure.Environments {
 		// construct azure api client
 		api, err := azure.New(&azure.Options{
-			AzureProfile:      azureProfile,
-			AzureAuthLocation: azureAuth,
-			AzureSubscription: environment.SubscriptionName,
-			UseIdentity:       azureUseIdentity,
+			CloudName: environment.CloudName,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create Azure API: %v", err)
@@ -326,14 +313,9 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 			return fmt.Errorf("setting up clients: %v", err)
 		}
 
-		plog.Printf("Fetching Azure storage credentials")
-
-		storageKey, err := api.GetStorageServiceKeysARM(specAzure.StorageAccount, specAzure.ResourceGroup)
+		client, err := api.GetBlobServiceClient(specAzure.StorageAccount)
 		if err != nil {
-			return err
-		}
-		if storageKey.Keys == nil {
-			plog.Fatalf("No storage service keys found")
+			return fmt.Errorf("failed to create blob service client for %q: %w", specAzure.StorageAccount, err)
 		}
 
 		// upload blob, do not overwrite
@@ -343,21 +325,15 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 		if azureTestContainer != "" {
 			container = azureTestContainer
 		}
-		err = uploadAzureBlob(spec, api, storageKey, vhdfile, container, blobName)
+		err = uploadAzureBlob(client, spec, vhdfile, container, blobName)
 		if err != nil {
 			return err
 		}
-		var sas string
-		for _, key := range *storageKey.Keys {
-			sas, err = api.SignBlob(specAzure.StorageAccount, *key.Value, container, blobName)
-			if err == nil {
-				break
-			}
-		}
+		sas, err := azure.SignBlob(client, container, blobName)
 		if err != nil {
 			plog.Fatalf("signing failed: %v", err)
 		}
-		url := api.UrlOfBlob(specAzure.StorageAccount, container, blobName).String()
+		url := azure.BlobURL(client, container, blobName)
 		plog.Noticef("Generated SAS: %q from %q for %q", sas, url, specChannel)
 		imageInfo.Azure = &azureImageInfo{
 			ImageName: sas, // the SAS URL can be used for publishing and for testing with kola via --azure-blob-url

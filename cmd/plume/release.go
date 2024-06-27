@@ -50,10 +50,7 @@ var (
 func init() {
 	cmdRelease.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
 	cmdRelease.Flags().StringVar(&selectedDistro, "distro", "cl", "DEPRECATED - system to release")
-	cmdRelease.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
-	cmdRelease.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdRelease.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use test container instead of default")
-	cmdRelease.Flags().BoolVar(&azureUseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 	cmdRelease.Flags().StringVar(&gceReleaseKey, "gce-release-key", "", "GCE key file for releases")
 	cmdRelease.Flags().BoolVarP(&releaseDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
@@ -383,19 +380,11 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 		return
 	}
 
-	if azureProfile == "" {
-		plog.Notice("No Azure profile defined, skipping.")
-		return
-	}
-
 	blobName := AzureBlobName()
 
 	for _, environment := range spec.Azure.Environments {
 		api, err := azure.New(&azure.Options{
-			AzureProfile:      azureProfile,
-			AzureAuthLocation: azureAuth,
-			AzureSubscription: environment.SubscriptionName,
-			UseIdentity:       azureUseIdentity,
+			CloudName: environment.CloudName,
 		})
 		if err != nil {
 			plog.Fatalf("failed to create Azure API: %v", err)
@@ -404,14 +393,9 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 			plog.Fatalf("setting up clients: %v", err)
 		}
 
-		plog.Printf("Fetching Azure storage credentials for %q in %q", spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
-
-		storageKey, err := api.GetStorageServiceKeysARM(spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
+		client, err := api.GetBlobServiceClient(spec.Azure.StorageAccount)
 		if err != nil {
-			plog.Fatalf("fetching storage key: %v", err)
-		}
-		if storageKey.Keys == nil {
-			plog.Fatalf("No storage service keys found")
+			plog.Fatalf("failed to create blob service client for %q: %v", spec.Azure.StorageAccount, err)
 		}
 
 		container := spec.Azure.Container
@@ -419,23 +403,19 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 			container = azureTestContainer
 		}
 
-		plog.Printf("Signing %q in %q on %v...", blobName, container, environment.SubscriptionName)
+		plog.Printf("Signing %q in %q on %v...", blobName, container, environment.CloudName)
 
 		var url string
-		for _, key := range *storageKey.Keys {
-			blobExists, err := api.BlobExists(spec.Azure.StorageAccount, *key.Value, container, blobName)
-			if err != nil {
-				continue
-			}
-			if !blobExists {
-				plog.Notice("Blob does not exist, skipping.")
-				return
-			}
-			url, err = api.SignBlob(spec.Azure.StorageAccount, *key.Value, container, blobName)
-			if err == nil {
-				break
-			}
+		blobExists, err := azure.BlobExists(client, container, blobName)
+		if err != nil {
+			plog.Fatalf("failed to check if blob %q in account %q container %q exists: %v", blobName, spec.Azure.StorageAccount, container, err)
 		}
+
+		if !blobExists {
+			plog.Notice("Blob does not exist, skipping.")
+			return
+		}
+		url, err = azure.SignBlob(client, container, blobName)
 		if err != nil {
 			plog.Fatalf("signing failed: %v", err)
 		}
