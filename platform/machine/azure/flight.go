@@ -100,33 +100,23 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 			return nil, err
 		}
 
-		kr, err := af.Api.GetStorageServiceKeysARM(af.ImageStorageAccount, af.ImageResourceGroup)
+		client, err := af.Api.GetBlobServiceClient(af.ImageStorageAccount)
 		if err != nil {
-			return nil, fmt.Errorf("Fetching storage service keys failed: %v", err)
-		}
-
-		if kr.Keys == nil {
-			return nil, fmt.Errorf("No storage service keys found")
+			return nil, fmt.Errorf("failed to create blob service client for %q: %w", af.ImageStorageAccount, err)
 		}
 
 		if opts.BlobURL != "" {
-			for _, k := range *kr.Keys {
-				plog.Infof("Copying blob")
-				if err := af.Api.CopyBlob(af.ImageStorageAccount, *k.Value, container, blobName, opts.BlobURL); err != nil {
-					return nil, fmt.Errorf("Copying blob failed: %v", err)
-				}
-				plog.Infof("Blob copy done")
-				break
+			plog.Infof("Copying blob")
+			if err := azure.CopyBlob(client, container, blobName, opts.BlobURL); err != nil {
+				return nil, fmt.Errorf("Copying blob failed: %v", err)
 			}
+			plog.Infof("Blob copy done")
 		} else if opts.ImageFile != "" {
-			for _, k := range *kr.Keys {
-				if err := af.Api.UploadBlob(af.ImageStorageAccount, *k.Value, opts.ImageFile, container, blobName, true); err != nil {
-					return nil, fmt.Errorf("Uploading blob failed: %v", err)
-				}
-				break
+			if err := azure.UploadBlob(client, opts.ImageFile, container, blobName, true); err != nil {
+				return nil, fmt.Errorf("Uploading blob failed: %v", err)
 			}
 		}
-		targetBlobURL := af.Api.UrlOfBlob(af.ImageStorageAccount, container, blobName).String()
+		targetBlobURL := azure.BlobURL(client, container, blobName)
 		var imgID string
 		if opts.UseGallery {
 			imgID, err = af.Api.CreateGalleryImage(imageName, af.ImageResourceGroup, af.ImageStorageAccount, targetBlobURL)

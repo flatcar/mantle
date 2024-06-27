@@ -19,16 +19,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
-
-	"github.com/flatcar/mantle/util"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
 )
 
 var (
-	virtualNetworkPrefix = []string{"10.0.0.0/16"}
-	subnetPrefix         = "10.0.0.0/24"
-	kolaSubnet           = "kola-subnet"
-	kolaVnet             = "kola-vn"
+	singleVirtualNetworkPrefix = "10.0.0.0/16"
+	virtualNetworkPrefix       = []*string{&singleVirtualNetworkPrefix}
+	subnetPrefix               = "10.0.0.0/24"
+	kolaSubnet                 = "kola-subnet"
+	kolaVnet                   = "kola-vn"
 )
 
 func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
@@ -39,33 +39,33 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
 		if len(parts) > 1 {
 			subnetName = parts[1]
 		}
-		result, err := a.netClient.ListAllComplete(context.TODO())
-		if err != nil {
-			return Network{}, fmt.Errorf("failed to query vnets: %w", err)
-		}
-		var net network.VirtualNetwork
-		found := false
-		for result.NotDone() {
-			net = result.Value()
-			if net.Name != nil && *net.Name == vnetName {
-				found = true
-				break
-			}
-			err = result.Next()
+		var net *armnetwork.VirtualNetwork
+		pager := a.netClient.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(context.TODO())
 			if err != nil {
 				return Network{}, fmt.Errorf("failed to iterate vnets: %w", err)
 			}
+			for _, vnet := range page.Value {
+				if vnet.Name != nil && *vnet.Name == vnetName {
+					net = vnet
+					break
+				}
+			}
+			if net != nil {
+				break
+			}
 		}
-		if !found {
+		if net == nil {
 			return Network{}, fmt.Errorf("failed to find vnet %s", vnetName)
 		}
-		subnets := net.VirtualNetworkPropertiesFormat.Subnets
+		subnets := net.Properties.Subnets
 		if subnets == nil {
 			return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
 		}
-		for _, subnet := range *subnets {
-			if subnet.Name != nil && *subnet.Name == subnetName {
-				return Network{subnet}, nil
+		for _, subnet := range subnets {
+			if subnet != nil && subnet.Name != nil && *subnet.Name == subnetName {
+				return Network{*subnet}, nil
 			}
 		}
 		return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
@@ -84,156 +84,145 @@ func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
 
 func (a *API) createVirtualNetwork(resourceGroup string) error {
 	plog.Infof("Creating VirtualNetwork %s", kolaVnet)
-	future, err := a.netClient.CreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, network.VirtualNetwork{
+	poller, err := a.netClient.BeginCreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, armnetwork.VirtualNetwork{
 		Location: &a.Opts.Location,
-		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &virtualNetworkPrefix,
+		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+			AddressSpace: &armnetwork.AddressSpace{
+				AddressPrefixes: virtualNetworkPrefix,
 			},
 		},
-	})
+	}, nil)
 	if err != nil {
 		return err
 	}
-	err = future.WaitForCompletionRef(context.TODO(), a.netClient.Client)
+	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		return err
 	}
-	_, err = future.Result(a.netClient)
-	return err
+	return nil
 }
 
-func (a *API) createSubnet(resourceGroup string) (network.Subnet, error) {
+func (a *API) createSubnet(resourceGroup string) (armnetwork.Subnet, error) {
 	plog.Infof("Creating Subnet %s", kolaSubnet)
-	future, err := a.subClient.CreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, kolaSubnet, network.Subnet{
-		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+	poller, err := a.subClient.BeginCreateOrUpdate(context.TODO(), resourceGroup, kolaVnet, kolaSubnet, armnetwork.Subnet{
+		Properties: &armnetwork.SubnetPropertiesFormat{
 			AddressPrefix: &subnetPrefix,
 		},
-	})
+	}, nil)
 	if err != nil {
-		return network.Subnet{}, err
+		return armnetwork.Subnet{}, err
 	}
-	err = future.WaitForCompletionRef(context.TODO(), a.subClient.Client)
+	r, err := poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
-		return network.Subnet{}, err
+		return armnetwork.Subnet{}, err
 	}
-	return future.Result(a.subClient)
+	return r.Subnet, nil
 }
 
-func (a *API) getSubnet(resourceGroup, vnet, subnet string) (network.Subnet, error) {
-	return a.subClient.Get(context.TODO(), resourceGroup, vnet, subnet, "")
+func (a *API) getSubnet(resourceGroup, vnet, subnet string) (armnetwork.Subnet, error) {
+	r, err := a.subClient.Get(context.TODO(), resourceGroup, vnet, subnet, nil)
+	return r.Subnet, err
 }
 
-func (a *API) createPublicIP(resourceGroup string) (*network.PublicIPAddress, error) {
+func (a *API) createPublicIP(resourceGroup string) (*armnetwork.PublicIPAddress, error) {
 	name := randomName("ip")
 	plog.Infof("Creating PublicIP %s", name)
 
-	future, err := a.ipClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.PublicIPAddress{
+	poller, err := a.ipClient.BeginCreateOrUpdate(context.TODO(), resourceGroup, name, armnetwork.PublicIPAddress{
 		Location: &a.Opts.Location,
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			DeleteOption: network.DeleteOptionsDelete,
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+			DeleteOption: to.Ptr(armnetwork.DeleteOptionsDelete),
 		},
-	})
+	}, nil)
 	if err != nil {
 		return nil, err
 	}
-	err = future.WaitForCompletionRef(context.TODO(), a.ipClient.Client)
+	r, err := poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		return nil, err
 	}
-	ip, err := future.Result(a.ipClient)
-	if err != nil {
-		return nil, err
-	}
-	ip.PublicIPAddressPropertiesFormat = &network.PublicIPAddressPropertiesFormat{
-		DeleteOption: network.DeleteOptionsDelete,
-	}
+	ip := r.PublicIPAddress
+	ip.Properties.DeleteOption = to.Ptr(armnetwork.DeleteOptionsDelete)
 	return &ip, nil
 }
 
 func (a *API) getPublicIP(name, resourceGroup string) (string, error) {
-	ip, err := a.ipClient.Get(context.TODO(), resourceGroup, name, "")
+	ip, err := a.ipClient.Get(context.TODO(), resourceGroup, name, nil)
 	if err != nil {
 		return "", err
 	}
 
-	if ip.PublicIPAddressPropertiesFormat.IPAddress == nil {
+	if ip.Properties.IPAddress == nil {
 		return "", fmt.Errorf("IP Address is nil")
 	}
 
-	return *ip.PublicIPAddressPropertiesFormat.IPAddress, nil
+	return *ip.Properties.IPAddress, nil
 }
 
 // returns PublicIP, PrivateIP, error
 func (a *API) GetIPAddresses(name, publicIPName, resourceGroup string) (string, string, error) {
-	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
+	privateIP, err := a.GetPrivateIP(name, resourceGroup)
 	if err != nil {
 		return "", "", err
 	}
-	configs := *nic.InterfacePropertiesFormat.IPConfigurations
-	var privateIP *string
-	for _, conf := range configs {
-		if conf.PrivateIPAddress == nil {
-			return "", "", fmt.Errorf("PrivateIPAddress is nil")
-		}
-		privateIP = conf.PrivateIPAddress
-		break
-	}
-	if privateIP == nil {
-		return "", "", fmt.Errorf("no ip configurations found")
-	}
 	if publicIPName == "" {
-		return *privateIP, *privateIP, nil
+		return privateIP, privateIP, nil
 	}
 
 	publicIP, err := a.getPublicIP(publicIPName, resourceGroup)
 	if err != nil {
 		return "", "", err
 	}
-	return publicIP, *privateIP, nil
+	return publicIP, privateIP, nil
 }
 
 func (a *API) GetPrivateIP(name, resourceGroup string) (string, error) {
-	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, "")
+	nic, err := a.intClient.Get(context.TODO(), resourceGroup, name, nil)
 	if err != nil {
 		return "", err
 	}
-
-	configs := *nic.InterfacePropertiesFormat.IPConfigurations
-	return *configs[0].PrivateIPAddress, nil
+	var privateIP *string
+	for _, conf := range nic.Properties.IPConfigurations {
+		if conf == nil || conf.Properties == nil || conf.Properties.PrivateIPAddress == nil {
+			//return "", "", fmt.Errorf("PrivateIPAddress is nil")
+			continue
+		}
+		privateIP = conf.Properties.PrivateIPAddress
+		break
+	}
+	if privateIP == nil {
+		return "", fmt.Errorf("no ip configurations found")
+	}
+	return *privateIP, nil
 }
 
-func (a *API) createNIC(ip *network.PublicIPAddress, subnet *network.Subnet, resourceGroup string) (*network.Interface, error) {
+func (a *API) createNIC(ip *armnetwork.PublicIPAddress, subnet *armnetwork.Subnet, resourceGroup string) (*armnetwork.Interface, error) {
 	name := randomName("nic")
 	ipconf := randomName("nic-ipconf")
 	plog.Infof("Creating NIC %s", name)
 
-	future, err := a.intClient.CreateOrUpdate(context.TODO(), resourceGroup, name, network.Interface{
+	poller, err := a.intClient.BeginCreateOrUpdate(context.TODO(), resourceGroup, name, armnetwork.Interface{
 		Location: &a.Opts.Location,
-		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-			IPConfigurations: &[]network.InterfaceIPConfiguration{
+		Properties: &armnetwork.InterfacePropertiesFormat{
+			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 				{
 					Name: &ipconf,
-					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 						PublicIPAddress:           ip,
-						PrivateIPAllocationMethod: network.IPAllocationMethodDynamic,
+						PrivateIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodDynamic),
 						Subnet:                    subnet,
 					},
 				},
 			},
-			EnableAcceleratedNetworking: util.BoolToPtr(true),
+			EnableAcceleratedNetworking: to.Ptr(true),
 		},
-	})
+	}, nil)
 	if err != nil {
 		return nil, err
 	}
-	err = future.WaitForCompletionRef(context.TODO(), a.intClient.Client)
+	r, err := poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		return nil, err
 	}
-	nic, err := future.Result(a.intClient)
-	if err != nil {
-		return nil, err
-	}
-	return &nic, nil
+	return &r.Interface, nil
 }
