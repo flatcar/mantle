@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The package github.com/Azure/azure-sdk-for-go needs go 1.7 for TLS
-// renegotiation, so only link in the ore subcommands if we build with go 1.7.
-
 package main
 
 import (
