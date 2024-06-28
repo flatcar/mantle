@@ -260,6 +260,21 @@ func (a *API) CreateStorageAccount(resourceGroup string) (string, error) {
 			AllowSharedKeyAccess: to.Ptr(false),
 		},
 	}
+	if a.Opts.KolaVnet != "" {
+		net, err := a.findVnetSubnet(a.Opts.KolaVnet)
+		if err != nil {
+			return "", fmt.Errorf("CreateStorageAccount: %v", err)
+		}
+		parameters.Properties.NetworkRuleSet = &armstorage.NetworkRuleSet{
+			DefaultAction: to.Ptr(armstorage.DefaultActionDeny),
+			VirtualNetworkRules: []*armstorage.VirtualNetworkRule{
+				{
+					VirtualNetworkResourceID: net.subnet.ID,
+				},
+			},
+		}
+	}
+
 	plog.Infof("Creating StorageAccount %s", name)
 	poller, err := a.accClient.BeginCreate(ctx, resourceGroup, name, parameters, nil)
 	if err != nil {

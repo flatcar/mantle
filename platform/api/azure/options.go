@@ -49,6 +49,7 @@ type Options struct {
 	Location         string
 	HyperVGeneration string
 	VnetSubnetName   string
+	KolaVnet         string
 	UseGallery       bool
 	UsePrivateIPs    bool
 
