@@ -27,11 +27,12 @@ import (
 
 type cluster struct {
 	*platform.BaseCluster
-	flight         *flight
-	sshKey         string
-	ResourceGroup  string
-	StorageAccount string
-	Network        azure.Network
+	flight           *flight
+	sshKey           string
+	ResourceGroup    string
+	StorageAccountRG string
+	StorageAccount   string
+	Network          azure.Network
 }
 
 func (ac *cluster) vmname() string {
