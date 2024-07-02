@@ -19,17 +19,15 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
 
 	"github.com/flatcar/mantle/util"
 )
-
-var forceDelete = true
 
 type Machine struct {
 	ID               string
@@ -43,7 +41,7 @@ func (a *API) getAvset() string {
 	if a.Opts.AvailabilitySet == "" {
 		return ""
 	}
-	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/availabilitySets/%s", a.Opts.SubscriptionID, a.Opts.ResourceGroup, a.Opts.AvailabilitySet)
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/availabilitySets/%s", a.subID, a.Opts.ResourceGroup, a.Opts.AvailabilitySet)
 }
 
 func (a *API) getVMRG(rg string) string {
@@ -54,15 +52,15 @@ func (a *API) getVMRG(rg string) string {
 	return vmrg
 }
 
-func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, ip *network.PublicIPAddress, nic *network.Interface) compute.VirtualMachine {
-	osProfile := compute.OSProfile{
-		AdminUsername: util.StrToPtr("core"),
+func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface) armcompute.VirtualMachine {
+	osProfile := armcompute.OSProfile{
+		AdminUsername: to.Ptr("core"),
 		ComputerName:  &name,
-		LinuxConfiguration: &compute.LinuxConfiguration{
-			SSH: &compute.SSHConfiguration{
-				PublicKeys: &[]compute.SSHPublicKey{
+		LinuxConfiguration: &armcompute.LinuxConfiguration{
+			SSH: &armcompute.SSHConfiguration{
+				PublicKeys: []*armcompute.SSHPublicKey{
 					{
-						Path:    util.StrToPtr("/home/core/.ssh/authorized_keys"),
+						Path:    to.Ptr("/home/core/.ssh/authorized_keys"),
 						KeyData: &sshkey,
 					},
 				},
@@ -73,79 +71,83 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	// Encode userdata to base64.
 	ud := base64.StdEncoding.EncodeToString([]byte(userdata))
 
-	var imgRef *compute.ImageReference
-	var plan *compute.Plan
+	var imgRef *armcompute.ImageReference
+	var plan *armcompute.Plan
 	if a.Opts.DiskURI != "" {
-		imgRef = &compute.ImageReference{
+		imgRef = &armcompute.ImageReference{
 			ID: &a.Opts.DiskURI,
 		}
 	} else {
-		imgRef = &compute.ImageReference{
+		imgRef = &armcompute.ImageReference{
 			Publisher: &a.Opts.Publisher,
 			Offer:     &a.Opts.Offer,
-			Sku:       &a.Opts.Sku,
+			SKU:       &a.Opts.Sku,
 			Version:   &a.Opts.Version,
 		}
 		if a.Opts.Version == "latest" {
 			var top int32 = 1
-			list, err := a.vmImgClient.List(context.TODO(), a.Opts.Location, a.Opts.Publisher, a.Opts.Offer, a.Opts.Sku, "", &top, "name desc")
+			vmImgListOpts := &armcompute.VirtualMachineImagesClientListOptions{
+				Top:     &top,
+				Orderby: to.Ptr("name desc"),
+			}
+			r, err := a.vmImgClient.List(context.TODO(), a.Opts.Location, a.Opts.Publisher, a.Opts.Offer, a.Opts.Sku, vmImgListOpts)
 			if err != nil {
 				plog.Warningf("failed to get image list: %v; continuing", err)
-			} else if list.Value == nil || len(*list.Value) == 0 || (*list.Value)[0].Name == nil {
+			} else if len(r.VirtualMachineImageResourceArray) == 0 || (r.VirtualMachineImageResourceArray[0] == nil) || (r.VirtualMachineImageResourceArray[0].Name == nil) {
 				plog.Warningf("no images found; continuing")
 			} else {
-				a.Opts.Version = *(*list.Value)[0].Name
+				a.Opts.Version = *r.VirtualMachineImageResourceArray[0].Name
 			}
 		}
 		// lookup plan information for image
-		imgInfo, err := a.vmImgClient.Get(context.TODO(), a.Opts.Location, *imgRef.Publisher, *imgRef.Offer, *imgRef.Sku, *imgRef.Version)
-		if err == nil && imgInfo.Plan != nil {
-			plan = &compute.Plan{
-				Publisher: imgInfo.Plan.Publisher,
-				Product:   imgInfo.Plan.Product,
-				Name:      imgInfo.Plan.Name,
+		imgInfo, err := a.vmImgClient.Get(context.TODO(), a.Opts.Location, *imgRef.Publisher, *imgRef.Offer, *imgRef.SKU, *imgRef.Version, nil)
+		if err == nil && imgInfo.Properties != nil && imgInfo.Properties.Plan != nil {
+			plan = &armcompute.Plan{
+				Publisher: imgInfo.Properties.Plan.Publisher,
+				Product:   imgInfo.Properties.Plan.Product,
+				Name:      imgInfo.Properties.Plan.Name,
 			}
 			plog.Debugf("using plan: %v:%v:%v", *plan.Publisher, *plan.Product, *plan.Name)
 		} else if err != nil {
 			plog.Warningf("failed to get image info: %v; continuing", err)
 		}
 	}
-	vm := compute.VirtualMachine{
+	vm := armcompute.VirtualMachine{
 		Name:     &name,
 		Location: &a.Opts.Location,
 		Tags: map[string]*string{
-			"createdBy": util.StrToPtr("mantle"),
+			"createdBy": to.Ptr("mantle"),
 		},
 		Plan: plan,
-		VirtualMachineProperties: &compute.VirtualMachineProperties{
-			HardwareProfile: &compute.HardwareProfile{
-				VMSize: compute.VirtualMachineSizeTypes(a.Opts.Size),
+		Properties: &armcompute.VirtualMachineProperties{
+			HardwareProfile: &armcompute.HardwareProfile{
+				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes(a.Opts.Size)),
 			},
-			StorageProfile: &compute.StorageProfile{
+			StorageProfile: &armcompute.StorageProfile{
 				ImageReference: imgRef,
-				OsDisk: &compute.OSDisk{
-					CreateOption: compute.DiskCreateOptionTypesFromImage,
-					DeleteOption: compute.DiskDeleteOptionTypesDelete,
-					ManagedDisk: &compute.ManagedDiskParameters{
-						StorageAccountType: compute.StorageAccountTypesPremiumLRS,
+				OSDisk: &armcompute.OSDisk{
+					CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
+					DeleteOption: to.Ptr(armcompute.DiskDeleteOptionTypesDelete),
+					ManagedDisk: &armcompute.ManagedDiskParameters{
+						StorageAccountType: to.Ptr(armcompute.StorageAccountTypesPremiumLRS),
 					},
 				},
 			},
-			OsProfile: &osProfile,
-			NetworkProfile: &compute.NetworkProfile{
-				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
+			OSProfile: &osProfile,
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 					{
 						ID: nic.ID,
-						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-							Primary:      util.BoolToPtr(true),
-							DeleteOption: compute.Delete,
+						Properties: &armcompute.NetworkInterfaceReferenceProperties{
+							Primary:      to.Ptr(true),
+							DeleteOption: to.Ptr(armcompute.DeleteOptionsDelete),
 						},
 					},
 				},
 			},
-			DiagnosticsProfile: &compute.DiagnosticsProfile{
-				BootDiagnostics: &compute.BootDiagnostics{
-					Enabled:    util.BoolToPtr(true),
+			DiagnosticsProfile: &armcompute.DiagnosticsProfile{
+				BootDiagnostics: &armcompute.BootDiagnostics{
+					Enabled:    to.Ptr(true),
 					StorageURI: &storageAccountURI,
 				},
 			},
@@ -154,9 +156,9 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 
 	switch a.Opts.DiskController {
 	case "nvme":
-		vm.VirtualMachineProperties.StorageProfile.DiskControllerType = compute.NVMe
+		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesNVMe)
 	case "scsi":
-		vm.VirtualMachineProperties.StorageProfile.DiskControllerType = compute.SCSI
+		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesSCSI)
 	}
 
 	// I don't think it would be an issue to have empty user-data set but better
@@ -164,16 +166,16 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	if ud != "" {
 		if a.Opts.UseUserData {
 			plog.Infof("using user-data")
-			vm.VirtualMachineProperties.UserData = &ud
+			vm.Properties.UserData = &ud
 		} else {
 			plog.Infof("using custom data")
-			vm.VirtualMachineProperties.OsProfile.CustomData = &ud
+			vm.Properties.OSProfile.CustomData = &ud
 		}
 	}
 
 	availabilitySetID := a.getAvset()
 	if availabilitySetID != "" {
-		vm.VirtualMachineProperties.AvailabilitySet = &compute.SubResource{ID: &availabilitySetID}
+		vm.Properties.AvailabilitySet = &armcompute.SubResource{ID: &availabilitySetID}
 	}
 
 	return vm
@@ -205,22 +207,19 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	plog.Infof("Creating Instance %s", name)
 
 	clean := func() {
-		_, _ = a.compClient.Delete(context.TODO(), vmResourceGroup, name, &forceDelete)
-		_, _ = a.intClient.Delete(context.TODO(), resourceGroup, *nic.Name)
-		_, _ = a.ipClient.Delete(context.TODO(), resourceGroup, *ip.Name)
+		_, _ = a.compClient.BeginDelete(context.TODO(), vmResourceGroup, name, &armcompute.VirtualMachinesClientBeginDeleteOptions{
+			ForceDeletion: to.Ptr(true),
+		})
+		_, _ = a.intClient.BeginDelete(context.TODO(), resourceGroup, *nic.Name, nil)
+		_, _ = a.ipClient.BeginDelete(context.TODO(), resourceGroup, *ip.Name, nil)
 	}
 
-	future, err := a.compClient.CreateOrUpdate(context.TODO(), vmResourceGroup, name, vmParams)
+	poller, err := a.compClient.BeginCreateOrUpdate(context.TODO(), vmResourceGroup, name, vmParams, nil)
 	if err != nil {
 		clean()
 		return nil, err
 	}
-	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
-	if err != nil {
-		clean()
-		return nil, err
-	}
-	_, err = future.Result(a.compClient)
+	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		clean()
 		return nil, err
@@ -228,12 +227,12 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 	plog.Infof("Instance %s created", name)
 
 	err = util.WaitUntilReady(5*time.Minute, 10*time.Second, func() (bool, error) {
-		vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, "")
+		vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, nil)
 		if err != nil {
 			return false, err
 		}
 
-		if vm.VirtualMachineProperties.ProvisioningState != nil && *vm.VirtualMachineProperties.ProvisioningState != "Succeeded" {
+		if vm.Properties != nil && vm.Properties.ProvisioningState != nil && *vm.Properties.ProvisioningState != "Succeeded" {
 			return false, nil
 		}
 
@@ -245,7 +244,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		return nil, fmt.Errorf("waiting for machine to become active: %v", err)
 	}
 
-	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, "")
+	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -276,15 +275,13 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 // OS disk are deleted automatically together with the VM.
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	resourceGroup = a.getVMRG(resourceGroup)
-	future, err := a.compClient.Delete(context.TODO(), resourceGroup, machine.ID, &forceDelete)
+	poller, err := a.compClient.BeginDelete(context.TODO(), resourceGroup, machine.ID, &armcompute.VirtualMachinesClientBeginDeleteOptions{
+		ForceDeletion: to.Ptr(true),
+	})
 	if err != nil {
 		return err
 	}
-	err = future.WaitForCompletionRef(context.TODO(), a.compClient.Client)
-	if err != nil {
-		return err
-	}
-	_, err = future.Result(a.compClient)
+	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		return err
 	}
@@ -292,24 +289,15 @@ func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 }
 
 func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {
-	kr, err := a.GetStorageServiceKeysARM(storageAccount, resourceGroup)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving storage service keys: %v", err)
-	}
-
-	if kr.Keys == nil {
-		return nil, fmt.Errorf("no storage service keys found")
-	}
-	k := *kr.Keys
-	key := *k[0].Value
-
 	vmResourceGroup := a.getVMRG(resourceGroup)
-	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, compute.InstanceViewTypesInstanceView)
+	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, &armcompute.VirtualMachinesClientGetOptions{
+		Expand: to.Ptr(armcompute.InstanceViewTypesInstanceView),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("could not get VM: %v", err)
 	}
 
-	consoleURI := vm.VirtualMachineProperties.InstanceView.BootDiagnostics.SerialConsoleLogBlobURI
+	consoleURI := vm.Properties.InstanceView.BootDiagnostics.SerialConsoleLogBlobURI
 	if consoleURI == nil {
 		return nil, fmt.Errorf("serial console URI is nil")
 	}
@@ -329,9 +317,13 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 		return nil, fmt.Errorf("could not find blob name in URI: %q", *consoleURI)
 	}
 
+	client, err := a.GetBlobServiceClient(storageAccount)
+	if err != nil {
+		return nil, err
+	}
 	var data io.ReadCloser
 	err = util.Retry(6, 10*time.Second, func() error {
-		data, err = a.GetBlob(storageAccount, key, container, blobname)
+		data, err = GetBlob(client, container, blobname)
 		if err != nil {
 			return fmt.Errorf("could not get blob for container %q, blobname %q: %v", container, blobname, err)
 		}
@@ -344,5 +336,5 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 		return nil, err
 	}
 
-	return ioutil.ReadAll(data)
+	return io.ReadAll(data)
 }

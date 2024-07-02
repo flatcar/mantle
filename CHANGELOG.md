@@ -20,8 +20,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - The `systemd.sysext.custom-docker` test now tries to figure out the distributed Docker version by searching for both `app-emulation/docker` and `app-containers/docker` package information. The older versions of Flatcar use the former, the new versions will use the latter ([#438](https://github.com/flatcar/mantle/pull/438))
 - DigitalOcean now supports deleting images with the same name ([#440](https://github.com/flatcar/mantle/pull/440))
 - Add support to plume azure release and pre-release to use managed identities ([#535](https://github.com/flatcar/mantle/pull/535))
+- Azure platform uses new go SDK, changing the way we authenticate (using azidentity now) ([#532](https://github.com/flatcar/mantle/pull/532))
 
 ### Removed
+
+- `ore azure upload-blob-arm` is renamed to `ore azure upload-blob`, replacing the old command. Same for `ore azure create-image-arm`. `ore azure replicate-image`, `ore azure unreplicate-image` and `ore azure share-image` commands are gone. Options related to Azure authentication in `kola`, `ore azure` and `plume` are gone ([#532](https://github.com/flatcar/mantle/pull/532))
 
 ### Fixed
 - Remove /etc/samba with an -f option in `cl.overlay.cleanup` for samba 4.18+ ([#455](https://github.com/flatcar/mantle/pull/455))

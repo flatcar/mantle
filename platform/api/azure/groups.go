@@ -18,56 +18,66 @@ import (
 	"context"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
-
-	"github.com/flatcar/mantle/util"
+	azruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 )
 
 func (a *API) CreateResourceGroup(prefix string) (string, error) {
 	name := randomName(prefix)
 	tags := map[string]*string{
-		"createdAt": util.StrToPtr(time.Now().Format(time.RFC3339)),
-		"createdBy": util.StrToPtr("mantle"),
+		"createdAt": to.Ptr(time.Now().Format(time.RFC3339)),
+		"createdBy": to.Ptr("mantle"),
 	}
 	plog.Infof("Creating ResourceGroup %s", name)
-	_, err := a.rgClient.CreateOrUpdate(context.TODO(), name, resources.Group{
+	r, err := a.rgClient.CreateOrUpdate(context.TODO(), name, armresources.ResourceGroup{
 		Location: &a.Opts.Location,
 		Tags:     tags,
-	})
+	}, nil)
 	if err != nil {
 		return "", err
 	}
+	if r.Name == nil {
+		return name, nil
+	}
 
-	return name, nil
+	return *r.Name, nil
 }
 
 func (a *API) TerminateResourceGroup(name string) error {
-	resp, err := a.rgClient.CheckExistence(context.TODO(), name)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 204 {
-		return nil
+	{
+		r, err := a.rgClient.CheckExistence(context.TODO(), name, nil)
+		if err != nil {
+			return err
+		}
+		if !r.Success {
+			return nil
+		}
 	}
 
-	_, err = a.rgClient.Delete(context.TODO(), name)
+	opts := &armresources.ResourceGroupsClientBeginDeleteOptions{
+		ForceDeletionTypes: to.Ptr("Microsoft.Compute/virtualMachines,Microsoft.Compute/virtualMachineScaleSets"),
+	}
+	poller, err := a.rgClient.BeginDelete(context.TODO(), name, opts)
+	pollOpts := &azruntime.PollUntilDoneOptions{
+		Frequency: 15 * time.Second,
+	}
+	_, err = poller.PollUntilDone(context.TODO(), pollOpts)
 	return err
 }
 
-func (a *API) ListResourceGroups(filter string) (resources.GroupListResult, error) {
-	iter, err := a.rgClient.ListComplete(context.TODO(), filter, nil)
-	if err != nil {
-		return resources.GroupListResult{}, err
+func (a *API) ListResourceGroups(filter string) ([]*armresources.ResourceGroup, error) {
+	opts := &armresources.ResourceGroupsClientListOptions{
+		Filter: &filter,
 	}
-	var results resources.GroupListResult
-	arr := make([]resources.Group, 0)
-	results.Value = &arr
-
-	for ; iter.NotDone(); err = iter.NextWithContext(context.TODO()) {
+	pager := a.rgClient.NewListPager(opts)
+	var list []*armresources.ResourceGroup
+	for pager.More() {
+		page, err := pager.NextPage(context.TODO())
 		if err != nil {
-			return resources.GroupListResult{}, err
+			return nil, err
 		}
-		arr = append(arr, iter.Value())
+		list = append(list, page.Value...)
 	}
-	return results, err
+	return list, nil
 }

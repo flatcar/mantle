@@ -107,8 +107,6 @@ func init() {
 	sv(&kola.AWSOptions.IAMInstanceProfile, "aws-iam-profile", "kola", "AWS IAM instance profile name")
 
 	// azure-specific options
-	sv(&kola.AzureOptions.AzureProfile, "azure-profile", "", "Azure profile (default \"~/"+auth.AzureProfilePath+"\")")
-	sv(&kola.AzureOptions.AzureAuthLocation, "azure-auth", "", "Azure auth location (default \"~/"+auth.AzureAuthPath+"\")")
 	sv(&kola.AzureOptions.BlobURL, "azure-blob-url", "", "Azure source page blob to be copied from a public/SAS URL, recommended way (from \"plume pre-release\" or \"ore azure upload-blob-arm\")")
 	sv(&kola.AzureOptions.ImageFile, "azure-image-file", "", "Azure image file (local image to upload in the temporary kola resource group)")
 	sv(&kola.AzureOptions.DiskURI, "azure-disk-uri", "", "Azure disk uri (custom images)")
@@ -122,7 +120,6 @@ func init() {
 	sv(&kola.AzureOptions.VnetSubnetName, "azure-vnet-subnet-name", "", "Use a pre-existing virtual network for created instances. Specify as vnet-name/subnet-name. If subnet name is omitted then \"default\" is assumed")
 	bv(&kola.AzureOptions.UseGallery, "azure-use-gallery", false, "Use gallery image instead of managed image")
 	bv(&kola.AzureOptions.UsePrivateIPs, "azure-use-private-ips", false, "Assume nodes are reachable using private IP addresses")
-	bv(&kola.AzureOptions.UseIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
 	sv(&kola.AzureOptions.DiskController, "azure-disk-controller", "default", "Use a specific disk-controller for storage (default \"default\", also \"nvme\" and \"scsi\")")
 	sv(&kola.AzureOptions.ResourceGroup, "azure-resource-group", "", "Deploy resources in an existing resource group")
 	sv(&kola.AzureOptions.AvailabilitySet, "azure-availability-set", "", "Deploy instances with an existing availibity set")

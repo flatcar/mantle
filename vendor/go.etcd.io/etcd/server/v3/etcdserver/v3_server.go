@@ -45,6 +45,10 @@ const (
 	maxGapBetweenApplyAndCommitIndex = 5000
 	traceThreshold                   = 100 * time.Millisecond
 	readIndexRetryTime               = 500 * time.Millisecond
+
+	// The timeout for the node to catch up its applied index, and is used in
+	// lease related operations, such as LeaseRenew and LeaseTimeToLive.
+	applyTimeout = time.Second
 )
 
 type RaftKV interface {
@@ -271,6 +275,18 @@ func (s *EtcdServer) LeaseGrant(ctx context.Context, r *pb.LeaseGrantRequest) (*
 	return resp.(*pb.LeaseGrantResponse), nil
 }
 
+func (s *EtcdServer) waitAppliedIndex() error {
+	select {
+	case <-s.ApplyWait():
+	case <-s.stopping:
+		return ErrStopped
+	case <-time.After(applyTimeout):
+		return ErrTimeoutWaitAppliedIndex
+	}
+
+	return nil
+}
+
 func (s *EtcdServer) LeaseRevoke(ctx context.Context, r *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error) {
 	resp, err := s.raftRequestOnce(ctx, pb.InternalRaftRequest{LeaseRevoke: r})
 	if err != nil {
@@ -280,26 +296,43 @@ func (s *EtcdServer) LeaseRevoke(ctx context.Context, r *pb.LeaseRevokeRequest) 
 }
 
 func (s *EtcdServer) LeaseRenew(ctx context.Context, id lease.LeaseID) (int64, error) {
-	ttl, err := s.lessor.Renew(id)
-	if err == nil { // already requested to primary lessor(leader)
-		return ttl, nil
-	}
-	if err != lease.ErrNotPrimary {
-		return -1, err
+	if s.isLeader() {
+		// If s.isLeader() returns true, but we fail to ensure the current
+		// member's leadership, there are a couple of possibilities:
+		//   1. current member gets stuck on writing WAL entries;
+		//   2. current member is in network isolation status;
+		//   3. current member isn't a leader anymore (possibly due to #1 above).
+		// In such case, we just return error to client, so that the client can
+		// switch to another member to continue the lease keep-alive operation.
+		if !s.ensureLeadership() {
+			return -1, lease.ErrNotPrimary
+		}
+
+		if err := s.waitAppliedIndex(); err != nil {
+			return 0, err
+		}
+
+		ttl, err := s.lessor.Renew(id)
+		if err == nil { // already requested to primary lessor(leader)
+			return ttl, nil
+		}
+		if err != lease.ErrNotPrimary {
+			return -1, err
+		}
 	}
 
 	cctx, cancel := context.WithTimeout(ctx, s.Cfg.ReqTimeout())
 	defer cancel()
 
 	// renewals don't go through raft; forward to leader manually
-	for cctx.Err() == nil && err != nil {
+	for cctx.Err() == nil {
 		leader, lerr := s.waitLeader(cctx)
 		if lerr != nil {
 			return -1, lerr
 		}
 		for _, url := range leader.PeerURLs {
 			lurl := url + leasehttp.LeasePrefix
-			ttl, err = leasehttp.RenewHTTP(cctx, id, lurl, s.peerRt)
+			ttl, err := leasehttp.RenewHTTP(cctx, id, lurl, s.peerRt)
 			if err == nil || err == lease.ErrLeaseNotFound {
 				return ttl, err
 			}
@@ -314,8 +347,36 @@ func (s *EtcdServer) LeaseRenew(ctx context.Context, id lease.LeaseID) (int64, e
 	return -1, ErrCanceled
 }
 
-func (s *EtcdServer) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
-	if s.Leader() == s.ID() {
+func (s *EtcdServer) checkLeaseTimeToLive(ctx context.Context, leaseID lease.LeaseID) (uint64, error) {
+	rev := s.AuthStore().Revision()
+	if !s.AuthStore().IsAuthEnabled() {
+		return rev, nil
+	}
+	authInfo, err := s.AuthInfoFromCtx(ctx)
+	if err != nil {
+		return rev, err
+	}
+	if authInfo == nil {
+		return rev, auth.ErrUserEmpty
+	}
+
+	l := s.lessor.Lookup(leaseID)
+	if l != nil {
+		for _, key := range l.Keys() {
+			if err := s.AuthStore().IsRangePermitted(authInfo, []byte(key), []byte{}); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return rev, nil
+}
+
+func (s *EtcdServer) leaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
+	if s.isLeader() {
+		if err := s.waitAppliedIndex(); err != nil {
+			return nil, err
+		}
 		// primary; timetolive directly from leader
 		le := s.lessor.Lookup(lease.LeaseID(r.ID))
 		if le == nil {
@@ -361,6 +422,31 @@ func (s *EtcdServer) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveR
 	return nil, ErrCanceled
 }
 
+func (s *EtcdServer) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
+	var rev uint64
+	var err error
+	if r.Keys {
+		// check RBAC permission only if Keys is true
+		rev, err = s.checkLeaseTimeToLive(ctx, lease.LeaseID(r.ID))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resp, err := s.leaseTimeToLive(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Keys {
+		if s.AuthStore().IsAuthEnabled() && rev != s.AuthStore().Revision() {
+			return nil, auth.ErrAuthOldRevision
+		}
+	}
+	return resp, nil
+}
+
+// LeaseLeases is really ListLeases !???
 func (s *EtcdServer) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*pb.LeaseLeasesResponse, error) {
 	ls := s.lessor.Leases()
 	lss := make([]*pb.LeaseStatus, len(ls))
@@ -428,6 +514,13 @@ func (s *EtcdServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest
 	}
 
 	lg := s.Logger()
+
+	// fix https://nvd.nist.gov/vuln/detail/CVE-2021-28235
+	defer func() {
+		if r != nil {
+			r.Password = ""
+		}
+	}()
 
 	var resp proto.Message
 	for {

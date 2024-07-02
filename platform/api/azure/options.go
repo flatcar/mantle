@@ -21,9 +21,22 @@ import (
 type Options struct {
 	*platform.Options
 
-	AzureProfile      string
-	AzureAuthLocation string
-	AzureSubscription string
+	// Base URL to cloud's Azure Active Directory. If not empty,
+	// CloudName is ignored.
+	ADHost string
+	// Name of the Azure cloud. Can be "public" or "pub" for Azure
+	// Public Cloud, "government" or "gov" for Azure Government
+	// and "china" or "cn" for Azure China. If empty, AZURE_CLOUD
+	// environment variable will be checked too. If still empty,
+	// default to Azure Public Cloud.
+	CloudName string
+	// ID of a preferred subscription in case where more than 1 is
+	// available for given credentials. If empty,
+	// AZURE_SUBSCRIPTION_ID environment variable will be checked
+	// too.
+	PreferredSubscriptionID string
+
+	// Common opts
 
 	BlobURL          string
 	ImageFile        string
@@ -37,17 +50,9 @@ type Options struct {
 	HyperVGeneration string
 	VnetSubnetName   string
 	UseGallery       bool
-	UseIdentity      bool
 	UsePrivateIPs    bool
 
 	DiskController string
-
-	SubscriptionName string
-	SubscriptionID   string
-
-	// Azure API endpoint. If unset, the Azure SDK default will be used.
-	ManagementURL         string
-	ManagementCertificate []byte
 
 	// Azure Storage API endpoint suffix. If unset, the Azure SDK default will be used.
 	StorageEndpointSuffix string

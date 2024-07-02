@@ -34,7 +34,7 @@ type gceSpec struct {
 }
 
 type azureEnvironmentSpec struct {
-	SubscriptionName string // Name of subscription in Azure profile
+	CloudName string // Name of the Azure cloud (see azure.Options)
 }
 
 type azureSpec struct {

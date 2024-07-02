@@ -15,15 +15,15 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/coreos/pkg/capnslog"
+	"github.com/flatcar/azure-vhd-utils/upload/metadata"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
@@ -53,8 +53,6 @@ func init() {
 	cmdPrune.Flags().IntVar(&daysSoftDeleted, "days-soft-deleted", 0, "Minimum age in days for files to remain soft deleted (recoverable)")
 	cmdPrune.Flags().IntVar(&keepLast, "keep-last", 0, "Number of latest images to keep")
 	cmdPrune.Flags().StringVar(&awsCredentialsFile, "aws-credentials", "", "AWS credentials file")
-	cmdPrune.Flags().StringVar(&azureProfile, "azure-profile", "", "Azure Profile json file")
-	cmdPrune.Flags().StringVar(&azureAuth, "azure-auth", "", "Azure Credentials json file")
 	cmdPrune.Flags().StringVar(&azureTestContainer, "azure-test-container", "", "Use another container instead of the default")
 	cmdPrune.Flags().BoolVarP(&pruneDryRun, "dry-run", "n", false,
 		"perform a trial run, do not make changes")
@@ -93,16 +91,14 @@ func runPrune(cmd *cobra.Command, args []string) {
 }
 
 func pruneAzure(ctx context.Context, spec *channelSpec) {
-	if spec.Azure.StorageAccount == "" || azureProfile == "" {
+	if spec.Azure.StorageAccount == "" {
 		plog.Notice("Azure image pruning disabled, skipping.")
 		return
 	}
 
 	for _, environment := range spec.Azure.Environments {
 		api, err := azure.New(&azure.Options{
-			AzureProfile:      azureProfile,
-			AzureAuthLocation: azureAuth,
-			AzureSubscription: environment.SubscriptionName,
+			CloudName: environment.CloudName,
 		})
 		if err != nil {
 			plog.Fatalf("Failed to create Azure API: %v", err)
@@ -111,66 +107,60 @@ func pruneAzure(ctx context.Context, spec *channelSpec) {
 			plog.Fatalf("Failed to set up clients: %v", err)
 		}
 
-		plog.Printf("Fetching Azure storage credentials for %q in %q", spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
-
-		storageKey, err := api.GetStorageServiceKeysARM(spec.Azure.StorageAccount, spec.Azure.ResourceGroup)
+		client, err := api.GetBlobServiceClient(spec.Azure.StorageAccount)
 		if err != nil {
-			plog.Fatalf("Failed to fetch storage key: %v", err)
-		}
-		if storageKey.Keys == nil {
-			plog.Fatalf("No storage service keys found")
+			plog.Fatalf("failed to create blob service client for %q: %v", spec.Azure.StorageAccount, err)
 		}
 
-		container := spec.Azure.Container
+		containerName := spec.Azure.Container
 		if azureTestContainer != "" {
-			container = azureTestContainer
+			containerName = azureTestContainer
 		}
 
 		// Remove the compression extension from the filename, as Azure sets
 		// the filename without the compression extension.
 		specFileName := strings.TrimSuffix(spec.Azure.Image, filepath.Ext(spec.Azure.Image))
 
-		for _, key := range *storageKey.Keys {
-			blobs, err := api.ListBlobs(spec.Azure.StorageAccount, *key.Value, container, storage.ListBlobsParameters{})
-			if err != nil {
-				plog.Warningf("Error listing blobs: %v", err)
-			}
-			plog.Infof("Got %d blobs for container %q (key %v)", len(blobs), container, key)
+		blobs, err := azure.ListBlobs(client, containerName, container.ListBlobsInclude{Metadata: true})
+		if err != nil {
+			plog.Warningf("Error listing blobs: %v", err)
+		}
+		plog.Infof("Got %d blobs for container %q", len(blobs), containerName)
 
-			now := time.Now()
-			for _, blob := range blobs {
-				// Check that the blob's name includes the channel
-				if !strings.Contains(blob.Name, specChannel) {
-					plog.Infof("Blob's name %q doesn't include %q, skipping.", blob.Name, specChannel)
-					continue
-				}
-				// Get the blob metadata and check that it's one of the release images
-				var metadata map[string]map[string]interface{}
-				json.Unmarshal([]byte(blob.Metadata["diskmetadata"]), &metadata)
-				fileName := metadata["fileMetaData"]["fileName"]
-				if fileName == nil {
-					plog.Infof("No file name metadata for %q, skipping.", blob.Name)
-					continue
-				}
-				if fileName != specFileName {
-					plog.Infof("Blob's file name %q doesn't match %q, skipping.", fileName, specFileName)
-					continue
-				}
-				// Get the last modified date and only delete obsolete blobs
-				lastModifiedDate := time.Time(blob.Properties.LastModified)
-				duration := now.Sub(lastModifiedDate)
-				daysOld := int(duration.Hours() / 24)
-				if daysOld < days {
-					plog.Infof("Valid blob: %q: %d days old, skipping.", blob.Name, daysOld)
-					continue
-				}
-				plog.Infof("Obsolete blob %q: %d days old", blob.Name, daysOld)
-				if !pruneDryRun {
-					plog.Infof("Deleting blob %q in container %q", blob.Name, container)
-					err = api.DeleteBlob(spec.Azure.StorageAccount, *key.Value, container, blob.Name)
-					if err != nil {
-						plog.Warningf("Error deleting blob (%v): %v", blob.Name, err)
-					}
+		now := time.Now()
+		for _, blob := range blobs {
+			// Check that the blob's name includes the channel
+			if !strings.Contains(*blob.Name, specChannel) {
+				plog.Infof("Blob's name %q doesn't include %q, skipping.", *blob.Name, specChannel)
+				continue
+			}
+			// Get the blob metadata and check that it's one of the release images
+			metadata, err := metadata.NewMetadataFromBlobMetadata(blob.Metadata)
+			if err != nil {
+				plog.Infof("Failed to get metadata from blob %q, skipping: %v", *blob.Name, err)
+				continue
+			}
+			if metadata.FileMetadata == nil {
+				plog.Infof("No file name metadata for %q, skipping.", *blob.Name)
+				continue
+			}
+			if metadata.FileMetadata.FileName != specFileName {
+				plog.Infof("Blob's file name %q doesn't match %q, skipping.", metadata.FileMetadata.FileName, specFileName)
+				continue
+			}
+			// Get the last modified date and only delete obsolete blobs
+			duration := now.Sub(*blob.Properties.LastModified)
+			daysOld := int(duration.Hours() / 24)
+			if daysOld < days {
+				plog.Infof("Valid blob: %q: %d days old, skipping.", *blob.Name, daysOld)
+				continue
+			}
+			plog.Infof("Obsolete blob %q: %d days old", *blob.Name, daysOld)
+			if !pruneDryRun {
+				plog.Infof("Deleting blob %q in container %q", *blob.Name, containerName)
+				err = azure.DeleteBlob(client, containerName, *blob.Name)
+				if err != nil {
+					plog.Warningf("Error deleting blob (%s): %v", *blob.Name, err)
 				}
 			}
 		}

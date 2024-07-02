@@ -37,7 +37,7 @@ var (
 	awsBoards         = []string{"amd64-usr", "arm64-usr"}
 	azureEnvironments = []azureEnvironmentSpec{
 		azureEnvironmentSpec{
-			SubscriptionName: "AzureCloud",
+			CloudName: "public",
 		},
 	}
 	awsPartitions = map[string]awsPartitionSpec{

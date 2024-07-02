@@ -45,6 +45,7 @@ var (
 	ErrGRPCMemberNotLearner       = status.New(codes.FailedPrecondition, "etcdserver: can only promote a learner member").Err()
 	ErrGRPCLearnerNotReady        = status.New(codes.FailedPrecondition, "etcdserver: can only promote a learner member which is in sync with leader").Err()
 	ErrGRPCTooManyLearners        = status.New(codes.FailedPrecondition, "etcdserver: too many learner members in cluster").Err()
+	ErrGRPCClusterIdMismatch      = status.New(codes.FailedPrecondition, "etcdserver: cluster ID mismatch").Err()
 
 	ErrGRPCRequestTooLarge        = status.New(codes.InvalidArgument, "etcdserver: request is too large").Err()
 	ErrGRPCRequestTooManyRequests = status.New(codes.ResourceExhausted, "etcdserver: too many requests").Err()
@@ -75,6 +76,7 @@ var (
 	ErrGRPCTimeout                    = status.New(codes.Unavailable, "etcdserver: request timed out").Err()
 	ErrGRPCTimeoutDueToLeaderFail     = status.New(codes.Unavailable, "etcdserver: request timed out, possibly due to previous leader failure").Err()
 	ErrGRPCTimeoutDueToConnectionLost = status.New(codes.Unavailable, "etcdserver: request timed out, possibly due to connection lost").Err()
+	ErrGRPCTimeoutWaitAppliedIndex    = status.New(codes.Unavailable, "etcdserver: request timed out, waiting for the applied index took too long").Err()
 	ErrGRPCUnhealthy                  = status.New(codes.Unavailable, "etcdserver: unhealthy cluster").Err()
 	ErrGRPCCorrupt                    = status.New(codes.DataLoss, "etcdserver: corrupt cluster").Err()
 	ErrGPRCNotSupportedForLearner     = status.New(codes.Unavailable, "etcdserver: rpc not supported for learner").Err()
@@ -113,6 +115,7 @@ var (
 		ErrorDesc(ErrGRPCMemberNotLearner):       ErrGRPCMemberNotLearner,
 		ErrorDesc(ErrGRPCLearnerNotReady):        ErrGRPCLearnerNotReady,
 		ErrorDesc(ErrGRPCTooManyLearners):        ErrGRPCTooManyLearners,
+		ErrorDesc(ErrGRPCClusterIdMismatch):      ErrGRPCClusterIdMismatch,
 
 		ErrorDesc(ErrGRPCRequestTooLarge):        ErrGRPCRequestTooLarge,
 		ErrorDesc(ErrGRPCRequestTooManyRequests): ErrGRPCRequestTooManyRequests,
@@ -199,6 +202,7 @@ var (
 	ErrInvalidAuthToken     = Error(ErrGRPCInvalidAuthToken)
 	ErrAuthOldRevision      = Error(ErrGRPCAuthOldRevision)
 	ErrInvalidAuthMgmt      = Error(ErrGRPCInvalidAuthMgmt)
+	ErrClusterIdMismatch    = Error(ErrGRPCClusterIdMismatch)
 
 	ErrNoLeader                   = Error(ErrGRPCNoLeader)
 	ErrNotLeader                  = Error(ErrGRPCNotLeader)
@@ -208,6 +212,7 @@ var (
 	ErrTimeout                    = Error(ErrGRPCTimeout)
 	ErrTimeoutDueToLeaderFail     = Error(ErrGRPCTimeoutDueToLeaderFail)
 	ErrTimeoutDueToConnectionLost = Error(ErrGRPCTimeoutDueToConnectionLost)
+	ErrTimeoutWaitAppliedIndex    = Error(ErrGRPCTimeoutWaitAppliedIndex)
 	ErrUnhealthy                  = Error(ErrGRPCUnhealthy)
 	ErrCorrupt                    = Error(ErrGRPCCorrupt)
 	ErrBadLeaderTransferee        = Error(ErrGRPCBadLeaderTransferee)

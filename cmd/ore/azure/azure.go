@@ -18,7 +18,6 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
 
-	"github.com/flatcar/mantle/auth"
 	"github.com/flatcar/mantle/cli"
 	"github.com/flatcar/mantle/platform/api/azure"
 )
@@ -31,11 +30,7 @@ var (
 		Short: "azure image and vm utilities",
 	}
 
-	azureProfile      string
-	azureAuth         string
-	azureSubscription string
-	azureLocation     string
-	useIdentity       bool
+	azureLocation string
 
 	api *azure.API
 )
@@ -43,24 +38,14 @@ var (
 func init() {
 	cli.WrapPreRun(Azure, preauth)
 
-	sv := Azure.PersistentFlags().StringVar
-	bv := Azure.PersistentFlags().BoolVar
-	sv(&azureProfile, "azure-profile", "", "Azure Profile json file")
-	sv(&azureAuth, "azure-auth", "", "Azure auth location (default \"~/"+auth.AzureAuthPath+"\")")
-	sv(&azureSubscription, "azure-subscription", "", "Azure subscription name. If unset, the first is used.")
-	sv(&azureLocation, "azure-location", "westus", "Azure location (default \"westus\")")
-	bv(&useIdentity, "azure-identity", false, "Use VM managed identity for authentication (default false)")
+	Azure.PersistentFlags().StringVar(&azureLocation, "azure-location", "westus", "Azure location (default \"westus\")")
 }
 
 func preauth(cmd *cobra.Command, args []string) error {
 	plog.Printf("Creating Azure API...")
 
 	a, err := azure.New(&azure.Options{
-		AzureProfile:      azureProfile,
-		AzureAuthLocation: azureAuth,
-		AzureSubscription: azureSubscription,
-		Location:          azureLocation,
-		UseIdentity:       useIdentity,
+		Location: azureLocation,
 	})
 	if err != nil {
 		plog.Fatalf("Failed to create Azure API: %v", err)

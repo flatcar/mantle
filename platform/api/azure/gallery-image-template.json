@@ -45,7 +45,7 @@
   },
   "resources": [
     {
-      "apiVersion": "2022-08-03",
+      "apiVersion": "2023-07-03",
       "location": "[parameters('location')]",
       "name": "[parameters('galleries_name')]",
       "properties": {
@@ -54,7 +54,7 @@
       "type": "Microsoft.Compute/galleries"
     },
     {
-      "apiVersion": "2022-08-03",
+      "apiVersion": "2023-07-03",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
       ],
@@ -90,7 +90,7 @@
       "type": "Microsoft.Compute/galleries/images"
     },
     {
-      "apiVersion": "2022-08-03",
+      "apiVersion": "2023-07-03",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/galleries/images', parameters('galleries_name'), parameters('image_name'))]",
         "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
