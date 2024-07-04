@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	azruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 )
@@ -58,11 +57,7 @@ func (a *API) TerminateResourceGroup(name string) error {
 	opts := &armresources.ResourceGroupsClientBeginDeleteOptions{
 		ForceDeletionTypes: to.Ptr("Microsoft.Compute/virtualMachines,Microsoft.Compute/virtualMachineScaleSets"),
 	}
-	poller, err := a.rgClient.BeginDelete(context.TODO(), name, opts)
-	pollOpts := &azruntime.PollUntilDoneOptions{
-		Frequency: 15 * time.Second,
-	}
-	_, err = poller.PollUntilDone(context.TODO(), pollOpts)
+	_, err := a.rgClient.BeginDelete(context.TODO(), name, opts)
 	return err
 }
 

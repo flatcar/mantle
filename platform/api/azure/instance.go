@@ -275,17 +275,12 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 // OS disk are deleted automatically together with the VM.
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	resourceGroup = a.getVMRG(resourceGroup)
-	poller, err := a.compClient.BeginDelete(context.TODO(), resourceGroup, machine.ID, &armcompute.VirtualMachinesClientBeginDeleteOptions{
+	_, err := a.compClient.BeginDelete(context.TODO(), resourceGroup, machine.ID, &armcompute.VirtualMachinesClientBeginDeleteOptions{
 		ForceDeletion: to.Ptr(true),
 	})
-	if err != nil {
-		return err
-	}
-	_, err = poller.PollUntilDone(context.TODO(), nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	// We used to wait for the VM to be deleted here, but it's not necessary as
+	// we will also delete the resource group later.
+	return err
 }
 
 func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {

@@ -31,44 +31,48 @@ var (
 	kolaVnet                   = "kola-vn"
 )
 
-func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
-	if a.Opts.VnetSubnetName != "" {
-		parts := strings.SplitN(a.Opts.VnetSubnetName, "/", 2)
-		vnetName := parts[0]
-		subnetName := "default"
-		if len(parts) > 1 {
-			subnetName = parts[1]
+func (a *API) findVnetSubnet(vnetSubnetStr string) (Network, error) {
+	parts := strings.SplitN(vnetSubnetStr, "/", 2)
+	vnetName := parts[0]
+	subnetName := "default"
+	if len(parts) > 1 {
+		subnetName = parts[1]
+	}
+	var net *armnetwork.VirtualNetwork
+	pager := a.netClient.NewListAllPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(context.TODO())
+		if err != nil {
+			return Network{}, fmt.Errorf("failed to iterate vnets: %w", err)
 		}
-		var net *armnetwork.VirtualNetwork
-		pager := a.netClient.NewListAllPager(nil)
-		for pager.More() {
-			page, err := pager.NextPage(context.TODO())
-			if err != nil {
-				return Network{}, fmt.Errorf("failed to iterate vnets: %w", err)
-			}
-			for _, vnet := range page.Value {
-				if vnet.Name != nil && *vnet.Name == vnetName {
-					net = vnet
-					break
-				}
-			}
-			if net != nil {
+		for _, vnet := range page.Value {
+			if vnet.Name != nil && *vnet.Name == vnetName {
+				net = vnet
 				break
 			}
 		}
-		if net == nil {
-			return Network{}, fmt.Errorf("failed to find vnet %s", vnetName)
+		if net != nil {
+			break
 		}
-		subnets := net.Properties.Subnets
-		if subnets == nil {
-			return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
-		}
-		for _, subnet := range subnets {
-			if subnet != nil && subnet.Name != nil && *subnet.Name == subnetName {
-				return Network{*subnet}, nil
-			}
-		}
+	}
+	if net == nil {
+		return Network{}, fmt.Errorf("failed to find vnet %s", vnetName)
+	}
+	subnets := net.Properties.Subnets
+	if subnets == nil {
 		return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
+	}
+	for _, subnet := range subnets {
+		if subnet != nil && subnet.Name != nil && *subnet.Name == subnetName {
+			return Network{*subnet}, nil
+		}
+	}
+	return Network{}, fmt.Errorf("failed to find subnet %s in vnet %s", subnetName, vnetName)
+}
+
+func (a *API) PrepareNetworkResources(resourceGroup string) (Network, error) {
+	if a.Opts.VnetSubnetName != "" {
+		return a.findVnetSubnet(a.Opts.VnetSubnetName)
 	}
 
 	if err := a.createVirtualNetwork(resourceGroup); err != nil {
