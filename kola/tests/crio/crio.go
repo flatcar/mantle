@@ -259,16 +259,16 @@ func crioNetwork(c cluster.TestCluster) {
 	machines := c.Machines()
 	src, dest := machines[0], machines[1]
 
-	c.Log("creating ncat containers")
+	c.Log("creating netcat containers")
 
 	// Since genContainer also generates crio pod/container configs,
 	// there will be a duplicate config file on each machine.
 	// Thus we only save one set for later use.
-	crioConfigPod, crioConfigContainer, err := genContainer(c, src, "ncat", "ncat", []string{"ncat", "echo"}, []string{"ncat"})
+	crioConfigPod, crioConfigContainer, err := genContainer(c, src, "netcat", "netcat", []string{"nc", "echo", "timeout"}, []string{"nc"})
 	if err != nil {
 		c.Fatal(err)
 	}
-	_, _, err = genContainer(c, dest, "ncat", "ncat", []string{"ncat", "echo"}, []string{"ncat"})
+	_, _, err = genContainer(c, dest, "netcat", "netcat", []string{"nc", "echo", "timeout"}, []string{"nc"})
 	if err != nil {
 		c.Fatal(err)
 	}
@@ -285,8 +285,8 @@ func crioNetwork(c cluster.TestCluster) {
 			return err
 		}
 
-		// This command will block until a message is recieved
-		output, err := c.SSH(dest, fmt.Sprintf("sudo timeout 30 crictl exec %s echo 'HELLO FROM SERVER' | timeout 20 ncat --listen 0.0.0.0 9988 || echo 'LISTENER TIMEOUT'", containerID))
+		// This command will block until a message is received
+		output, err := c.SSH(dest, fmt.Sprintf("sudo timeout 30 crictl exec %s echo 'HELLO FROM SERVER' | timeout 20 nc -l -N 0.0.0.0 9988 || echo 'LISTENER TIMEOUT'", containerID))
 		if err != nil {
 			return err
 		}
@@ -328,7 +328,7 @@ func crioNetwork(c cluster.TestCluster) {
 			return err
 		}
 
-		output, err := c.SSH(src, fmt.Sprintf("sudo crictl exec %s echo 'HELLO FROM CLIENT' | ncat %s 9988",
+		output, err := c.SSH(src, fmt.Sprintf("sudo crictl exec %s echo 'HELLO FROM CLIENT' | nc %s 9988",
 			containerID, dest.PrivateIP()))
 		if err != nil {
 			return err

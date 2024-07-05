@@ -275,15 +275,15 @@ func podmanNetworkTest(c cluster.TestCluster) {
 	machines := c.Machines()
 	src, dest := machines[0], machines[1]
 
-	c.Log("creating ncat containers")
+	c.Log("creating netcat containers")
 
-	tutil.GenPodmanScratchContainer(c, src, "ncat", []string{"ncat"})
-	tutil.GenPodmanScratchContainer(c, dest, "ncat", []string{"ncat"})
+	tutil.GenPodmanScratchContainer(c, src, "netcat", []string{"timeout", "nc"})
+	tutil.GenPodmanScratchContainer(c, dest, "netcat", []string{"timeout", "nc"})
 
 	listener := func(ctx context.Context) error {
 		// Will block until a message is recieved
 		out, err := c.SSH(dest,
-			`echo "HELLO FROM SERVER" | sudo podman run -i -p 9988:9988 ncat ncat --idle-timeout 20 --listen 0.0.0.0 9988`,
+			`echo "HELLO FROM SERVER" | sudo podman run -i -p 9988:9988 netcat timeout 20 nc -l -N 0.0.0.0 9988`,
 		)
 		if err != nil {
 			return err
@@ -317,7 +317,7 @@ func podmanNetworkTest(c cluster.TestCluster) {
 			}
 		}
 
-		srcCmd := fmt.Sprintf(`echo "HELLO FROM CLIENT" | sudo podman run -i ncat ncat %s 9988`, dest.PrivateIP())
+		srcCmd := fmt.Sprintf(`echo "HELLO FROM CLIENT" | sudo podman run -i netcat nc %s 9988`, dest.PrivateIP())
 		out, err := c.SSH(src, srcCmd)
 		if err != nil {
 			return err
