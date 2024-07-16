@@ -223,6 +223,7 @@ func init() {
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
 	sv(&kola.QEMUOptions.BIOSImage, "qemu-bios", "", "BIOS to use for QEMU vm")
+	sv(&kola.QEMUOptions.VNC, "qemu-vnc", "", "VNC port (0 for 5900, 1 for 5901, etc.)")
 	bv(&kola.QEMUOptions.UseVanillaImage, "qemu-skip-mangle", false, "don't modify CL disk image to capture console log")
 	sv(&kola.QEMUOptions.ExtraBaseDiskSize, "qemu-grow-base-disk-by", "", "grow base disk by the given size in bytes, following optional 1024-based suffixes are allowed: b (ignored), k, K, M, G, T")
 	bv(&kola.QEMUOptions.EnableTPM, "qemu-tpm", false, "enable TPM device in QEMU. Requires installing swtpm. Use only with 'kola spawn', test cases are responsible for creating a VM with TPM explicitly.")

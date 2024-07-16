@@ -38,6 +38,7 @@ type MachineOptions struct {
 	ExtraPrimaryDiskSize string
 	EnableTPM            bool
 	SoftwareTPMSocket    string
+	VNC                  string
 }
 
 type Disk struct {
@@ -373,6 +374,10 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		qmCmd = append(qmCmd,
 			"-fsdev", "local,id=cfg,security_model=none,readonly=on,path="+confPath,
 			"-device", Virtio(board, "9p", "fsdev=cfg,mount_tag=config-2"))
+	}
+
+	if options.VNC != "" {
+		qmCmd = append(qmCmd, "-vnc", fmt.Sprintf(":%s", options.VNC))
 	}
 
 	// auto-read-only is only available in 3.1.0 & greater versions of QEMU

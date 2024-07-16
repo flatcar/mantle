@@ -46,6 +46,9 @@ type Options struct {
 
 	EnableTPM bool
 
+	// VNC port to provide a VNC session
+	VNC string
+
 	*platform.Options
 }
 

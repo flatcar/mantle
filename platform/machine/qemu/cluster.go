@@ -46,6 +46,7 @@ func (qc *Cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		// Use for 'kola spawn'; test cases should pass true through
 		// NewMachineWithOptions()
 		EnableTPM: qc.flight.opts.EnableTPM,
+		VNC:       qc.flight.opts.VNC,
 	}
 	return qc.NewMachineWithOptions(userdata, options)
 }

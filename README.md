@@ -116,6 +116,13 @@ _Note for both architectures_:
 ```shell
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="sudo nsenter -n -t <PID of the QEMU instance> nc %h %p" -p 22 core@<IP of the QEMU instance>
 ```
+- using `--qemu-vnc 0`, it's possible to setup a VNC server. Similar to SSH you need to identify the PID of the `qemu` instance to setup a proxy:
+```
+mkfifo reply
+ncat -kl 12800 < reply | sudo nsenter -t "${QEMUPID}" -n ncat localhost 5900 > reply
+rm reply
+```
+Now, you can access the VNC session on localhost:12800 using a VNC client.
 
 ##### Advanced usage with Equinix Metal
 
