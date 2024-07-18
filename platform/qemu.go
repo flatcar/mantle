@@ -17,12 +17,14 @@ package platform
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	origExec "os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -293,7 +295,7 @@ func mkpath(basedir string) (string, error) {
 	return f.Name(), nil
 }
 
-func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImagePath string, isIgnition bool, options MachineOptions) ([]string, []*os.File, error) {
+func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, diskImagePath string, enableSecureboot, isIgnition bool, options MachineOptions) ([]string, []*os.File, error) {
 	var qmCmd []string
 
 	// As we expand this list of supported native + board
@@ -307,7 +309,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		qmBinary = "qemu-system-x86_64"
 		qmCmd = []string{
 			"qemu-system-x86_64",
-			"-machine", "accel=kvm",
+			"-machine", "q35,accel=kvm,smm=on",
 			"-cpu", "host",
 			"-m", "2512",
 		}
@@ -340,7 +342,6 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 	}
 
 	qmCmd = append(qmCmd,
-		"-bios", biosImage,
 		"-smp", "4",
 		"-uuid", uuid,
 		"-display", "none",
@@ -348,7 +349,37 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		"-serial", "chardev:log",
 		"-object", "rng-random,filename=/dev/urandom,id=rng0",
 		"-device", "virtio-rng-pci,rng=rng0",
+		"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=raw,readonly=on", firmware),
 	)
+
+	if enableSecureboot == true {
+		// Create a copy of the OVMF Vars
+		ovmfVarsSrc, err := os.Open(ovmfVars)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer ovmfVarsSrc.Close()
+
+		ovmfVarsCopy, err := ioutil.TempFile("/var/tmp/", "mantle-qemu")
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if _, err := io.Copy(ovmfVarsCopy, ovmfVarsSrc); err != nil {
+			return nil, nil, err
+		}
+
+		_, err = ovmfVarsCopy.Seek(0, 0)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		qmCmd = append(qmCmd,
+			"-global", "ICH9-LPC.disable_s3=1",
+			"-global", "driver=cfi.pflash01,property=secure,value=on",
+			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVarsCopy.Name()),
+		)
+	}
 
 	if options.EnableTPM {
 		var tpm string
@@ -413,6 +444,11 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 	fdset := 1
 
 	for _, disk := range allDisks {
+		bootIndexArg := ""
+		if slices.Contains(disk.DeviceOpts, "serial=primary-disk") {
+			bootIndexArg = ",bootindex=1"
+		}
+
 		optionsDiskFile, err := disk.setupFile()
 		if err != nil {
 			return nil, nil, err
@@ -423,7 +459,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		id := fmt.Sprintf("d%d", fdnum)
 		qmCmd = append(qmCmd, "-add-fd", fmt.Sprintf("fd=%d,set=%d", fdnum, fdset),
 			"-drive", fmt.Sprintf("if=none,id=%s,format=qcow2,file=/dev/fdset/%d%s", id, fdset, autoReadOnly),
-			"-device", Virtio(board, "blk", fmt.Sprintf("drive=%s%s", id, disk.getOpts())))
+			"-device", Virtio(board, "blk", fmt.Sprintf("drive=%s%s%s", id, disk.getOpts(), bootIndexArg)))
 		fdnum += 1
 		fdset += 1
 	}

@@ -163,6 +163,9 @@ type Options struct {
 	// Board is the board used by the image
 	Board string
 
+	// Toggle to instantiate a secureboot instance.
+	EnableSecureboot bool
+
 	// How many times to retry establishing an SSH connection when
 	// creating a journal or when doing a machine check.
 	SSHRetries int
