@@ -145,11 +145,15 @@ LinkLocalAddressing=no
 	}
 	// This uses path arguments with path values being
 	// relative to the folder created for this machine
-	biosImage, err := filepath.Abs(qc.flight.opts.BIOSImage)
+	firmware, err := filepath.Abs(qc.flight.opts.Firmware)
 	if err != nil {
-		return nil, fmt.Errorf("failed to canonicalize bios path: %v", err)
+		return nil, fmt.Errorf("failed to canonicalize firmware path: %v", err)
 	}
-	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, biosImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
+	ovmfVars, err := filepath.Abs(qc.flight.opts.OVMFVars)
+	if err != nil {
+		return nil, fmt.Errorf("failed to canonicalize ovmf vars path: %v", err)
+	}
+	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, firmware, ovmfVars, qm.consolePath, confPath, qc.flight.diskImagePath, qc.flight.opts.EnableSecureboot, conf.IsIgnition(), options)
 	if err != nil {
 		return nil, err
 	}
