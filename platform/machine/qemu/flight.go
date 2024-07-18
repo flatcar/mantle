@@ -35,9 +35,12 @@ type Options struct {
 	// DiskImage is the full path to the disk image to boot in QEMU.
 	DiskImage string
 
-	// BIOSImage is name of the BIOS file to pass to QEMU.
+	// Firmware is name of the Firmware file to pass to QEMU.
 	// It can be a plain name, or a full path.
-	BIOSImage string
+	Firmware string
+
+	// OMVF Vars file to pass to QEMU UEFI
+	OVMFVars string
 
 	// Don't modify CL disk images to add console logging
 	UseVanillaImage bool
