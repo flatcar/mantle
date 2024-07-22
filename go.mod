@@ -1,8 +1,6 @@
 module github.com/flatcar/mantle
 
-go 1.21
-
-toolchain go1.22.2
+go 1.22.5
 
 require (
 	cloud.google.com/go/storage v1.30.1
