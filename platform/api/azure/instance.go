@@ -258,7 +258,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.
 
 	clean := func() {
 		_, _ = a.compClient.BeginDelete(context.TODO(), vmResourceGroup, name, &armcompute.VirtualMachinesClientBeginDeleteOptions{
-			ForceDeletion: to.Ptr(true),
+			ForceDeletion: to.Ptr(false),
 		})
 		_, _ = a.intClient.BeginDelete(context.TODO(), resourceGroup, *nic.Name, nil)
 		_, _ = a.ipClient.BeginDelete(context.TODO(), resourceGroup, *ip.Name, nil)
@@ -325,7 +325,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	resourceGroup = a.getVMRG(resourceGroup)
 	_, err := a.compClient.BeginDelete(context.TODO(), resourceGroup, machine.ID, &armcompute.VirtualMachinesClientBeginDeleteOptions{
-		ForceDeletion: to.Ptr(true),
+		ForceDeletion: to.Ptr(false),
 	})
 	// We used to wait for the VM to be deleted here, but it's not necessary as
 	// we will also delete the resource group later.
