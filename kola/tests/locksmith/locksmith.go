@@ -152,6 +152,7 @@ func locksmithCluster(c cluster.TestCluster) {
 	}
 
 	c.MustSSH(machs[0], "locksmithctl status")
+	c.MustSSH(machs[0], "locksmithctl set-max 3")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
