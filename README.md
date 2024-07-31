@@ -87,26 +87,35 @@ Finally, a Flatcar image must be available on the system:
 
 Example with the latest `alpha` release:
 ```shell
-wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img.bz2
-wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img.bz2.sig
-gpg --verify ./flatcar_production_qemu_image.img.bz2.sig
-bzip2 -dk ./flatcar_production_qemu_image.img.bz2
-sudo ./bin/kola run --key ${HOME}/.ssd/id_rsa.pub -k -b cl -p qemu --board amd64-usr --qemu-image ./flatcar_production_qemu_image.img cl.locksmith.cluster
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img.sig
+gpg --verify flatcar_production_qemu_image.img.sig
+
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.fd
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
+gpg --verify flatcar_production_qemu_uefi_efi_code.fd.sig
+
+sudo ./bin/kola run --board amd64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu \
+    --qemu-bios flatcar_production_qemu_uefi_efi_code.fd \
+    --qemu-image flatcar_production_qemu_image.img \
+    cl.locksmith.cluster
 ```
 
 ###### Run tests for ARM64
 Example with the latest `alpha` release:
 ```shell
-wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2
-wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2.sig
-gpg --verify ./flatcar_production_image.bin.bz2.sig
-bzip2 -dk ./flatcar_production_image.bin.bz2.sig
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_secure_image.img
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_secure_image.img.sig
+gpg --verify flatcar_production_qemu_uefi_secure_image.img.sig
 
 wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd
 wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
-gpg --verify ./flatcar_production_qemu_uefi_efi_code.fd.sig
+gpg --verify flatcar_production_qemu_uefi_efi_code.fd.sig
 
-sudo ./bin/kola run --board arm64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu --qemu-image ./flatcar_production_image.bin --qemu-bios=./flatcar_production_qemu_uefi_efi_code.fd cl.etcd-member.discovery
+sudo ./bin/kola run --board arm64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu \
+    --qemu-bios flatcar_production_qemu_uefi_efi_code.fd \
+    --qemu-image flatcar_production_qemu_uefi_secure_image.bin \
+    cl.etcd-member.discovery
 ```
 
 _Note for both architectures_:
