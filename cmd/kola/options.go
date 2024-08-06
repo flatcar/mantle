@@ -417,5 +417,15 @@ func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
 		allKeys = append(allKeys, key)
 	}
 
+	// Ignition v3 does not allow duplicate keys so we need to deduplicate
+	allUniqueKeys := make(map[string]*agent.Key)
+	for _, key := range allKeys {
+		allUniqueKeys[string(key.Blob)] = &key
+	}
+	allKeys = []agent.Key{}
+	for _, value := range allUniqueKeys {
+		allKeys = append(allKeys, *value)
+	}
+
 	return allKeys, nil
 }
