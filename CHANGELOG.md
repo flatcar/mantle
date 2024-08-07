@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - DigitalOcean now supports deleting images with the same name ([#440](https://github.com/flatcar/mantle/pull/440))
 - Add support to plume azure release and pre-release to use managed identities ([#535](https://github.com/flatcar/mantle/pull/535))
 - Azure platform uses new go SDK, changing the way we authenticate (using azidentity now) ([#532](https://github.com/flatcar/mantle/pull/532))
+- Update storage config following Azure Compute Gallery Image API change ([#550](https://github.com/flatcar/mantle/pull/550))
 
 ### Removed
 

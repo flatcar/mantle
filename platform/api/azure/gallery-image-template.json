@@ -115,7 +115,7 @@
           "osDiskImage": {
             "hostCaching": "ReadOnly",
             "source": {
-              "id": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_name'))]",
+              "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_name'))]",
               "uri": "[parameters('vhd_uri')]"
             }
           }
