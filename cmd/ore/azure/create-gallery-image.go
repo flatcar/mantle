@@ -16,11 +16,13 @@ package azure
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/flatcar/azure-vhd-utils/op"
 	"github.com/flatcar/mantle/platform/api/azure"
 	"github.com/flatcar/mantle/sdk"
 	"github.com/spf13/cobra"
@@ -40,6 +42,7 @@ var (
 	resourceGrp      string
 	hyperVGeneration string
 	board            string
+	dbFile           string
 )
 
 func init() {
@@ -52,8 +55,27 @@ func init() {
 	sv(&hyperVGeneration, "hyper-v-generation", "V2", "Hyper-V generation (V2 or V1)")
 	sv(&board, "board", "amd64-usr", "board name (amd64-usr or arm64-usr)")
 	sv(&storageAccount, "storage-account", "", "storage account name (optional)")
+	sv(&dbFile, "db-file", "", "path to the DB secure boot certificate (optional)")
 
 	Azure.AddCommand(cmdCreateGalleryImage)
+}
+
+func readDbString(fname string) (string, error) {
+	buf, err := os.ReadFile(fname)
+	if err != nil {
+		return "", err
+	}
+	db := ""
+	for _, str := range strings.Split(string(buf), "\n") {
+		if strings.Contains(str, "-----BEGIN CERTIFICATE-----") {
+			continue
+		}
+		if strings.Contains(str, "-----END CERTIFICATE-----") {
+			continue
+		}
+		db += str
+	}
+	return db, nil
 }
 
 func azureSanitize(name string) string {
@@ -70,12 +92,19 @@ func runCreateGalleryImage(cmd *cobra.Command, args []string) error {
 	api.Opts.Board = board
 	api.Opts.HyperVGeneration = hyperVGeneration
 
+	var db string
+	if dbFile != "" {
+		db, err = readDbString(dbFile)
+		if err != nil {
+			plog.Fatalf("failed to read db file: %v", err)
+		}
+	}
 	if blobName == "" {
 		ver, err := sdk.VersionsFromDir(filepath.Dir(vhd))
 		if err != nil {
 			plog.Fatalf("Unable to get version from image directory, provide a -blob-name flag or include a version.txt in the image directory: %v\n", err)
 		}
-		blobName = fmt.Sprintf("flatcar-dev-%s-%s", os.Getenv("USER"), ver.Version)
+		blobName = fmt.Sprintf("flatcar-dev-%s-%s.vhd", os.Getenv("USER"), ver.Version)
 	}
 	if imageName == "" {
 		imageName = azureSanitize(strings.TrimSuffix(blobName, ".vhd"))
@@ -98,11 +127,16 @@ func runCreateGalleryImage(cmd *cobra.Command, args []string) error {
 	}
 
 	container := "vhds"
-	if err := azure.UploadBlob(client, vhd, container, blobName, true); err != nil {
-		plog.Fatalf("Uploading blob failed: %v", err)
+	if err := azure.UploadBlob(client, vhd, container, blobName, false); err != nil {
+		var operr op.Error
+		if errors.As(err, &operr) && operr == op.BlobAlreadyExists {
+			plog.Noticef("Blob %q already exists, skipping upload", blobName)
+		} else {
+			plog.Fatalf("Uploading blob failed: %v", err)
+		}
 	}
 	blobUrl := azure.BlobURL(client, container, blobName)
-	imgID, err := api.CreateGalleryImage(imageName, resourceGrp, storageAccount, blobUrl)
+	imgID, err := api.CreateGalleryImage(imageName, resourceGrp, storageAccount, blobUrl, db)
 	if err != nil {
 		plog.Fatalf("Couldn't create gallery image: %v\n", err)
 	}

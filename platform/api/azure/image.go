@@ -32,9 +32,10 @@ import (
 var galleryImageTemplate []byte
 
 const (
-	deploymentName    = "kolagalleryimage"
-	galleryNamePrefix = "kolaSIG"
-	imageVersion      = "0.0.0"
+	deploymentName     = "kolagalleryimage"
+	galleryNamePrefix  = "kolaSIG"
+	imageVersion       = "0.0.0"
+	secureImageVersion = "0.0.1"
 )
 
 type paramValue struct {
@@ -45,6 +46,8 @@ type galleryParams struct {
 	GalleriesName       paramValue `json:"galleries_name"`
 	ImageName           paramValue `json:"image_name"`
 	ImageVersion        paramValue `json:"image_version"`
+	SecureImageVersion  paramValue `json:"secure_image_version"`
+	DB                  paramValue `json:"db"`
 	StorageAccountsName paramValue `json:"storageAccounts_name"`
 	VhdUri              paramValue `json:"vhd_uri"`
 	Location            paramValue `json:"location"`
@@ -63,7 +66,7 @@ func azureArchForBoard(board string) string {
 }
 
 // CreateGalleryImage creates an Azure Compute Gallery with 1 image version referencing the blob as the disk
-func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI string) (string, error) {
+func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI, db string) (string, error) {
 	plog.Infof("Creating Gallery Image %s", name)
 	galleryName := randomNameEx(galleryNamePrefix, "")
 	template := make(map[string]interface{})
@@ -75,6 +78,8 @@ func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI st
 		GalleriesName:       paramValue{galleryName},
 		ImageName:           paramValue{name},
 		ImageVersion:        paramValue{imageVersion},
+		SecureImageVersion:  paramValue{secureImageVersion},
+		DB:                  paramValue{db},
 		StorageAccountsName: paramValue{storageAccount},
 		VhdUri:              paramValue{blobURI},
 		Location:            paramValue{a.Opts.Location},
@@ -106,13 +111,19 @@ func (a *API) CreateGalleryImage(name, resourceGroup, storageAccount, blobURI st
 	if err != nil {
 		return "", err
 	}
-	_, err = poller.PollUntilDone(context.TODO(), nil)
+	result, err := poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		return "", err
 	}
-	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s",
-		a.subID, resourceGroup, galleryName, name, imageVersion)
-	return id, nil
+	for _, entry := range result.Properties.OutputResources {
+		if entry == nil || entry.ID == nil {
+			continue
+		}
+		if strings.Contains(*entry.ID, "/versions/") {
+			return *entry.ID, nil
+		}
+	}
+	return "", fmt.Errorf("failed to find image version ID")
 }
 
 // CreateImage creates a managed image referencing the blob as the disk
