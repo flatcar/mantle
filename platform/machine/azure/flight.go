@@ -130,7 +130,7 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		targetBlobURL := azure.BlobURL(client, container, blobName)
 		var imgID string
 		if opts.UseGallery {
-			imgID, err = af.Api.CreateGalleryImage(imageName, af.ImageResourceGroup, af.ImageStorageAccount, targetBlobURL)
+			imgID, err = af.Api.CreateGalleryImage(imageName, af.ImageResourceGroup, af.ImageStorageAccount, targetBlobURL, "")
 			if err != nil {
 				return nil, fmt.Errorf("couldn't create gallery image: %w", err)
 			}
