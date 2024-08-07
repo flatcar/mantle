@@ -329,15 +329,6 @@ func azurePreRelease(ctx context.Context, client *http.Client, src *storage.Buck
 		if err != nil {
 			return err
 		}
-		sas, err := azure.SignBlob(client, container, blobName)
-		if err != nil {
-			plog.Fatalf("signing failed: %v", err)
-		}
-		url := azure.BlobURL(client, container, blobName)
-		plog.Noticef("Generated SAS: %q from %q for %q", sas, url, specChannel)
-		imageInfo.Azure = &azureImageInfo{
-			ImageName: sas, // the SAS URL can be used for publishing and for testing with kola via --azure-blob-url
-		}
 	}
 	return nil
 }
