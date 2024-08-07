@@ -405,7 +405,6 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 
 		plog.Printf("Signing %q in %q on %v...", blobName, container, environment.CloudName)
 
-		var url string
 		blobExists, err := azure.BlobExists(client, container, blobName)
 		if err != nil {
 			plog.Fatalf("failed to check if blob %q in account %q container %q exists: %v", blobName, spec.Azure.StorageAccount, container, err)
@@ -415,12 +414,6 @@ func doAzure(ctx context.Context, client *http.Client, src *storage.Bucket, spec
 			plog.Notice("Blob does not exist, skipping.")
 			return
 		}
-		url, err = azure.SignBlob(client, container, blobName)
-		if err != nil {
-			plog.Fatalf("signing failed: %v", err)
-		}
-		plog.Noticef("Generated SAS: %q for %q", url, specChannel)
-		plog.Noticef("Please update the SKU manually (or try to automate this step)!")
 	}
 }
 
