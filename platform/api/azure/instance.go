@@ -245,7 +245,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 	}
 	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
-		return &Machine{ID: name, State: PROVISIONING}, fmt.Errorf("PollUntilDone: %w", err)
+		return &Machine{ID: name, State: PROVISIONING}, fmt.Errorf("PollUntilDone(%s): %w", name, err)
 	}
 	plog.Infof("Instance %s created", name)
 
