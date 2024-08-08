@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
 
+	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/util"
 )
 
@@ -52,7 +53,7 @@ func (a *API) getVMRG(rg string) string {
 	return vmrg
 }
 
-func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface) armcompute.VirtualMachine {
+func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface) armcompute.VirtualMachine {
 	osProfile := armcompute.OSProfile{
 		AdminUsername: to.Ptr("core"),
 		ComputerName:  &name,
@@ -69,7 +70,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	}
 
 	// Encode userdata to base64.
-	ud := base64.StdEncoding.EncodeToString([]byte(userdata))
+	ud := base64.StdEncoding.EncodeToString(userdata.Bytes())
 
 	var imgRef *armcompute.ImageReference
 	var plan *armcompute.Plan
@@ -164,7 +165,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	// I don't think it would be an issue to have empty user-data set but better
 	// to be safe than sorry.
 	if ud != "" {
-		if a.Opts.UseUserData {
+		if a.Opts.UseUserData && userdata.IsIgnition() {
 			plog.Infof("using user-data")
 			vm.Properties.UserData = &ud
 		} else {
@@ -181,7 +182,7 @@ func (a *API) getVMParameters(name, userdata, sshkey, storageAccountURI string, 
 	return vm
 }
 
-func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccount string, network Network) (*Machine, error) {
+func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string, userdata *conf.Conf, network Network) (*Machine, error) {
 	// only VMs are created in the user supplied resource group, kola still manages a resource group
 	// for the gallery and storage account.
 	vmResourceGroup := a.getVMRG(resourceGroup)
@@ -203,7 +204,7 @@ func (a *API) CreateInstance(name, userdata, sshkey, resourceGroup, storageAccou
 		return nil, fmt.Errorf("couldn't get NIC name")
 	}
 
-	vmParams := a.getVMParameters(name, userdata, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), ip, nic)
+	vmParams := a.getVMParameters(name, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), userdata, ip, nic)
 	plog.Infof("Creating Instance %s", name)
 
 	clean := func() {
