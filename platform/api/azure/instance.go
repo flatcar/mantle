@@ -30,6 +30,13 @@ import (
 	"github.com/flatcar/mantle/util"
 )
 
+type MachineState int
+
+const (
+	READY MachineState = iota
+	PROVISIONING
+)
+
 type Machine struct {
 	ID               string
 	PublicIPAddress  string
@@ -331,6 +338,38 @@ func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	})
 	// We used to wait for the VM to be deleted here, but it's not necessary as
 	// we will also delete the resource group later.
+	return err
+}
+
+func (a *API) GetScreenshot(name, resourceGroup string, output io.Writer) error {
+	vmResourceGroup := a.getVMRG(resourceGroup)
+	param := &armcompute.VirtualMachinesClientRetrieveBootDiagnosticsDataOptions{
+		SasURIExpirationTimeInMinutes: to.Ptr[int32](5),
+	}
+	resp, err := a.compClient.RetrieveBootDiagnosticsData(context.TODO(), vmResourceGroup, name, param)
+	if err != nil {
+		return fmt.Errorf("could not get VM: %v", err)
+	}
+	if resp.ConsoleScreenshotBlobURI == nil {
+		return fmt.Errorf("console screenshot URI is nil")
+	}
+
+	var data io.ReadCloser
+	err = util.Retry(6, 10*time.Second, func() error {
+		reply, err := http.Get(*resp.ConsoleScreenshotBlobURI)
+		if err != nil {
+			return fmt.Errorf("could not GET console screenshot: %v", err)
+		}
+		data = reply.Body
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	written, err := io.Copy(output, data)
+	if err == nil {
+		plog.Debugf("wrote %d bytes to screenshot", written)
+	}
 	return err
 }
 

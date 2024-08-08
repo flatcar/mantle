@@ -126,6 +126,16 @@ func (am *machine) saveConsole() error {
 		return fmt.Errorf("failed writing console to file: %v", err)
 	}
 
+	if am.mach.CreateError != nil {
+		path := filepath.Join(am.dir, "screenshot.bmp")
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		return am.cluster.flight.Api.GetScreenshot(am.ID(), am.ResourceGroup(), f)
+	}
+
 	return nil
 }
 
