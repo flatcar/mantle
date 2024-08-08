@@ -243,9 +243,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 		clean()
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	_, err = poller.PollUntilDone(ctx, nil)
+	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
 		return &Machine{ID: name, State: PROVISIONING}, fmt.Errorf("PollUntilDone: %w", err)
 	}
