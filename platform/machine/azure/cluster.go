@@ -96,6 +96,13 @@ func (ac *cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 		return nil, err
 	}
 
+	// We want to get to this point on CreateError (eg. OS Provisioning Timeout)
+	// so that the serial console output is captured for debugging.
+	if instance.CreateError != nil {
+		mach.Destroy()
+		return nil, instance.CreateError
+	}
+
 	if mach.journal, err = platform.NewJournal(mach.dir); err != nil {
 		mach.Destroy()
 		return nil, err

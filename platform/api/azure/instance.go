@@ -36,6 +36,7 @@ type Machine struct {
 	PrivateIPAddress string
 	InterfaceName    string
 	PublicIPName     string
+	CreateError      error
 }
 
 // InstanceOptions contains optional parameters for instance creation
@@ -254,8 +255,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.
 	}
 	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
-		clean()
-		return nil, err
+		return &Machine{ID: name, CreateError: fmt.Errorf("PollUntilDone: %w", err)}, nil
 	}
 	plog.Infof("Instance %s created", name)
 
