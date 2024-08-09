@@ -64,10 +64,21 @@ func init() {
 		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 	register.Register(&register.Test{
-		Run:         dockerNetwork,
+		Run:         dockerNetworkNmapNcat,
 		ClusterSize: 2,
-		Name:        "docker.network",
+		Name:        "docker.network-nmap-ncat",
 		Distros:     []string{"cl"},
+		EndVersion:  semver.Version{Major: 4057},
+		// No idea why Docker containers cannot reach each the other VM
+		ExcludePlatforms: []string{"qemu-unpriv"},
+		// Should run on all cloud environments to check against network conflicts
+	})
+	register.Register(&register.Test{
+		Run:         dockerNetworkOpenBsdNc,
+		ClusterSize: 2,
+		Name:        "docker.network-openbsd-nc",
+		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 4057},
 		// No idea why Docker containers cannot reach each the other VM
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		// Should run on all cloud environments to check against network conflicts
@@ -362,21 +373,47 @@ func dockerResources(c cluster.TestCluster) {
 	}
 }
 
+type ncSetup struct {
+	imageName     string
+	binaries      []string
+	clientCommand string
+	serverCommand string
+}
+
+func dockerNetworkNmapNcat(c cluster.TestCluster) {
+	nc := ncSetup{
+		imageName:     "ncat",
+		binaries:      []string{"ncat"},
+		clientCommand: "ncat",
+		serverCommand: "ncat --idle-timeout 20 --listen",
+	}
+	dockerNetwork(c, nc)
+}
+
+func dockerNetworkOpenBsdNc(c cluster.TestCluster) {
+	nc := ncSetup{
+		imageName:     "netcat",
+		binaries:      []string{"nc", "timeout"},
+		clientCommand: "nc",
+		serverCommand: "timeout 20 nc -N -l",
+	}
+	dockerNetwork(c, nc)
+}
+
 // Ensure that docker containers can make network connections outside of the host
-func dockerNetwork(c cluster.TestCluster) {
+func dockerNetwork(c cluster.TestCluster, nc ncSetup) {
 	machines := c.Machines()
 	src, dest := machines[0], machines[1]
 
-	c.Log("creating ncat containers")
+	c.Logf("creating %s containers\n", nc.imageName)
 
-	GenDockerImage(c, src, "ncat", []string{"ncat"})
-	GenDockerImage(c, dest, "ncat", []string{"ncat"})
+	GenDockerImage(c, src, nc.imageName, nc.binaries)
+	GenDockerImage(c, dest, nc.imageName, nc.binaries)
 
 	listener := func(ctx context.Context) error {
-		// Will block until a message is recieved
-		out, err := c.SSH(dest,
-			`echo "HELLO FROM SERVER" | docker run -i -p 9988:9988 ncat ncat --idle-timeout 20 --listen 0.0.0.0 9988`,
-		)
+		// Will block until a message is received
+		destCmd := fmt.Sprintf(`echo "HELLO FROM SERVER" | docker run -i -p 9988:9988 %s %s 0.0.0.0 9988`, nc.imageName, nc.serverCommand)
+		out, err := c.SSH(dest, destCmd)
 		if err != nil {
 			return err
 		}
@@ -409,7 +446,7 @@ func dockerNetwork(c cluster.TestCluster) {
 			}
 		}
 
-		srcCmd := fmt.Sprintf(`echo "HELLO FROM CLIENT" | docker run -i ncat ncat %s 9988`, dest.PrivateIP())
+		srcCmd := fmt.Sprintf(`echo "HELLO FROM CLIENT" | docker run -i %s %s %s 9988`, nc.imageName, nc.clientCommand, dest.PrivateIP())
 		out, err := c.SSH(src, srcCmd)
 		if err != nil {
 			return err

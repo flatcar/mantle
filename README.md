@@ -128,7 +128,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand=
 - using `--qemu-vnc 0`, it's possible to setup a VNC server. Similar to SSH you need to identify the PID of the `qemu` instance to setup a proxy:
 ```
 mkfifo reply
-ncat -kl 12800 < reply | sudo nsenter -t "${QEMUPID}" -n ncat localhost 5900 > reply
+nc -kl 12800 < reply | sudo nsenter -t "${QEMUPID}" -n nc localhost 5900 > reply
 rm reply
 ```
 Now, you can access the VNC session on localhost:12800 using a VNC client.
