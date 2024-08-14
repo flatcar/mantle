@@ -80,16 +80,16 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		return nil, err
 	}
 
-	af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
-	if err != nil {
-		return nil, err
-	}
-	af.ImageStorageAccount, err = af.Api.CreateStorageAccount(af.ImageResourceGroup)
-	if err != nil {
-		return nil, err
-	}
-
 	if opts.BlobURL != "" || opts.ImageFile != "" {
+		af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
+		if err != nil {
+			return nil, err
+		}
+		af.ImageStorageAccount, err = af.Api.CreateStorageAccount(af.ImageResourceGroup)
+		if err != nil {
+			return nil, err
+		}
+
 		af.UseFlightRG = true
 		imageName := fmt.Sprintf("%v", time.Now().UnixNano())
 		blobName := imageName + ".vhd"
@@ -162,9 +162,6 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 	} else {
 		ac.sshKey = af.FakeSSHKey
 	}
-
-	ac.StorageAccountRG = af.ImageResourceGroup
-	ac.StorageAccount = af.ImageStorageAccount
 
 	if af.UseFlightRG {
 		ac.ResourceGroup = af.ImageResourceGroup

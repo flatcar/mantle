@@ -27,12 +27,10 @@ import (
 
 type cluster struct {
 	*platform.BaseCluster
-	flight           *flight
-	sshKey           string
-	ResourceGroup    string
-	StorageAccountRG string
-	StorageAccount   string
-	Network          azure.Network
+	flight        *flight
+	sshKey        string
+	ResourceGroup string
+	Network       azure.Network
 }
 
 func (ac *cluster) vmname() string {
@@ -49,7 +47,7 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	instance, createErr := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, conf, ac.Network)
+	instance, createErr := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, conf, ac.Network)
 	mach := &machine{
 		cluster: ac,
 		mach:    instance,

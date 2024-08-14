@@ -110,7 +110,7 @@ func (am *machine) ConsoleOutput() string {
 
 func (am *machine) saveConsole() error {
 	var err error
-	am.console, err = am.cluster.flight.Api.GetConsoleOutput(am.ID(), am.ResourceGroup(), am.cluster.StorageAccount)
+	am.console, err = am.cluster.flight.Api.GetConsoleOutput(am.ID(), am.ResourceGroup())
 	if err != nil {
 		return err
 	}
