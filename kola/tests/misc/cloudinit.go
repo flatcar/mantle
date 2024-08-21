@@ -155,8 +155,9 @@ hostname: "core1"
 write_files:
   - path: "/foo"
     content: bar`),
-		Distros:          []string{"cl"},
-		ExcludePlatforms: []string{"qemu-unpriv"},
+		Distros: []string{"cl"},
+		// Hetzner: we need to implement coreos-cloudinit support for Hetzner.
+		ExcludePlatforms: []string{"qemu-unpriv", "hetzner"},
 		// This should run on all clouds
 	})
 	register.Register(&register.Test{
