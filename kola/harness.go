@@ -673,6 +673,9 @@ func architecture(pltfrm string) string {
 	if pltfrm == "azure" && AzureOptions.Board != "" {
 		nativeArch = boardToArch(AzureOptions.Board)
 	}
+	if pltfrm == "hetzner" && HetznerOptions.Board != "" {
+		nativeArch = boardToArch(HetznerOptions.Board)
+	}
 	return nativeArch
 }
 
