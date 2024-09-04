@@ -304,12 +304,16 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 	// similar in cosa run
 	var qmBinary string
 	combo := runtime.GOARCH + "--" + board
+	smmFlag := ""
+	if enableSecureboot {
+		smmFlag = ",smm=on"
+	}
 	switch combo {
 	case "amd64--amd64-usr":
 		qmBinary = "qemu-system-x86_64"
 		qmCmd = []string{
 			"qemu-system-x86_64",
-			"-machine", "q35,accel=kvm,smm=on",
+			"-machine", fmt.Sprintf("q35,accel=kvm%s", smmFlag),
 			"-cpu", "host",
 			"-m", "2512",
 		}
@@ -341,6 +345,11 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 		panic("host-guest combo not supported: " + combo)
 	}
 
+	if ovmfVars == "" {
+		qmCmd = append(qmCmd,
+			"-bios", firmware,
+		)
+	}
 	qmCmd = append(qmCmd,
 		"-smp", "4",
 		"-uuid", uuid,
@@ -349,10 +358,14 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 		"-serial", "chardev:log",
 		"-object", "rng-random,filename=/dev/urandom,id=rng0",
 		"-device", "virtio-rng-pci,rng=rng0",
-		"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=raw,readonly=on", firmware),
 	)
+	if ovmfVars != "" {
+		qmCmd = append(qmCmd,
+			"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=raw,readonly=on", firmware),
+		)
+	}
 
-	if enableSecureboot == true {
+	if ovmfVars != "" {
 		// Create a copy of the OVMF Vars
 		ovmfVarsSrc, err := os.Open(ovmfVars)
 		if err != nil {
@@ -374,9 +387,13 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			return nil, nil, err
 		}
 
+		if enableSecureboot {
+			qmCmd = append(qmCmd,
+				"-global", "ICH9-LPC.disable_s3=1",
+				"-global", "driver=cfi.pflash01,property=secure,value=on",
+			)
+		}
 		qmCmd = append(qmCmd,
-			"-global", "ICH9-LPC.disable_s3=1",
-			"-global", "driver=cfi.pflash01,property=secure,value=on",
 			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVarsCopy.Name()),
 		)
 	}
