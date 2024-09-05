@@ -1,0 +1,52 @@
+name: Build other docker image
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: "Name of the image from the other-dockerfiles directory."
+        required: true
+        type: choice
+        options:
+        - targetcli-fb
+
+env:
+  REGISTRY: ghcr.io
+  ORG: flatcar
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: linux/amd64,linux/arm64
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: other-dockerfiles/${{ inputs.image_name }}
+        push: true
+        platforms: linux/amd64,linux/arm64
+        tags: ${{ env.REGISTRY }}/${{ env.ORG }}/${{ inputs.image_name }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
