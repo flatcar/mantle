@@ -22,7 +22,7 @@ import (
 func init() {
 	register.Register(&register.Test{
 		Run:         packageTests,
-		ClusterSize: 1,
+		ClusterSize: 2,
 		Name:        "packages",
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
@@ -32,4 +32,5 @@ func init() {
 
 func packageTests(c cluster.TestCluster) {
 	c.Run("sys-cluster/ipvsadm", ipvsadm)
+	c.Run("sys-block/open-iscsi", openISCSI)
 }
