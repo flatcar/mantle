@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	origExec "os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -295,6 +296,27 @@ func mkpath(basedir string) (string, error) {
 	return f.Name(), nil
 }
 
+func CreateOvmfVarsCopy(dir, ovmfVars string) (string, error) {
+	ovmfVarsDst := path.Join(dir, path.Base(ovmfVars))
+	ovmfVarsSrc, err := os.Open(ovmfVars)
+	if err != nil {
+		return "", err
+	}
+	defer ovmfVarsSrc.Close()
+
+	ovmfVarsCopy, err := os.Create(ovmfVarsDst)
+	if err != nil {
+		return "", err
+	}
+	defer ovmfVarsCopy.Close()
+
+	if _, err := io.Copy(ovmfVarsCopy, ovmfVarsSrc); err != nil {
+		os.Remove(ovmfVarsCopy.Name())
+		return "", err
+	}
+	return path.Base(ovmfVars), nil
+}
+
 func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, diskImagePath string, enableSecureboot, isIgnition bool, options MachineOptions) ([]string, []*os.File, error) {
 	var qmCmd []string
 
@@ -366,27 +388,6 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 	}
 
 	if ovmfVars != "" {
-		// Create a copy of the OVMF Vars
-		ovmfVarsSrc, err := os.Open(ovmfVars)
-		if err != nil {
-			return nil, nil, err
-		}
-		defer ovmfVarsSrc.Close()
-
-		ovmfVarsCopy, err := ioutil.TempFile("/var/tmp/", "mantle-qemu")
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if _, err := io.Copy(ovmfVarsCopy, ovmfVarsSrc); err != nil {
-			return nil, nil, err
-		}
-
-		_, err = ovmfVarsCopy.Seek(0, 0)
-		if err != nil {
-			return nil, nil, err
-		}
-
 		if enableSecureboot {
 			qmCmd = append(qmCmd,
 				"-global", "ICH9-LPC.disable_s3=1",
@@ -394,7 +395,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			)
 		}
 		qmCmd = append(qmCmd,
-			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVarsCopy.Name()),
+			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVars),
 		)
 	}
 
