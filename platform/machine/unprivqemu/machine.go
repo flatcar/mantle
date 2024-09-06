@@ -16,6 +16,8 @@ package unprivqemu
 
 import (
 	"io/ioutil"
+	"os"
+	"path"
 	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
@@ -32,6 +34,7 @@ type machine struct {
 	journal     *platform.Journal
 	consolePath string
 	console     string
+	ovmfVars    string
 	subDir      string
 	swtpm       *local.SoftwareTPM
 	ip          string
@@ -77,6 +80,12 @@ func (m *machine) Destroy() {
 
 	if m.swtpm != nil {
 		m.swtpm.Stop()
+	}
+	if m.ovmfVars != "" {
+		err := os.Remove(path.Join(m.subDir, m.ovmfVars))
+		if err != nil {
+			plog.Errorf("Error removing OVMF vars: %v", err)
+		}
 	}
 	m.journal.Destroy()
 
