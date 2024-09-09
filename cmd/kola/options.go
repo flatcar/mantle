@@ -223,6 +223,8 @@ func init() {
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
+	sv(&kola.QEMUOptions.Firmware, "qemu-bios", "", "bios to use for QEMU vm")
+	root.PersistentFlags().MarkDeprecated("qemu-bios", "use --qemu-firmware")
 	sv(&kola.QEMUOptions.Firmware, "qemu-firmware", "", "firmware image to use for QEMU vm")
 	sv(&kola.QEMUOptions.VNC, "qemu-vnc", "", "VNC port (0 for 5900, 1 for 5901, etc.)")
 	sv(&kola.QEMUOptions.OVMFVars, "qemu-ovmf-vars", "", "OVMF vars file to use for QEMU vm")
