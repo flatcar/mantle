@@ -223,6 +223,13 @@ var (
 	}
 )
 
+func SkipSecureboot(_ semver.Version, channel, arch, platform string) bool {
+	if Options.EnableSecureboot {
+		return true
+	}
+	return false
+}
+
 // NativeRunner is a closure passed to all kola test functions and used
 // to run native go functions directly on kola machines. It is necessary
 // glue until kola does introspection.
