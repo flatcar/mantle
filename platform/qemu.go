@@ -377,6 +377,10 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVars),
 		)
 		if enableSecureboot {
+			// When OVMF is built for X64 with SMM enabled S3 (suspend/resume)
+			// must be disabled. This is required for secure boot and not very
+			// well documented. The flag comes from here:
+			// https://github.com/tianocore/edk2/blob/b81557a00c61cc80ab118828f16ed9ce79455880/OvmfPkg/README#L213
 			qmCmd = append(qmCmd,
 				"-global", "ICH9-LPC.disable_s3=1",
 				"-global", "driver=cfi.pflash01,property=secure,value=on",
