@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-semver/semver"
+	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform"
@@ -133,7 +134,7 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3902},
-		SkipFunc:   skipOnGha,
+		SkipFunc:   skipZfs,
 	})
 
 	register.Register(&register.Test{
@@ -144,7 +145,7 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3902},
-		SkipFunc:   skipOnGha,
+		SkipFunc:   skipZfs,
 	})
 
 	register.Register(&register.Test{
@@ -155,8 +156,12 @@ func init() {
 		// This test is normally not related to the cloud environment
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3902},
-		SkipFunc:   skipOnGha,
+		SkipFunc:   skipZfs,
 	})
+}
+
+func skipZfs(version semver.Version, channel, arch, platform string) bool {
+	return kola.SkipSecureboot(version, channel, arch, platform) || skipOnGha(version, channel, arch, platform)
 }
 
 func skipOnGha(version semver.Version, channel, arch, platform string) bool {
