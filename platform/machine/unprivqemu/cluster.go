@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -143,13 +144,26 @@ LinkLocalAddressing=no
 			}
 		}()
 	}
+
+	ovmfVars := ""
+	if qc.flight.opts.OVMFVars != "" {
+		ovmfVars, err = platform.CreateOvmfVarsCopy(qm.subDir, qc.flight.opts.OVMFVars)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			if ovmfVars != "" {
+				os.Remove(path.Join(qm.subDir, ovmfVars))
+			}
+		}()
+	}
 	// This uses path arguments with path values being
 	// relative to the folder created for this machine
-	biosImage, err := filepath.Abs(qc.flight.opts.BIOSImage)
+	firmware, err := filepath.Abs(qc.flight.opts.Firmware)
 	if err != nil {
-		return nil, fmt.Errorf("failed to canonicalize bios path: %v", err)
+		return nil, fmt.Errorf("failed to canonicalize firmware path: %v", err)
 	}
-	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, biosImage, qm.consolePath, confPath, qc.flight.diskImagePath, conf.IsIgnition(), options)
+	qmCmd, extraFiles, err := platform.CreateQEMUCommand(qc.flight.opts.Board, qm.id, firmware, ovmfVars, qm.consolePath, confPath, qc.flight.diskImagePath, qc.flight.opts.EnableSecureboot, conf.IsIgnition(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +196,7 @@ LinkLocalAddressing=no
 
 	// from this point on Destroy() is responsible for cleaning up swtpm
 	qm.swtpm, swtpm = swtpm, nil
+	qm.ovmfVars, ovmfVars = ovmfVars, ""
 	plog.Debugf("qemu PID (manual cleanup needed if --remove=false): %v", qm.qemu.Pid())
 
 	pid := strconv.Itoa(qm.qemu.Pid())

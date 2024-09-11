@@ -20,15 +20,18 @@ import (
 	"io/ioutil"
 	"os"
 	origExec "os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/coreos/go-semver/semver"
 
+	"github.com/flatcar/mantle/system"
 	"github.com/flatcar/mantle/system/exec"
 	"github.com/flatcar/mantle/util"
 )
@@ -293,7 +296,18 @@ func mkpath(basedir string) (string, error) {
 	return f.Name(), nil
 }
 
-func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImagePath string, isIgnition bool, options MachineOptions) ([]string, []*os.File, error) {
+// returns basename of the copied file because it is intended
+// to be used by qemu, which will be started in dir
+func CreateOvmfVarsCopy(dir, ovmfVars string) (string, error) {
+	ovmfVarsDst := path.Join(dir, path.Base(ovmfVars))
+	err := system.CopyRegularFile(ovmfVars, ovmfVarsDst)
+	if err != nil {
+		return "", err
+	}
+	return path.Base(ovmfVars), nil
+}
+
+func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, diskImagePath string, enableSecureboot, isIgnition bool, options MachineOptions) ([]string, []*os.File, error) {
 	var qmCmd []string
 
 	// As we expand this list of supported native + board
@@ -302,12 +316,16 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 	// similar in cosa run
 	var qmBinary string
 	combo := runtime.GOARCH + "--" + board
+	smmFlag := ""
+	if enableSecureboot {
+		smmFlag = ",smm=on"
+	}
 	switch combo {
 	case "amd64--amd64-usr":
 		qmBinary = "qemu-system-x86_64"
 		qmCmd = []string{
 			"qemu-system-x86_64",
-			"-machine", "accel=kvm",
+			"-machine", fmt.Sprintf("q35,accel=kvm%s", smmFlag),
 			"-cpu", "host",
 			"-m", "2512",
 		}
@@ -339,8 +357,12 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		panic("host-guest combo not supported: " + combo)
 	}
 
+	if ovmfVars == "" {
+		qmCmd = append(qmCmd,
+			"-bios", firmware,
+		)
+	}
 	qmCmd = append(qmCmd,
-		"-bios", biosImage,
 		"-smp", "4",
 		"-uuid", uuid,
 		"-display", "none",
@@ -349,6 +371,22 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		"-object", "rng-random,filename=/dev/urandom,id=rng0",
 		"-device", "virtio-rng-pci,rng=rng0",
 	)
+	if ovmfVars != "" {
+		qmCmd = append(qmCmd,
+			"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=raw,readonly=on", firmware),
+			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVars),
+		)
+		if enableSecureboot {
+			// When OVMF is built for X64 with SMM enabled S3 (suspend/resume)
+			// must be disabled. This is required for secure boot and not very
+			// well documented. The flag comes from here:
+			// https://github.com/tianocore/edk2/blob/b81557a00c61cc80ab118828f16ed9ce79455880/OvmfPkg/README#L213
+			qmCmd = append(qmCmd,
+				"-global", "ICH9-LPC.disable_s3=1",
+				"-global", "driver=cfi.pflash01,property=secure,value=on",
+			)
+		}
+	}
 
 	if options.EnableTPM {
 		var tpm string
@@ -413,6 +451,11 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 	fdset := 1
 
 	for _, disk := range allDisks {
+		bootIndexArg := ""
+		if slices.Contains(disk.DeviceOpts, "serial=primary-disk") {
+			bootIndexArg = ",bootindex=1"
+		}
+
 		optionsDiskFile, err := disk.setupFile()
 		if err != nil {
 			return nil, nil, err
@@ -423,7 +466,7 @@ func CreateQEMUCommand(board, uuid, biosImage, consolePath, confPath, diskImageP
 		id := fmt.Sprintf("d%d", fdnum)
 		qmCmd = append(qmCmd, "-add-fd", fmt.Sprintf("fd=%d,set=%d", fdnum, fdset),
 			"-drive", fmt.Sprintf("if=none,id=%s,format=qcow2,file=/dev/fdset/%d%s", id, fdset, autoReadOnly),
-			"-device", Virtio(board, "blk", fmt.Sprintf("drive=%s%s", id, disk.getOpts())))
+			"-device", Virtio(board, "blk", fmt.Sprintf("drive=%s%s%s", id, disk.getOpts(), bootIndexArg)))
 		fdnum += 1
 		fdset += 1
 	}

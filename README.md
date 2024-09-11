@@ -95,8 +95,13 @@ wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_productio
 wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
 gpg --verify flatcar_production_qemu_uefi_efi_code.fd.sig
 
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_vars.fd
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_vars.fd.sig
+gpg --verify flatcar_production_qemu_uefi_efi_vars.fd.sig
+
 sudo ./bin/kola run --board amd64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu \
-    --qemu-bios flatcar_production_qemu_uefi_efi_code.fd \
+    --qemu-firmware flatcar_production_qemu_uefi_efi_code.fd \
+    --qemu-ovmf-vars flatcar_production_qemu_uefi_efi_vars.fd \
     --qemu-image flatcar_production_qemu_image.img \
     cl.locksmith.cluster
 ```
@@ -104,17 +109,17 @@ sudo ./bin/kola run --board amd64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p 
 ###### Run tests for ARM64
 Example with the latest `alpha` release:
 ```shell
-wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_secure_image.img
-wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_secure_image.img.sig
-gpg --verify flatcar_production_qemu_uefi_secure_image.img.sig
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_image.img
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_image.img.sig
+gpg --verify flatcar_production_qemu_uefi_image.img.sig
 
 wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd
 wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
 gpg --verify flatcar_production_qemu_uefi_efi_code.fd.sig
 
 sudo ./bin/kola run --board arm64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu \
-    --qemu-bios flatcar_production_qemu_uefi_efi_code.fd \
-    --qemu-image flatcar_production_qemu_uefi_secure_image.bin \
+    --qemu-firmware flatcar_production_qemu_uefi_efi_code.fd \
+    --qemu-image flatcar_production_qemu_uefi_image.img \
     cl.etcd-member.discovery
 ```
 

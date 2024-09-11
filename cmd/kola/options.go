@@ -54,7 +54,7 @@ var (
 		"rhcos": "v3",
 	}
 
-	kolaDefaultBIOS = map[string]string{
+	kolaDefaultFirmware = map[string]string{
 		"amd64-usr": "bios-256k.bin",
 		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_qemu_uefi_efi_code.fd",
 	}
@@ -87,6 +87,7 @@ func init() {
 	sv(&kola.UpdatePayloadFile, "update-payload", "", "Path to an update payload that should be made available to tests")
 	bv(&kola.ForceFlatcarKey, "force-flatcar-key", false, "Use the Flatcar production key to verify update payload")
 	sv(&kola.Options.IgnitionVersion, "ignition-version", "", "Ignition version override: v2, v3")
+	bv(&kola.Options.EnableSecureboot, "enable-secureboot", false, "Instantiate a Secureboot Machine")
 	iv(&kola.Options.SSHRetries, "ssh-retries", kolaSSHRetries, "Number of retries with the SSH timeout when starting the machine")
 	dv(&kola.Options.SSHTimeout, "ssh-timeout", kolaSSHTimeout, "A timeout for a single try of establishing an SSH connection when starting the machine")
 
@@ -222,8 +223,11 @@ func init() {
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
-	sv(&kola.QEMUOptions.BIOSImage, "qemu-bios", "", "BIOS to use for QEMU vm")
+	sv(&kola.QEMUOptions.Firmware, "qemu-bios", "", "bios to use for QEMU vm")
+	root.PersistentFlags().MarkDeprecated("qemu-bios", "use --qemu-firmware")
+	sv(&kola.QEMUOptions.Firmware, "qemu-firmware", "", "firmware image to use for QEMU vm")
 	sv(&kola.QEMUOptions.VNC, "qemu-vnc", "", "VNC port (0 for 5900, 1 for 5901, etc.)")
+	sv(&kola.QEMUOptions.OVMFVars, "qemu-ovmf-vars", "", "OVMF vars file to use for QEMU vm")
 	bv(&kola.QEMUOptions.UseVanillaImage, "qemu-skip-mangle", false, "don't modify CL disk image to capture console log")
 	sv(&kola.QEMUOptions.ExtraBaseDiskSize, "qemu-grow-base-disk-by", "", "grow base disk by the given size in bytes, following optional 1024-based suffixes are allowed: b (ignored), k, K, M, G, T")
 	bv(&kola.QEMUOptions.EnableTPM, "qemu-tpm", false, "enable TPM device in QEMU. Requires installing swtpm. Use only with 'kola spawn', test cases are responsible for creating a VM with TPM explicitly.")
@@ -310,8 +314,11 @@ func syncOptions() error {
 		kola.QEMUOptions.DiskImage = image
 	}
 
-	if kola.QEMUOptions.BIOSImage == "" {
-		kola.QEMUOptions.BIOSImage = kolaDefaultBIOS[kola.QEMUOptions.Board]
+	if kola.QEMUOptions.Firmware == "" {
+		kola.QEMUOptions.Firmware = kolaDefaultFirmware[kola.QEMUOptions.Board]
+	}
+	if kola.QEMUOptions.EnableSecureboot && kola.QEMUOptions.OVMFVars == "" {
+		return fmt.Errorf("Secureboot requires OVMF vars file")
 	}
 	units, _ := root.PersistentFlags().GetStringSlice("debug-systemd-units")
 	for _, unit := range units {
