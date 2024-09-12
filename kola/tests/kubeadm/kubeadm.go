@@ -119,6 +119,7 @@ var (
 	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
 etcd:
+  version: 3.5.16
   advertise_client_urls: http://{PRIVATE_IPV4}:2379
   listen_client_urls: http://0.0.0.0:2379`)
 )
