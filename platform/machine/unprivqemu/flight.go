@@ -81,6 +81,7 @@ func (qf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 }
 
 func (qf *flight) Destroy() {
+	qf.BaseFlight.Destroy()
 	if qf.diskImageFile != nil {
 		qf.diskImageFile.Close()
 	}

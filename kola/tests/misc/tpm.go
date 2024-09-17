@@ -302,6 +302,15 @@ func init() {
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
 	})
+
+	register.Register(&register.Test{
+		Run:         eventLogTest,
+		ClusterSize: 0,
+		Platforms:   []string{"qemu"},
+		Name:        "cl.tpm.eventlog",
+		Distros:     []string{"cl"},
+		MinVersion:  semver.Version{Major: 4082},
+	})
 }
 
 func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, variant string) {
@@ -358,4 +367,28 @@ func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, 
 		}
 		checkIfMountpointIsEncrypted(c, m, "/")
 	}
+}
+
+func eventLogTest(c cluster.TestCluster) {
+	options := platform.MachineOptions{EnableTPM: true}
+	var (
+		m   platform.Machine
+		err error
+	)
+	switch pc := c.Cluster.(type) {
+	// These cases have to be separated because otherwise the golang compiler doesn't type-check
+	// the case bodies using the proper subtype of `pc`.
+	case *qemu.Cluster:
+		m, err = pc.NewMachineWithOptions(nil, options)
+	case *unprivqemu.Cluster:
+		m, err = pc.NewMachineWithOptions(nil, options)
+	default:
+		c.Fatal("unknown cluster type")
+	}
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	// Verify that the TPM event log is working.
+	_ = c.MustSSH(m, "sudo tpm2_eventlog /sys/kernel/security/tpm0/binary_bios_measurements")
 }
