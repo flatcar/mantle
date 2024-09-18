@@ -103,6 +103,8 @@ type Options struct {
 	// Google Storage base URL for temporary uploads
 	// e.g. gs://users.developer.core-os.net/bovik/mantle
 	StorageURL string
+	// StorageSSHPort is the port used to SSH into the "storage" server a SSH URL is provided.
+	StorageSSHPort string
 	// Metro is where you want your server to live.
 	Metro string
 
@@ -216,7 +218,7 @@ func New(opts *Options) (*API, error) {
 			},
 		}
 
-		client, err := ssh.Dial("tcp", url.Host, cfg)
+		client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", url.Hostname(), opts.StorageSSHPort), cfg)
 		if err != nil {
 			return nil, fmt.Errorf("creating SSH client: %w", err)
 		}
@@ -235,7 +237,7 @@ func New(opts *Options) (*API, error) {
 			protocol = proto
 		}
 
-		storage = sshstorage.New(client, url.Hostname(), opts.RemoteDocumentRoot, protocol)
+		storage = sshstorage.New(client, url.Host, opts.RemoteDocumentRoot, protocol)
 	}
 
 	if opts.LaunchTimeout == 0 {
