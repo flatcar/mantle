@@ -315,6 +315,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 	// coreos-assembler folks as they utilize something
 	// similar in cosa run
 	var qmBinary string
+	vmMemSizeMB := "3072"
 	combo := runtime.GOARCH + "--" + board
 	smmFlag := ""
 	if enableSecureboot {
@@ -327,7 +328,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			"qemu-system-x86_64",
 			"-machine", fmt.Sprintf("q35,accel=kvm%s", smmFlag),
 			"-cpu", "host",
-			"-m", "2512",
+			"-m", vmMemSizeMB,
 		}
 	case "amd64--arm64-usr":
 		qmBinary = "qemu-system-aarch64"
@@ -335,7 +336,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			"qemu-system-aarch64",
 			"-machine", "virt",
 			"-cpu", "cortex-a57",
-			"-m", "2512",
+			"-m", vmMemSizeMB,
 		}
 	case "arm64--amd64-usr":
 		qmBinary = "qemu-system-x86_64"
@@ -343,7 +344,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			"qemu-system-x86_64",
 			"-machine", "pc-q35-2.8",
 			"-cpu", "kvm64",
-			"-m", "2512",
+			"-m", vmMemSizeMB,
 		}
 	case "arm64--arm64-usr":
 		qmBinary = "qemu-system-aarch64"
@@ -351,7 +352,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			"qemu-system-aarch64",
 			"-machine", "virt,accel=kvm,gic-version=3",
 			"-cpu", "host",
-			"-m", "2512",
+			"-m", vmMemSizeMB,
 		}
 	default:
 		panic("host-guest combo not supported: " + combo)
