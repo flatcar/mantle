@@ -372,9 +372,22 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 		"-device", "virtio-rng-pci,rng=rng0",
 	)
 	if ovmfVars != "" {
+		var fwFormat, varsFormat string
+
+		if strings.HasSuffix(firmware, ".qcow2") {
+			fwFormat = "qcow2"
+		} else {
+			fwFormat = "raw"
+		}
+		if strings.HasSuffix(ovmfVars, ".qcow2") {
+			varsFormat = "qcow2"
+		} else {
+			varsFormat = "raw"
+		}
+
 		qmCmd = append(qmCmd,
-			"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=raw,readonly=on", firmware),
-			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=raw", ovmfVars),
+			"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=%v,readonly=on", firmware, fwFormat),
+			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=%v", ovmfVars, varsFormat),
 		)
 		if enableSecureboot {
 			// When OVMF is built for X64 with SMM enabled S3 (suspend/resume)

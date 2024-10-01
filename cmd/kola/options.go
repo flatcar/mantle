@@ -56,7 +56,7 @@ var (
 
 	kolaDefaultFirmware = map[string]string{
 		"amd64-usr": "bios-256k.bin",
-		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_qemu_uefi_efi_code.fd",
+		"arm64-usr": sdk.BuildRoot() + "/images/arm64-usr/latest/flatcar_production_qemu_uefi_efi_code.qcow2",
 	}
 
 	kolaSSHRetries = 60
