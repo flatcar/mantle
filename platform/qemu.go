@@ -389,7 +389,7 @@ func CreateQEMUCommand(board, uuid, firmware, ovmfVars, consolePath, confPath, d
 			"-drive", fmt.Sprintf("if=pflash,unit=0,file=%v,format=%v,readonly=on", firmware, fwFormat),
 			"-drive", fmt.Sprintf("if=pflash,unit=1,file=%v,format=%v", ovmfVars, varsFormat),
 		)
-		if enableSecureboot {
+		if enableSecureboot && board == "amd64-usr" {
 			// When OVMF is built for X64 with SMM enabled S3 (suspend/resume)
 			// must be disabled. This is required for secure boot and not very
 			// well documented. The flag comes from here:
