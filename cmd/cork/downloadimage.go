@@ -87,7 +87,7 @@ func (platforms *platformList) Set(value string) error {
 		"esx":       {"_vmware_ova.ova"},
 		"gce":       {"_gce.tar.gz"},
 		"qemu":      {"_image.bin.bz2"},
-		"qemu_uefi": {"_qemu_uefi_efi_code.fd", "_qemu_uefi_efi_vars.fd", "_image.bin.bz2"},
+		"qemu_uefi": {"_qemu_uefi_efi_code.qcow2", "_qemu_uefi_efi_vars.qcow2", "_image.bin.bz2"},
 	}
 
 	values := strings.Split(value, ",")

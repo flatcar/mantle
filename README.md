@@ -91,17 +91,17 @@ wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_productio
 wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img.sig
 gpg --verify flatcar_production_qemu_image.img.sig
 
-wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.fd
-wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
-gpg --verify flatcar_production_qemu_uefi_efi_code.fd.sig
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.qcow2
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_code.qcow2.sig
+gpg --verify flatcar_production_qemu_uefi_efi_code.qcow2.sig
 
-wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_vars.fd
-wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_vars.fd.sig
-gpg --verify flatcar_production_qemu_uefi_efi_vars.fd.sig
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_vars.qcow2
+wget https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_uefi_efi_vars.qcow2.sig
+gpg --verify flatcar_production_qemu_uefi_efi_vars.qcow2.sig
 
 sudo ./bin/kola run --board amd64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu \
-    --qemu-firmware flatcar_production_qemu_uefi_efi_code.fd \
-    --qemu-ovmf-vars flatcar_production_qemu_uefi_efi_vars.fd \
+    --qemu-firmware flatcar_production_qemu_uefi_efi_code.qcow2 \
+    --qemu-ovmf-vars flatcar_production_qemu_uefi_efi_vars.qcow2 \
     --qemu-image flatcar_production_qemu_image.img \
     cl.locksmith.cluster
 ```
@@ -113,12 +113,12 @@ wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_productio
 wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_image.img.sig
 gpg --verify flatcar_production_qemu_uefi_image.img.sig
 
-wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd
-wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.fd.sig
-gpg --verify flatcar_production_qemu_uefi_efi_code.fd.sig
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.qcow2
+wget https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_qemu_uefi_efi_code.qcow2.sig
+gpg --verify flatcar_production_qemu_uefi_efi_code.qcow2.sig
 
 sudo ./bin/kola run --board arm64-usr --key ${HOME}/.ssh/id_rsa.pub -k -b cl -p qemu \
-    --qemu-firmware flatcar_production_qemu_uefi_efi_code.fd \
+    --qemu-firmware flatcar_production_qemu_uefi_efi_code.qcow2 \
     --qemu-image flatcar_production_qemu_uefi_image.img \
     cl.etcd-member.discovery
 ```

@@ -21,6 +21,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/kola/tests/util"
@@ -58,6 +59,9 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		// Changing the verity hash breaks Secure Boot verification, causing
+		// GRUB to error and then just sit at the menu forever.
+		SkipFunc: kola.SkipSecureboot,
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadUsr,
@@ -68,6 +72,9 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		// Changing the verity hash breaks Secure Boot verification, causing
+		// GRUB to error and then just sit at the menu forever.
+		SkipFunc: kola.SkipSecureboot,
 	})
 }
 
