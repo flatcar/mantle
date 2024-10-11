@@ -27,11 +27,12 @@ import (
 
 type cluster struct {
 	*platform.BaseCluster
-	flight         *flight
-	sshKey         string
-	ResourceGroup  string
-	StorageAccount string
-	Network        azure.Network
+	flight           *flight
+	sshKey           string
+	ResourceGroup    string
+	StorageAccountRG string
+	StorageAccount   string
+	Network          azure.Network
 }
 
 func (ac *cluster) vmname() string {
@@ -48,20 +49,23 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, conf, ac.Network)
-	if err != nil {
-		return nil, err
-	}
-
+	instance, createErr := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, conf, ac.Network)
 	mach := &machine{
 		cluster: ac,
 		mach:    instance,
+	}
+	if instance == nil {
+		return nil, createErr
 	}
 
 	mach.dir = filepath.Join(ac.RuntimeConf().OutputDir, mach.ID())
 	if err := os.Mkdir(mach.dir, 0777); err != nil {
 		mach.Destroy()
 		return nil, err
+	}
+	if createErr != nil {
+		mach.Destroy()
+		return nil, createErr
 	}
 
 	confPath := filepath.Join(mach.dir, "user-data")

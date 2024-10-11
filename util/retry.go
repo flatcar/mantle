@@ -57,8 +57,6 @@ func WaitUntilReady(timeout, delay time.Duration, checkFunction func() (bool, er
 		default:
 		}
 
-		time.Sleep(delay)
-
 		done, err := checkFunction()
 		if err != nil {
 			return err
@@ -67,6 +65,8 @@ func WaitUntilReady(timeout, delay time.Duration, checkFunction func() (bool, er
 		if done {
 			break
 		}
+
+		time.Sleep(delay)
 	}
 	return nil
 }
