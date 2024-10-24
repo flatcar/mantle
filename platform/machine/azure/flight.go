@@ -41,6 +41,7 @@ type flight struct {
 	ImageResourceGroup  string
 	ImageStorageAccount string
 	Network             azure.Network
+	UseFlightRG         bool
 }
 
 // NewFlight creates an instance of a Flight suitable for spawning
@@ -79,20 +80,20 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		return nil, err
 	}
 
+	af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
+	if err != nil {
+		return nil, err
+	}
+	af.ImageStorageAccount, err = af.Api.CreateStorageAccount(af.ImageResourceGroup)
+	if err != nil {
+		return nil, err
+	}
+
 	if opts.BlobURL != "" || opts.ImageFile != "" {
+		af.UseFlightRG = true
 		imageName := fmt.Sprintf("%v", time.Now().UnixNano())
 		blobName := imageName + ".vhd"
 		container := "temp"
-
-		af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
-		if err != nil {
-			return nil, err
-		}
-
-		af.ImageStorageAccount, err = af.Api.CreateStorageAccount(af.ImageResourceGroup)
-		if err != nil {
-			return nil, err
-		}
 
 		af.Network, err = af.Api.PrepareNetworkResources(af.ImageResourceGroup)
 		if err != nil {
@@ -162,21 +163,17 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		ac.sshKey = af.FakeSSHKey
 	}
 
-	if af.ImageResourceGroup != "" && af.ImageStorageAccount != "" {
+	ac.StorageAccountRG = af.ImageResourceGroup
+	ac.StorageAccount = af.ImageStorageAccount
+
+	if af.UseFlightRG {
 		ac.ResourceGroup = af.ImageResourceGroup
-		ac.StorageAccount = af.ImageStorageAccount
 		ac.Network = af.Network
 	} else {
 		ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
 		if err != nil {
 			return nil, err
 		}
-
-		ac.StorageAccount, err = af.Api.CreateStorageAccount(ac.ResourceGroup)
-		if err != nil {
-			return nil, err
-		}
-
 		ac.Network, err = af.Api.PrepareNetworkResources(ac.ResourceGroup)
 		if err != nil {
 			ac.Destroy()

@@ -60,7 +60,7 @@ func Execute(main *cobra.Command) {
 		"Alias for --log-level=DEBUG")
 
 	WrapPreRun(main, func(cmd *cobra.Command, args []string) error {
-		startLogging(cmd)
+		StartLogging(cmd)
 		return nil
 	})
 
@@ -78,7 +78,7 @@ func setRepoLogLevel(repo string, l capnslog.LogLevel) {
 	r.SetRepoLogLevel(l)
 }
 
-func startLogging(cmd *cobra.Command) {
+func StartLogging(cmd *cobra.Command) {
 	switch {
 	case logDebug:
 		logLevel = capnslog.DEBUG

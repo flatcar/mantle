@@ -152,8 +152,8 @@ func (a *API) resolveImage() error {
 	if a.Opts.DiskURI != "" || a.Opts.BlobURL != "" || a.Opts.ImageFile != "" || a.Opts.Version != "" || a.Opts.Sku == "" {
 		return nil
 	}
-
-	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/version.txt", a.Opts.Sku))
+	sku := strings.TrimSuffix(a.Opts.Sku, "-gen2")
+	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/version.txt", sku))
 	if err != nil {
 		return fmt.Errorf("unable to fetch release bucket %v version: %v", a.Opts.Sku, err)
 	}
