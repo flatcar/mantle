@@ -64,6 +64,11 @@ function download_dev_container_image {
         version=$(source /usr/share/flatcar/release; echo "${FLATCAR_RELEASE_VERSION}")
         image_url=$(process_template '{{ .ImageDirectoryURLTemplate }}/flatcar_developer_container.bin.bz2' "${arch}" "${version}")
 
+        if [ "$(curl -I --retry-delay 1 --retry 60 --retry-connrefused --retry-max-time 60 --connect-timeout 20 -L -s -o /dev/null -w "%{http_code}" "${image_url}")" = 404 ]; then
+          echo "Skipping test because the devcontainer is not available" >&2
+          exit 0
+        fi
+
         echo "Fetching developer container from ${image_url}"
         # Stolen from copy_from_buildcache in ci_automation_common.sh. Not
         # using --output-dir option as this seems to be quite a new addition
