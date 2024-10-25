@@ -25,6 +25,11 @@ func init() {
       "contents": { "source": "data:," },
       "mode": 420
     }]
+  },
+  "kernelArguments": {
+    "shouldExist": [
+      "SYSTEMD_CGROUP_ENABLE_LEGACY_FORCE=1"
+    ]
   }
 }`)
 
