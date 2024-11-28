@@ -38,6 +38,7 @@ import (
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/kola/torcx"
 	"github.com/flatcar/mantle/platform"
+	akamaiapi "github.com/flatcar/mantle/platform/api/akamai"
 	awsapi "github.com/flatcar/mantle/platform/api/aws"
 	azureapi "github.com/flatcar/mantle/platform/api/azure"
 	brightboxapi "github.com/flatcar/mantle/platform/api/brightbox"
@@ -49,6 +50,7 @@ import (
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
 	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/platform/machine/akamai"
 	"github.com/flatcar/mantle/platform/machine/aws"
 	"github.com/flatcar/mantle/platform/machine/azure"
 	"github.com/flatcar/mantle/platform/machine/brightbox"
@@ -69,6 +71,7 @@ var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola")
 
 	Options             = platform.Options{}
+	AkamaiOptions       = akamaiapi.Options{Options: &Options}       // glue to set platform options from main
 	AWSOptions          = awsapi.Options{Options: &Options}          // glue to set platform options from main
 	AzureOptions        = azureapi.Options{Options: &Options}        // glue to set platform options from main
 	BrightboxOptions    = brightboxapi.Options{Options: &Options}    // glue to set platform options from main
@@ -234,6 +237,8 @@ type NativeRunner func(funcName string, m platform.Machine) error
 
 func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 	switch pltfrm {
+	case "akamai":
+		flight, err = akamai.NewFlight(&AkamaiOptions)
 	case "aws":
 		flight, err = aws.NewFlight(&AWSOptions)
 	case "azure":
