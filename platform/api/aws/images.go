@@ -223,7 +223,7 @@ func (a *API) finishSnapshotTask(snapshotTaskID, imageName string) (*Snapshot, e
 		case "completed":
 			return true, *details.SnapshotId, nil
 		case "pending", "active":
-			plog.Debugf("waiting for import task: %v (%v): %v", *details.Status, *details.Progress, *details.StatusMessage)
+			plog.Debugf("waiting for import task")
 			return false, "", nil
 		case "cancelled", "cancelling":
 			return false, "", fmt.Errorf("import task cancelled")
