@@ -207,7 +207,16 @@ func (a *API) finishSnapshotTask(snapshotTaskID, imageName string) (*Snapshot, e
 			return false, "", err
 		}
 
+		if len(taskRes.ImportSnapshotTasks) == 0 {
+			plog.Debugf("no import snapshot tasks in progress")
+			return false, "", nil
+		}
+
 		details := taskRes.ImportSnapshotTasks[0].SnapshotTaskDetail
+		if details == nil {
+			plog.Debugf("no details on the import snapshot task")
+			return false, "", nil
+		}
 
 		// I dream of AWS specifying this as an enum shape, not string
 		switch *details.Status {
