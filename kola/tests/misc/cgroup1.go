@@ -38,6 +38,7 @@ func init() {
 		},
 		Distros:    []string{"cl"},
 		MinVersion: semver.Version{Major: 3033},
+		EndVersion: semver.Version{Major: 4152},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
