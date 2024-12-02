@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strings"
 	"text/template"
 	"time"
@@ -146,10 +147,12 @@ func init() {
 				testParams["Release"] = version
 
 				cgroupSuffix := ""
-				var major int64 = 0
+				var majorMinVersion int64 = 0
+				var majorEndVersion int64 = math.MaxInt64
 				if testParams["cgroupv1"].(bool) {
 					cgroupSuffix = ".cgroupv1"
-					major = 3140
+					majorMinVersion = 3140
+					majorEndVersion = 4179
 				}
 
 				if CNI == "flannel" {
@@ -160,8 +163,8 @@ func init() {
 					mmv := (int64)(mmvi.(int))
 					// Careful, so we don't lower
 					// the min version too much.
-					if mmv > major {
-						major = mmv
+					if mmv > majorMinVersion {
+						majorMinVersion = mmv
 					}
 				}
 
@@ -174,7 +177,8 @@ func init() {
 					Run: func(c cluster.TestCluster) {
 						kubeadmBaseTest(c, testParams)
 					},
-					MinVersion: semver.Version{Major: major},
+					MinVersion: semver.Version{Major: majorMinVersion},
+					EndVersion: semver.Version{Major: majorEndVersion},
 					Flags:      flags,
 				})
 			}
