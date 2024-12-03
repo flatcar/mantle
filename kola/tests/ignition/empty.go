@@ -31,7 +31,8 @@ func init() {
 		Run:         empty,
 		ClusterSize: 1,
 		// brightbox does not support yet adding SSH keys to the metadata service.
-		ExcludePlatforms: []string{"qemu", "esx", "brightbox"},
+		// akamai does not provide SSH keys as metadata (https://github.com/coreos/afterburn/issues/1111)
+		ExcludePlatforms: []string{"qemu", "esx", "brightbox", "akamai"},
 		Distros:          []string{"cl"},
 		// The userdata injection of disabling the update server won't work
 		// for an empty config, we still take care of doing later it via SSH
@@ -44,7 +45,7 @@ func init() {
 		Name:             "cl.ignition.v1.noop",
 		Run:              empty,
 		ClusterSize:      1,
-		ExcludePlatforms: []string{"qemu", "esx", "openstack", "brightbox"},
+		ExcludePlatforms: []string{"qemu", "esx", "openstack", "brightbox", "akamai"},
 		Distros:          []string{"cl"},
 		Flags:            []register.Flag{register.NoSSHKeyInUserData},
 		UserData:         conf.Ignition(`{"ignitionVersion": 1}`),
@@ -54,7 +55,7 @@ func init() {
 		Name:             "cl.ignition.v2.noop",
 		Run:              empty,
 		ClusterSize:      1,
-		ExcludePlatforms: []string{"qemu", "esx", "brightbox"},
+		ExcludePlatforms: []string{"qemu", "esx", "brightbox", "akamai"},
 		Distros:          []string{"cl"},
 		Flags:            []register.Flag{register.NoSSHKeyInUserData},
 		UserData:         conf.Ignition(`{"ignition":{"version":"2.0.0"}}`),
