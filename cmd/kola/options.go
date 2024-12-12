@@ -40,7 +40,7 @@ var (
 	kolaOffering       string
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
-	kolaPlatforms      = []string{"aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
+	kolaPlatforms      = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
 	kolaDistros        = []string{"cl", "fcos", "rhcos"}
 	kolaChannels       = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings      = []string{"basic", "pro"}
@@ -253,6 +253,12 @@ func init() {
 	sv(&kola.HetznerOptions.Location, "hetzner-location", "fsn1", "Hetzner location name")
 	sv(&kola.HetznerOptions.Image, "hetzner-image", "", "Hetzner image ID")
 	sv(&kola.HetznerOptions.ServerType, "hetzner-server-type", "cx22", "Hetzner instance type")
+
+	// Akamai specific options
+	sv(&kola.AkamaiOptions.Token, "akamai-token", "", "Akamai access token")
+	sv(&kola.AkamaiOptions.Image, "akamai-image", "", "Akamai image ID")
+	sv(&kola.AkamaiOptions.Region, "akamai-region", "", "Akamai region")
+	sv(&kola.AkamaiOptions.Type, "akamai-type", "g6-nanode-1", "Akamai instance type")
 }
 
 // Sync up the command line options if there is dependency
@@ -274,6 +280,7 @@ func syncOptions() error {
 	kola.BrightboxOptions.Board = board
 	kola.ScalewayOptions.Board = board
 	kola.HetznerOptions.Board = board
+	kola.AkamaiOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
