@@ -223,6 +223,11 @@ var (
 			desc:  "systemd skipped execution of a unit due to an ordering cycle",
 			match: regexp.MustCompile("Ordering cycle found, skipping (.*)|Job (.*) deleted to break ordering cycle starting with (.*)|Found ordering cycle on (.*)"),
 		},
+		{
+			desc:     "SELinux denial message",
+			match:    regexp.MustCompile(`avc:\s*denied\s*(\S.*)`),
+			skipFlag: &[]register.Flag{register.NoSELinuxAVCChecks}[0],
+		},
 	}
 )
 
