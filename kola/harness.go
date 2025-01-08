@@ -67,6 +67,10 @@ import (
 	"github.com/flatcar/mantle/system"
 )
 
+const (
+	AVCChecksMajorVersion int64 = 4208
+)
+
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola")
 
@@ -473,6 +477,17 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		tests, err = FilterTests(tests, patterns, channel, offering, pltfrm, *version)
 		if err != nil {
 			plog.Fatal(err)
+		}
+
+		// If the version is < AVCChecksMajorVersion, we skip
+		// AVC checks completely. This is to avoid test
+		// failures on older Flatcar versions where we expect
+		// this kind of issues to show up and we won't fix
+		// them.
+		if version.LessThan(semver.Version{Major: AVCChecksMajorVersion}) {
+			for _, t := range tests {
+				t.Flags = append(t.Flags, register.NoSELinuxAVCChecks)
+			}
 		}
 	}
 
