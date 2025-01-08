@@ -53,6 +53,11 @@ func init() {
 			// (see scripts/ci-automation/vendor-testing/qemu_update.sh)
 			return kola.UpdatePayloadFile == ""
 		},
+		// Skip AVC checks, we will do our own only on the
+		// last boot logs, as the older logs may come from an
+		// old version of Flatcar that still has some AVC
+		// messages.
+		Flags: []register.Flag{register.NoSELinuxAVCChecks},
 	})
 	register.Register(&register.Test{
 		Name:        "cl.update.docker-btrfs-compat",
@@ -71,6 +76,11 @@ func init() {
 		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
 			return kola.UpdatePayloadFile == ""
 		},
+		// Skip AVC checks, we will do our own only on the
+		// last boot logs, as the older logs may come from an
+		// old version of Flatcar that still has some AVC
+		// messages.
+		Flags:   []register.Flag{register.NoSELinuxAVCChecks},
 		Distros: []string{"cl"},
 	})
 	register.Register(&register.Test{
@@ -118,6 +128,11 @@ systemd:
     - name: chronyd.service
       mask: true
 `),
+		// Skip AVC checks, we will do our own only on the
+		// last boot logs, as the older logs may come from an
+		// old version of Flatcar that still has some AVC
+		// messages.
+		Flags: []register.Flag{register.NoSELinuxAVCChecks},
 	})
 	register.Register(&register.Test{
 		Name:        "cl.sysext.boot.old",
@@ -164,6 +179,32 @@ func Serve() error {
 	return omahawrapper.Serve()
 }
 
+func checkNoAVCMessages(c cluster.TestCluster, m platform.Machine) {
+	version := c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`)
+	if len(version) == 0 {
+		c.Fatalf("got an empty version from os-release")
+	}
+
+	sv, err := semver.NewVersion(string(version))
+	if err != nil {
+		c.Fatalf("failed to parse os-release version: %v", err)
+	}
+
+	if sv.LessThan(semver.Version{Major: kola.AVCChecksMajorVersion}) {
+		// skip AVC checks altogether - too old Flatcar version
+		return
+	}
+
+	// end with "true" to return 0 in case grep selects no lines and returns 1
+	out, err := c.SSH(m, `journalctl -b | grep -ie 'avc:[[:space:]]*denied'; true`)
+	if err != nil {
+		c.Fatalf("failed to get AVC messages from last boot in journal from machine %s: %v", m.ID(), err)
+	}
+	if len(out) > 0 {
+		c.Fatalf("found AVC messages in last boot logs on machine %s", m.ID())
+	}
+}
+
 func payloadPrepareMachine(conf *conf.UserData, c cluster.TestCluster) (string, platform.Machine) {
 	addr := configureOmahaServer(c, c.Machines()[0])
 
@@ -205,6 +246,7 @@ func payloadPerformUpdate(addr string, m platform.Machine, c cluster.TestCluster
 func payload(c cluster.TestCluster) {
 	addr, m := payloadPrepareMachine(nil, c)
 	payloadPerformUpdate(addr, m, c)
+	checkNoAVCMessages(c, m)
 }
 
 func btrfs_compat(c cluster.TestCluster) {
@@ -252,6 +294,7 @@ systemd:
 
 	c.MustSSH(m, `docker image ls | grep alpine || { echo "ERROR: Container image 'alpine' disappeared after update"; docker image ls; exit 1; } `)
 	c.MustSSH(m, `docker ps --all | grep docker_btrfs_driver_test || { echo "ERROR: Container 'docker_btrfs_driver_test' disappeared after update"; docker ps --all; exit 1; } `)
+	checkNoAVCMessages(c, m)
 }
 
 func configureOmahaServer(c cluster.TestCluster, srv platform.Machine) string {
@@ -391,6 +434,9 @@ func oemPayload(c cluster.TestCluster) {
 	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
 	_ = c.MustSSH(m, `curl -fsSLO --retry-delay 1 --retry 60 --retry-connrefused --retry-max-time 60 --connect-timeout 20 https://bincache.flatcar-linux.net/images/`+arch+`/`+version+`/flatcar_test_update-oem-azure.gz`)
 	_ = c.MustSSH(m, `sudo flatcar-update --to-version `+version+` --to-payload /updates/update.gz --extension ./flatcar_test_update-oem-azure.gz --disable-afterwards --force-dev-key`)
+
+	checkNoAVCMessages(c, m)
+
 	c.Logf("Rebooting test machine after flatcar-update run (2nd reboot)")
 	if err := m.Reboot(); err != nil {
 		c.Fatalf("reboot failed: %v", err)
@@ -400,6 +446,7 @@ func oemPayload(c cluster.TestCluster) {
 	_ = c.MustSSH(m, `test ! -e /oem/python/shouldbedeleted && test ! -e /etc/systemd/system/waagent.service`)
 	_ = c.MustSSH(m, `test -e /oem/sysext/active-oem-azure`)
 	_ = c.MustSSH(m, `systemd-sysext status --json=pretty | jq --raw-output '.[] | select(.hierarchy == "/usr") | .extensions[]' | grep -q oem-azure`)
+	checkNoAVCMessages(c, m)
 }
 
 func sysextBootLogicOld(c cluster.TestCluster) {
