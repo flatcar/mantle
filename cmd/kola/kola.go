@@ -130,7 +130,7 @@ func runRun(cmd *cobra.Command, args []string) {
 	} else {
 		sshKeys = nil
 	}
-	runErr := kola.RunTests(patterns, kolaChannel, kolaOffering, kolaPlatform, outputDir, &sshKeys, runRemove)
+	runErr := kola.RunTests(patterns, kolaChannel, kolaOffering, kolaPlatform, outputDir, &sshKeys, runRemove, kolaImageVersion)
 
 	// needs to be after RunTests() because harness empties the directory
 	if err := writeProps(); err != nil {

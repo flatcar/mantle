@@ -38,6 +38,7 @@ var (
 	kolaPlatform       string
 	kolaChannel        string
 	kolaOffering       string
+	kolaImageVersion   string // ${VERSION_ID} or ${VERSION_ID}+${BUILD_ID}
 	defaultTargetBoard = sdk.DefaultBoard()
 	kolaArchitectures  = []string{"amd64"}
 	kolaPlatforms      = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
@@ -81,6 +82,7 @@ func init() {
 	root.PersistentFlags().StringVarP(&kolaOffering, "offering", "", "basic", "Offering: "+strings.Join(kolaOfferings, ", "))
 	root.PersistentFlags().StringVarP(&kola.Options.Distribution, "distro", "b", "cl", "Distribution: "+strings.Join(kolaDistros, ", "))
 	root.PersistentFlags().IntVarP(&kola.TestParallelism, "parallel", "j", 1, "number of tests to run in parallel")
+	sv(&kolaImageVersion, "image-version", "", "Version of the tested image, build ID (if any) should be separated from version ID with a '+'")
 	sv(&kola.TAPFile, "tapfile", "", "file to write TAP results to")
 	sv(&kola.Options.BaseName, "basename", "kola", "Cluster name prefix")
 	ss("debug-systemd-unit", []string{}, "full-unit-name.service to enable SYSTEMD_LOG_LEVEL=debug on. Specify multiple times for multiple units.")

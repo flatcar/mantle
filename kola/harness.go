@@ -399,33 +399,19 @@ func versionOutsideRange(version, minVersion, endVersion semver.Version) bool {
 // register tests in their init() function.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. If it already exists it will be erased!
-func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
-	var versionStr string
-
-	// Avoid incurring cost of starting machine in getClusterSemver when
-	// either:
-	// 1) none of the selected tests care about the version
-	// 2) glob is an exact match which means minVersion will be ignored
-	//    either way
-	// 3) the provided torcx flag is wrong
-	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, semver.Version{})
-	if err != nil {
-		plog.Fatal(err)
-	}
-
-	skipGetVersion := true
-	for name, t := range tests {
-		patternNotName := true
-		for _, pattern := range patterns {
-			if name == pattern {
-				patternNotName = false
-				break
-			}
+func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool, imageVersion string) error {
+	imageSemver := semver.Version{}
+	haveVersion := false
+	if imageVersion != "" {
+		versionID := imageVersion
+		plusIndex := strings.IndexRune(versionID, '+')
+		if plusIndex >= 0 {
+			versionID = versionID[0:plusIndex]
 		}
-		if patternNotName && (t.MinVersion != semver.Version{} || t.EndVersion != semver.Version{}) {
-			skipGetVersion = false
-			break
+		if err := imageSemver.Set(versionID); err != nil {
+			return fmt.Errorf("could not parse passed image version as semver: %v", err)
 		}
+		haveVersion = true
 	}
 
 	if TorcxManifestFile != "" {
@@ -449,31 +435,29 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		defer flight.Destroy()
 	}
 
-	if !skipGetVersion {
+	if !haveVersion {
 		plog.Info("Creating cluster to check semver...")
 
 		version, err := getClusterSemver(flight, outputDir)
 		if err != nil {
 			plog.Fatal(err)
 		}
+		imageSemver = *version
+	}
 
-		versionStr = version.String()
+	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, imageSemver)
+	if err != nil {
+		plog.Fatal(err)
+	}
 
-		// one more filter pass now that we know real version
-		tests, err = FilterTests(tests, patterns, channel, offering, pltfrm, *version)
-		if err != nil {
-			plog.Fatal(err)
-		}
-
-		// If the version is < AVCChecksMajorVersion, we skip
-		// AVC checks completely. This is to avoid test
-		// failures on older Flatcar versions where we expect
-		// this kind of issues to show up and we won't fix
-		// them.
-		if version.LessThan(semver.Version{Major: AVCChecksMajorVersion}) {
-			for _, t := range tests {
-				t.Flags = append(t.Flags, register.NoSELinuxAVCChecks)
-			}
+	// If the version is < AVCChecksMajorVersion, we skip
+	// AVC checks completely. This is to avoid test
+	// failures on older Flatcar versions where we expect
+	// this kind of issues to show up and we won't fix
+	// them.
+	if imageSemver.LessThan(semver.Version{Major: AVCChecksMajorVersion}) {
+		for _, t := range tests {
+			t.Flags = append(t.Flags, register.NoSELinuxAVCChecks)
 		}
 	}
 
@@ -482,7 +466,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		Parallel:  TestParallelism,
 		Verbose:   true,
 		Reporters: reporters.Reporters{
-			reporters.NewJSONReporter("report.json", pltfrm, versionStr),
+			reporters.NewJSONReporter("report.json", pltfrm, imageSemver.String()),
 		},
 	}
 	var htests harness.Tests
