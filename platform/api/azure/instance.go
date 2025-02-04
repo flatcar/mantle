@@ -182,7 +182,7 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 
 	// Configure user data or custom data
 	if ud != "" {
-		if a.Opts.UseUserData && userdata.IsIgnition() {
+		if userdata.IsIgnition() {
 			plog.Infof("using user-data")
 			vm.Properties.UserData = &ud
 		} else {
