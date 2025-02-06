@@ -2,7 +2,7 @@
 #
 # golang:1.23-bookworm is based on debian:bookworm, this is important to ensure we have libc compatibility for the copied binary
 
-FROM --platform=linux/amd64 docker.io/amd64/golang:1.23-bookworm as builder-amd64
+FROM --platform=linux/amd64 docker.io/amd64/golang:1.23-bookworm AS builder-amd64
 # We use dynamic linking when possible to reduce compile time and binary size
 ENV CGO_ENABLED=1
 COPY . /usr/src/mantle
