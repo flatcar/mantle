@@ -43,7 +43,7 @@ EOF
 
 
 cat << EOF > calico.yaml
-# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/custom-resources.yaml
+# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/custom-resources.yaml
 # This section includes base Calico installation configuration.
 # For more information, see: https://docs.tigera.io/calico/latest/reference/installation/api#operator.tigera.io/v1.Installation
 apiVersion: operator.tigera.io/v1
@@ -87,7 +87,7 @@ EOF
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
 
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/tigera-operator.yaml
     # calico.yaml uses Installation and APIServer CRDs, so make sure that they are established.
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/installations.operator.tigera.io
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/apiservers.operator.tigera.io
