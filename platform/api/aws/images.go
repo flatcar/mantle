@@ -54,7 +54,7 @@ func (e *EC2ImageFormat) Set(s string) error {
 	case string(EC2ImageFormatRaw):
 		*e = EC2ImageFormatRaw
 	default:
-		return fmt.Errorf("invalid ec2 image format: must be raw or vmdk")
+		return fmt.Errorf("invalid ec2 image format: must be %s or %s", EC2ImageFormatRaw, EC2ImageFormatVmdk)
 	}
 	return nil
 }
