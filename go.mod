@@ -14,7 +14,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2
 	github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14
 	github.com/apricote/hcloud-upload-image/hcloudimages v0.3.0
-	github.com/aws/aws-sdk-go v1.44.46
+	github.com/aws/aws-sdk-go v1.44.332
 	github.com/brightbox/gobrightbox/v2 v2.2.0
 	github.com/coreos/butane v0.14.1-0.20220401164106-6b5239299226
 	github.com/coreos/go-iptables v0.5.0
