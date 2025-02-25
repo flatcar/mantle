@@ -11,6 +11,7 @@ import (
 	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
+	testsutil "github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/util"
@@ -20,17 +21,28 @@ const (
 	CmdTimeout = time.Second * 300
 )
 
+const nvidiaDriverVersionOverride = `
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+  - path: /etc/flatcar/nvidia-metadata
+    contents:
+      inline: |
+        {{ .NVIDIA_DRIVER_VERSION_LINE }}
+`
+
 var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/misc")
 
 func init() {
 	register.Register(&register.Test{
-		Name:        "cl.misc.nvidia",
-		Run:         verifyNvidiaInstallation,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
+		Name:          "cl.misc.nvidia",
+		Run:           verifyNvidiaInstallation,
+		ClusterSize:   0,
+		Distros:       []string{"cl"},
 		// This test is to test the NVIDIA installation, limited to AZURE for now
-		Platforms:     []string{"azure"},
-		Architectures: []string{"amd64"},
+		Platforms:     []string{"azure", "aws"},
+		Architectures: []string{"amd64", "arm64"},
 		Flags:         []register.Flag{register.NoEnableSelinux},
 		SkipFunc:      skipOnNonGpu,
 	})
@@ -77,6 +89,9 @@ func skipOnNonGpu(version semver.Version, channel, arch, platform string) bool {
 	if platform == "azure" && strings.Contains(kola.AzureOptions.Size, "NC") {
 		return false
 	}
+	if platform == "aws" && (strings.HasPrefix(kola.AWSOptions.InstanceType, "p") || strings.HasPrefix(kola.AWSOptions.InstanceType, "g")) {
+		return false
+	}
 	return true
 }
 
@@ -96,7 +111,21 @@ func waitForNvidiaDriver(c *cluster.TestCluster, m *platform.Machine) error {
 }
 
 func verifyNvidiaInstallation(c cluster.TestCluster) {
-	m := c.Machines()[0]
+	params := map[string]string{}
+	// Earlier driver versions have issue building on arm64 with kernel 6.6
+	if kola.QEMUOptions.Board == "arm64-usr" {
+		params["NVIDIA_DRIVER_VERSION_LINE"] = "NVIDIA_DRIVER_VERSION=570.86.15"
+	} else {
+		params["NVIDIA_DRIVER_VERSION_LINE"] = ""
+	}
+	butane, err := testsutil.ExecTemplate(nvidiaDriverVersionOverride, params)
+	if err != nil {
+		c.Fatalf("ExecTemplate: %s", err)
+	}
+	m, err := c.NewMachine(conf.Butane(butane))
+	if err != nil {
+		c.Fatalf("Cluster.NewMachine: %s", err)
+	}
 	if err := waitForNvidiaDriver(&c, &m); err != nil {
 		c.Fatal(err)
 	}
