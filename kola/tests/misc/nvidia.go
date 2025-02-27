@@ -32,6 +32,31 @@ storage:
         {{ .NVIDIA_DRIVER_VERSION_LINE }}
 `
 
+const nvidiaOperatorTemplate = `
+variant: flatcar
+version: 1.0.0
+
+storage:
+  files:
+  - path: /etc/flatcar/nvidia-metadata
+    contents:
+      inline: |
+        NVIDIA_DRIVER_VERSION=570.86.15
+  - path: /opt/extensions/kubernetes-v1.30.4-{{ .ARCH_SUFFIX }}.raw
+    contents:
+      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-v1.30.4-{{ .ARCH_SUFFIX }}.raw
+  - path: /opt/extensions/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
+    contents:
+      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
+  links:
+  - path: /etc/extensions/kubernetes.raw
+    target: /opt/extensions/kubernetes-v1.30.4-{{ .ARCH_SUFFIX }}.raw
+    hard: false
+  - path: /etc/extensions/nvidia_runtime.raw
+    target: /opt/extensions/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
+    hard: false
+`
+
 var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/misc")
 
 func init() {
@@ -48,39 +73,15 @@ func init() {
 	})
 
 	register.Register(&register.Test{
-		Name:        "cl.misc.nvidia.operator",
-		Run:         verifyNvidiaGpuOperator,
-		ClusterSize: 1,
-		Distros:     []string{"cl"},
+		Name:          "cl.misc.nvidia.operator",
+		Run:           verifyNvidiaGpuOperator,
+		ClusterSize:   0,
+		Distros:       []string{"cl"},
 		// This test is to test the NVIDIA installation, limited to AZURE for now
-		Platforms:     []string{"azure"},
-		Architectures: []string{"amd64"},
+		Platforms:     []string{"azure", "aws"},
+		Architectures: []string{"amd64", "arm64"},
 		Flags:         []register.Flag{register.NoEnableSelinux, register.NoEmergencyShellCheck},
 		SkipFunc:      skipOnNonGpu,
-		UserData: conf.Butane(`
-variant: flatcar
-version: 1.0.0
-
-storage:
-  files:
-  - path: /etc/flatcar/nvidia-metadata
-    contents:
-      inline: |
-        NVIDIA_DRIVER_VERSION=535.183.06
-  - path: /opt/extensions/kubernetes-v1.30.4-x86-64.raw
-    contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-v1.30.4-x86-64.raw
-  - path: /opt/extensions/nvidia_runtime-v1.16.2-x86-64.raw
-    contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/nvidia_runtime-v1.16.2-x86-64.raw
-  links:
-  - path: /etc/extensions/kubernetes.raw
-    target: /opt/extensions/kubernetes-v1.30.4-x86-64.raw
-    hard: false
-  - path: /etc/extensions/nvidia_runtime.raw
-    target: /opt/extensions/nvidia_runtime-v1.16.2-x86-64.raw
-    hard: false
-`),
 	})
 }
 
@@ -133,8 +134,25 @@ func verifyNvidiaInstallation(c cluster.TestCluster) {
 }
 
 func verifyNvidiaGpuOperator(c cluster.TestCluster) {
-	m := c.Machines()[0]
-	if err := waitForNvidiaDriver(&c, &m); err != nil {
+	params := map[string]string{}
+	// For amd64 the suffix is x86-64, for arm64 it's arm64
+	if kola.QEMUOptions.Board == "arm64-usr" {
+		params["ARCH_SUFFIX"] = "arm64"
+	} else {
+		params["ARCH_SUFFIX"] = "x86-64"
+	}
+
+	butane, err := testsutil.ExecTemplate(nvidiaOperatorTemplate, params)
+	if err != nil {
+		c.Fatalf("ExecTemplate: %s", err)
+	}
+
+	m, err := c.NewMachine(conf.Butane(butane))
+	if err != nil {
+		c.Fatalf("Cluster.NewMachine: %s", err)
+	}
+
+	if err = waitForNvidiaDriver(&c, &m); err != nil {
 		c.Fatal(err)
 	}
 	_ = c.MustSSH(m, "sudo systemctl cat nvidia.service")
@@ -151,7 +169,7 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 	_ = c.MustSSH(m, "kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml")
 	_ = c.MustSSH(m, "kubectl taint nodes --all node-role.kubernetes.io/control-plane-")
 	_ = c.MustSSH(m, "kubectl describe nodes $HOSTNAME")
-	err := util.Retry(5, 10*time.Second, func() error {
+	err = util.Retry(5, 10*time.Second, func() error {
 		out, err := c.SSH(m, "kubectl get nodes")
 		if err != nil {
 			return err
