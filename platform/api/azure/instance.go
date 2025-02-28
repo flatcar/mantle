@@ -53,7 +53,7 @@ func (a *API) getVMRG(rg string) string {
 	return vmrg
 }
 
-func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface) armcompute.VirtualMachine {
+func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface, managedIdentityID string) armcompute.VirtualMachine {
 	osProfile := armcompute.OSProfile{
 		AdminUsername: to.Ptr("core"),
 		ComputerName:  &name,
@@ -113,6 +113,8 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 			plog.Warningf("failed to get image info: %v; continuing", err)
 		}
 	}
+
+	// Set up the VM configuration
 	vm := armcompute.VirtualMachine{
 		Name:     &name,
 		Location: &a.Opts.Location,
@@ -155,6 +157,7 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		},
 	}
 
+	// Configure disk controller if specified
 	switch a.Opts.DiskController {
 	case "nvme":
 		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesNVMe)
@@ -162,8 +165,7 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesSCSI)
 	}
 
-	// I don't think it would be an issue to have empty user-data set but better
-	// to be safe than sorry.
+	// Configure user data or custom data
 	if ud != "" {
 		if a.Opts.UseUserData && userdata.IsIgnition() {
 			plog.Infof("using user-data")
@@ -174,15 +176,29 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		}
 	}
 
+	// Configure availability set if specified
 	availabilitySetID := a.getAvset()
 	if availabilitySetID != "" {
 		vm.Properties.AvailabilitySet = &armcompute.SubResource{ID: &availabilitySetID}
 	}
 
+	// Configure managed identity if specified
+	if managedIdentityID != "" {
+		plog.Infof("Assigning managed identity to VM (using pre-looked-up ID)")
+
+		// Configure the VM with the user assigned managed identity
+		vm.Identity = &armcompute.VirtualMachineIdentity{
+			Type: to.Ptr(armcompute.ResourceIdentityTypeUserAssigned),
+			UserAssignedIdentities: map[string]*armcompute.UserAssignedIdentitiesValue{
+				managedIdentityID: {},
+			},
+		}
+	}
+
 	return vm
 }
 
-func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string, userdata *conf.Conf, network Network) (*Machine, error) {
+func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string, userdata *conf.Conf, network Network, managedIdentityID string) (*Machine, error) {
 	// only VMs are created in the user supplied resource group, kola still manages a resource group
 	// for the gallery and storage account.
 	vmResourceGroup := a.getVMRG(resourceGroup)
@@ -204,7 +220,8 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 		return nil, fmt.Errorf("couldn't get NIC name")
 	}
 
-	vmParams := a.getVMParameters(name, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), userdata, ip, nic)
+	// Pass the managedIdentityID to getVMParameters
+	vmParams := a.getVMParameters(name, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), userdata, ip, nic, managedIdentityID)
 	plog.Infof("Creating Instance %s", name)
 
 	clean := func() {
@@ -317,6 +334,7 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 	if err != nil {
 		return nil, err
 	}
+
 	var data io.ReadCloser
 	err = util.Retry(6, 10*time.Second, func() error {
 		data, err = GetBlob(client, container, blobname)
@@ -331,6 +349,5 @@ func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]by
 	if err != nil {
 		return nil, err
 	}
-
 	return io.ReadAll(data)
 }

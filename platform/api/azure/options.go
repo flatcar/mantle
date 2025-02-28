@@ -63,4 +63,6 @@ type Options struct {
 	ResourceGroup string
 	// AvailabilitySet is an existing availability set to deploy the instance in.
 	AvailabilitySet string
+	// VMIdentity is the name of a managed identity to assign to the VM.
+	VMIdentity string
 }
