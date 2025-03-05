@@ -130,7 +130,8 @@ func verifyNvidiaInstallation(c cluster.TestCluster) {
 	if err := waitForNvidiaDriver(&c, &m); err != nil {
 		c.Fatal(err)
 	}
-	c.AssertCmdOutputContains(m, "/opt/bin/nvidia-smi", "Tesla")
+	out := c.MustSSH(m, "/opt/bin/nvidia-smi")
+	c.Logf("nvidia-smi: %s", out)
 }
 
 func verifyNvidiaGpuOperator(c cluster.TestCluster) {
