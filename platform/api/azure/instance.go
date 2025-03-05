@@ -38,6 +38,11 @@ type Machine struct {
 	PublicIPName     string
 }
 
+// InstanceOptions contains optional parameters for instance creation
+type InstanceOptions struct {
+	DiskSizeGB int32
+}
+
 func (a *API) getAvset() string {
 	if a.Opts.AvailabilitySet == "" {
 		return ""
@@ -53,7 +58,7 @@ func (a *API) getVMRG(rg string) string {
 	return vmrg
 }
 
-func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface, managedIdentityID string) armcompute.VirtualMachine {
+func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface, managedIdentityID string, options InstanceOptions) armcompute.VirtualMachine {
 	osProfile := armcompute.OSProfile{
 		AdminUsername: to.Ptr("core"),
 		ComputerName:  &name,
@@ -74,6 +79,7 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 
 	var imgRef *armcompute.ImageReference
 	var plan *armcompute.Plan
+
 	if a.Opts.DiskURI != "" {
 		imgRef = &armcompute.ImageReference{
 			ID: &a.Opts.DiskURI,
@@ -85,12 +91,14 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 			SKU:       &a.Opts.Sku,
 			Version:   &a.Opts.Version,
 		}
+
 		if a.Opts.Version == "latest" {
 			var top int32 = 1
 			vmImgListOpts := &armcompute.VirtualMachineImagesClientListOptions{
 				Top:     &top,
 				Orderby: to.Ptr("name desc"),
 			}
+
 			r, err := a.vmImgClient.List(context.TODO(), a.Opts.Location, a.Opts.Publisher, a.Opts.Offer, a.Opts.Sku, vmImgListOpts)
 			if err != nil {
 				plog.Warningf("failed to get image list: %v; continuing", err)
@@ -100,6 +108,7 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 				a.Opts.Version = *r.VirtualMachineImageResourceArray[0].Name
 			}
 		}
+
 		// lookup plan information for image
 		imgInfo, err := a.vmImgClient.Get(context.TODO(), a.Opts.Location, *imgRef.Publisher, *imgRef.Offer, *imgRef.SKU, *imgRef.Version, nil)
 		if err == nil && imgInfo.Properties != nil && imgInfo.Properties.Plan != nil {
@@ -112,6 +121,19 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 		} else if err != nil {
 			plog.Warningf("failed to get image info: %v; continuing", err)
 		}
+	}
+
+	osDisk := &armcompute.OSDisk{
+		CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
+		DeleteOption: to.Ptr(armcompute.DiskDeleteOptionTypesDelete),
+		ManagedDisk: &armcompute.ManagedDiskParameters{
+			StorageAccountType: to.Ptr(armcompute.StorageAccountTypesPremiumLRS),
+		},
+	}
+
+	// If a custom disk size is specified via options, set it on the OS disk
+	if options.DiskSizeGB > 0 {
+		osDisk.DiskSizeGB = &options.DiskSizeGB
 	}
 
 	// Set up the VM configuration
@@ -128,13 +150,7 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 			},
 			StorageProfile: &armcompute.StorageProfile{
 				ImageReference: imgRef,
-				OSDisk: &armcompute.OSDisk{
-					CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
-					DeleteOption: to.Ptr(armcompute.DiskDeleteOptionTypesDelete),
-					ManagedDisk: &armcompute.ManagedDiskParameters{
-						StorageAccountType: to.Ptr(armcompute.StorageAccountTypesPremiumLRS),
-					},
-				},
+				OSDisk:         osDisk,
 			},
 			OSProfile: &osProfile,
 			NetworkProfile: &armcompute.NetworkProfile{
@@ -197,7 +213,8 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 	return vm
 }
 
-func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.Conf, network Network, managedIdentityID string) (*Machine, error) {
+// CreateInstance creates a new Azure VM instance using the provided parameters
+func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.Conf, network Network, managedIdentityID string, options InstanceOptions) (*Machine, error) {
 	// only VMs are created in the user supplied resource group, kola still manages a resource group
 	// for the gallery and storage account.
 	vmResourceGroup := a.getVMRG(resourceGroup)
@@ -219,8 +236,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.
 		return nil, fmt.Errorf("couldn't get NIC name")
 	}
 
-	// Pass the managedIdentityID to getVMParameters
-	vmParams := a.getVMParameters(name, sshkey, userdata, ip, nic, managedIdentityID)
+	vmParams := a.getVMParameters(name, sshkey, userdata, ip, nic, managedIdentityID, options)
 	plog.Infof("Creating Instance %s", name)
 
 	clean := func() {
@@ -312,7 +328,6 @@ func (a *API) GetConsoleOutput(name, resourceGroup string) ([]byte, error) {
 	if resp.SerialConsoleLogBlobURI == nil {
 		return nil, fmt.Errorf("serial console URI is nil")
 	}
-
 	var output []byte
 	err = util.Retry(6, 10*time.Second, func() error {
 		reply, err := http.Get(*resp.SerialConsoleLogBlobURI)
@@ -330,6 +345,7 @@ func (a *API) GetConsoleOutput(name, resourceGroup string) ([]byte, error) {
 		}
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
