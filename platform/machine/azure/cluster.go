@@ -30,7 +30,6 @@ type cluster struct {
 	flight            *flight
 	sshKey            string
 	ResourceGroup     string
-	StorageAccount    string
 	Network           azure.Network
 	ManagedIdentityID string // Add managed identity ID field to cluster struct
 }
@@ -50,7 +49,7 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	}
 
 	// Pass the managed identity ID to the CreateInstance method
-	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, conf, ac.Network, ac.ManagedIdentityID)
+	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, conf, ac.Network, ac.ManagedIdentityID)
 	if err != nil {
 		return nil, err
 	}

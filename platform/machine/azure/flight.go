@@ -176,15 +176,9 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 
 	if af.ImageResourceGroup != "" && af.ImageStorageAccount != "" {
 		ac.ResourceGroup = af.ImageResourceGroup
-		ac.StorageAccount = af.ImageStorageAccount
 		ac.Network = af.Network
 	} else {
 		ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
-		if err != nil {
-			return nil, err
-		}
-
-		ac.StorageAccount, err = af.Api.CreateStorageAccount(ac.ResourceGroup)
 		if err != nil {
 			return nil, err
 		}

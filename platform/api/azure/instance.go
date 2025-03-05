@@ -53,7 +53,7 @@ func (a *API) getVMRG(rg string) string {
 	return vmrg
 }
 
-func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface, managedIdentityID string) armcompute.VirtualMachine {
+func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface, managedIdentityID string) armcompute.VirtualMachine {
 	osProfile := armcompute.OSProfile{
 		AdminUsername: to.Ptr("core"),
 		ComputerName:  &name,
@@ -197,7 +197,7 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 	return vm
 }
 
-func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string, userdata *conf.Conf, network Network, managedIdentityID string) (*Machine, error) {
+func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.Conf, network Network, managedIdentityID string) (*Machine, error) {
 	// only VMs are created in the user supplied resource group, kola still manages a resource group
 	// for the gallery and storage account.
 	vmResourceGroup := a.getVMRG(resourceGroup)
@@ -220,7 +220,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 	}
 
 	// Pass the managedIdentityID to getVMParameters
-	vmParams := a.getVMParameters(name, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), userdata, ip, nic, managedIdentityID)
+	vmParams := a.getVMParameters(name, sshkey, userdata, ip, nic, managedIdentityID)
 	plog.Infof("Creating Instance %s", name)
 
 	clean := func() {
@@ -300,7 +300,7 @@ func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	return err
 }
 
-func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {
+func (a *API) GetConsoleOutput(name, resourceGroup string) ([]byte, error) {
 	vmResourceGroup := a.getVMRG(resourceGroup)
 	param := &armcompute.VirtualMachinesClientRetrieveBootDiagnosticsDataOptions{
 		SasURIExpirationTimeInMinutes: to.Ptr[int32](5),
