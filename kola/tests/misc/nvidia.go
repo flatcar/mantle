@@ -184,7 +184,7 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 	_ = c.MustSSH(m, "/opt/bin/helm repo add nvidia https://helm.ngc.nvidia.com/nvidia  && /opt/bin/helm repo update")
 	_ = c.MustSSH(m, `/opt/bin/helm install --wait --generate-name \
 	-n gpu-operator --create-namespace \
-	--version v24.6.1 \
+	--version v24.9.2 \
 	nvidia/gpu-operator \
 	--set driver.enabled=false \
 	--set toolkit.enabled=false \
