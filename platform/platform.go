@@ -118,6 +118,12 @@ type Cluster interface {
 	RuntimeConf() *RuntimeConfig
 }
 
+// For clusters that support passing additional options to machine creation.
+// Not all options have to be supported. The baseline is that `ExtraPrimaryDiskSize` is.
+type CreateWithOptions interface {
+	NewMachineWithOptions(userdata *conf.UserData, options MachineOptions) (Machine, error)
+}
+
 // Flight represents a group of Clusters within a single platform.
 type Flight interface {
 	// NewCluster creates a new Cluster.

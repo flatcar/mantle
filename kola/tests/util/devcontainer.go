@@ -5,7 +5,6 @@ package util
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -17,8 +16,6 @@ import (
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/local"
-	"github.com/flatcar/mantle/platform/machine/qemu"
-	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 	mutil "github.com/flatcar/mantle/util"
 )
 
@@ -125,13 +122,11 @@ func NewMachineWithLargeDisk(c cluster.TestCluster, extraSize string, userData *
 	options := platform.MachineOptions{
 		ExtraPrimaryDiskSize: extraSize,
 	}
-	switch pc := c.Cluster.(type) {
-	case *qemu.Cluster:
+	if pc, ok := c.Cluster.(platform.CreateWithOptions); ok {
 		return pc.NewMachineWithOptions(userData, options)
-	case *unprivqemu.Cluster:
-		return pc.NewMachineWithOptions(userData, options)
+	} else {
+		return nil, fmt.Errorf("platform %s does not support creating machines with options", c.Cluster.Platform())
 	}
-	return nil, errors.New("unknown cluster type, this test should only be running on qemu or qemu-unpriv platforms")
 }
 
 // Serve is a function that could be used as a native function for
