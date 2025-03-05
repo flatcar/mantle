@@ -65,7 +65,6 @@ func init() {
 		Run:           verifyNvidiaInstallation,
 		ClusterSize:   0,
 		Distros:       []string{"cl"},
-		// This test is to test the NVIDIA installation, limited to AZURE for now
 		Platforms:     []string{"azure", "aws"},
 		Architectures: []string{"amd64", "arm64"},
 		Flags:         []register.Flag{register.NoEnableSelinux},
@@ -77,7 +76,6 @@ func init() {
 		Run:           verifyNvidiaGpuOperator,
 		ClusterSize:   0,
 		Distros:       []string{"cl"},
-		// This test is to test the NVIDIA installation, limited to AZURE for now
 		Platforms:     []string{"azure", "aws"},
 		Architectures: []string{"amd64", "arm64"},
 		Flags:         []register.Flag{register.NoEnableSelinux, register.NoEmergencyShellCheck},
