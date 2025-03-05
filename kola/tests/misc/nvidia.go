@@ -73,7 +73,7 @@ func init() {
 	})
 
 	register.Register(&register.Test{
-		Name:          "cl.misc.nvidia.operator",
+		Name:          "cl.misc.nvidia-operator",
 		Run:           verifyNvidiaGpuOperator,
 		ClusterSize:   0,
 		Distros:       []string{"cl"},
