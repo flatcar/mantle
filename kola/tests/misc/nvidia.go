@@ -148,7 +148,7 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 		c.Fatalf("ExecTemplate: %s", err)
 	}
 
-	m, err := c.NewMachine(conf.Butane(butane))
+	m, err := testsutil.NewMachineWithLargeDisk(c, "32G", conf.Butane(butane))
 	if err != nil {
 		c.Fatalf("Cluster.NewMachine: %s", err)
 	}
