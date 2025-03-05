@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/flatcar/mantle/cli"
+	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/azure"
 )
 
@@ -42,10 +43,12 @@ func init() {
 }
 
 func preauth(cmd *cobra.Command, args []string) error {
+	cli.StartLogging(cmd)
 	plog.Printf("Creating Azure API...")
 
 	a, err := azure.New(&azure.Options{
 		Location: azureLocation,
+		Options:  &platform.Options{},
 	})
 	if err != nil {
 		plog.Fatalf("Failed to create Azure API: %v", err)

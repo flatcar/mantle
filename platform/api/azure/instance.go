@@ -19,7 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"regexp"
+	"net/http"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -30,12 +30,20 @@ import (
 	"github.com/flatcar/mantle/util"
 )
 
+type MachineState int
+
+const (
+	READY MachineState = iota
+	PROVISIONING
+)
+
 type Machine struct {
 	ID               string
 	PublicIPAddress  string
 	PrivateIPAddress string
 	InterfaceName    string
 	PublicIPName     string
+	State            MachineState
 }
 
 func (a *API) getAvset() string {
@@ -148,11 +156,26 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 			},
 			DiagnosticsProfile: &armcompute.DiagnosticsProfile{
 				BootDiagnostics: &armcompute.BootDiagnostics{
-					Enabled:    to.Ptr(true),
-					StorageURI: &storageAccountURI,
+					Enabled: to.Ptr(true),
 				},
 			},
 		},
+	}
+
+	if a.Opts.TrustedLaunch {
+		if a.Opts.HyperVGeneration != string(armcompute.HyperVGenerationTypeV2) {
+			plog.Warningf("TrustedLaunch is only supported for HyperVGeneration v2; ignoring")
+		}
+		if a.Opts.Board != "amd64-usr" {
+			plog.Warningf("TrustedLaunch is only supported for amd64-usr; ignoring")
+		}
+		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
+			SecurityType: to.Ptr(armcompute.SecurityTypesTrustedLaunch),
+			UefiSettings: &armcompute.UefiSettings{
+				SecureBootEnabled: to.Ptr(false),
+				VTpmEnabled:       to.Ptr(true),
+			},
+		}
 	}
 
 	switch a.Opts.DiskController {
@@ -209,7 +232,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 
 	clean := func() {
 		_, _ = a.compClient.BeginDelete(context.TODO(), vmResourceGroup, name, &armcompute.VirtualMachinesClientBeginDeleteOptions{
-			ForceDeletion: to.Ptr(true),
+			ForceDeletion: to.Ptr(false),
 		})
 		_, _ = a.intClient.BeginDelete(context.TODO(), resourceGroup, *nic.Name, nil)
 		_, _ = a.ipClient.BeginDelete(context.TODO(), resourceGroup, *ip.Name, nil)
@@ -222,8 +245,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 	}
 	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
-		clean()
-		return nil, err
+		return &Machine{ID: name, State: PROVISIONING}, fmt.Errorf("PollUntilDone(%s): %w", name, err)
 	}
 	plog.Infof("Instance %s created", name)
 
@@ -277,55 +299,65 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	resourceGroup = a.getVMRG(resourceGroup)
 	_, err := a.compClient.BeginDelete(context.TODO(), resourceGroup, machine.ID, &armcompute.VirtualMachinesClientBeginDeleteOptions{
-		ForceDeletion: to.Ptr(true),
+		ForceDeletion: to.Ptr(false),
 	})
 	// We used to wait for the VM to be deleted here, but it's not necessary as
 	// we will also delete the resource group later.
 	return err
 }
 
+func (a *API) GetScreenshot(name, resourceGroup string, output io.Writer) error {
+	vmResourceGroup := a.getVMRG(resourceGroup)
+	param := &armcompute.VirtualMachinesClientRetrieveBootDiagnosticsDataOptions{
+		SasURIExpirationTimeInMinutes: to.Ptr[int32](5),
+	}
+	resp, err := a.compClient.RetrieveBootDiagnosticsData(context.TODO(), vmResourceGroup, name, param)
+	if err != nil {
+		return fmt.Errorf("could not get VM: %v", err)
+	}
+	if resp.ConsoleScreenshotBlobURI == nil {
+		return fmt.Errorf("console screenshot URI is nil")
+	}
+
+	var data io.ReadCloser
+	err = util.Retry(6, 10*time.Second, func() error {
+		reply, err := http.Get(*resp.ConsoleScreenshotBlobURI)
+		if err != nil {
+			return fmt.Errorf("could not GET console screenshot: %v", err)
+		}
+		data = reply.Body
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	written, err := io.Copy(output, data)
+	if err == nil {
+		plog.Debugf("wrote %d bytes to screenshot", written)
+	}
+	return err
+}
+
 func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {
 	vmResourceGroup := a.getVMRG(resourceGroup)
-	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, &armcompute.VirtualMachinesClientGetOptions{
-		Expand: to.Ptr(armcompute.InstanceViewTypesInstanceView),
-	})
+	param := &armcompute.VirtualMachinesClientRetrieveBootDiagnosticsDataOptions{
+		SasURIExpirationTimeInMinutes: to.Ptr[int32](5),
+	}
+	resp, err := a.compClient.RetrieveBootDiagnosticsData(context.TODO(), vmResourceGroup, name, param)
 	if err != nil {
 		return nil, fmt.Errorf("could not get VM: %v", err)
 	}
-
-	consoleURI := vm.Properties.InstanceView.BootDiagnostics.SerialConsoleLogBlobURI
-	if consoleURI == nil {
+	if resp.SerialConsoleLogBlobURI == nil {
 		return nil, fmt.Errorf("serial console URI is nil")
 	}
 
-	// Only the full URI to the logs are present in the virtual machine
-	// properties. Parse out the container & file name to use the GetBlob
-	// API call directly.
-	uri := []byte(*consoleURI)
-	containerPat := regexp.MustCompile(`bootdiagnostics-[a-z0-9\-]+`)
-	container := string(containerPat.Find(uri))
-	if container == "" {
-		return nil, fmt.Errorf("could not find container name in URI: %q", *consoleURI)
-	}
-	namePat := regexp.MustCompile(`[a-z0-9\-\.]+.serialconsole.log`)
-	blobname := string(namePat.Find(uri))
-	if blobname == "" {
-		return nil, fmt.Errorf("could not find blob name in URI: %q", *consoleURI)
-	}
-
-	client, err := a.GetBlobServiceClient(storageAccount)
-	if err != nil {
-		return nil, err
-	}
 	var data io.ReadCloser
 	err = util.Retry(6, 10*time.Second, func() error {
-		data, err = GetBlob(client, container, blobname)
+		reply, err := http.Get(*resp.SerialConsoleLogBlobURI)
 		if err != nil {
-			return fmt.Errorf("could not get blob for container %q, blobname %q: %v", container, blobname, err)
+			return fmt.Errorf("could not GET console output: %v", err)
 		}
-		if data == nil {
-			return fmt.Errorf("empty data while getting blob for container %q, blobname %q", container, blobname)
-		}
+		data = reply.Body
 		return nil
 	})
 	if err != nil {
