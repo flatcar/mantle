@@ -42,15 +42,15 @@ storage:
     contents:
       inline: |
         NVIDIA_DRIVER_VERSION=570.86.15
-  - path: /opt/extensions/kubernetes-v1.30.4-{{ .ARCH_SUFFIX }}.raw
+  - path: /opt/extensions/kubernetes-v1.30.8-{{ .ARCH_SUFFIX }}.raw
     contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-v1.30.4-{{ .ARCH_SUFFIX }}.raw
+      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-v1.30.8-{{ .ARCH_SUFFIX }}.raw
   - path: /opt/extensions/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
     contents:
       source: https://github.com/flatcar/sysext-bakery/releases/download/latest/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
   links:
   - path: /etc/extensions/kubernetes.raw
-    target: /opt/extensions/kubernetes-v1.30.4-{{ .ARCH_SUFFIX }}.raw
+    target: /opt/extensions/kubernetes-v1.30.8-{{ .ARCH_SUFFIX }}.raw
     hard: false
   - path: /etc/extensions/nvidia_runtime.raw
     target: /opt/extensions/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
