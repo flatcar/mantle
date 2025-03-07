@@ -29,6 +29,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -59,6 +60,7 @@ type API struct {
 	ipClient    *armnetwork.PublicIPAddressesClient
 	intClient   *armnetwork.InterfacesClient
 	accClient   *armstorage.AccountsClient
+	msiClient   *armmsi.UserAssignedIdentitiesClient
 	Opts        *Options
 }
 
@@ -194,6 +196,12 @@ func (a *API) SetupClients() error {
 	}
 	a.accClient = scf.NewAccountsClient()
 
+	mcf, err := armmsi.NewClientFactory(a.subID, a.creds, opts)
+	if err != nil {
+		return err
+	}
+	a.msiClient = mcf.NewUserAssignedIdentitiesClient()
+
 	return nil
 }
 
@@ -301,4 +309,41 @@ func (a *API) GC(gracePeriod time.Duration) error {
 	}
 
 	return nil
+}
+
+// FindManagedIdentityID searches for a managed identity by name across the subscription
+// and returns its resource ID if found
+func (a *API) FindManagedIdentityID(identityName string) (string, error) {
+	ctx := context.TODO()
+
+	// Use NewListBySubscriptionPager to search across the entire subscription
+	pager := a.msiClient.NewListBySubscriptionPager(nil)
+
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to list managed identities: %v", err)
+		}
+
+		// Check each identity for a name match
+		for _, identity := range page.Value {
+			if identity.Name != nil && *identity.Name == identityName {
+				if identity.ID == nil || *identity.ID == "" {
+					continue
+				}
+
+				// Extract resource group name from the ID for logging
+				idParts := strings.Split(*identity.ID, "/")
+				var resourceGroup string
+				if len(idParts) >= 5 {
+					resourceGroup = idParts[4]
+				}
+
+				plog.Infof("Found managed identity %s in resource group %s", identityName, resourceGroup)
+				return *identity.ID, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("managed identity %q was not found in the subscription", identityName)
 }

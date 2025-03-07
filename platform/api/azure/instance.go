@@ -19,7 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"regexp"
+	"net/http"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -53,7 +53,7 @@ func (a *API) getVMRG(rg string) string {
 	return vmrg
 }
 
-func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface) armcompute.VirtualMachine {
+func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armnetwork.PublicIPAddress, nic *armnetwork.Interface, managedIdentityID string) armcompute.VirtualMachine {
 	osProfile := armcompute.OSProfile{
 		AdminUsername: to.Ptr("core"),
 		ComputerName:  &name,
@@ -113,6 +113,8 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 			plog.Warningf("failed to get image info: %v; continuing", err)
 		}
 	}
+
+	// Set up the VM configuration
 	vm := armcompute.VirtualMachine{
 		Name:     &name,
 		Location: &a.Opts.Location,
@@ -148,13 +150,13 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 			},
 			DiagnosticsProfile: &armcompute.DiagnosticsProfile{
 				BootDiagnostics: &armcompute.BootDiagnostics{
-					Enabled:    to.Ptr(true),
-					StorageURI: &storageAccountURI,
+					Enabled: to.Ptr(true),
 				},
 			},
 		},
 	}
 
+	// Configure disk controller if specified
 	switch a.Opts.DiskController {
 	case "nvme":
 		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesNVMe)
@@ -162,8 +164,7 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		vm.Properties.StorageProfile.DiskControllerType = to.Ptr(armcompute.DiskControllerTypesSCSI)
 	}
 
-	// I don't think it would be an issue to have empty user-data set but better
-	// to be safe than sorry.
+	// Configure user data or custom data
 	if ud != "" {
 		if a.Opts.UseUserData && userdata.IsIgnition() {
 			plog.Infof("using user-data")
@@ -174,15 +175,29 @@ func (a *API) getVMParameters(name, sshkey, storageAccountURI string, userdata *
 		}
 	}
 
+	// Configure availability set if specified
 	availabilitySetID := a.getAvset()
 	if availabilitySetID != "" {
 		vm.Properties.AvailabilitySet = &armcompute.SubResource{ID: &availabilitySetID}
 	}
 
+	// Configure managed identity if specified
+	if managedIdentityID != "" {
+		plog.Infof("Assigning managed identity to VM (using pre-looked-up ID)")
+
+		// Configure the VM with the user assigned managed identity
+		vm.Identity = &armcompute.VirtualMachineIdentity{
+			Type: to.Ptr(armcompute.ResourceIdentityTypeUserAssigned),
+			UserAssignedIdentities: map[string]*armcompute.UserAssignedIdentitiesValue{
+				managedIdentityID: {},
+			},
+		}
+	}
+
 	return vm
 }
 
-func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string, userdata *conf.Conf, network Network) (*Machine, error) {
+func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.Conf, network Network, managedIdentityID string) (*Machine, error) {
 	// only VMs are created in the user supplied resource group, kola still manages a resource group
 	// for the gallery and storage account.
 	vmResourceGroup := a.getVMRG(resourceGroup)
@@ -204,7 +219,8 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup, storageAccount string,
 		return nil, fmt.Errorf("couldn't get NIC name")
 	}
 
-	vmParams := a.getVMParameters(name, sshkey, fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccount), userdata, ip, nic)
+	// Pass the managedIdentityID to getVMParameters
+	vmParams := a.getVMParameters(name, sshkey, userdata, ip, nic, managedIdentityID)
 	plog.Infof("Creating Instance %s", name)
 
 	clean := func() {
@@ -284,53 +300,38 @@ func (a *API) TerminateInstance(machine *Machine, resourceGroup string) error {
 	return err
 }
 
-func (a *API) GetConsoleOutput(name, resourceGroup, storageAccount string) ([]byte, error) {
+func (a *API) GetConsoleOutput(name, resourceGroup string) ([]byte, error) {
 	vmResourceGroup := a.getVMRG(resourceGroup)
-	vm, err := a.compClient.Get(context.TODO(), vmResourceGroup, name, &armcompute.VirtualMachinesClientGetOptions{
-		Expand: to.Ptr(armcompute.InstanceViewTypesInstanceView),
-	})
+	param := &armcompute.VirtualMachinesClientRetrieveBootDiagnosticsDataOptions{
+		SasURIExpirationTimeInMinutes: to.Ptr[int32](5),
+	}
+	resp, err := a.compClient.RetrieveBootDiagnosticsData(context.TODO(), vmResourceGroup, name, param)
 	if err != nil {
 		return nil, fmt.Errorf("could not get VM: %v", err)
 	}
-
-	consoleURI := vm.Properties.InstanceView.BootDiagnostics.SerialConsoleLogBlobURI
-	if consoleURI == nil {
+	if resp.SerialConsoleLogBlobURI == nil {
 		return nil, fmt.Errorf("serial console URI is nil")
 	}
 
-	// Only the full URI to the logs are present in the virtual machine
-	// properties. Parse out the container & file name to use the GetBlob
-	// API call directly.
-	uri := []byte(*consoleURI)
-	containerPat := regexp.MustCompile(`bootdiagnostics-[a-z0-9\-]+`)
-	container := string(containerPat.Find(uri))
-	if container == "" {
-		return nil, fmt.Errorf("could not find container name in URI: %q", *consoleURI)
-	}
-	namePat := regexp.MustCompile(`[a-z0-9\-\.]+.serialconsole.log`)
-	blobname := string(namePat.Find(uri))
-	if blobname == "" {
-		return nil, fmt.Errorf("could not find blob name in URI: %q", *consoleURI)
-	}
-
-	client, err := a.GetBlobServiceClient(storageAccount)
-	if err != nil {
-		return nil, err
-	}
-	var data io.ReadCloser
+	var output []byte
 	err = util.Retry(6, 10*time.Second, func() error {
-		data, err = GetBlob(client, container, blobname)
+		reply, err := http.Get(*resp.SerialConsoleLogBlobURI)
 		if err != nil {
-			return fmt.Errorf("could not get blob for container %q, blobname %q: %v", container, blobname, err)
+			return fmt.Errorf("could not GET console output: %v", err)
 		}
-		if data == nil {
-			return fmt.Errorf("empty data while getting blob for container %q, blobname %q", container, blobname)
+		body := reply.Body
+		defer body.Close()
+		if reply.StatusCode != 200 {
+			return fmt.Errorf("unexpected status code: %v", reply.StatusCode)
+		}
+		output, err = io.ReadAll(body)
+		if err != nil {
+			return fmt.Errorf("could not read console output: %v", err)
 		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	return io.ReadAll(data)
+	return output, nil
 }

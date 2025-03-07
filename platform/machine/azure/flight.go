@@ -41,6 +41,7 @@ type flight struct {
 	ImageResourceGroup  string
 	ImageStorageAccount string
 	Network             azure.Network
+	ManagedIdentityID   string // Store the managed identity resource ID
 }
 
 // NewFlight creates an instance of a Flight suitable for spawning
@@ -77,6 +78,16 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 	af.FakeSSHKey, err = platform.GenerateFakeKey()
 	if err != nil {
 		return nil, err
+	}
+
+	// If a managed identity is specified, look it up across all resource groups
+	// and fail fast if it can't be found
+	if opts.VMIdentity != "" {
+		plog.Infof("Looking up managed identity %q", opts.VMIdentity)
+		af.ManagedIdentityID, err = api.FindManagedIdentityID(opts.VMIdentity)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if opts.BlobURL != "" || opts.ImageFile != "" {
@@ -152,8 +163,9 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 	}
 
 	ac := &cluster{
-		BaseCluster: bc,
-		flight:      af,
+		BaseCluster:       bc,
+		flight:            af,
+		ManagedIdentityID: af.ManagedIdentityID,
 	}
 
 	if !rconf.NoSSHKeyInMetadata {
@@ -164,15 +176,9 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 
 	if af.ImageResourceGroup != "" && af.ImageStorageAccount != "" {
 		ac.ResourceGroup = af.ImageResourceGroup
-		ac.StorageAccount = af.ImageStorageAccount
 		ac.Network = af.Network
 	} else {
 		ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
-		if err != nil {
-			return nil, err
-		}
-
-		ac.StorageAccount, err = af.Api.CreateStorageAccount(ac.ResourceGroup)
 		if err != nil {
 			return nil, err
 		}

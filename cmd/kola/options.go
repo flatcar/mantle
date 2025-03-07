@@ -125,6 +125,7 @@ func init() {
 	sv(&kola.AzureOptions.ResourceGroup, "azure-resource-group", "", "Deploy resources in an existing resource group")
 	sv(&kola.AzureOptions.AvailabilitySet, "azure-availability-set", "", "Deploy instances with an existing availibity set")
 	sv(&kola.AzureOptions.KolaVnet, "azure-kola-vnet", "", "Pass the vnet/subnet that kola is being ran from to restrict network access to created storage accounts")
+	sv(&kola.AzureOptions.VMIdentity, "azure-vm-identity", "", "Assign a managed identity to the VM by name (will be looked up for its ID)")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")
@@ -414,6 +415,16 @@ func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
 			Comment: comment,
 		}
 		allKeys = append(allKeys, key)
+	}
+
+	// Ignition v3 does not allow duplicate keys so we need to deduplicate
+	allUniqueKeys := make(map[string]*agent.Key)
+	for _, key := range allKeys {
+		allUniqueKeys[string(key.Blob)] = &key
+	}
+	allKeys = []agent.Key{}
+	for _, value := range allUniqueKeys {
+		allKeys = append(allKeys, *value)
 	}
 
 	return allKeys, nil

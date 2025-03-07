@@ -27,11 +27,11 @@ import (
 
 type cluster struct {
 	*platform.BaseCluster
-	flight         *flight
-	sshKey         string
-	ResourceGroup  string
-	StorageAccount string
-	Network        azure.Network
+	flight            *flight
+	sshKey            string
+	ResourceGroup     string
+	Network           azure.Network
+	ManagedIdentityID string // Add managed identity ID field to cluster struct
 }
 
 func (ac *cluster) vmname() string {
@@ -48,7 +48,8 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, ac.StorageAccount, conf, ac.Network)
+	// Pass the managed identity ID to the CreateInstance method
+	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, conf, ac.Network, ac.ManagedIdentityID)
 	if err != nil {
 		return nil, err
 	}

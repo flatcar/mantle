@@ -162,7 +162,7 @@ func (bc *BaseCluster) RenderUserData(userdata *conf.UserData, ignitionVars map[
 		}
 	}
 
-	if bc.bf.AdditionalSshKeys != nil && *bc.bf.AdditionalSshKeys != nil {
+	if bc.bf.AdditionalSshKeys != nil && *bc.bf.AdditionalSshKeys != nil && !bc.rconf.NoSSHKeyInUserData {
 		userdata = conf.AddSSHKeys(userdata, bc.bf.AdditionalSshKeys)
 	}
 
