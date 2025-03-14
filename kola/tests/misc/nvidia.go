@@ -1,3 +1,5 @@
+//go:generate go run nvidia_versions_gen.go
+
 package misc
 
 import (
@@ -18,12 +20,20 @@ import (
 )
 
 const (
-	CmdTimeout           = time.Second * 300
-	KubernetesVersion    = "v1.30.8"                          // Kubernetes version used in the template
-	NvidiaRuntimeVersion = "v1.16.2"                          // NVIDIA runtime version used in the template
-	GpuOperatorVersion   = "v24.9.2"                          // GPU operator version used for Helm install
-	CudaSampleImageTag   = "vectoradd-cuda11.7.1-ubuntu20.04" // CUDA sample image tag
+	CmdTimeout         = time.Second * 300
+	CudaSampleImageTag = "vectoradd-cuda11.7.1-ubuntu20.04" // CUDA sample image tag
 )
+
+const nvidiaDriverVersionOverride = `
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+  - path: /etc/flatcar/nvidia-metadata
+    contents:
+      inline: |
+        NVIDIA_DRIVER_VERSION={{ .VERSION }}
+`
 
 const nvidiaOperatorTemplate = `
 variant: flatcar
@@ -49,6 +59,23 @@ storage:
 var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/misc")
 
 func init() {
+	// Register tests for each NVIDIA driver version
+	versions := GetNvidiaVersions()
+	for _, version := range versions {
+		versionStr := version // Create a new variable to avoid closure issues
+		versionId := strings.ReplaceAll(versionStr, ".", "-")
+		register.Register(&register.Test{
+			Name:          fmt.Sprintf("cl.misc.nvidia-custom-%s", versionId),
+			Run:           func(c cluster.TestCluster) { verifyNvidiaInstallationCustom(c, versionStr) },
+			ClusterSize:   0,
+			Distros:       []string{"cl"},
+			Platforms:     []string{"azure", "aws"},
+			Architectures: []string{"amd64"},
+			Flags:         []register.Flag{register.NoEnableSelinux},
+			SkipFunc:      skipOnNonGpu,
+		})
+	}
+
 	register.Register(&register.Test{
 		Name:          "cl.misc.nvidia",
 		Run:           verifyNvidiaInstallation,
@@ -105,6 +132,24 @@ func verifyNvidiaInstallation(c cluster.TestCluster) {
 	}
 	out := c.MustSSH(m, "/opt/bin/nvidia-smi")
 	c.Logf("nvidia-smi: %s", out)
+}
+
+func verifyNvidiaInstallationCustom(c cluster.TestCluster, version string) {
+	params := map[string]string{
+		"VERSION": version,
+	}
+	butane, err := testsutil.ExecTemplate(nvidiaDriverVersionOverride, params)
+	if err != nil {
+		c.Fatalf("ExecTemplate: %s", err)
+	}
+	m, err := c.NewMachine(conf.Butane(butane))
+	if err != nil {
+		c.Fatalf("Cluster.NewMachine: %s", err)
+	}
+	if err := waitForNvidiaDriver(&c, &m); err != nil {
+		c.Fatal(err)
+	}
+	c.AssertCmdOutputContains(m, "/opt/bin/nvidia-smi", version)
 }
 
 func verifyNvidiaGpuOperator(c cluster.TestCluster) {
