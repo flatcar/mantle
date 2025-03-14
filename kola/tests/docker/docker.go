@@ -792,7 +792,7 @@ docker run -v "/etc/misc:/opt" --rm ghcr.io/flatcar/busybox true`
 	// there is a specific AVC in logs. We need to be more lenient
 	// on the older versions of Flatcar and ignore the unexpected
 	// AVCs.
-	version := string(c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	version := string(c.MustSSH(m, `. /usr/lib/os-release && echo $VERSION`))
 	if version == "" {
 		c.Fatalf("got an empty version from os-release")
 	}
