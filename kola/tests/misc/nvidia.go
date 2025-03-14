@@ -21,6 +21,8 @@ import (
 
 const (
 	CmdTimeout         = time.Second * 300
+	// Latest tags here: https://catalog.ngc.nvidia.com/orgs/nvidia/teams/k8s/containers/cuda-sample/tags
+	// The registry blocks unauthenticated tag discovery.
 	CudaSampleImageTag = "vectoradd-cuda11.7.1-ubuntu20.04" // CUDA sample image tag
 )
 
