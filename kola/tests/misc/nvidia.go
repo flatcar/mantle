@@ -18,7 +18,11 @@ import (
 )
 
 const (
-	CmdTimeout = time.Second * 300
+	CmdTimeout           = time.Second * 300
+	KubernetesVersion    = "v1.30.8"                          // Kubernetes version used in the template
+	NvidiaRuntimeVersion = "v1.16.2"                          // NVIDIA runtime version used in the template
+	GpuOperatorVersion   = "v24.9.2"                          // GPU operator version used for Helm install
+	CudaSampleImageTag   = "vectoradd-cuda11.7.1-ubuntu20.04" // CUDA sample image tag
 )
 
 const nvidiaOperatorTemplate = `
@@ -27,18 +31,18 @@ version: 1.0.0
 
 storage:
   files:
-  - path: /opt/extensions/kubernetes-v1.30.8-{{ .ARCH_SUFFIX }}.raw
+  - path: /opt/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
     contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-v1.30.8-{{ .ARCH_SUFFIX }}.raw
-  - path: /opt/extensions/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
+      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
+  - path: /opt/extensions/nvidia_runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
     contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
+      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/nvidia_runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
   links:
   - path: /etc/extensions/kubernetes.raw
-    target: /opt/extensions/kubernetes-v1.30.8-{{ .ARCH_SUFFIX }}.raw
+    target: /opt/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
     hard: false
   - path: /etc/extensions/nvidia_runtime.raw
-    target: /opt/extensions/nvidia_runtime-v1.16.2-{{ .ARCH_SUFFIX }}.raw
+    target: /opt/extensions/nvidia_runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
     hard: false
 `
 
@@ -104,7 +108,10 @@ func verifyNvidiaInstallation(c cluster.TestCluster) {
 }
 
 func verifyNvidiaGpuOperator(c cluster.TestCluster) {
-	params := map[string]string{}
+	params := map[string]string{
+		"KubernetesVersion":    KubernetesVersion,
+		"NvidiaRuntimeVersion": NvidiaRuntimeVersion,
+	}
 	// For amd64 the suffix is x86-64, for arm64 it's arm64
 	if kola.QEMUOptions.Board == "arm64-usr" {
 		params["ARCH_SUFFIX"] = "arm64"
@@ -153,13 +160,13 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 		c.Fatalf("%v", err)
 	}
 	_ = c.MustSSH(m, "/opt/bin/helm repo add nvidia https://helm.ngc.nvidia.com/nvidia  && /opt/bin/helm repo update")
-	_ = c.MustSSH(m, `/opt/bin/helm install --wait --generate-name \
+	_ = c.MustSSH(m, fmt.Sprintf(`/opt/bin/helm install --wait --generate-name \
 	-n gpu-operator --create-namespace \
-	--version v24.9.2 \
+	--version %s \
 	nvidia/gpu-operator \
 	--set driver.enabled=false \
 	--set toolkit.enabled=false \
-	`)
+	`, GpuOperatorVersion))
 	_ = c.MustSSH(m, "/opt/bin/helm ls")
 	err = util.Retry(10, 10*time.Second, func() error {
 		out, err := c.SSH(m, "kubectl get pods --all-namespaces -o json | jq '.items[] | select(.status.phase != \"Running\" and .status.phase != \"Succeeded\") | .metadata.name'")
@@ -176,7 +183,7 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 	if err != nil {
 		c.Fatalf("%v", err)
 	}
-	_ = c.MustSSH(m, `kubectl apply -f - <<EOF
+	_ = c.MustSSH(m, fmt.Sprintf(`kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -185,11 +192,11 @@ spec:
   restartPolicy: OnFailure
   containers:
   - name: cuda-vectoradd
-    image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.7.1-ubuntu20.04"
+    image: "nvcr.io/nvidia/k8s/cuda-sample:%s"
     resources:
       limits:
         nvidia.com/gpu: 1
-EOF`)
+EOF`, CudaSampleImageTag))
 	// wait until pod/cuda-vectoradd is done
 	err = util.Retry(3, 10*time.Second, func() error {
 		out, err := c.SSH(m, "kubectl get pod cuda-vectoradd -o jsonpath='{.status.phase}'")
