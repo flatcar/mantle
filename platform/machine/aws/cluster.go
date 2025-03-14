@@ -28,6 +28,10 @@ type cluster struct {
 }
 
 func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
+	return ac.NewMachineWithOptions(userdata, platform.MachineOptions{})
+}
+
+func (ac *cluster) NewMachineWithOptions(userdata *conf.UserData, options platform.MachineOptions) (platform.Machine, error) {
 	conf, err := ac.RenderUserData(userdata, map[string]string{
 		"$public_ipv4":  "${COREOS_EC2_IPV4_PUBLIC}",
 		"$private_ipv4": "${COREOS_EC2_IPV4_LOCAL}",
@@ -40,7 +44,20 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if !ac.RuntimeConf().NoSSHKeyInMetadata {
 		keyname = ac.flight.Name()
 	}
-	instances, err := ac.flight.api.CreateInstances(ac.Name(), keyname, conf.String(), 1)
+
+	// Only pass the extra disk size if it's set
+	var rootDiskSize *int64
+	if options.ExtraPrimaryDiskSize != "" {
+		diskSize, err := platform.ParseDiskSize(options.ExtraPrimaryDiskSize)
+		if err != nil {
+			return nil, err
+		}
+		// expect disk size in GiB
+		diskSizeSigned := int64(diskSize / (1024 * 1024 * 1024))
+		rootDiskSize = &diskSizeSigned
+	}
+
+	instances, err := ac.flight.api.CreateInstances(ac.Name(), keyname, conf.String(), 1, rootDiskSize)
 	if err != nil {
 		return nil, err
 	}

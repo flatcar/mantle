@@ -41,6 +41,10 @@ func (ac *cluster) vmname() string {
 }
 
 func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
+	return ac.NewMachineWithOptions(userdata, platform.MachineOptions{})
+}
+
+func (ac *cluster) NewMachineWithOptions(userdata *conf.UserData, options platform.MachineOptions) (platform.Machine, error) {
 	conf, err := ac.RenderUserData(userdata, map[string]string{
 		"$private_ipv4": "${COREOS_AZURE_IPV4_DYNAMIC}",
 	})
@@ -48,8 +52,29 @@ func (ac *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	// Pass the managed identity ID to the CreateInstance method
-	instance, err := ac.flight.Api.CreateInstance(ac.vmname(), ac.sshKey, ac.ResourceGroup, conf, ac.Network, ac.ManagedIdentityID)
+	var instanceOptions azure.InstanceOptions
+
+	// If ExtraPrimaryDiskSize is set, configure the custom disk size
+	if options.ExtraPrimaryDiskSize != "" {
+		diskSize, err := platform.ParseDiskSize(options.ExtraPrimaryDiskSize)
+		if err != nil {
+			return nil, err
+		}
+		// Convert to int32 as that's what Azure API expects
+		instanceOptions.DiskSizeGB = int32(diskSize / (1024 * 1024 * 1024))
+	}
+
+	// Create the instance with the specified options
+	instance, err := ac.flight.Api.CreateInstance(
+		ac.vmname(),
+		ac.sshKey,
+		ac.ResourceGroup,
+		conf,
+		ac.Network,
+		ac.ManagedIdentityID,
+		instanceOptions,
+	)
+
 	if err != nil {
 		return nil, err
 	}

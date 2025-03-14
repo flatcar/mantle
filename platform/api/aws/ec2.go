@@ -44,8 +44,10 @@ func (a *API) DeleteKey(name string) error {
 	return err
 }
 
-// CreateInstances creates EC2 instances with a given name tag, optional ssh key name, user data. The image ID, instance type, and security group set in the API will be used. CreateInstances will block until all instances are running and have an IP address.
-func (a *API) CreateInstances(name, keyname, userdata string, count uint64) ([]*ec2.Instance, error) {
+// CreateInstances creates EC2 instances with a given name tag, optional ssh key name, user data, and optional root disk size.
+// The image ID, instance type, and security group set in the API will be used.
+// CreateInstancesWithDiskOptions will block until all instances are running and have an IP address.
+func (a *API) CreateInstances(name, keyname, userdata string, count uint64, rootDiskSizeGB *int64) ([]*ec2.Instance, error) {
 	cnt := int64(count)
 
 	var ud *string
@@ -109,6 +111,20 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64) ([]*
 					},
 				},
 			},
+		}
+
+		// Add block device mappings for root disk size if specified
+		if rootDiskSizeGB != nil && *rootDiskSizeGB > 0 {
+			inst.BlockDeviceMappings = []*ec2.BlockDeviceMapping{
+				{
+					DeviceName: aws.String("/dev/xvda"),
+					Ebs: &ec2.EbsBlockDevice{
+						DeleteOnTermination: aws.Bool(true),
+						VolumeSize:          rootDiskSizeGB,
+						VolumeType:          aws.String("gp2"),
+					},
+				},
+			}
 		}
 
 		err = util.RetryConditional(5, 5*time.Second, func(err error) bool {

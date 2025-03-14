@@ -223,7 +223,7 @@ func setupDiskFromFile(imageFile, extraDiskSize string) (*os.File, error) {
 	}
 	sizeOpt := ""
 	if extraDiskSize != "" {
-		diskSize, err := parseDiskSize(extraDiskSize)
+		diskSize, err := ParseDiskSize(extraDiskSize)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse extra disk size %s: %v", extraDiskSize, err)
 		}
@@ -235,7 +235,7 @@ func setupDiskFromFile(imageFile, extraDiskSize string) (*os.File, error) {
 	return setupDisk("-o", qcowOpts)
 }
 
-func parseDiskSize(diskSize string) (uint64, error) {
+func ParseDiskSize(diskSize string) (uint64, error) {
 	multiplier := (uint64)(1)
 	last := len(diskSize) - 1
 	suffix := diskSize[last]
