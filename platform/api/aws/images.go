@@ -54,7 +54,7 @@ func (e *EC2ImageFormat) Set(s string) error {
 	case string(EC2ImageFormatRaw):
 		*e = EC2ImageFormatRaw
 	default:
-		return fmt.Errorf("invalid ec2 image format: must be raw or vmdk")
+		return fmt.Errorf("invalid ec2 image format: must be %s or %s", EC2ImageFormatRaw, EC2ImageFormatVmdk)
 	}
 	return nil
 }
@@ -515,6 +515,7 @@ func registerImageParams(snapshotID string, diskSizeGiB uint, name, description 
 		Description:        aws.String(description),
 		Architecture:       aws.String(arch),
 		VirtualizationType: aws.String(string(imageType)),
+		BootMode:           aws.String(ec2.BootModeValuesUefiPreferred),
 		RootDeviceName:     aws.String(fmt.Sprintf("/dev/%sa", diskBaseName)),
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
 			&ec2.BlockDeviceMapping{
