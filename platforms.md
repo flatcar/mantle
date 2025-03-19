@@ -72,7 +72,7 @@ create images from the image file.
  - For each cluster to be created a Resource Group is created containing the necessary networking resources and a storage account (which will be used to store boot diagnostics for any machines in the cluster).
  - There are two types of images in Azure (published images and custom images). For using published images the channel can be passed via the `azure-sku` parameter and the version can be passed via the `azure-version` parameter. To specify a custom image you can pass the `azure-disk-uri` parameter.
  - `kola` works entirely on ARM based authentication, `ore` has methods for both ASM or ARM credentials.
- - `GC` in Azure searches for Resource Groups with a prefix of `kola-cluster` in the name.
+ - `GC` in Azure searches for Resource Groups with a prefix that matches the `--azure-resource-group-basename` flag (defaults to `kola-cluster`).
 
 ## DigitalOcean
 

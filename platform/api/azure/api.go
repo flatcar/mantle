@@ -294,7 +294,7 @@ func (a *API) GC(gracePeriod time.Duration) error {
 	}
 
 	for _, l := range listGroups {
-		if strings.HasPrefix(*l.Name, "kola-cluster") {
+		if strings.HasPrefix(*l.Name, a.Opts.ResourceGroupBasename) {
 			createdAt := *l.Tags["createdAt"]
 			timeCreated, err := time.Parse(time.RFC3339, createdAt)
 			if err != nil {

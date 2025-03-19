@@ -123,6 +123,7 @@ func init() {
 	bv(&kola.AzureOptions.UsePrivateIPs, "azure-use-private-ips", false, "Assume nodes are reachable using private IP addresses")
 	sv(&kola.AzureOptions.DiskController, "azure-disk-controller", "default", "Use a specific disk-controller for storage (default \"default\", also \"nvme\" and \"scsi\")")
 	sv(&kola.AzureOptions.ResourceGroup, "azure-resource-group", "", "Deploy resources in an existing resource group")
+	sv(&kola.AzureOptions.ResourceGroupBasename, "azure-resource-group-basename", "kola-cluster", "Prefix used for creating new resource groups")
 	sv(&kola.AzureOptions.AvailabilitySet, "azure-availability-set", "", "Deploy instances with an existing availibity set")
 	sv(&kola.AzureOptions.KolaVnet, "azure-kola-vnet", "", "Pass the vnet/subnet that kola is being ran from to restrict network access to created storage accounts")
 	sv(&kola.AzureOptions.VMIdentity, "azure-vm-identity", "", "Assign a managed identity to the VM by name (will be looked up for its ID)")
