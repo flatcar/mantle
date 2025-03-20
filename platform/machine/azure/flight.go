@@ -95,7 +95,7 @@ func NewFlight(opts *azure.Options) (platform.Flight, error) {
 		blobName := imageName + ".vhd"
 		container := "temp"
 
-		af.ImageResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster-image")
+		af.ImageResourceGroup, err = af.Api.CreateResourceGroup(af.Api.Opts.ResourceGroupBasename + "-image")
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +178,7 @@ func (af *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		ac.ResourceGroup = af.ImageResourceGroup
 		ac.Network = af.Network
 	} else {
-		ac.ResourceGroup, err = af.Api.CreateResourceGroup("kola-cluster")
+		ac.ResourceGroup, err = af.Api.CreateResourceGroup(af.Api.Opts.ResourceGroupBasename)
 		if err != nil {
 			return nil, err
 		}

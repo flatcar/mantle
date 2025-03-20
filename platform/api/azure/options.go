@@ -61,6 +61,8 @@ type Options struct {
 	UseUserData bool
 	// ResourceGroup is an existing resource group to deploy resources in.
 	ResourceGroup string
+	// ResourceGroupBasename is the prefix used for creating new resource groups
+	ResourceGroupBasename string
 	// AvailabilitySet is an existing availability set to deploy the instance in.
 	AvailabilitySet string
 	// VMIdentity is the name of a managed identity to assign to the VM.
