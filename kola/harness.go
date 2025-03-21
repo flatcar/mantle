@@ -279,6 +279,18 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 	return
 }
 
+func hasPattern(patterns []string) bool {
+	for _, pattern := range patterns {
+		for _, p := range pattern {
+			switch p {
+			case '\\', '[', '*', '?':
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func FilterTests(tests map[string]*register.Test, patterns []string, channel, offering string, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
 
@@ -435,7 +447,11 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		defer flight.Destroy()
 	}
 
-	if !haveVersion {
+	if !haveVersion && hasPattern(patterns) {
+		// The passed names have patterns, which means
+		// that we don't have a fixed set of tests to
+		// run, so we need to know a version in order
+		// to do version checks on the matching tests.
 		plog.Info("Creating cluster to check semver...")
 
 		version, err := getClusterSemver(flight, outputDir)
@@ -443,6 +459,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 			plog.Fatal(err)
 		}
 		imageSemver = *version
+		haveVersion = true
 	}
 
 	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, imageSemver)
@@ -450,7 +467,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		plog.Fatal(err)
 	}
 
-	if disableSELinuxAVCChecks ||  imageSemver.LessThan(semver.Version{Major: AVCChecksMajorVersion}) {
+	if disableSELinuxAVCChecks || (haveVersion && imageSemver.LessThan(semver.Version{Major: AVCChecksMajorVersion})) {
 		// If the version is < AVCChecksMajorVersion, we skip
 		// AVC checks completely. This is to avoid test
 		// failures on older Flatcar versions where we expect
