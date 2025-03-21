@@ -399,7 +399,7 @@ func versionOutsideRange(version, minVersion, endVersion semver.Version) bool {
 // register tests in their init() function.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. If it already exists it will be erased!
-func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool, imageVersion string) error {
+func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool, imageVersion string, disableSELinuxAVCChecks bool) error {
 	imageSemver := semver.Version{}
 	haveVersion := false
 	if imageVersion != "" {
@@ -450,12 +450,12 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		plog.Fatal(err)
 	}
 
-	// If the version is < AVCChecksMajorVersion, we skip
-	// AVC checks completely. This is to avoid test
-	// failures on older Flatcar versions where we expect
-	// this kind of issues to show up and we won't fix
-	// them.
-	if imageSemver.LessThan(semver.Version{Major: AVCChecksMajorVersion}) {
+	if disableSELinuxAVCChecks ||  imageSemver.LessThan(semver.Version{Major: AVCChecksMajorVersion}) {
+		// If the version is < AVCChecksMajorVersion, we skip
+		// AVC checks completely. This is to avoid test
+		// failures on older Flatcar versions where we expect
+		// this kind of issues to show up and we won't fix
+		// them.
 		for _, t := range tests {
 			t.Flags = append(t.Flags, register.NoSELinuxAVCChecks)
 		}
