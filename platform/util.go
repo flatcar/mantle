@@ -129,7 +129,7 @@ func StartMachine(m Machine, j *Journal) error {
 	if err := CheckMachine(context.TODO(), m); err != nil {
 		return fmt.Errorf("machine %q failed basic checks: %v", m.ID(), err)
 	}
-	if !m.RuntimeConf().NoEnableSelinux {
+	if !m.RuntimeConf().NoEnableSelinux && m.RuntimeConf().LateSelinux {
 		if err := EnableSelinux(m); err != nil {
 			return fmt.Errorf("machine %q failed to enable selinux: %v", m.ID(), err)
 		}

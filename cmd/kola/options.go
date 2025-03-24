@@ -81,6 +81,7 @@ func init() {
 	root.PersistentFlags().StringVarP(&kolaOffering, "offering", "", "basic", "Offering: "+strings.Join(kolaOfferings, ", "))
 	root.PersistentFlags().StringVarP(&kola.Options.Distribution, "distro", "b", "cl", "Distribution: "+strings.Join(kolaDistros, ", "))
 	root.PersistentFlags().IntVarP(&kola.TestParallelism, "parallel", "j", 1, "number of tests to run in parallel")
+	bv(&kola.LateSelinux, "late-selinux", false, "Enable SELinux only after bootup")
 	sv(&kola.TAPFile, "tapfile", "", "file to write TAP results to")
 	sv(&kola.Options.BaseName, "basename", "kola", "Cluster name prefix")
 	ss("debug-systemd-unit", []string{}, "full-unit-name.service to enable SYSTEMD_LOG_LEVEL=debug on. Specify multiple times for multiple units.")

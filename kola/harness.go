@@ -88,6 +88,7 @@ var (
 	TestParallelism        int    //glue var to set test parallelism from main
 	TAPFile                string // if not "", write TAP results here
 	TorcxManifestFile      string // torcx manifest to expose to tests, if set
+	LateSelinux            bool   // delay the switching of SELinux to enforce mode
 	DevcontainerURL        string // dev container to expose to tests, if set
 	DevcontainerBinhostURL string // dev container binhost URL to use in the devcontainer test
 	DevcontainerFile       string // dev container path to expose to tests, if set
@@ -593,6 +594,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 		SSHRetries:         Options.SSHRetries,
 		SSHTimeout:         Options.SSHTimeout,
 		DefaultUser:        t.DefaultUser,
+		LateSelinux:        LateSelinux,
 	}
 	c, err := flight.NewCluster(rconf)
 	if err != nil {
