@@ -34,6 +34,7 @@ const (
 	NoKernelPanicCheck                  // don't check console output for kernel panic
 	NoVerityCorruptionCheck             // don't check console output for verity corruption
 	NoDisableUpdates                    // don't disable usage of the public update server
+	NoSELinuxAVCChecks                  // don't check console output for SELinux AVCs
 )
 
 // Test provides the main test abstraction for kola. The run function is

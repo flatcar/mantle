@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -65,6 +64,10 @@ import (
 	"github.com/flatcar/mantle/platform/machine/scaleway"
 	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 	"github.com/flatcar/mantle/system"
+)
+
+const (
+	AVCChecksMajorVersion int64 = 4208
 )
 
 var (
@@ -223,6 +226,11 @@ var (
 			desc:  "systemd skipped execution of a unit due to an ordering cycle",
 			match: regexp.MustCompile("Ordering cycle found, skipping (.*)|Job (.*) deleted to break ordering cycle starting with (.*)|Found ordering cycle on (.*)"),
 		},
+		{
+			desc:     "SELinux denial message",
+			match:    regexp.MustCompile(`avc:\s*denied\s*(\S.*)`),
+			skipFlag: &[]register.Flag{register.NoSELinuxAVCChecks}[0],
+		},
 	}
 )
 
@@ -269,6 +277,18 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		err = fmt.Errorf("invalid platform %q", pltfrm)
 	}
 	return
+}
+
+func hasPattern(patterns []string) bool {
+	for _, pattern := range patterns {
+		for _, p := range pattern {
+			switch p {
+			case '\\', '[', '*', '?':
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func FilterTests(tests map[string]*register.Test, patterns []string, channel, offering string, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
@@ -391,33 +411,19 @@ func versionOutsideRange(version, minVersion, endVersion semver.Version) bool {
 // register tests in their init() function.
 // outputDir is where various test logs and data will be written for
 // analysis after the test run. If it already exists it will be erased!
-func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool) error {
-	var versionStr string
-
-	// Avoid incurring cost of starting machine in getClusterSemver when
-	// either:
-	// 1) none of the selected tests care about the version
-	// 2) glob is an exact match which means minVersion will be ignored
-	//    either way
-	// 3) the provided torcx flag is wrong
-	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, semver.Version{})
-	if err != nil {
-		plog.Fatal(err)
-	}
-
-	skipGetVersion := true
-	for name, t := range tests {
-		patternNotName := true
-		for _, pattern := range patterns {
-			if name == pattern {
-				patternNotName = false
-				break
-			}
+func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, sshKeys *[]agent.Key, remove bool, imageVersion string, disableSELinuxAVCChecks bool) error {
+	imageSemver := semver.Version{}
+	haveVersion := false
+	if imageVersion != "" {
+		versionID := imageVersion
+		plusIndex := strings.IndexRune(versionID, '+')
+		if plusIndex >= 0 {
+			versionID = versionID[0:plusIndex]
 		}
-		if patternNotName && (t.MinVersion != semver.Version{} || t.EndVersion != semver.Version{}) {
-			skipGetVersion = false
-			break
+		if err := imageSemver.Set(versionID); err != nil {
+			return fmt.Errorf("could not parse passed image version as semver: %v", err)
 		}
+		haveVersion = true
 	}
 
 	if TorcxManifestFile != "" {
@@ -441,33 +447,34 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		defer flight.Destroy()
 	}
 
-	if !skipGetVersion {
+	if !haveVersion && hasPattern(patterns) {
+		// The passed names have patterns, which means
+		// that we don't have a fixed set of tests to
+		// run, so we need to know a version in order
+		// to do version checks on the matching tests.
 		plog.Info("Creating cluster to check semver...")
 
 		version, err := getClusterSemver(flight, outputDir)
 		if err != nil {
 			plog.Fatal(err)
 		}
+		imageSemver = *version
+		haveVersion = true
+	}
 
-		// If the version is > 3033, we can safely use user-data instead of custom-data for
-		// provisioning the instance on Azure.
-		if !version.LessThan(semver.Version{Major: 3034}) && pltfrm == "azure" {
-			// Using reflection is a bit hacky, but it seems to be the only way to
-			// access the field we want to set.
-			f := reflect.ValueOf(flight).Elem()
-			api := f.FieldByName("Api")
-			opts := api.Elem().FieldByName("Opts")
-			userData := opts.Elem().FieldByName("UseUserData")
-			// At this point, this field can be set.
-			userData.SetBool(true)
-		}
+	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, imageSemver)
+	if err != nil {
+		plog.Fatal(err)
+	}
 
-		versionStr = version.String()
-
-		// one more filter pass now that we know real version
-		tests, err = FilterTests(tests, patterns, channel, offering, pltfrm, *version)
-		if err != nil {
-			plog.Fatal(err)
+	if disableSELinuxAVCChecks || (haveVersion && imageSemver.LessThan(semver.Version{Major: AVCChecksMajorVersion})) {
+		// If the version is < AVCChecksMajorVersion, we skip
+		// AVC checks completely. This is to avoid test
+		// failures on older Flatcar versions where we expect
+		// this kind of issues to show up and we won't fix
+		// them.
+		for _, t := range tests {
+			t.Flags = append(t.Flags, register.NoSELinuxAVCChecks)
 		}
 	}
 
@@ -476,7 +483,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		Parallel:  TestParallelism,
 		Verbose:   true,
 		Reporters: reporters.Reporters{
-			reporters.NewJSONReporter("report.json", pltfrm, versionStr),
+			reporters.NewJSONReporter("report.json", pltfrm, imageSemver.String()),
 		},
 	}
 	var htests harness.Tests

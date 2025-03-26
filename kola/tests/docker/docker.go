@@ -15,10 +15,12 @@
 package docker
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -27,6 +29,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/coreos/go-semver/semver"
+	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/lang/worker"
@@ -62,6 +65,8 @@ func init() {
 		MinVersion:  semver.Version{Major: 2942},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		// Skip AVC checks, we will do our own.
+		Flags: []register.Flag{register.NoSELinuxAVCChecks},
 	})
 	register.Register(&register.Test{
 		Run:         dockerNetworkNmapNcat,
@@ -781,6 +786,72 @@ docker run -v "/etc/misc:/opt" --rm ghcr.io/flatcar/busybox true`
 
 	if string(out) != "world" {
 		c.Fatal("/etc/misc/hello should holds 'world'")
+	}
+
+	// We disabled AVC checks, because we want to make sure that
+	// there is a specific AVC in logs. We need to be more lenient
+	// on the older versions of Flatcar and ignore the unexpected
+	// AVCs.
+	version := string(c.MustSSH(m, `. /usr/lib/os-release && echo $VERSION`))
+	if version == "" {
+		c.Fatalf("got an empty version from os-release")
+	}
+
+	sv, err := semver.NewVersion(version)
+	if err != nil {
+		c.Fatalf("failed to parse os-release version: %v", err)
+	}
+
+	out, err = c.SSH(m, `journalctl | grep -ie 'avc:[[:space:]]*denied'`)
+	if err != nil {
+		c.Fatalf("failed to get AVC messages from journal: %v", err)
+	}
+	s := bufio.NewScanner(bytes.NewReader(out))
+
+	// LTS-2023 uses different device for /etc (part of the root
+	// partition) and different SELinux context. On newer Flatcar
+	// versions, /etc is an overlay.
+	//
+	// TODO: Drop it when LTS-2023 becomes unsupported.
+	var (
+		dev     string
+		context string
+	)
+	if sv.LessThan(semver.Version{Major: 3510, Minor: 4}) {
+		dev = "vda[0-9]*"
+		context = "svirt_lxc_net_t"
+	} else {
+		dev = "overlay"
+		context = "container_t"
+	}
+	r := regexp.MustCompile(fmt.Sprintf(`avc:  denied  { write } for  pid=[0-9]* comm="sh" name="misc" dev="%s" ino=[0-9]* scontext=system_u:system_r:%s:s0:c[0-9]*,c[0-9]* tcontext=system_u:object_r:etc_t:s0 tclass=dir permissive=0`, dev, context))
+	if sv.LessThan(semver.Version{Major: kola.AVCChecksMajorVersion}) {
+		// old Flatcar, lenient checks
+		found := false
+		for s.Scan() {
+			if r.MatchString(s.Text()) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			c.Fatalf("missing the expected AVC in logs")
+		}
+	} else {
+		// new Flatcar, strict checks
+		found := false
+		for s.Scan() {
+			if found {
+				c.Fatalf("too many AVCs, expected only one")
+			}
+			found = true
+			if !r.MatchString(s.Text()) {
+				c.Fatalf("unexpected AVC: %s", s.Text())
+			}
+		}
+		if !found {
+			c.Fatalf("missing the expected AVC in logs")
+		}
 	}
 }
 
