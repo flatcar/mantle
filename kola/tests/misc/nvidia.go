@@ -52,7 +52,7 @@ func init() {
 	register.Register(&register.Test{
 		Name:          "cl.misc.nvidia",
 		Run:           verifyNvidiaInstallation,
-		ClusterSize:   1,
+		ClusterSize:   0,
 		Distros:       []string{"cl"},
 		Platforms:     []string{"azure", "aws"},
 		Architectures: []string{"amd64", "arm64"},
@@ -72,7 +72,7 @@ func init() {
 	})
 }
 
-func skipOnNonGpu(version semver.Version, channel, arch, platform string) bool {
+func skipOnNonGpu(_ semver.Version, _, arch, platform string) bool {
 	// N stands for GPU instance obviously :)
 	if platform == "azure" && strings.Contains(kola.AzureOptions.Size, "NC") {
 		return false
@@ -81,6 +81,12 @@ func skipOnNonGpu(version semver.Version, channel, arch, platform string) bool {
 		return false
 	}
 	return true
+}
+
+func runtimeSkipOnNonGpu(c cluster.TestCluster) {
+	if skipOnNonGpu(semver.Version{}, "", kola.QEMUOptions.Board, string(c.Platform())) {
+		c.Skip("wrong instance size")
+	}
 }
 
 func waitForNvidiaDriver(c *cluster.TestCluster, m *platform.Machine) error {
@@ -99,7 +105,11 @@ func waitForNvidiaDriver(c *cluster.TestCluster, m *platform.Machine) error {
 }
 
 func verifyNvidiaInstallation(c cluster.TestCluster) {
-	m := c.Machines()[0]
+	runtimeSkipOnNonGpu(c)
+	m, err := c.NewMachine(nil)
+	if err != nil {
+		c.Fatal(err)
+	}
 	if err := waitForNvidiaDriver(&c, &m); err != nil {
 		c.Fatal(err)
 	}
@@ -108,6 +118,7 @@ func verifyNvidiaInstallation(c cluster.TestCluster) {
 }
 
 func verifyNvidiaGpuOperator(c cluster.TestCluster) {
+	runtimeSkipOnNonGpu(c)
 	params := map[string]string{
 		"KubernetesVersion":    KubernetesVersion,
 		"NvidiaRuntimeVersion": NvidiaRuntimeVersion,
