@@ -144,6 +144,10 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("ResourceGroup must match AvailabilitySet")
 	}
 
+	if opts.ResourceGroupBasename == "" {
+		return nil, fmt.Errorf("ResourceGroupBasename must be set")
+	}
+
 	api := &API{
 		cloudConfig: config,
 		creds:       creds,

@@ -30,7 +30,8 @@ var (
 		Short: "azure image and vm utilities",
 	}
 
-	azureLocation string
+	azureLocation              string
+	azureResourceGroupBasename string
 
 	api *azure.API
 )
@@ -39,13 +40,15 @@ func init() {
 	cli.WrapPreRun(Azure, preauth)
 
 	Azure.PersistentFlags().StringVar(&azureLocation, "azure-location", "westus", "Azure location (default \"westus\")")
+	Azure.PersistentFlags().StringVar(&azureResourceGroupBasename, "azure-resource-group-basename", "kola-cluster", "Prefix used for creating new resource groups")
 }
 
 func preauth(cmd *cobra.Command, args []string) error {
 	plog.Printf("Creating Azure API...")
 
 	a, err := azure.New(&azure.Options{
-		Location: azureLocation,
+		Location:              azureLocation,
+		ResourceGroupBasename: azureResourceGroupBasename,
 	})
 	if err != nil {
 		plog.Fatalf("Failed to create Azure API: %v", err)
