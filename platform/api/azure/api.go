@@ -144,10 +144,6 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("ResourceGroup must match AvailabilitySet")
 	}
 
-	if opts.ResourceGroupBasename == "" {
-		return nil, fmt.Errorf("ResourceGroupBasename must be set")
-	}
-
 	api := &API{
 		cloudConfig: config,
 		creds:       creds,
@@ -161,6 +157,13 @@ func New(opts *Options) (*API, error) {
 	}
 
 	return api, nil
+}
+
+func (a *API) ResourceGroupBasename() string {
+	if a.Opts.ResourceGroupBasename != "" {
+		return a.Opts.ResourceGroupBasename
+	}
+	return "kola-cluster"
 }
 
 func (a *API) SetupClients() error {
@@ -298,7 +301,7 @@ func (a *API) GC(gracePeriod time.Duration) error {
 	}
 
 	for _, l := range listGroups {
-		if strings.HasPrefix(*l.Name, a.Opts.ResourceGroupBasename) {
+		if strings.HasPrefix(*l.Name, a.ResourceGroupBasename()) {
 			createdAt := *l.Tags["createdAt"]
 			timeCreated, err := time.Parse(time.RFC3339, createdAt)
 			if err != nil {
