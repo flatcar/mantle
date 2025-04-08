@@ -8,6 +8,7 @@
 [![Bluesky](https://img.shields.io/badge/Bluesky-Follow-0285FF?logo=bluesky)](https://bsky.app/profile/flatcar.org)
 
 </div>
+
 # Mantle: Gluing Container Linux together
 
 This repository is a collection of utilities for developing Container Linux. Most of the
