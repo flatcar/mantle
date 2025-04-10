@@ -6,10 +6,9 @@ import (
 	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
-	"github.com/flatcar/mantle/platform/machine/qemu"
-	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 )
 
 const (
@@ -320,18 +319,7 @@ func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, 
 		},
 		EnableTPM: true,
 	}
-	var m platform.Machine
-	var err error
-	switch pc := c.Cluster.(type) {
-	// These cases have to be separated because otherwise the golang compiler doesn't type-check
-	// the case bodies using the proper subtype of `pc`.
-	case *qemu.Cluster:
-		m, err = pc.NewMachineWithOptions(userData, options)
-	case *unprivqemu.Cluster:
-		m, err = pc.NewMachineWithOptions(userData, options)
-	default:
-		c.Fatal("unknown cluster type")
-	}
+	m, err := util.NewMachineWithOptions(c, userData, options)
 	if err != nil {
 		c.Fatal(err)
 	}
@@ -371,20 +359,7 @@ func tpmTest(c cluster.TestCluster, userData *conf.UserData, mountpoint string, 
 
 func eventLogTest(c cluster.TestCluster) {
 	options := platform.MachineOptions{EnableTPM: true}
-	var (
-		m   platform.Machine
-		err error
-	)
-	switch pc := c.Cluster.(type) {
-	// These cases have to be separated because otherwise the golang compiler doesn't type-check
-	// the case bodies using the proper subtype of `pc`.
-	case *qemu.Cluster:
-		m, err = pc.NewMachineWithOptions(nil, options)
-	case *unprivqemu.Cluster:
-		m, err = pc.NewMachineWithOptions(nil, options)
-	default:
-		c.Fatal("unknown cluster type")
-	}
+	m, err := util.NewMachineWithOptions(c, nil, options)
 	if err != nil {
 		c.Fatal(err)
 	}

@@ -115,6 +115,14 @@ func DevContainerDownloadLibrary() (string, error) {
 	return ExecNamedTemplate(downloadLibraryTemplate, "download library", libraryParameters)
 }
 
+func NewMachineWithOptions(c cluster.TestCluster, userData *conf.UserData, options platform.MachineOptions) (platform.Machine, error) {
+	if pc, ok := c.Cluster.(platform.CreateWithOptions); ok {
+		return pc.NewMachineWithOptions(userData, options)
+	} else {
+		return nil, fmt.Errorf("platform %s does not support creating machines with options", c.Cluster.Platform())
+	}
+}
+
 // NewMachineWithLargeDisk creates a new machine on the passed qemu or
 // qemu-unpriv cluster. The extraSize parameter is a string describing
 // size, like "5G".
@@ -122,11 +130,7 @@ func NewMachineWithLargeDisk(c cluster.TestCluster, extraSize string, userData *
 	options := platform.MachineOptions{
 		ExtraPrimaryDiskSize: extraSize,
 	}
-	if pc, ok := c.Cluster.(platform.CreateWithOptions); ok {
-		return pc.NewMachineWithOptions(userData, options)
-	} else {
-		return nil, fmt.Errorf("platform %s does not support creating machines with options", c.Cluster.Platform())
-	}
+	return NewMachineWithOptions(c, userData, options)
 }
 
 // Serve is a function that could be used as a native function for
