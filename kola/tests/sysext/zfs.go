@@ -11,10 +11,9 @@ import (
 	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
+	"github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
-	"github.com/flatcar/mantle/platform/machine/qemu"
-	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 )
 
 var zfsUserData = conf.Butane(`
@@ -179,24 +178,12 @@ func skipOnGha(version semver.Version, channel, arch, platform string) bool {
 }
 
 func createZfsMachine(c cluster.TestCluster, userdata *conf.UserData) platform.Machine {
-	var m platform.Machine
-	var err error
 	options := platform.MachineOptions{
 		AdditionalDisks: []platform.Disk{
 			{Size: "1G", DeviceOpts: []string{"serial=zfs"}},
 		},
 	}
-	switch pc := c.Cluster.(type) {
-	// These cases have to be separated because when put together to the same case statement
-	// the golang compiler no longer checks that the individual types in the case have the
-	// NewMachineWithOptions function, but rather whether platform.Cluster does which fails
-	case *qemu.Cluster:
-		m, err = pc.NewMachineWithOptions(userdata, options)
-	case *unprivqemu.Cluster:
-		m, err = pc.NewMachineWithOptions(userdata, options)
-	default:
-		c.Fatal("unknown cluster type")
-	}
+	m, err := util.NewMachineWithOptions(c, userdata, options)
 	if err != nil {
 		c.Fatalf("creating a machine failed: %v", err)
 	}

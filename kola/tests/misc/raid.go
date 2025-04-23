@@ -23,8 +23,6 @@ import (
 	tutil "github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
-	"github.com/flatcar/mantle/platform/machine/qemu"
-	"github.com/flatcar/mantle/platform/machine/unprivqemu"
 )
 
 const (
@@ -215,24 +213,12 @@ func init() {
 }
 
 func RootOnRaid(c cluster.TestCluster, userData *conf.UserData) {
-	var m platform.Machine
-	var err error
 	options := platform.MachineOptions{
 		AdditionalDisks: []platform.Disk{
 			{Size: "520M", DeviceOpts: []string{"serial=secondary"}},
 		},
 	}
-	switch pc := c.Cluster.(type) {
-	// These cases have to be separated because when put together to the same case statement
-	// the golang compiler no longer checks that the individual types in the case have the
-	// NewMachineWithOptions function, but rather whether platform.Cluster does which fails
-	case *qemu.Cluster:
-		m, err = pc.NewMachineWithOptions(userData, options)
-	case *unprivqemu.Cluster:
-		m, err = pc.NewMachineWithOptions(userData, options)
-	default:
-		c.Fatal("unknown cluster type")
-	}
+	m, err := tutil.NewMachineWithOptions(c, userData, options)
 	if err != nil {
 		c.Fatal(err)
 	}
