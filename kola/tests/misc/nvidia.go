@@ -47,6 +47,43 @@ storage:
     hard: false
 `
 
+const nvidiaSysextTemplate = `
+variant: flatcar
+version: 1.0.0
+
+storage:
+  files:
+  - path: /etc/flatcar/enabled-sysext.conf
+    contents:
+      inline: |
+        nvidia-drivers-{{ .NvidiaSysextVersion }}
+`
+
+const nvidiaSysextOperatorTemplate = `
+variant: flatcar
+version: 1.0.0
+
+storage:
+  files:
+  - path: /opt/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
+    contents:
+      source: https://extensions.flatcar.org/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
+  - path: /opt/extensions/nvidia-runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
+    contents:
+      source: https://extensions.flatcar.org/extensions/nvidia-runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
+  - path: /etc/flatcar/enabled-sysext.conf
+    contents:
+      inline: |
+        nvidia-drivers-{{ .NvidiaSysextVersion }}
+  links:
+  - path: /etc/extensions/kubernetes.raw
+    target: /opt/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
+    hard: false
+  - path: /etc/extensions/nvidia-runtime.raw
+    target: /opt/extensions/nvidia-runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
+    hard: false
+`
+
 var plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/misc")
 
 func init() {
@@ -70,6 +107,30 @@ func init() {
 		Architectures: []string{"amd64", "arm64"},
 		Flags:         []register.Flag{register.NoEnableSelinux, register.NoEmergencyShellCheck},
 		SkipFunc:      skipOnNonGpu,
+	})
+
+	register.Register(&register.Test{
+		Name:          "cl.misc.nvidia-sysext",
+		Run:           verifyNvidiaSysextInstallation,
+		ClusterSize:   0,
+		Distros:       []string{"cl"},
+		Platforms:     []string{"azure", "aws"},
+		Architectures: []string{"amd64", "arm64"},
+		Flags:         []register.Flag{register.NoEnableSelinux},
+		SkipFunc:      skipOnNonGpu,
+		MinVersion:    semver.Version{Major: 4334},
+	})
+
+	register.Register(&register.Test{
+		Name:          "cl.misc.nvidia-sysext-operator",
+		Run:           verifyNvidiaSysextGpuOperator,
+		ClusterSize:   0,
+		Distros:       []string{"cl"},
+		Platforms:     []string{"azure", "aws"},
+		Architectures: []string{"amd64", "arm64"},
+		Flags:         []register.Flag{register.NoEnableSelinux, register.NoEmergencyShellCheck},
+		SkipFunc:      skipOnNonGpu,
+		MinVersion:    semver.Version{Major: 4334},
 	})
 }
 
@@ -105,22 +166,46 @@ func waitForNvidiaDriver(c *cluster.TestCluster, m *platform.Machine) error {
 	return nil
 }
 
-func verifyNvidiaInstallation(c cluster.TestCluster) {
+func verifyNvidiaSysextInstallationImpl(c cluster.TestCluster, sysextMode bool) {
 	runtimeSkipOnNonGpu(c)
-	m, err := c.NewMachine(nil)
+	var userData *conf.UserData
+	if sysextMode {
+		params := map[string]string{
+			"NvidiaSysextVersion": NvidiaSysextVersion,
+		}
+		// For amd64 the suffix is x86-64, for arm64 it's arm64
+		if kola.QEMUOptions.Board == "arm64-usr" {
+			params["ARCH_SUFFIX"] = "arm64"
+		} else {
+			params["ARCH_SUFFIX"] = "x86-64"
+		}
+
+		butane, err := testsutil.ExecTemplate(nvidiaSysextTemplate, params)
+		if err != nil {
+			c.Fatalf("ExecTemplate: %s", err)
+		}
+		userData = conf.Butane(butane)
+	}
+
+	m, err := c.NewMachine(userData)
 	if err != nil {
 		c.Fatal(err)
 	}
 	if err := waitForNvidiaDriver(&c, &m); err != nil {
 		c.Fatal(err)
 	}
-	out := c.MustSSH(m, "/opt/bin/nvidia-smi")
+	nvidiaSmiPath := "/usr/bin/nvidia-smi"
+	if sysextMode {
+		nvidiaSmiPath = "/opt/bin/nvidia-smi"
+	}
+	out := c.MustSSH(m, nvidiaSmiPath)
 	c.Logf("nvidia-smi: %s", out)
 }
 
-func verifyNvidiaGpuOperator(c cluster.TestCluster) {
+func verifyNvidiaSysextGpuOperatorImpl(c cluster.TestCluster, sysextMode bool) {
 	runtimeSkipOnNonGpu(c)
 	params := map[string]string{
+		"NvidiaSysextVersion":  NvidiaSysextVersion,
 		"KubernetesVersion":    KubernetesVersion,
 		"NvidiaRuntimeVersion": NvidiaRuntimeVersion,
 	}
@@ -131,7 +216,11 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 		params["ARCH_SUFFIX"] = "x86-64"
 	}
 
-	butane, err := testsutil.ExecTemplate(nvidiaOperatorTemplate, params)
+	template := nvidiaOperatorTemplate
+	if sysextMode {
+		template = nvidiaSysextOperatorTemplate
+	}
+	butane, err := testsutil.ExecTemplate(template, params)
 	if err != nil {
 		c.Fatalf("ExecTemplate: %s", err)
 	}
@@ -147,7 +236,11 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 	_ = c.MustSSH(m, "sudo systemctl cat nvidia.service")
 	_ = c.MustSSH(m, "sudo systemd-sysext status")
 	c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "nvidia-runtime")
-	c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "nvidia-driver")
+	if sysextMode {
+		c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "flatcar-nvidia-drivers")
+	} else {
+		c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "nvidia-driver")
+	}
 	_ = c.MustSSH(m, `curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
 	&& chmod 700 get_helm.sh \
 	&& HELM_INSTALL_DIR=/opt/bin PATH=$PATH:/opt/bin ./get_helm.sh`)
@@ -171,7 +264,7 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 	if err != nil {
 		c.Fatalf("%v", err)
 	}
-	_ = c.MustSSH(m, "/opt/bin/helm repo add nvidia https://helm.ngc.nvidia.com/nvidia  && /opt/bin/helm repo update")
+	_ = c.MustSSH(m, "/opt/bin/helm repo add nvidia https://helm.ngc.nvidia.com/nvidia && /opt/bin/helm repo update")
 	_ = c.MustSSH(m, fmt.Sprintf(`/opt/bin/helm install --wait --generate-name \
 	-n gpu-operator --create-namespace \
 	--version %s \
@@ -227,4 +320,20 @@ EOF`, CudaSampleImageTag))
 	if err != nil {
 		c.Fatalf("%v", err)
 	}
+}
+
+func verifyNvidiaInstallation(c cluster.TestCluster) {
+	verifyNvidiaSysextInstallationImpl(c, false)
+}
+
+func verifyNvidiaSysextInstallation(c cluster.TestCluster) {
+	verifyNvidiaSysextInstallationImpl(c, true)
+}
+
+func verifyNvidiaGpuOperator(c cluster.TestCluster) {
+	verifyNvidiaSysextGpuOperatorImpl(c, false)
+}
+
+func verifyNvidiaSysextGpuOperator(c cluster.TestCluster) {
+	verifyNvidiaSysextGpuOperatorImpl(c, true)
 }
