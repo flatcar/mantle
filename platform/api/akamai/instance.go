@@ -172,6 +172,10 @@ func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	}
 
 	for _, image := range images {
+		if image.IsPublic {
+			continue
+		}
+
 		if image.Created.After(threshold) {
 			continue
 		}
