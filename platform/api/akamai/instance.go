@@ -77,7 +77,7 @@ func (a *API) CreateServer(ctx context.Context, name, userData string) (*Server,
 		return nil, fmt.Errorf("waiting for instance disk to be ready: %w", err)
 	}
 
-	root := "sda"
+	root := "/dev/sda"
 	instanceConfigCreateOptions := linodego.InstanceConfigCreateOptions{
 		Label:    "default",
 		Comments: "Created by Mantle",
