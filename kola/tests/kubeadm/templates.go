@@ -43,7 +43,7 @@ storage:
         source: "data:text/plain;base64,{{ .WorkerScript }}"
     - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
-        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64"}}x86-64{{ else }}arm64{{ end }}.raw
+        source: https://extensions.flatcar.org/extensions/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
 `
 
 	masterConfig = `---
@@ -86,7 +86,7 @@ storage:
         source: https://get.helm.sh/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
     - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
-        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64"}}x86-64{{ else }}arm64{{ end }}.raw
+        source: https://extensions.flatcar.org/extensions/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
   {{ if eq .CNI "cilium" }}
     - path: {{ .DownloadDir }}/cilium.tar.gz
       mode: 0755
