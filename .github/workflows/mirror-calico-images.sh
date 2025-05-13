@@ -22,6 +22,9 @@ images=(
   calico/csi
   calico/node-driver-registrar
   calico/apiserver
+  calico/goldmane
+  calico/whisker
+  calico/whisker-backend
 )
 
 # we iterate over the images we want to mirror
