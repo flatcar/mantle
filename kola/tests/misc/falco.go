@@ -1,6 +1,7 @@
 package misc
 
 import (
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
@@ -17,8 +18,9 @@ func init() {
 		// falco builder container can't handle our arm64 config (yet)
 		Architectures: []string{"amd64"},
 		// selinux blocks insmod from within container
-		Flags:    []register.Flag{register.NoEnableSelinux},
-		SkipFunc: kola.SkipSecureboot,
+		Flags:      []register.Flag{register.NoEnableSelinux},
+		SkipFunc:   kola.SkipSecureboot,
+		EndVersion: semver.Version{Major: 4330, Minor: 0, Patch: 0},
 	})
 }
 
