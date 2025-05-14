@@ -19,7 +19,8 @@ import (
 
 const (
 	CmdTimeout           = time.Second * 300
-	KubernetesVersion    = "v1.30.8"                          // Kubernetes version used in the template
+	NvidiaSysextVersion  = "550-open"                         // NVIDIA drivers sysext version used in the template
+	KubernetesVersion    = "v1.32.2"                          // Kubernetes version used in the template
 	NvidiaRuntimeVersion = "v1.16.2"                          // NVIDIA runtime version used in the template
 	GpuOperatorVersion   = "v24.9.2"                          // GPU operator version used for Helm install
 	CudaSampleImageTag   = "vectoradd-cuda11.7.1-ubuntu20.04" // CUDA sample image tag
@@ -33,16 +34,16 @@ storage:
   files:
   - path: /opt/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
     contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
-  - path: /opt/extensions/nvidia_runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
+      source: https://extensions.flatcar.org/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
+  - path: /opt/extensions/nvidia-runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
     contents:
-      source: https://github.com/flatcar/sysext-bakery/releases/download/latest/nvidia_runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
+      source: https://extensions.flatcar.org/extensions/nvidia-runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
   links:
   - path: /etc/extensions/kubernetes.raw
     target: /opt/extensions/kubernetes-{{ .KubernetesVersion }}-{{ .ARCH_SUFFIX }}.raw
     hard: false
-  - path: /etc/extensions/nvidia_runtime.raw
-    target: /opt/extensions/nvidia_runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
+  - path: /etc/extensions/nvidia-runtime.raw
+    target: /opt/extensions/nvidia-runtime-{{ .NvidiaRuntimeVersion }}-{{ .ARCH_SUFFIX }}.raw
     hard: false
 `
 
@@ -145,7 +146,7 @@ func verifyNvidiaGpuOperator(c cluster.TestCluster) {
 	}
 	_ = c.MustSSH(m, "sudo systemctl cat nvidia.service")
 	_ = c.MustSSH(m, "sudo systemd-sysext status")
-	c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "nvidia_runtime")
+	c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "nvidia-runtime")
 	c.AssertCmdOutputContains(m, "sudo systemd-sysext status", "nvidia-driver")
 	_ = c.MustSSH(m, `curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
 	&& chmod 700 get_helm.sh \
