@@ -43,7 +43,7 @@ storage:
         source: "data:text/plain;base64,{{ .WorkerScript }}"
     - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
-        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64"}}x86-64{{ else }}arm64{{ end }}.raw
+        source: https://extensions.flatcar.org/extensions/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
 `
 
 	masterConfig = `---
@@ -86,7 +86,7 @@ storage:
         source: https://get.helm.sh/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
     - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
-        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64"}}x86-64{{ else }}arm64{{ end }}.raw
+        source: https://extensions.flatcar.org/extensions/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
   {{ if eq .CNI "cilium" }}
     - path: {{ .DownloadDir }}/cilium.tar.gz
       mode: 0755
@@ -209,7 +209,7 @@ EOF
 
 {{ if eq .CNI "calico" }}
 cat << EOF > calico.yaml
-# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/custom-resources.yaml
+# Source: https://raw.githubusercontent.com/projectcalico/calico/v3.30.0/manifests/custom-resources.yaml
 # This section includes base Calico installation configuration.
 # For more information, see: https://docs.tigera.io/calico/latest/reference/installation/api#operator.tigera.io/v1.Installation
 apiVersion: operator.tigera.io/v1
@@ -246,6 +246,21 @@ kind: APIServer
 metadata:
   name: default
 spec: {}
+---
+
+# Configures the Calico Goldmane flow aggregator.
+apiVersion: operator.tigera.io/v1
+kind: Goldmane
+metadata:
+  name: default
+
+---
+
+# Configures the Calico Whisker observability UI.
+apiVersion: operator.tigera.io/v1
+kind: Whisker
+metadata:
+  name: default
 EOF
 {{ end }}
 
@@ -258,9 +273,11 @@ EOF
     chown -R core:core /home/core/.kube; chmod a+r /home/core/.kube/config;
 
 {{ if eq .CNI "calico" }}
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.0/manifests/tigera-operator.yaml
     # calico.yaml uses Installation and APIServer CRDs, so make sure that they are established.
+    kubectl -n tigera-operator wait --for create --timeout=60s crd/installations.operator.tigera.io
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/installations.operator.tigera.io
+    kubectl -n tigera-operator wait --for create --timeout=60s crd/apiservers.operator.tigera.io
     kubectl -n tigera-operator wait --for condition=established --timeout=60s crd/apiservers.operator.tigera.io
     kubectl apply -f calico.yaml
 {{ end }}
