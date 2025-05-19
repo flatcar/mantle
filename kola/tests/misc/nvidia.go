@@ -194,9 +194,9 @@ func verifyNvidiaSysextInstallationImpl(c cluster.TestCluster, sysextMode bool) 
 	if err := waitForNvidiaDriver(&c, &m); err != nil {
 		c.Fatal(err)
 	}
-	nvidiaSmiPath := "/usr/bin/nvidia-smi"
+	nvidiaSmiPath := "/opt/bin/nvidia-smi"
 	if sysextMode {
-		nvidiaSmiPath = "/opt/bin/nvidia-smi"
+		nvidiaSmiPath = "/usr/bin/nvidia-smi"
 	}
 	out := c.MustSSH(m, nvidiaSmiPath)
 	c.Logf("nvidia-smi: %s", out)
