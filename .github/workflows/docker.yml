@@ -2,10 +2,10 @@ name: Build docker image
 on:
   push:
     branches:
-      - 'flatcar-master'
+      - 'main'
   pull_request:
     branches:
-      - 'flatcar-master'
+      - 'main'
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: flatcar/mantle

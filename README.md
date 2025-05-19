@@ -83,7 +83,7 @@ cd mantle
 ./build kola kolet
 ```
 
-Alternatively, there is a container image with the required dependencies and the mantle binaries for the latest commit on `flatcar-master`:
+Alternatively, there is a container image with the required dependencies and the mantle binaries for the latest commit on `main`:
 
 ```
 sudo docker run --privileged --net host -v /dev:/dev --rm -it ghcr.io/flatcar/mantle:git-$(git rev-parse HEAD)
