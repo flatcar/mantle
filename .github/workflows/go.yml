@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ flatcar-master ]
+    branches: [ main ]
   pull_request:
-    branches: [ flatcar-master ]
+    branches: [ main ]
 
 jobs:
 
