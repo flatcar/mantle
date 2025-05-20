@@ -1,6 +1,7 @@
 module github.com/flatcar/mantle
 
-go 1.23
+go 1.23.0
+
 toolchain go1.24.1
 
 require (
@@ -41,7 +42,7 @@ require (
 	github.com/packethost/packngo v0.21.0
 	github.com/pborman/uuid v1.2.0
 	github.com/pin/tftp v2.1.0+incompatible
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.23
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 	github.com/stretchr/testify v1.9.0
