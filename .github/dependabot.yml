@@ -1,0 +1,9 @@
+---
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      # run once a week, by default on Monday
+      interval: weekly
+
