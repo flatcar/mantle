@@ -3,8 +3,8 @@ package block
 import (
 	"time"
 
+	"github.com/scaleway/scaleway-sdk-go/errors"
 	"github.com/scaleway/scaleway-sdk-go/internal/async"
-	"github.com/scaleway/scaleway-sdk-go/internal/errors"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -56,7 +56,6 @@ func (s *API) WaitForVolume(req *WaitForVolumeRequest, opts ...scw.RequestOption
 				VolumeID: req.VolumeID,
 				Zone:     req.Zone,
 			}, opts...)
-
 			if err != nil {
 				return nil, false, err
 			}
