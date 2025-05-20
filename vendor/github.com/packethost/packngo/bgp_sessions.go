@@ -6,11 +6,13 @@ import (
 
 var bgpSessionBasePath = "/bgp/sessions"
 var bgpNeighborsBasePath = "/bgp/neighbors"
+var bgpDiscoverBasePath = "/bgp/discover"
 
 // BGPSessionService interface defines available BGP session methods
 type BGPSessionService interface {
 	Get(string, *GetOptions) (*BGPSession, *Response, error)
 	Create(string, CreateBGPSessionRequest) (*BGPSession, *Response, error)
+	Update(string, UpdateBGPSessionRequest) (*BGPSession, *Response, error)
 	Delete(string) (*Response, error)
 }
 
@@ -65,6 +67,11 @@ type CreateBGPSessionRequest struct {
 	DefaultRoute  *bool  `json:"default_route,omitempty"`
 }
 
+// UpdateBGPSessionRequest struct
+type UpdateBGPSessionRequest struct {
+	DefaultRoute bool `json:"default_route"`
+}
+
 // Create function
 func (s *BGPSessionServiceOp) Create(deviceID string, request CreateBGPSessionRequest) (*BGPSession, *Response, error) {
 	if validateErr := ValidateUUID(deviceID); validateErr != nil {
@@ -74,6 +81,22 @@ func (s *BGPSessionServiceOp) Create(deviceID string, request CreateBGPSessionRe
 	session := new(BGPSession)
 
 	resp, err := s.client.DoRequest("POST", apiPath, request, session)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return session, resp, err
+}
+
+// Update function
+func (s *BGPSessionServiceOp) Update(sessionID string, request UpdateBGPSessionRequest) (*BGPSession, *Response, error) {
+	if validateErr := ValidateUUID(sessionID); validateErr != nil {
+		return nil, nil, validateErr
+	}
+	apiPath := path.Join(bgpSessionBasePath, sessionID)
+	session := new(BGPSession)
+
+	resp, err := s.client.DoRequest("PUT", apiPath, request, session)
 	if err != nil {
 		return nil, resp, err
 	}

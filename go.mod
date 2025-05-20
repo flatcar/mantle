@@ -39,7 +39,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
 	github.com/linode/linodego v1.43.0
-	github.com/packethost/packngo v0.21.0
+	github.com/packethost/packngo v0.31.0
 	github.com/pborman/uuid v1.2.0
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
