@@ -31,7 +31,6 @@ require (
 	github.com/flatcar/container-linux-config-transpiler v0.9.4
 	github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
 	github.com/flatcar/ignition v0.36.2
-	github.com/godbus/dbus v0.0.0-20181025153459-66d97aec3384
 	github.com/golang/protobuf v1.5.4
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
