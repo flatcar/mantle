@@ -104,6 +104,61 @@ systemd:
       enabled: true
 `),
 	})
+	register.Register(&register.Test{
+		Run:         firewall,
+		ClusterSize: 1,
+		MinVersion:  semver.Version{Major: 4345},
+		Name:        "cl.network.nftables",
+		Platforms:   []string{"qemu", "qemu-uefi"},
+		Distros:     []string{"cl"},
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /var/lib/nftables/rules-save
+      mode: 0644
+      contents:
+        inline: |
+          table ip filter {
+          	chain INPUT {
+          		type filter hook input priority filter; policy accept;
+          		tcp dport 80 counter packets 0 bytes 0 drop
+          	}
+          }
+systemd:
+ units:
+   - name: nftables-load.service
+     enabled: true
+`),
+	})
+	register.Register(&register.Test{
+		Run:         firewall,
+		ClusterSize: 1,
+		Name:        "cl.network.iptables",
+		Platforms:   []string{"qemu", "qemu-uefi"},
+		Distros:     []string{"cl"},
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /var/lib/iptables/rules-save
+      mode: 0644
+      contents:
+        inline: |
+          *filter
+          :INPUT ACCEPT [2931:170804]
+          :FORWARD ACCEPT [0:0]
+          :OUTPUT ACCEPT [0:0]
+          -A INPUT -p tcp -m tcp --dport 80 -j DROP
+          COMMIT
+systemd:
+ units:
+   - name: iptables-restore.service
+     enabled: true
+`),
+	})
 }
 
 type listener struct {
@@ -250,4 +305,12 @@ func NetworkInitramfsSecondBoot(c cluster.TestCluster) {
 func wireguard(c cluster.TestCluster) {
 	m := c.Machines()[0]
 	c.AssertCmdOutputContains(m, `ip --json address show kv0 | jq -r '.[] | .addr_info | .[] | select( .family == "inet") | .local'`, "10.100.0.2")
+}
+
+// iptables save and restore iptables rules.
+func firewall(c cluster.TestCluster) {
+	m := c.Machines()[0]
+	// We test that the ruleset has been created using iptables or nftables.
+	// This would return an error if the ruleset is not created.
+	c.AssertCmdOutputContains(m, `sudo nft --json list ruleset | jq '.nftables.[] | select(.chain) | .chain.policy'`, "accept")
 }
