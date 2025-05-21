@@ -29,6 +29,21 @@ type MetalGateway struct {
 	Href           string                `json:"href"`
 	CreatedAt      string                `json:"created_at,omitempty"`
 	UpdatedAt      string                `json:"updated_at,omitempty"`
+	VRF            *VRF                  `json:"vrf,omitempty"`
+}
+
+// MetalGatewayLite struct representation of a Metal Gateway
+type MetalGatewayLite struct {
+	ID string `json:"id,omitempty"`
+	// The current state of the Metal Gateway. 'Ready' indicates the gateway record has been configured, but is currently not active on the network. 'Active' indicates the gateway has been configured on the network. 'Deleting' is a temporary state used to indicate that the gateway is in the process of being un-configured from the network, after which the gateway record will be deleted.
+	State     string     `json:"state,omitempty"`
+	CreatedAt *Timestamp `json:"created_at,omitempty"`
+	UpdatedAt *Timestamp `json:"updated_at,omitempty"`
+	// The gateway address with subnet CIDR value for this Metal Gateway. For example, a Metal Gateway using an IP reservation with block 10.1.2.0/27 would have a gateway address of 10.1.2.1/27.
+	GatewayAddress string `json:"gateway_address,omitempty"`
+	// The VLAN id of the Virtual Network record associated to this Metal Gateway. Example: 1001.
+	VLAN int    `json:"vlan,omitempty"`
+	Href string `json:"href,omitempty"`
 }
 
 type MetalGatewayServiceOp struct {
@@ -62,13 +77,17 @@ func (s *MetalGatewayServiceOp) List(projectID string, opts *ListOptions) (metal
 		}
 		return
 	}
-
 }
 
 type MetalGatewayCreateRequest struct {
-	VirtualNetworkID      string `json:"virtual_network_id"`
-	IPReservationID       string `json:"ip_reservation_id,omitempty"`
-	PrivateIPv4SubnetSize int    `json:"private_ipv4_subnet_size,omitempty"`
+	// VirtualNetworkID virtual network UUID.
+	VirtualNetworkID string `json:"virtual_network_id"`
+
+	// IPReservationID (optional) IP Reservation UUID (Public or VRF). Required for VRF.
+	IPReservationID string `json:"ip_reservation_id,omitempty"`
+
+	// PrivateIPv4SubnetSize (optional) Power of 2 between 8 and 128 (8, 16, 32, 64, 128). Invalid for VRF.
+	PrivateIPv4SubnetSize int `json:"private_ipv4_subnet_size,omitempty"`
 }
 
 func (s *MetalGatewayServiceOp) Get(metalGatewayID string, opts *GetOptions) (*MetalGateway, *Response, error) {
