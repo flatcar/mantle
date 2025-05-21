@@ -44,7 +44,7 @@ require (
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/spf13/cobra v1.1.3
-	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
+	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.10
 	github.com/vincent-petithory/dataurl v1.0.0
