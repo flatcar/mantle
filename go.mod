@@ -39,7 +39,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/linode/linodego v1.43.0
 	github.com/packethost/packngo v0.31.0
-	github.com/pborman/uuid v1.2.0
+	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/spf13/cobra v1.1.3
