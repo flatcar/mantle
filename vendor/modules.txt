@@ -548,7 +548,7 @@ github.com/modern-go/reflect2
 # github.com/packethost/packngo v0.31.0
 ## explicit; go 1.16
 github.com/packethost/packngo
-# github.com/pborman/uuid v1.2.0
+# github.com/pborman/uuid v1.2.1
 ## explicit
 github.com/pborman/uuid
 # github.com/pin/tftp v2.1.0+incompatible
