@@ -312,5 +312,5 @@ func firewall(c cluster.TestCluster) {
 	m := c.Machines()[0]
 	// We test that the ruleset has been created using iptables or nftables.
 	// This would return an error if the ruleset is not created.
-	c.AssertCmdOutputContains(m, `sudo nft --json list ruleset | jq '.nftables.[] | select(.rule) | .rule.expr[0].match.right'`, "80")
+	c.AssertCmdOutputContains(m, `sudo nft --json list ruleset | jq '.nftables[] | select(.rule) | .rule.expr[0].match.right'`, "80")
 }
