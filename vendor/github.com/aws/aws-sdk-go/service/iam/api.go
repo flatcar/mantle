@@ -1360,10 +1360,10 @@ func (c *IAM) CreateOpenIDConnectProviderRequest(input *CreateOpenIDConnectProvi
 // Amazon Web Services secures communication with some OIDC identity providers
 // (IdPs) through our library of trusted root certificate authorities (CAs)
 // instead of using a certificate thumbprint to verify your IdP server certificate.
-// These OIDC IdPs include Auth0, GitHub, Google, and those that use an Amazon
-// S3 bucket to host a JSON Web Key Set (JWKS) endpoint. In these cases, your
-// legacy thumbprint remains in your configuration, but is no longer used for
-// validation.
+// In these cases, your legacy thumbprint remains in your configuration, but
+// is no longer used for validation. These OIDC IdPs include Auth0, GitHub,
+// GitLab, Google, and those that use an Amazon S3 bucket to host a JSON Web
+// Key Set (JWKS) endpoint.
 //
 // The trust for the OIDC provider is derived from the IAM provider that this
 // operation creates. Therefore, it is best to limit access to the CreateOpenIDConnectProvider
@@ -1399,6 +1399,10 @@ func (c *IAM) CreateOpenIDConnectProviderRequest(input *CreateOpenIDConnectProvi
 //   - ErrCodeServiceFailureException "ServiceFailure"
 //     The request processing has failed because of an unknown error, exception
 //     or failure.
+//
+//   - ErrCodeOpenIdIdpCommunicationErrorException "OpenIdIdpCommunicationError"
+//     The request failed because IAM cannot connect to the OpenID Connect identity
+//     provider URL.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/iam-2010-05-08/CreateOpenIDConnectProvider
 func (c *IAM) CreateOpenIDConnectProvider(input *CreateOpenIDConnectProviderInput) (*CreateOpenIDConnectProviderOutput, error) {
@@ -5476,6 +5480,9 @@ func (c *IAM) GenerateServiceLastAccessedDetailsRequest(input *GenerateServiceLa
 // reports activity for at least the last 400 days, or less if your Region began
 // supporting this feature within the last year. For more information, see Regions
 // where data is tracked (https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_access-advisor.html#access-advisor_tracking-period).
+// For more information about services and actions for which action last accessed
+// information is displayed, see IAM action last accessed information services
+// and actions (https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_access-advisor-action-last-accessed.html).
 //
 // The service last accessed data includes all attempts to access an Amazon
 // Web Services API, not just the successful ones. This includes all attempts
@@ -5617,12 +5624,6 @@ func (c *IAM) GetAccessKeyLastUsedRequest(input *GetAccessKeyLastUsedInput) (req
 //
 // See the AWS API reference guide for AWS Identity and Access Management's
 // API operation GetAccessKeyLastUsed for usage and error information.
-//
-// Returned Error Codes:
-//   - ErrCodeNoSuchEntityException "NoSuchEntity"
-//     The request was rejected because it referenced a resource entity that does
-//     not exist. The error message describes the resource.
-//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/iam-2010-05-08/GetAccessKeyLastUsed
 func (c *IAM) GetAccessKeyLastUsed(input *GetAccessKeyLastUsedInput) (*GetAccessKeyLastUsedOutput, error) {
 	req, out := c.GetAccessKeyLastUsedRequest(input)
@@ -8195,10 +8196,11 @@ func (c *IAM) ListAccessKeysRequest(input *ListAccessKeysInput) (req *request.Re
 // If the UserName is not specified, the user name is determined implicitly
 // based on the Amazon Web Services access key ID used to sign the request.
 // If a temporary access key is used, then UserName is required. If a long-term
-// key is assigned to the user, then UserName is not required. This operation
-// works for access keys under the Amazon Web Services account. Consequently,
-// you can use this operation to manage Amazon Web Services account root user
-// credentials even if the Amazon Web Services account has no associated users.
+// key is assigned to the user, then UserName is not required.
+//
+// This operation works for access keys under the Amazon Web Services account.
+// If the Amazon Web Services account has no associated users, the root user
+// returns it's own access key IDs by running this command.
 //
 // To ensure the security of your Amazon Web Services account, the secret access
 // key is accessible only during key and user creation.
@@ -13675,7 +13677,7 @@ func (c *IAM) RemoveRoleFromInstanceProfileRequest(input *RemoveRoleFromInstance
 
 // RemoveRoleFromInstanceProfile API operation for AWS Identity and Access Management.
 //
-// Removes the specified IAM role from the specified EC2 instance profile.
+// Removes the specified IAM role from the specified Amazon EC2 instance profile.
 //
 // Make sure that you do not have any Amazon EC2 instances running with the
 // role you are about to remove from the instance profile. Removing a role from
@@ -16955,10 +16957,10 @@ func (c *IAM) UpdateOpenIDConnectProviderThumbprintRequest(input *UpdateOpenIDCo
 // Amazon Web Services secures communication with some OIDC identity providers
 // (IdPs) through our library of trusted root certificate authorities (CAs)
 // instead of using a certificate thumbprint to verify your IdP server certificate.
-// These OIDC IdPs include Auth0, GitHub, Google, and those that use an Amazon
-// S3 bucket to host a JSON Web Key Set (JWKS) endpoint. In these cases, your
-// legacy thumbprint remains in your configuration, but is no longer used for
-// validation.
+// In these cases, your legacy thumbprint remains in your configuration, but
+// is no longer used for validation. These OIDC IdPs include Auth0, GitHub,
+// GitLab, Google, and those that use an Amazon S3 bucket to host a JSON Web
+// Key Set (JWKS) endpoint.
 //
 // Trust for the OIDC provider is derived from the provider certificate and
 // is validated by the thumbprint. Therefore, it is best to limit access to
@@ -19922,11 +19924,14 @@ type CreateOpenIDConnectProviderInput struct {
 	// lets you maintain multiple thumbprints if the identity provider is rotating
 	// certificates.
 	//
+	// This parameter is optional. If it is not included, IAM will retrieve and
+	// use the top intermediate certificate authority (CA) thumbprint of the OpenID
+	// Connect identity provider server certificate.
+	//
 	// The server certificate thumbprint is the hex-encoded SHA-1 hash value of
 	// the X.509 certificate used by the domain where the OpenID Connect provider
 	// makes its keys available. It is always a 40-character string.
 	//
-	// You must provide at least one thumbprint when creating an IAM OIDC provider.
 	// For example, assume that the OIDC provider is server.example.com and the
 	// provider stores its keys at https://keys.server.example.com/openid-connect.
 	// In that case, the thumbprint string would be the hex-encoded SHA-1 hash value
@@ -19935,9 +19940,7 @@ type CreateOpenIDConnectProviderInput struct {
 	// For more information about obtaining the OIDC provider thumbprint, see Obtaining
 	// the thumbprint for an OpenID Connect provider (https://docs.aws.amazon.com/IAM/latest/UserGuide/identity-providers-oidc-obtain-thumbprint.html)
 	// in the IAM user Guide.
-	//
-	// ThumbprintList is a required field
-	ThumbprintList []*string `type:"list" required:"true"`
+	ThumbprintList []*string `type:"list"`
 
 	// The URL of the identity provider. The URL must begin with https:// and should
 	// correspond to the iss claim in the provider's OpenID Connect ID tokens. Per
@@ -19975,9 +19978,6 @@ func (s CreateOpenIDConnectProviderInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *CreateOpenIDConnectProviderInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CreateOpenIDConnectProviderInput"}
-	if s.ThumbprintList == nil {
-		invalidParams.Add(request.NewErrParamRequired("ThumbprintList"))
-	}
 	if s.Url == nil {
 		invalidParams.Add(request.NewErrParamRequired("Url"))
 	}
@@ -20805,6 +20805,7 @@ type CreateServiceLinkedRoleInput struct {
 	// AWSServiceName is a required field
 	AWSServiceName *string `min:"1" type:"string" required:"true"`
 
+	//
 	// A string that you provide, which is combined with the service-provided prefix
 	// to form the complete role name. If you make multiple requests for the same
 	// service, then you must supply a different CustomSuffix for each request.
@@ -36402,12 +36403,12 @@ type SimulateCustomPolicyInput struct {
 	// can omit this parameter. The following list shows each of the supported scenario
 	// values and the resources that you must define to run the simulation.
 	//
-	// Each of the EC2 scenarios requires that you specify instance, image, and
-	// security group resources. If your scenario includes an EBS volume, then you
-	// must specify that volume as a resource. If the EC2 scenario includes VPC,
-	// then you must supply the network interface resource. If it includes an IP
-	// subnet, then you must specify the subnet resource. For more information on
-	// the EC2 scenario options, see Supported platforms (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-supported-platforms.html)
+	// Each of the Amazon EC2 scenarios requires that you specify instance, image,
+	// and security group resources. If your scenario includes an EBS volume, then
+	// you must specify that volume as a resource. If the Amazon EC2 scenario includes
+	// VPC, then you must supply the network interface resource. If it includes
+	// an IP subnet, then you must specify the subnet resource. For more information
+	// on the Amazon EC2 scenario options, see Supported platforms (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-supported-platforms.html)
 	// in the Amazon EC2 User Guide.
 	//
 	//    * EC2-VPC-InstanceStore instance, image, security group, network interface
@@ -36785,12 +36786,12 @@ type SimulatePrincipalPolicyInput struct {
 	// can omit this parameter. The following list shows each of the supported scenario
 	// values and the resources that you must define to run the simulation.
 	//
-	// Each of the EC2 scenarios requires that you specify instance, image, and
-	// security group resources. If your scenario includes an EBS volume, then you
-	// must specify that volume as a resource. If the EC2 scenario includes VPC,
-	// then you must supply the network interface resource. If it includes an IP
-	// subnet, then you must specify the subnet resource. For more information on
-	// the EC2 scenario options, see Supported platforms (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-supported-platforms.html)
+	// Each of the Amazon EC2 scenarios requires that you specify instance, image,
+	// and security group resources. If your scenario includes an EBS volume, then
+	// you must specify that volume as a resource. If the Amazon EC2 scenario includes
+	// VPC, then you must supply the network interface resource. If it includes
+	// an IP subnet, then you must specify the subnet resource. For more information
+	// on the Amazon EC2 scenario options, see Supported platforms (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-supported-platforms.html)
 	// in the Amazon EC2 User Guide.
 	//
 	//    * EC2-VPC-InstanceStore instance, image, security group, network interface
@@ -39567,6 +39568,9 @@ type UpdateRoleInput struct {
 	// operations to create a console URL. For more information, see Using IAM roles
 	// (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html) in the
 	// IAM User Guide.
+	//
+	// IAM role credentials provided by Amazon EC2 instances assigned to the role
+	// are not subject to the specified maximum session duration.
 	MaxSessionDuration *int64 `min:"3600" type:"integer"`
 
 	// The name of the role that you want to modify.
