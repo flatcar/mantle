@@ -72,11 +72,12 @@ type Instance struct {
 
 // InstanceSpec represents a linode spec
 type InstanceSpec struct {
-	Disk     int `json:"disk"`
-	Memory   int `json:"memory"`
-	VCPUs    int `json:"vcpus"`
-	Transfer int `json:"transfer"`
-	GPUs     int `json:"gpus"`
+	Disk               int `json:"disk"`
+	Memory             int `json:"memory"`
+	VCPUs              int `json:"vcpus"`
+	Transfer           int `json:"transfer"`
+	GPUs               int `json:"gpus"`
+	AcceleratedDevices int `json:"accelerated_devices"`
 }
 
 // InstanceAlert represents a metric alert
@@ -90,9 +91,10 @@ type InstanceAlert struct {
 
 // InstanceBackup represents backup settings for an instance
 type InstanceBackup struct {
-	Available bool `json:"available,omitempty"` // read-only
-	Enabled   bool `json:"enabled,omitempty"`   // read-only
-	Schedule  struct {
+	Available      bool       `json:"available,omitempty"` // read-only
+	Enabled        bool       `json:"enabled,omitempty"`   // read-only
+	LastSuccessful *time.Time `json:"-"`                   // read-only
+	Schedule       struct {
 		Day    string `json:"day,omitempty"`
 		Window string `json:"window,omitempty"`
 	} `json:"schedule,omitempty"`
@@ -118,6 +120,7 @@ type InstanceTransfer struct {
 }
 
 // MonthlyInstanceTransferStats pool stats for a Linode Instance network transfer statistics for a specific month
+// Deprecated: use MonthlyInstanceTransferStatsV2 for new implementations
 type MonthlyInstanceTransferStats struct {
 	// The amount of inbound public network traffic received by this Linode, in bytes, for a specific year/month.
 	BytesIn int `json:"bytes_in"`
@@ -129,6 +132,18 @@ type MonthlyInstanceTransferStats struct {
 	BytesTotal int `json:"bytes_total"`
 }
 
+// MonthlyInstanceTransferStatsV2 pool stats for a Linode Instance network transfer statistics for a specific month
+type MonthlyInstanceTransferStatsV2 struct {
+	// The amount of inbound public network traffic received by this Linode, in bytes, for a specific year/month.
+	BytesIn uint64 `json:"bytes_in"`
+
+	// The amount of outbound public network traffic sent by this Linode, in bytes, for a specific year/month.
+	BytesOut uint64 `json:"bytes_out"`
+
+	// The total amount of public network traffic sent and received by this Linode, in bytes, for a specific year/month.
+	BytesTotal uint64 `json:"bytes_total"`
+}
+
 // InstancePlacementGroup represents information about the placement group
 // this Linode is a part of.
 type InstancePlacementGroup struct {
@@ -136,6 +151,7 @@ type InstancePlacementGroup struct {
 	Label                string               `json:"label"`
 	PlacementGroupType   PlacementGroupType   `json:"placement_group_type"`
 	PlacementGroupPolicy PlacementGroupPolicy `json:"placement_group_policy"`
+	MigratingTo          *int                 `json:"migrating_to"` // read-only
 }
 
 // InstanceMetadataOptions specifies various Instance creation fields
@@ -225,6 +241,26 @@ func (i *Instance) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (backup *InstanceBackup) UnmarshalJSON(b []byte) error {
+	type Mask InstanceBackup
+
+	p := struct {
+		*Mask
+		LastSuccessful *parseabletime.ParseableTime `json:"last_successful"`
+	}{
+		Mask: (*Mask)(backup),
+	}
+
+	if err := json.Unmarshal(b, &p); err != nil {
+		return err
+	}
+
+	backup.LastSuccessful = (*time.Time)(p.LastSuccessful)
+
+	return nil
+}
+
 // GetUpdateOptions converts an Instance to InstanceUpdateOptions for use in UpdateInstance
 func (i *Instance) GetUpdateOptions() InstanceUpdateOptions {
 	return InstanceUpdateOptions{
@@ -276,34 +312,19 @@ type InstanceMigrateOptions struct {
 
 // ListInstances lists linode instances
 func (c *Client) ListInstances(ctx context.Context, opts *ListOptions) ([]Instance, error) {
-	response, err := getPaginatedResults[Instance](ctx, c, "linode/instances", opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return getPaginatedResults[Instance](ctx, c, "linode/instances", opts)
 }
 
 // GetInstance gets the instance with the provided ID
 func (c *Client) GetInstance(ctx context.Context, linodeID int) (*Instance, error) {
 	e := formatAPIPath("linode/instances/%d", linodeID)
-	response, err := doGETRequest[Instance](ctx, c, e)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return doGETRequest[Instance](ctx, c, e)
 }
 
 // GetInstanceTransfer gets the instance's network transfer pool statistics for the current month.
 func (c *Client) GetInstanceTransfer(ctx context.Context, linodeID int) (*InstanceTransfer, error) {
 	e := formatAPIPath("linode/instances/%d/transfer", linodeID)
-	response, err := doGETRequest[InstanceTransfer](ctx, c, e)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return doGETRequest[InstanceTransfer](ctx, c, e)
 }
 
 // GetInstanceTransferMonthly gets the instance's network transfer pool statistics for a specific month.
@@ -312,26 +333,21 @@ func (c *Client) GetInstanceTransferMonthly(ctx context.Context, linodeID, year,
 	return doGETRequest[MonthlyInstanceTransferStats](ctx, c, e)
 }
 
+// GetInstanceTransferMonthlyV2 gets the instance's network transfer pool statistics for a specific month.
+func (c *Client) GetInstanceTransferMonthlyV2(ctx context.Context, linodeID, year, month int) (*MonthlyInstanceTransferStatsV2, error) {
+	e := formatAPIPath("linode/instances/%d/transfer/%d/%d", linodeID, year, month)
+	return doGETRequest[MonthlyInstanceTransferStatsV2](ctx, c, e)
+}
+
 // CreateInstance creates a Linode instance
 func (c *Client) CreateInstance(ctx context.Context, opts InstanceCreateOptions) (*Instance, error) {
-	e := "linode/instances"
-	response, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return doPOSTRequest[Instance](ctx, c, "linode/instances", opts)
 }
 
 // UpdateInstance creates a Linode instance
 func (c *Client) UpdateInstance(ctx context.Context, linodeID int, opts InstanceUpdateOptions) (*Instance, error) {
 	e := formatAPIPath("linode/instances/%d", linodeID)
-	response, err := doPUTRequest[Instance](ctx, c, e, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return doPUTRequest[Instance](ctx, c, e, opts)
 }
 
 // RenameInstance renames an Instance
@@ -342,8 +358,7 @@ func (c *Client) RenameInstance(ctx context.Context, linodeID int, label string)
 // DeleteInstance deletes a Linode instance
 func (c *Client) DeleteInstance(ctx context.Context, linodeID int) error {
 	e := formatAPIPath("linode/instances/%d", linodeID)
-	err := doDELETERequest(ctx, c, e)
-	return err
+	return doDELETERequest(ctx, c, e)
 }
 
 // BootInstance will boot a Linode instance
@@ -356,27 +371,19 @@ func (c *Client) BootInstance(ctx context.Context, linodeID int, configID int) e
 	}
 
 	e := formatAPIPath("linode/instances/%d/boot", linodeID)
-	_, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }
 
 // CloneInstance clone an existing Instances Disks and Configuration profiles to another Linode Instance
 func (c *Client) CloneInstance(ctx context.Context, linodeID int, opts InstanceCloneOptions) (*Instance, error) {
 	e := formatAPIPath("linode/instances/%d/clone", linodeID)
-	response, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return doPOSTRequest[Instance](ctx, c, e, opts)
 }
 
 // ResetInstancePassword resets a Linode instance's root password
 func (c *Client) ResetInstancePassword(ctx context.Context, linodeID int, opts InstancePasswordResetOptions) error {
 	e := formatAPIPath("linode/instances/%d/password", linodeID)
-	_, err := doPOSTRequest[Instance](ctx, c, e, opts)
-
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }
 
 // RebootInstance reboots a Linode instance
@@ -389,8 +396,7 @@ func (c *Client) RebootInstance(ctx context.Context, linodeID int, configID int)
 	}
 
 	e := formatAPIPath("linode/instances/%d/reboot", linodeID)
-	_, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }
 
 // InstanceRebuildOptions is a struct representing the options to send to the rebuild linode endpoint
@@ -413,12 +419,7 @@ type InstanceRebuildOptions struct {
 // then deploys a new Image to this Linode with the given attributes.
 func (c *Client) RebuildInstance(ctx context.Context, linodeID int, opts InstanceRebuildOptions) (*Instance, error) {
 	e := formatAPIPath("linode/instances/%d/rebuild", linodeID)
-	response, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return doPOSTRequest[Instance](ctx, c, e, opts)
 }
 
 // InstanceRescueOptions fields are those accepted by RescueInstance
@@ -432,15 +433,13 @@ type InstanceRescueOptions struct {
 // copying data between disks, and downloading files from a disk via SSH and SFTP.
 func (c *Client) RescueInstance(ctx context.Context, linodeID int, opts InstanceRescueOptions) error {
 	e := formatAPIPath("linode/instances/%d/rescue", linodeID)
-	_, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }
 
 // ResizeInstance resizes an instance to new Linode type
 func (c *Client) ResizeInstance(ctx context.Context, linodeID int, opts InstanceResizeOptions) error {
 	e := formatAPIPath("linode/instances/%d/resize", linodeID)
-	_, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }
 
 // ShutdownInstance - Shutdown an instance
@@ -448,25 +447,34 @@ func (c *Client) ShutdownInstance(ctx context.Context, id int) error {
 	return c.simpleInstanceAction(ctx, "shutdown", id)
 }
 
+// Deprecated: Please use UpgradeInstance instead.
 // MutateInstance Upgrades a Linode to its next generation.
 func (c *Client) MutateInstance(ctx context.Context, id int) error {
 	return c.simpleInstanceAction(ctx, "mutate", id)
 }
 
+// InstanceUpgradeOptions is a struct representing the options for upgrading a Linode
+type InstanceUpgradeOptions struct {
+	// Automatically resize disks when resizing a Linode.
+	// When resizing down to a smaller plan your Linode's data must fit within the smaller disk size.
+	AllowAutoDiskResize bool `json:"allow_auto_disk_resize"`
+}
+
+// UpgradeInstance upgrades a Linode to its next generation.
+func (c *Client) UpgradeInstance(ctx context.Context, linodeID int, opts InstanceUpgradeOptions) error {
+	e := formatAPIPath("linode/instances/%d/mutate", linodeID)
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
+}
+
 // MigrateInstance - Migrate an instance
 func (c *Client) MigrateInstance(ctx context.Context, linodeID int, opts InstanceMigrateOptions) error {
 	e := formatAPIPath("linode/instances/%d/migrate", linodeID)
-	_, err := doPOSTRequest[Instance](ctx, c, e, opts)
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }
 
 // simpleInstanceAction is a helper for Instance actions that take no parameters
 // and return empty responses `{}` unless they return a standard error
 func (c *Client) simpleInstanceAction(ctx context.Context, action string, linodeID int) error {
-	_, err := doPOSTRequest[any, any](
-		ctx,
-		c,
-		formatAPIPath("linode/instances/%d/%s", linodeID, action),
-	)
-	return err
+	e := formatAPIPath("linode/instances/%d/%s", linodeID, action)
+	return doPOSTRequestNoRequestResponseBody(ctx, c, e)
 }
