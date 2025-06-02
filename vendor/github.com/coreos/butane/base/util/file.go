@@ -15,6 +15,7 @@
 package util
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -30,14 +31,27 @@ func EnsurePathWithinFilesDir(path, filesDir string) error {
 	if err != nil {
 		return err
 	}
-	if !strings.HasPrefix(absPath, absBase+string(filepath.Separator)) {
+	if absPath != absBase && !strings.HasPrefix(absPath, absBase+string(filepath.Separator)) {
 		return common.ErrFilesDirEscape
 	}
 	return nil
 }
 
-/// CheckForDecimalMode fails if the specified mode appears to have been
-/// incorrectly specified in decimal instead of octal.
+func ReadLocalFile(configPath, filesDir string) ([]byte, error) {
+	if filesDir == "" {
+		// a files dir isn't configured; refuse to read anything
+		return nil, common.ErrNoFilesDir
+	}
+	// calculate file path within FilesDir and check for path traversal
+	filePath := filepath.Join(filesDir, filepath.FromSlash(configPath))
+	if err := EnsurePathWithinFilesDir(filePath, filesDir); err != nil {
+		return nil, err
+	}
+	return os.ReadFile(filePath)
+}
+
+// CheckForDecimalMode fails if the specified mode appears to have been
+// incorrectly specified in decimal instead of octal.
 func CheckForDecimalMode(mode int, directory bool) error {
 	correctedMode, ok := decimalModeToOctal(mode)
 	if !ok {
@@ -49,9 +63,9 @@ func CheckForDecimalMode(mode int, directory bool) error {
 	return nil
 }
 
-/// isTypicalMode returns true if the specified mode is unsurprising.
-/// It returns false for some modes that are unusual but valid in limited
-/// cases.
+// isTypicalMode returns true if the specified mode is unsurprising.
+// It returns false for some modes that are unusual but valid in limited
+// cases.
 func isTypicalMode(mode int, directory bool) bool {
 	// no permissions is always reasonable (root ignores mode bits)
 	if mode == 0 {
@@ -126,8 +140,8 @@ func isTypicalMode(mode int, directory bool) bool {
 	return true
 }
 
-/// decimalModeToOctal takes a mode written in decimal and converts it to
-/// octal, returning (0, false) on failure.
+// decimalModeToOctal takes a mode written in decimal and converts it to
+// octal, returning (0, false) on failure.
 func decimalModeToOctal(mode int) (int, bool) {
 	if mode < 0 || mode > 7777 {
 		// out of range
