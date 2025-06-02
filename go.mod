@@ -37,14 +37,14 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.9.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
-	github.com/linode/linodego v1.43.0
+	github.com/linode/linodego v1.52.0
 	github.com/packethost/packngo v0.31.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/ulikunitz/xz v0.5.10
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
@@ -53,10 +53,10 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.13
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.38.0
-	golang.org/x/oauth2 v0.23.0
-	golang.org/x/sys v0.31.0
+	golang.org/x/crypto v0.38.0
+	golang.org/x/net v0.40.0
+	golang.org/x/oauth2 v0.30.0
+	golang.org/x/sys v0.33.0
 	google.golang.org/api v0.126.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -81,14 +81,14 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-resty/resty/v2 v2.16.2 // indirect
+	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
@@ -126,9 +126,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
