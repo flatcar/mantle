@@ -51,6 +51,7 @@ type ServerConsole struct {
 
 // ServerOptions is used in conjunction with CreateServer and UpdateServer to
 // create and update servers.
+// UserData needs to be base64 encoded.
 type ServerOptions struct {
 	ID                 string        `json:"-"`
 	Image              *string       `json:"image,omitempty"`
