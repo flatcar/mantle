@@ -60,7 +60,7 @@ func VerityVerify(c cluster.TestCluster) {
 	rootOffset := getKernelVerityHashOffset(c)
 
 	// extract verity hash from kernel
-	ddcmd := fmt.Sprintf("dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
+	ddcmd := fmt.Sprintf("sudo dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
 	hash := c.MustSSH(m, ddcmd)
 
 	// find /usr dev
