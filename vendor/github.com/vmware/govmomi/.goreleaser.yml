@@ -1,118 +1,157 @@
 ---
+version: 2
 project_name: govmomi
+
+env:
+  - GO_VERSION=1.24
+  - ALPINE_VERSION=3.21
+
 builds:
-- id: govc
-  goos:
-    - linux
-    - darwin
-    - windows
-    - freebsd
-  goarch:
-    - amd64
-    - 386
-    - arm64
-  env:
-    - CGO_ENABLED=0
-  main: ./govc/main.go
-  binary: govc
-  flags: -compiler gc
-  ldflags: -X github.com/vmware/govmomi/govc/flags.GitVersion={{.Version}}
-- id: vcsim
-  goos:
-    - linux
-    - darwin
-    - windows
-    - freebsd
-  goarch:
-    - amd64
-    - 386
-    - arm64
-  env:
-    - CGO_ENABLED=0
-  main: ./vcsim/main.go
-  binary: vcsim
-  flags: -compiler gc
-  ldflags: -X github.com/vmware/govmomi/vcsim/flags.GitVersion={{.Version}}
+  - id: govc
+    no_main_check: true
+    goos: &goos-defs
+      - linux
+      - darwin
+      - windows
+      - freebsd
+    goarch: &goarch-defs
+      - amd64
+      - arm
+      - arm64
+      - mips64le
+      - s390x
+    env:
+      - CGO_ENABLED=0
+      - PKGPATH=github.com/vmware/govmomi/cli/flags
+    dir: ./govc
+    main: .
+    binary: govc
+    ldflags:
+      - "-X {{.Env.PKGPATH}}.BuildVersion={{.Version}} -X {{.Env.PKGPATH}}.BuildCommit={{.ShortCommit}} -X {{.Env.PKGPATH}}.BuildDate={{.Date}}"
+  - id: vcsim
+    no_main_check: true
+    goos: *goos-defs
+    goarch: *goarch-defs
+    env:
+      - CGO_ENABLED=0
+    dir: ./vcsim
+    main: .
+    binary: vcsim
+    ldflags:
+      - "-X main.buildVersion={{.Version}} -X main.buildCommit={{.ShortCommit}} -X main.buildDate={{.Date}}"
+
+nfpms:
+  - package_name: govmomi
+    vendor: Broadcom
+    license: Apache 2.0
+    ids:
+      - govc
+      - vcsim
+    homepage: https://github.com/vmware/govmomi
+    maintainer: Doug MacEachern <dougm@vmware.com>
+    description: |-
+      vSphere CLI
+    formats:
+      - rpm
+
 archives:
-- id: govcbuild
-  builds: ['govc']
-  name_template: 'govc_{{ .Os }}_{{ .Arch }}'
-  format: gz
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-  - none*
-- id: vcsimbuild
-  builds: ['vcsim']
-  name_template: 'vcsim_{{ .Os }}_{{ .Arch }}'
-  format: gz
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-  - none*
+  - id: govcbuild
+    ids:
+      - govc
+    name_template: >-
+      govc_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides: &overrides
+      - goos: windows
+        formats:
+          - zip
+    files: &extrafiles
+      - CHANGELOG.md
+      - LICENSE.txt
+      - README.md
+  - id: vcsimbuild
+    ids:
+      - vcsim
+    name_template: >-
+      vcsim_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides: *overrides
+    files: *extrafiles
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
 checksum:
-  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  name_template: "checksums.txt"
+
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - "^docs:"
+      - "^test:"
       - Merge pull request
       - Merge branch
-brews:
-  - name: govc
+
+dockers:
+  - image_templates:
+      - "vmware/govc:{{ .Tag }}"
+      - "vmware/govc:{{ .ShortCommit }}"
+      - "vmware/govc:latest"
+    dockerfile: Dockerfile.govc
     ids:
       - govc
-    github:
-      owner: govmomi
-      name: homebrew-tap
-    commit_author:
-      name: Alfred the Narwhal
-      email: cna-alfred@vmware.com
-    folder: Formula
-    homepage: "https://github.com/vmware/govmomi/blob/master/govc/README.md"
-    description: "govc is a vSphere CLI built on top of govmomi."
-    test: |
-      system "#{bin}/govc version"
-    install: |
-      bin.install "govc"
-  - name: vcsim
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.url=https://github.com/vmware/govmomi"
+      - "--platform=linux/amd64"
+      - "--build-arg=GO_VERSION={{.Env.GO_VERSION}}"
+
+  - image_templates:
+      - "vmware/govc:{{ .Tag }}-runner"
+      - "vmware/govc:alpine-{{ .Tag }}-runner"
+      - "vmware/govc:{{ .ShortCommit }}-runner"
+      - "vmware/govc:alpine-{{ .ShortCommit }}-runner"
+      - "vmware/govc:latest-runner"
+      - "vmware/govc:alpine-latest-runner"
+    dockerfile: Dockerfile.govc.runner
+    ids:
+      - govc
+    extra_files:
+      - scripts/runner/entrypoint.sh
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.url=https://github.com/vmware/govmomi"
+      - "--platform=linux/amd64"
+      - "--build-arg=ALPINE_VERSION={{.Env.ALPINE_VERSION}}"
+
+  - image_templates:
+      - "vmware/vcsim:{{ .Tag }}"
+      - "vmware/vcsim:{{ .ShortCommit }}"
+      - "vmware/vcsim:latest"
+    dockerfile: Dockerfile.vcsim
     ids:
       - vcsim
-    github:
-      owner: govmomi
-      name: homebrew-tap
-    commit_author:
-      name: Alfred the Narwhal
-      email: cna-alfred@vmware.com
-    folder: Formula
-    homepage: "https://github.com/vmware/govmomi/blob/master/vcsim/README.md"
-    description: "vcsim is a vSphere API simulator built on top of govmomi."
-    test: |
-      system "#{bin}/vcsim -h"
-    install: |
-      bin.install "vcsim"
-dockers:
-- image_templates: 
-  - "vmware/govc:{{ .Tag }}"
-  - "vmware/govc:v{{ .Major }}"
-  - "vmware/govc:v{{ .Major }}.{{ .Minor }}"
-  - "vmware/govc:latest"
-  goos: linux
-  goarch: amd64
-  dockerfile: Dockerfile.govc
-  binaries: 
-  - govc
-- image_templates: 
-  - "vmware/vcsim:{{ .Tag }}"
-  - "vmware/vcsim:v{{ .Major }}"
-  - "vmware/vcsim:v{{ .Major }}.{{ .Minor }}"
-  - "vmware/vcsim:latest"
-  goos: linux
-  goarch: amd64
-  dockerfile: Dockerfile.vcsim
-  binaries: 
-  - vcsim
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.url=https://github.com/vmware/govmomi"
+      - "--platform=linux/amd64"
+      - "--build-arg=GO_VERSION={{.Env.GO_VERSION}}"
