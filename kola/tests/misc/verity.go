@@ -56,12 +56,17 @@ func Verity(c cluster.TestCluster) {
 func VerityVerify(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
-	// get offset of verity hash within kernel
-	rootOffset := getKernelVerityHashOffset(c)
+	// try to extract the verity hash from the load script (newer versions)
+	hash, err := c.SSH(m, "grep -oP '(?<=usrhash=)[^ ]+' /boot/flatcar/load-a")
 
-	// extract verity hash from kernel
-	ddcmd := fmt.Sprintf("sudo dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
-	hash := c.MustSSH(m, ddcmd)
+	if err != nil {
+		// get offset of verity hash within kernel
+		rootOffset := getKernelVerityHashOffset(c)
+
+		// extract the verity hash from the kernel image (older versions)
+		ddcmd := fmt.Sprintf("sudo dd if=/boot/flatcar/vmlinuz-a skip=%d count=64 bs=1 status=none", rootOffset)
+		hash = c.MustSSH(m, ddcmd)
+	}
 
 	// find /usr dev
 	usrdev := util.GetUsrDeviceNode(c, m)

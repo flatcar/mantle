@@ -21,6 +21,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/kola/tests/util"
@@ -68,6 +69,9 @@ func init() {
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
+		// From this version, signed load scripts are used, we lack the GPG key
+		// to sign a new one, and the kernel is supposed to be loaded from /usr.
+		EndVersion: semver.Version{Major: 4344},
 	})
 }
 
@@ -81,10 +85,15 @@ func RebootIntoUSRB(c cluster.TestCluster) {
 	util.AssertBootedUsr(c, m, "USR-A")
 
 	// copy USR-A to USR-B
-	c.MustSSH(m, "sudo dd if=/dev/disk/by-partlabel/USR-A of=/dev/disk/by-partlabel/USR-B bs=10M status=none")
+	c.MustSSH(m, "sudo cp /dev/disk/by-partlabel/USR-A /dev/disk/by-partlabel/USR-B")
 
-	// copy kernel
-	c.MustSSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b")
+	// copy kernel or load + verity files
+	if _, err := c.SSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b"); err != nil {
+		c.MustSSH(m, "sudo cp /boot/flatcar/load-a /boot/flatcar/load-b")
+		c.MustSSH(m, "sudo cp /boot/flatcar/load-a.sig /boot/flatcar/load-b.sig")
+		c.MustSSH(m, "sudo cp /boot/flatcar/verity-a.sig /boot/flatcar/verity-b.sig")
+		c.MustSSH(m, "sudo cp /boot/flatcar/verity-a.sig.sig /boot/flatcar/verity-b.sig.sig")
+	}
 
 	prioritizeUsr(c, m, "USR-B")
 	if err := m.Reboot(); err != nil {
@@ -93,8 +102,10 @@ func RebootIntoUSRB(c cluster.TestCluster) {
 	util.AssertBootedUsr(c, m, "USR-B")
 }
 
-// Verify that we reboot into the old image after the new image fails a
-// verity check.
+// Verify that we reboot into the old image after invalidating the verity root
+// hash. Annoyingly for newer versions, this will cause GRUB's load script GPG
+// verification to fail rather than the kernel's root hash verification, but the
+// end result should be the same. The security is hard to break. :)
 func RecoverBadVerity(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
@@ -103,13 +114,17 @@ func RecoverBadVerity(c cluster.TestCluster) {
 	util.AssertBootedUsr(c, m, "USR-A")
 
 	// copy USR-A to USR-B
-	c.MustSSH(m, "sudo dd if=/dev/disk/by-partlabel/USR-A of=/dev/disk/by-partlabel/USR-B bs=10M status=none")
+	c.MustSSH(m, "sudo cp /dev/disk/by-partlabel/USR-A /dev/disk/by-partlabel/USR-B")
 
-	// copy kernel
-	c.MustSSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b")
-
-	// invalidate verity hash on B kernel
-	c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/flatcar/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<0000000000000000000000000000000000000000000000000000000000000000", getKernelVerityHashOffset(c)))
+	// copy kernel or load + verity files and then invalidate the verity hash
+	if _, err := c.SSH(m, "sudo cp /boot/flatcar/vmlinuz-a /boot/flatcar/vmlinuz-b"); err == nil {
+		c.MustSSH(m, fmt.Sprintf("sudo dd of=/boot/flatcar/vmlinuz-b bs=1 seek=%d count=64 conv=notrunc status=none <<<0000000000000000000000000000000000000000000000000000000000000000", getKernelVerityHashOffset(c)))
+	} else {
+		c.MustSSH(m, "sudo cp /boot/flatcar/load-a.sig /boot/flatcar/load-b.sig")
+		c.MustSSH(m, "sudo cp /boot/flatcar/verity-a.sig /boot/flatcar/verity-b.sig")
+		c.MustSSH(m, "sudo cp /boot/flatcar/verity-a.sig.sig /boot/flatcar/verity-b.sig.sig")
+		c.MustSSH(m, "sed -r 's/usrhash=[^ ]+/usrhash=0000000000000000000000000000000000000000000000000000000000000000/' /boot/flatcar/load-a | sudo tee /boot/flatcar/load-b")
+	}
 
 	prioritizeUsr(c, m, "USR-B")
 	// rebootWithEmergencyShellTimeout also covers the kernel panic timeout of 1 minute before reboot
