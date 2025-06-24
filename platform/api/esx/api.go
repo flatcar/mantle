@@ -642,7 +642,7 @@ func (a *API) buildCreateImportSpecRequest(name string, ovaPath string, finder *
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading ovf: %v", err)
 	}
-	cisr, err := ovfHandler.CreateImportSpec(a.ctx, string(descriptor), resourcePool, datastore, cisp)
+	cisr, err := ovfHandler.CreateImportSpec(a.ctx, string(descriptor), resourcePool, datastore, &cisp)
 	if err != nil {
 		return nil, nil, err
 	}

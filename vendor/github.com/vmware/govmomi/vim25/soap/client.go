@@ -1,18 +1,6 @@
-/*
-Copyright (c) 2014-2018 VMware, Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// © Broadcom. All Rights Reserved.
+// The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+// SPDX-License-Identifier: Apache-2.0
 
 package soap
 
@@ -21,26 +9,28 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/vmware/govmomi/internal/version"
 	"github.com/vmware/govmomi/vim25/progress"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vim25/xml"
@@ -58,6 +48,16 @@ const (
 	SessionCookieName = "vmware_soap_session"
 )
 
+// defaultUserAgent is the default user agent string, e.g.
+// "govc govmomi/0.28.0 (go1.18.3;linux;amd64)"
+var defaultUserAgent = fmt.Sprintf(
+	"%s %s/%s (%s)",
+	execName(),
+	version.ClientName,
+	version.ClientVersion,
+	strings.Join([]string{runtime.Version(), runtime.GOOS, runtime.GOARCH}, ";"),
+)
+
 type Client struct {
 	http.Client
 
@@ -69,12 +69,19 @@ type Client struct {
 	hostsMu sync.Mutex
 	hosts   map[string]string
 
-	Namespace string // Vim namespace
-	Version   string // Vim version
-	Types     types.Func
-	UserAgent string
+	Namespace string     `json:"namespace"` // Vim namespace
+	Version   string     `json:"version"`   // Vim version
+	Types     types.Func `json:"types"`
+	UserAgent string     `json:"userAgent"`
 
-	cookie string
+	// Cookie returns a value for the SOAP Header.Cookie.
+	// This SOAP request header is used for authentication by
+	// API endpoints such as pbm, vslm and sms.
+	// When nil, no SOAP Header.Cookie is set.
+	Cookie          func() *HeaderElement
+	insecureCookies bool
+
+	useJSON bool
 }
 
 var schemeMatch = regexp.MustCompile(`^\w+://`)
@@ -101,6 +108,7 @@ func ParseURL(s string) (*url.URL, error) {
 			s = "https://" + s
 		}
 
+		s := strings.TrimSuffix(s, "/")
 		u, err = url.Parse(s)
 		if err != nil {
 			return nil, err
@@ -119,35 +127,57 @@ func ParseURL(s string) (*url.URL, error) {
 	return u, nil
 }
 
+// Go's ForceAttemptHTTP2 default is true, we disable by default.
+// This undocumented env var can be used to enable.
+var http2 = os.Getenv("GOVMOMI_HTTP2") == "true"
+
 func NewClient(u *url.URL, insecure bool) *Client {
+	var t *http.Transport
+
+	if d, ok := http.DefaultTransport.(*http.Transport); ok {
+		// Inherit the same defaults explicitly set in http.DefaultTransport,
+		// unless otherwise noted.
+		t = &http.Transport{
+			Proxy:                 d.Proxy,
+			DialContext:           d.DialContext,
+			ForceAttemptHTTP2:     http2, // false by default in govmomi
+			MaxIdleConns:          d.MaxIdleConns,
+			IdleConnTimeout:       d.IdleConnTimeout,
+			TLSHandshakeTimeout:   d.TLSHandshakeTimeout,
+			ExpectContinueTimeout: d.ExpectContinueTimeout,
+		}
+	} else {
+		t = new(http.Transport)
+	}
+
+	t.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: insecure,
+	}
+
+	c := newClientWithTransport(u, insecure, t)
+
+	// Always set DialTLS and DialTLSContext, even if InsecureSkipVerify=true,
+	// because of how certificate verification has been delegated to the host's
+	// PKI framework in Go 1.18. Please see the following links for more info:
+	//
+	//   * https://tip.golang.org/doc/go1.18 (search for "Certificate.Verify")
+	//   * https://github.com/square/certigo/issues/264
+	t.DialTLSContext = c.dialTLSContext
+
+	return c
+}
+
+func newClientWithTransport(u *url.URL, insecure bool, t *http.Transport) *Client {
 	c := Client{
 		u: u,
 		k: insecure,
 		d: newDebug(),
+		t: t,
 
 		Types: types.TypeFunc(),
 	}
 
-	// Initialize http.RoundTripper on client, so we can customize it below
-	if t, ok := http.DefaultTransport.(*http.Transport); ok {
-		c.t = &http.Transport{
-			Proxy:                 t.Proxy,
-			DialContext:           t.DialContext,
-			MaxIdleConns:          t.MaxIdleConns,
-			IdleConnTimeout:       t.IdleConnTimeout,
-			TLSHandshakeTimeout:   t.TLSHandshakeTimeout,
-			ExpectContinueTimeout: t.ExpectContinueTimeout,
-		}
-	} else {
-		c.t = new(http.Transport)
-	}
-
 	c.hosts = make(map[string]string)
-	c.t.TLSClientConfig = &tls.Config{InsecureSkipVerify: c.k}
-	// Don't bother setting DialTLS if InsecureSkipVerify=true
-	if !c.k {
-		c.t.DialTLS = c.dialTLS
-	}
 
 	c.Client.Transport = c.t
 	c.Client.Jar, _ = cookiejar.New(nil)
@@ -156,11 +186,48 @@ func NewClient(u *url.URL, insecure bool) *Client {
 	c.u = c.URL()
 	c.u.User = nil
 
+	if c.u.Scheme == "http" {
+		c.insecureCookies = os.Getenv("GOVMOMI_INSECURE_COOKIES") == "true"
+	}
+
 	return &c
+}
+
+func (c *Client) DefaultTransport() *http.Transport {
+	return c.t
 }
 
 // NewServiceClient creates a NewClient with the given URL.Path and namespace.
 func (c *Client) NewServiceClient(path string, namespace string) *Client {
+	return c.newServiceClientWithTransport(path, namespace, c.t)
+}
+
+func sessionCookie(jar http.CookieJar, u *url.URL) *HeaderElement {
+	for _, cookie := range jar.Cookies(u) {
+		if cookie.Name == SessionCookieName {
+			return &HeaderElement{Value: cookie.Value}
+		}
+	}
+	return nil
+}
+
+// SessionCookie returns a SessionCookie with value of the vmware_soap_session http.Cookie.
+func (c *Client) SessionCookie() *HeaderElement {
+	u := c.URL()
+
+	if cookie := sessionCookie(c.Jar, u); cookie != nil {
+		return cookie
+	}
+
+	// Default "/sdk" Path would match above,
+	// but saw a case of Path == "sdk", where above returns nil.
+	// The jar entry Path is normally "/", so fallback to that.
+	u.Path = "/"
+
+	return sessionCookie(c.Jar, u)
+}
+
+func (c *Client) newServiceClientWithTransport(path string, namespace string, t *http.Transport) *Client {
 	vc := c.URL()
 	u, err := url.Parse(path)
 	if err != nil {
@@ -171,12 +238,8 @@ func (c *Client) NewServiceClient(path string, namespace string) *Client {
 		u.Host = vc.Host
 	}
 
-	client := NewClient(u, c.k)
+	client := newClientWithTransport(u, c.k, t)
 	client.Namespace = "urn:" + namespace
-	client.Transport.(*http.Transport).TLSClientConfig = c.Transport.(*http.Transport).TLSClientConfig
-	if cert := c.Certificate(); cert != nil {
-		client.SetCertificate(*cert)
-	}
 
 	// Copy the trusted thumbprints
 	c.hostsMu.Lock()
@@ -187,14 +250,6 @@ func (c *Client) NewServiceClient(path string, namespace string) *Client {
 
 	// Copy the cookies
 	client.Client.Jar.SetCookies(u, c.Client.Jar.Cookies(u))
-
-	// Set SOAP Header cookie
-	for _, cookie := range client.Jar.Cookies(u) {
-		if cookie.Name == SessionCookieName {
-			client.cookie = cookie.Value
-			break
-		}
-	}
 
 	// Copy any query params (e.g. GOVMOMI_TUNNEL_PROXY_PORT used in testing)
 	client.u.RawQuery = vc.RawQuery
@@ -215,16 +270,26 @@ func (c *Client) NewServiceClient(path string, namespace string) *Client {
 	return client
 }
 
-// SetRootCAs defines the set of root certificate authorities
-// that clients use when verifying server certificates.
-// By default TLS uses the host's root CA set.
+// UseJSON changes the protocol between SOAP and JSON. Starting with vCenter
+// 8.0.1 JSON over HTTP can be used. Note this method has no locking and clients
+// should be careful to not interfere with concurrent use of the client
+// instance.
+func (c *Client) UseJSON(useJSON bool) {
+	c.useJSON = useJSON
+}
+
+// SetRootCAs defines the set of PEM-encoded file locations of root certificate
+// authorities the client uses when verifying server certificates instead of the
+// TLS defaults which uses the host's root CA set. Multiple PEM file locations
+// can be specified using the OS-specific PathListSeparator.
 //
-// See: http.Client.Transport.TLSClientConfig.RootCAs
-func (c *Client) SetRootCAs(file string) error {
+// See: http.Client.Transport.TLSClientConfig.RootCAs and
+// https://pkg.go.dev/os#PathListSeparator
+func (c *Client) SetRootCAs(pemPaths string) error {
 	pool := x509.NewCertPool()
 
-	for _, name := range filepath.SplitList(file) {
-		pem, err := ioutil.ReadFile(filepath.Clean(name))
+	for _, name := range filepath.SplitList(pemPaths) {
+		pem, err := os.ReadFile(filepath.Clean(name))
 		if err != nil {
 			return err
 		}
@@ -276,6 +341,20 @@ func (c *Client) Thumbprint(host string) string {
 	return c.hosts[host]
 }
 
+// KnownThumbprint checks whether the provided thumbprint is known to this client.
+func (c *Client) KnownThumbprint(tp string) bool {
+	c.hostsMu.Lock()
+	defer c.hostsMu.Unlock()
+
+	for _, v := range c.hosts {
+		if v == tp {
+			return true
+		}
+	}
+
+	return false
+}
+
 // LoadThumbprints from file with the give name.
 // If name is empty or name does not exist this function will return nil.
 func (c *Client) LoadThumbprints(file string) error {
@@ -318,10 +397,16 @@ func (c *Client) loadThumbprints(name string) error {
 	return scanner.Err()
 }
 
+var fips140 = strings.Contains(os.Getenv("GODEBUG"), "fips140=only")
+
 // ThumbprintSHA1 returns the thumbprint of the given cert in the same format used by the SDK and Client.SetThumbprint.
 //
 // See: SSLVerifyFault.Thumbprint, SessionManagerGenericServiceTicket.Thumbprint, HostConnectSpec.SslThumbprint
+// When GODEBUG contains "fips140=only", this function returns an empty string.
 func ThumbprintSHA1(cert *x509.Certificate) string {
+	if fips140 {
+		return ""
+	}
 	sum := sha1.Sum(cert.Raw)
 	hex := make([]string, len(sum))
 	for i, b := range sum {
@@ -330,7 +415,24 @@ func ThumbprintSHA1(cert *x509.Certificate) string {
 	return strings.Join(hex, ":")
 }
 
-func (c *Client) dialTLS(network string, addr string) (net.Conn, error) {
+// ThumbprintSHA256 returns the sha256 thumbprint of the given cert.
+func ThumbprintSHA256(cert *x509.Certificate) string {
+	sum := sha256.Sum256(cert.Raw)
+	hex := make([]string, len(sum))
+	for i, b := range sum {
+		hex[i] = fmt.Sprintf("%02X", b)
+	}
+	return strings.Join(hex, ":")
+}
+
+func thumbprintMatches(thumbprint string, cert *x509.Certificate) bool {
+	return thumbprint == ThumbprintSHA256(cert) || thumbprint == ThumbprintSHA1(cert)
+}
+
+func (c *Client) dialTLSContext(
+	ctx context.Context,
+	network, addr string) (net.Conn, error) {
+
 	// Would be nice if there was a tls.Config.Verify func,
 	// see tls.clientHandshakeState.doFullHandshake
 
@@ -340,10 +442,9 @@ func (c *Client) dialTLS(network string, addr string) (net.Conn, error) {
 		return conn, nil
 	}
 
-	switch err.(type) {
-	case x509.UnknownAuthorityError:
-	case x509.HostnameError:
-	default:
+	// Allow a thumbprint verification attempt if the error indicates
+	// the failure was due to lack of trust.
+	if !IsCertificateUntrusted(err) {
 		return nil, err
 	}
 
@@ -359,14 +460,13 @@ func (c *Client) dialTLS(network string, addr string) (net.Conn, error) {
 	}
 
 	cert := conn.ConnectionState().PeerCertificates[0]
-	peer := ThumbprintSHA1(cert)
-	if thumbprint != peer {
-		_ = conn.Close()
-
-		return nil, fmt.Errorf("host %q thumbprint does not match %q", addr, thumbprint)
+	if thumbprintMatches(thumbprint, cert) {
+		return conn, nil
 	}
 
-	return conn, nil
+	_ = conn.Close()
+
+	return nil, fmt.Errorf("host %q thumbprint does not match %q", addr, thumbprint)
 }
 
 // splitHostPort is similar to net.SplitHostPort,
@@ -387,6 +487,7 @@ func splitHostPort(host string) (string, string) {
 
 const sdkTunnel = "sdkTunnel:8089"
 
+// Certificate returns the current TLS certificate.
 func (c *Client) Certificate() *tls.Certificate {
 	certs := c.t.TLSClientConfig.Certificates
 	if len(certs) == 0 {
@@ -395,6 +496,7 @@ func (c *Client) Certificate() *tls.Certificate {
 	return &certs[0]
 }
 
+// SetCertificate st a certificate for TLS use.
 func (c *Client) SetCertificate(cert tls.Certificate) {
 	t := c.Client.Transport.(*http.Transport)
 
@@ -402,11 +504,48 @@ func (c *Client) SetCertificate(cert tls.Certificate) {
 	t.TLSClientConfig.Certificates = []tls.Certificate{cert}
 }
 
+// UseServiceVersion sets Client.Version to the current version of the service endpoint via /sdk/vimServiceVersions.xml
+func (c *Client) UseServiceVersion(kind ...string) error {
+	ns := "vim"
+	if len(kind) != 0 {
+		ns = kind[0]
+	}
+
+	u := c.URL()
+	u.Path = path.Join("/sdk", ns+"ServiceVersions.xml")
+
+	res, err := c.Get(u.String())
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("http.Get(%s): %s", u.Path, res.Status)
+	}
+
+	v := struct {
+		Namespace *string `xml:"namespace>name"`
+		Version   *string `xml:"namespace>version"`
+	}{
+		&c.Namespace,
+		&c.Version,
+	}
+
+	err = xml.NewDecoder(res.Body).Decode(&v)
+	_ = res.Body.Close()
+	if err != nil {
+		return fmt.Errorf("xml.Decode(%s): %s", u.Path, err)
+	}
+
+	return nil
+}
+
 // Tunnel returns a Client configured to proxy requests through vCenter's http port 80,
 // to the SDK tunnel virtual host.  Use of the SDK tunnel is required by LoginExtensionByCertificate()
 // and optional for other methods.
 func (c *Client) Tunnel() *Client {
-	tunnel := c.NewServiceClient(c.u.Path, c.Namespace)
+	tunnel := c.newServiceClientWithTransport(c.u.Path, c.Namespace, c.DefaultTransport().Clone())
+
 	t := tunnel.Client.Transport.(*http.Transport)
 	// Proxy to vCenter host on port 80
 	host := tunnel.u.Hostname()
@@ -432,29 +571,34 @@ func (c *Client) Tunnel() *Client {
 	return tunnel
 }
 
+// URL returns the URL to which the client is configured
 func (c *Client) URL() *url.URL {
 	urlCopy := *c.u
 	return &urlCopy
 }
 
 type marshaledClient struct {
-	Cookies  []*http.Cookie
-	URL      *url.URL
-	Insecure bool
-	Version  string
+	Cookies  []*http.Cookie `json:"cookies"`
+	URL      *url.URL       `json:"url"`
+	Insecure bool           `json:"insecure"`
+	Version  string         `json:"version"`
+	UseJSON  bool           `json:"useJSON"`
 }
 
+// MarshalJSON writes the Client configuration to JSON.
 func (c *Client) MarshalJSON() ([]byte, error) {
 	m := marshaledClient{
 		Cookies:  c.Jar.Cookies(c.u),
 		URL:      c.u,
 		Insecure: c.k,
 		Version:  c.Version,
+		UseJSON:  c.useJSON,
 	}
 
 	return json.Marshal(m)
 }
 
+// UnmarshalJSON rads Client configuration from JSON.
 func (c *Client) UnmarshalJSON(b []byte) error {
 	var m marshaledClient
 
@@ -466,12 +610,24 @@ func (c *Client) UnmarshalJSON(b []byte) error {
 	*c = *NewClient(m.URL, m.Insecure)
 	c.Version = m.Version
 	c.Jar.SetCookies(m.URL, m.Cookies)
+	c.useJSON = m.UseJSON
 
 	return nil
 }
 
-type kindContext struct{}
+func (c *Client) setInsecureCookies(res *http.Response) {
+	cookies := res.Cookies()
+	if len(cookies) != 0 {
+		for _, cookie := range cookies {
+			cookie.Secure = false
+		}
+		c.Jar.SetCookies(c.u, cookies)
+	}
+}
 
+// Do is equivalent to http.Client.Do and takes care of API specifics including
+// logging, user-agent header, handling cookies, measuring responsiveness of the
+// API
 func (c *Client) Do(ctx context.Context, req *http.Request, f func(*http.Response) error) error {
 	if ctx == nil {
 		ctx = context.Background()
@@ -482,38 +638,32 @@ func (c *Client) Do(ctx context.Context, req *http.Request, f func(*http.Respons
 		defer d.done()
 	}
 
-	if c.UserAgent != "" {
-		req.Header.Set(`User-Agent`, c.UserAgent)
+	// use default
+	if c.UserAgent == "" {
+		c.UserAgent = defaultUserAgent
 	}
+
+	req.Header.Set(`User-Agent`, c.UserAgent)
 
 	ext := ""
 	if d.enabled() {
 		ext = d.debugRequest(req)
 	}
 
-	tstart := time.Now()
 	res, err := c.Client.Do(req.WithContext(ctx))
-	tstop := time.Now()
-
-	if d.enabled() {
-		var name string
-		if kind, ok := ctx.Value(kindContext{}).(HasFault); ok {
-			name = fmt.Sprintf("%T", kind)
-		} else {
-			name = fmt.Sprintf("%s %s", req.Method, req.URL)
-		}
-		d.logf("%6dms (%s)", tstop.Sub(tstart)/time.Millisecond, name)
-	}
-
 	if err != nil {
 		return err
 	}
 
-	defer res.Body.Close()
-
 	if d.enabled() {
 		d.debugResponse(res, ext)
 	}
+
+	if c.insecureCookies {
+		c.setInsecureCookies(res)
+	}
+
+	defer res.Body.Close()
 
 	return f(res)
 }
@@ -537,7 +687,7 @@ type statusError struct {
 }
 
 // Temporary returns true for HTTP response codes that can be retried
-// See vim25.TemporaryNetworkError
+// See vim25.IsTemporaryNetworkError
 func (e *statusError) Temporary() bool {
 	switch e.res.StatusCode {
 	case http.StatusBadGateway:
@@ -558,7 +708,15 @@ func newStatusError(res *http.Response) error {
 	}
 }
 
+// RoundTrip executes an API request to VMOMI server.
 func (c *Client) RoundTrip(ctx context.Context, reqBody, resBody HasFault) error {
+	if !c.useJSON {
+		return c.soapRoundTrip(ctx, reqBody, resBody)
+	}
+	return c.jsonRoundTrip(ctx, reqBody, resBody)
+}
+
+func (c *Client) soapRoundTrip(ctx context.Context, reqBody, resBody HasFault) error {
 	var err error
 	var b []byte
 
@@ -575,8 +733,10 @@ func (c *Client) RoundTrip(ctx context.Context, reqBody, resBody HasFault) error
 		h.ID = id
 	}
 
-	h.Cookie = c.cookie
-	if h.Cookie != "" || h.ID != "" || h.Security != nil {
+	if c.Cookie != nil {
+		h.Cookie = c.Cookie()
+	}
+	if h.Cookie != nil || h.ID != "" || h.Security != nil {
 		reqEnv.Header = &h // XML marshal header only if a field is set
 	}
 
@@ -606,7 +766,7 @@ func (c *Client) RoundTrip(ctx context.Context, reqBody, resBody HasFault) error
 	}
 	req.Header.Set(`SOAPAction`, action)
 
-	return c.Do(context.WithValue(ctx, kindContext{}, resBody), req, func(res *http.Response) error {
+	return c.Do(ctx, req, func(res *http.Response) error {
 		switch res.StatusCode {
 		case http.StatusOK:
 			// OK
@@ -660,6 +820,7 @@ type Upload struct {
 	Headers       map[string]string
 	Ticket        *http.Cookie
 	Progress      progress.Sinker
+	Close         bool
 }
 
 var DefaultUpload = Upload{
@@ -687,7 +848,7 @@ func (c *Client) Upload(ctx context.Context, f io.Reader, u *url.URL, param *Upl
 	}
 
 	req = req.WithContext(ctx)
-
+	req.Close = param.Close
 	req.ContentLength = param.ContentLength
 	req.Header.Set("Content-Type", param.Type)
 
@@ -745,6 +906,7 @@ type Download struct {
 	Ticket   *http.Cookie
 	Progress progress.Sinker
 	Writer   io.Writer
+	Close    bool
 }
 
 var DefaultDownload = Download{
@@ -759,6 +921,7 @@ func (c *Client) DownloadRequest(ctx context.Context, u *url.URL, param *Downloa
 	}
 
 	req = req.WithContext(ctx)
+	req.Close = param.Close
 
 	for k, v := range param.Headers {
 		req.Header.Add(k, v)
@@ -805,7 +968,7 @@ func (c *Client) WriteFile(ctx context.Context, file string, src io.Reader, size
 
 	if s != nil {
 		pr := progress.NewReader(ctx, s, src, size)
-		src = pr
+		r = pr
 
 		// Mark progress reader as done when returning from this function.
 		defer func() {
@@ -843,4 +1006,13 @@ func (c *Client) DownloadFile(ctx context.Context, file string, u *url.URL, para
 	}
 
 	return c.WriteFile(ctx, file, rc, contentLength, param.Progress, param.Writer)
+}
+
+// execName gets the name of the executable for the current process
+func execName() string {
+	name, err := os.Executable()
+	if err != nil {
+		return "N/A"
+	}
+	return strings.TrimSuffix(filepath.Base(name), ".exe")
 }

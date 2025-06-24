@@ -1,18 +1,6 @@
-/*
-Copyright (c) 2015 VMware, Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// © Broadcom. All Rights Reserved.
+// The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+// SPDX-License-Identifier: Apache-2.0
 
 package object
 
@@ -21,6 +9,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/vmware/govmomi/internal"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -50,7 +39,7 @@ func (h HostSystem) ResourcePool(ctx context.Context) (*ResourcePool, error) {
 	}
 
 	var mcr *mo.ComputeResource
-	var parent interface{}
+	var parent any
 
 	switch mh.Parent.Type {
 	case "ComputeResource":
@@ -81,24 +70,17 @@ func (h HostSystem) ManagementIPs(ctx context.Context) ([]net.IP, error) {
 		return nil, err
 	}
 
-	var ips []net.IP
-	for _, nc := range mh.Config.VirtualNicManagerInfo.NetConfig {
-		if nc.NicType != string(types.HostVirtualNicManagerNicTypeManagement) {
-			continue
-		}
-		for ix := range nc.CandidateVnic {
-			for _, selectedVnicKey := range nc.SelectedVnic {
-				if nc.CandidateVnic[ix].Key != selectedVnicKey {
-					continue
-				}
-				ip := net.ParseIP(nc.CandidateVnic[ix].Spec.Ip.IpAddress)
-				if ip != nil {
-					ips = append(ips, ip)
-				}
-			}
-		}
+	config := mh.Config
+	if config == nil {
+		return nil, nil
 	}
-	return ips, nil
+
+	info := config.VirtualNicManagerInfo
+	if info == nil {
+		return nil, nil
+	}
+
+	return internal.HostSystemManagementIPs(info.NetConfig), nil
 }
 
 func (h HostSystem) Disconnect(ctx context.Context) (*Task, error) {

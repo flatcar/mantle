@@ -1,28 +1,12 @@
-/*
-Copyright (c) 2015-2016 VMware, Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// © Broadcom. All Rights Reserved.
+// The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+// SPDX-License-Identifier: Apache-2.0
 
 package vim25
 
 import (
 	"context"
 	"encoding/json"
-	"encoding/xml"
-	"fmt"
-	"net/http"
-	"path"
 	"strings"
 
 	"github.com/vmware/govmomi/vim25/methods"
@@ -32,7 +16,7 @@ import (
 
 const (
 	Namespace = "vim25"
-	Version   = "6.7"
+	Version   = "9.0.0.0"
 	Path      = "/sdk"
 )
 
@@ -86,33 +70,6 @@ func NewClient(ctx context.Context, rt soap.RoundTripper) (*Client, error) {
 	}
 
 	return &c, nil
-}
-
-// UseServiceVersion sets soap.Client.Version to the current version of the service endpoint via /sdk/vimServiceVersions.xml
-func (c *Client) UseServiceVersion() error {
-	u := c.URL()
-	u.Path = path.Join(Path, "vimServiceVersions.xml")
-
-	res, err := c.Get(u.String())
-	if err != nil {
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("http.Get(%s): %s", u.Path, err)
-	}
-
-	v := struct {
-		Version *string `xml:"namespace>version"`
-	}{&c.Version}
-
-	err = xml.NewDecoder(res.Body).Decode(&v)
-	_ = res.Body.Close()
-	if err != nil {
-		return fmt.Errorf("xml.Decode(%s): %s", u.Path, err)
-	}
-
-	return nil
 }
 
 // RoundTrip dispatches to the RoundTripper field.
@@ -169,6 +126,11 @@ func (c *Client) Valid() bool {
 	}
 
 	return true
+}
+
+// Path returns vim25.Path (see cache.Client)
+func (c *Client) Path() string {
+	return Path
 }
 
 // IsVC returns true if we are connected to a vCenter
