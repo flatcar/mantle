@@ -147,7 +147,7 @@ github.com/apricote/hcloud-upload-image/hcloudimages/internal/labelutil
 github.com/apricote/hcloud-upload-image/hcloudimages/internal/randomid
 github.com/apricote/hcloud-upload-image/hcloudimages/internal/sshkey
 github.com/apricote/hcloud-upload-image/hcloudimages/internal/sshsession
-# github.com/aws/aws-sdk-go v1.55.5
+# github.com/aws/aws-sdk-go v1.55.7
 ## explicit; go 1.19
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/arn
