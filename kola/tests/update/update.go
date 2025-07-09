@@ -291,13 +291,18 @@ func updateMachineBootPartTooSmall(c cluster.TestCluster, m platform.Machine) {
 	err = util.WaitUntilReady(60*time.Second, 10*time.Second, func() (bool, error) {
 		envs, stderr, err := m.SSH("update_engine_client -status 2>/dev/null")
 		if err != nil {
-			return false, fmt.Errorf("checking status failed: %v: %s", err, stderr)
+			return false, fmt.Errorf("checking update_engine_client status failed: %v: %s", err, stderr)
 		}
 
 		return splitNewlineEnv(string(envs))["CURRENT_OP"] == "UPDATE_STATUS_IDLE", nil
 	})
 	if err != nil {
 		c.Fatalf("Update did not fail: %v", err)
+	}
+
+	failure_message := string(c.MustSSH(m, `journalctl -xeu update-engine.service | grep -i 'Failed to copy kernel from /boot/flatcar/vmlinuz-a to /boot/flatcar/vmlinuz-b'`))
+	if failure_message == "" {
+		c.Fatalf("Failure message not found in the update-engine.service: 'Failed to copy kernel from /boot/flatcar/vmlinuz-a to /boot/flatcar/vmlinuz-b'")
 	}
 }
 
