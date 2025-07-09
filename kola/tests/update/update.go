@@ -297,7 +297,7 @@ func updateMachineBootPartTooSmall(c cluster.TestCluster, m platform.Machine) {
 			return false, fmt.Errorf("checking status failed: %v: %s", err, stderr)
 		}
 
-		return splitNewlineEnv(string(envs))["CURRENT_OP"] == "UPDATE_STATUS_UPDATED_NEED_REBOOT", nil
+		return splitNewlineEnv(string(envs))["CURRENT_OP"] == "UPDATE_STATUS_IDLE", nil
 	})
 	if err != nil {
 		c.Fatalf("Update did not fail: %v", err)
