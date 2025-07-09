@@ -162,6 +162,29 @@ systemd:
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3620},
 	})
+	register.Register(&register.Test{
+		Name:        "cl.update.payload-boot-part-too-small",
+		Run:         payload_boot_part_too_small,
+		ClusterSize: 1,
+		NativeFuncs: map[string]func() error{
+			"Omaha": Serve,
+		},
+		Distros: []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// This test can only run if the update payload to test is given.
+			// The image passed must also be an old release to ensure that we
+			// don't have incomaptible changes
+			// (see scripts/ci-automation/vendor-testing/qemu_update.sh)
+			return kola.UpdatePayloadFile == ""
+		},
+		// Skip AVC checks, we will do our own only on the
+		// last boot logs, as the older logs may come from an
+		// old version of Flatcar that still has some AVC
+		// messages.
+		Flags: []register.Flag{register.NoSELinuxAVCChecks},
+	})
 }
 
 func Serve() error {
@@ -247,6 +270,38 @@ func payload(c cluster.TestCluster) {
 	addr, m := payloadPrepareMachine(nil, c)
 	payloadPerformUpdate(addr, m, c)
 	checkNoAVCMessages(c, m)
+}
+
+func payload_boot_part_too_small(c cluster.TestCluster) {
+	addr, m := payloadPrepareMachine(nil, c)
+	c.MustSSH(m, `sudo dd if=/dev/zero of=/boot/increase_boot_part_usage bs=5M count=1`)
+	updateMachine(c, m)
+	tutil.AssertBootedUsr(c, m, "USR-B")
+	tutil.InvalidateUsrPartition(c, m, "USR-A")
+	configureMachineForUpdate(c, m, addr)
+	updateMachineBootPartTooSmall(c, m)
+	tutil.AssertBootedUsr(c, m, "USR-B")
+}
+
+func updateMachineBootPartTooSmall(c cluster.TestCluster, m platform.Machine) {
+	c.Logf("Triggering update_engine")
+
+	out, stderr, err := m.SSH("update_engine_client -check_for_update")
+	if err != nil {
+		c.Fatalf("Executing update_engine_client failed: %v: %v: %s", out, err, stderr)
+	}
+
+	err = util.WaitUntilReady(60*time.Second, 10*time.Second, func() (bool, error) {
+		envs, stderr, err := m.SSH("update_engine_client -status 2>/dev/null")
+		if err != nil {
+			return false, fmt.Errorf("checking status failed: %v: %s", err, stderr)
+		}
+
+		return splitNewlineEnv(string(envs))["CURRENT_OP"] == "UPDATE_STATUS_UPDATED_NEED_REBOOT", nil
+	})
+	if err != nil {
+		c.Fatalf("Update did not fail: %v", err)
+	}
 }
 
 func btrfs_compat(c cluster.TestCluster) {
