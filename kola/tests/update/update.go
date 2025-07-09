@@ -275,12 +275,9 @@ func payload(c cluster.TestCluster) {
 func payload_boot_part_too_small(c cluster.TestCluster) {
 	addr, m := payloadPrepareMachine(nil, c)
 	c.MustSSH(m, `sudo dd if=/dev/zero of=/boot/increase_boot_part_usage bs=5M count=1`)
-	updateMachine(c, m)
-	tutil.AssertBootedUsr(c, m, "USR-B")
-	tutil.InvalidateUsrPartition(c, m, "USR-A")
 	configureMachineForUpdate(c, m, addr)
 	updateMachineBootPartTooSmall(c, m)
-	tutil.AssertBootedUsr(c, m, "USR-B")
+	tutil.AssertBootedUsr(c, m, "USR-A")
 }
 
 func updateMachineBootPartTooSmall(c cluster.TestCluster, m platform.Machine) {
