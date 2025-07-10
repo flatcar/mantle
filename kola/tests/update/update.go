@@ -270,6 +270,13 @@ func payloadBootPartTooSmall(c cluster.TestCluster) {
 	configureMachineForUpdate(c, m, addr)
 	updateMachineBootPartTooSmall(c, m)
 	tutil.AssertBootedUsr(c, m, "USR-A")
+
+	// reboot to make sure that the machine can boot with /boot partition 100% full
+	c.Logf("Rebooting test machine")
+	if err := m.Reboot(); err != nil {
+		c.Fatalf("reboot failed: %v", err)
+	}
+	tutil.AssertBootedUsr(c, m, "USR-A")
 }
 
 func updateMachineBootPartTooSmall(c cluster.TestCluster, m platform.Machine) {
