@@ -164,7 +164,7 @@ systemd:
 	})
 	register.Register(&register.Test{
 		Name:        "cl.update.payload-boot-part-too-small",
-		Run:         payload_boot_part_too_small,
+		Run:         payloadBootPartTooSmall,
 		ClusterSize: 1,
 		NativeFuncs: map[string]func() error{
 			"Omaha": Serve,
@@ -173,16 +173,8 @@ systemd:
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
-			// This test can only run if the update payload to test is given.
-			// The image passed must also be an old release to ensure that we
-			// don't have incomaptible changes
-			// (see scripts/ci-automation/vendor-testing/qemu_update.sh)
 			return kola.UpdatePayloadFile == ""
 		},
-		// Skip AVC checks, we will do our own only on the
-		// last boot logs, as the older logs may come from an
-		// old version of Flatcar that still has some AVC
-		// messages.
 		Flags: []register.Flag{register.NoSELinuxAVCChecks},
 	})
 }
@@ -272,7 +264,7 @@ func payload(c cluster.TestCluster) {
 	checkNoAVCMessages(c, m)
 }
 
-func payload_boot_part_too_small(c cluster.TestCluster) {
+func payloadBootPartTooSmall(c cluster.TestCluster) {
 	addr, m := payloadPrepareMachine(nil, c)
 	c.MustSSH(m, `sudo dd if=/dev/zero of=/boot/increase_boot_part_usage bs=5M count=1`)
 	configureMachineForUpdate(c, m, addr)
