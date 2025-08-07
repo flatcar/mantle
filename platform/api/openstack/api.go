@@ -112,6 +112,15 @@ func New(opts *Options) (*API, error) {
 		Username:         profile.Username,
 		Password:         profile.Password,
 		DomainID:         profile.DomainID,
+		// Enable automatic re‑authentication so that long‑running
+		// kola test suites do not fail once the Keystone token
+		// expires (typically after one hour).  With AllowReauth set
+		// to true, gophercloud will transparently obtain a fresh
+		// token whenever it receives a 401 response, preventing
+		// intermittent "Authentication failed" errors during console
+		// log retrieval, security‑group operations, etc.
+		// See https://pkg.go.dev/github.com/gophercloud/gophercloud#AuthOptions
+		AllowReauth: true,
 	}
 
 	provider, err := openstack.AuthenticatedClient(osOpts)
