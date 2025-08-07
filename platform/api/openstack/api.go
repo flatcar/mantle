@@ -112,6 +112,15 @@ func New(opts *Options) (*API, error) {
 		Username:         profile.Username,
 		Password:         profile.Password,
 		DomainID:         profile.DomainID,
+		// Enable automatic re‑authentication so that long‑running
+		// kola test suites do not fail once the Keystone token
+		// expires (typically after one hour).  With AllowReauth set
+		// to true, gophercloud will transparently obtain a fresh
+		// token whenever it receives a 401 response, preventing
+		// intermittent "Authentication failed" errors during console
+		// log retrieval, security‑group operations, etc.
+		// See https://pkg.go.dev/github.com/gophercloud/gophercloud#AuthOptions
+		AllowReauth: true,
 	}
 
 	provider, err := openstack.AuthenticatedClient(osOpts)
@@ -583,6 +592,106 @@ func (a *API) DeleteImage(imageID string) error {
 	return images.Delete(a.imageClient, imageID).ExtractErr()
 }
 
+func (a *API) PruneKeys(olderThan time.Duration) error {
+	// Build a set of keypair names that are still in use by active servers so
+	// that we don't delete keys that are currently required.
+	usedKeys := make(map[string]struct{})
+
+	srvPager := servers.List(a.computeClient, servers.ListOpts{})
+	srvPages, err := unwrapPages(srvPager, true)
+	if err != nil {
+		return fmt.Errorf("listing servers: %v", err)
+	}
+
+	srvList, err := servers.ExtractServers(srvPages)
+	if err != nil {
+		return fmt.Errorf("extracting servers: %v", err)
+	}
+
+	for _, s := range srvList {
+		if s.KeyName != "" {
+			usedKeys[s.KeyName] = struct{}{}
+		}
+	}
+
+	// List all keypairs in the project.
+	kpPager := keypairs.List(a.computeClient, keypairs.ListOpts{})
+	kpPages, err := unwrapPages(kpPager, true)
+	if err != nil {
+		return fmt.Errorf("listing keypairs: %v", err)
+	}
+
+	kpList, err := keypairs.ExtractKeyPairs(kpPages)
+	if err != nil {
+		return fmt.Errorf("extracting keypairs: %v", err)
+	}
+
+	now := time.Now()
+
+	for _, kp := range kpList {
+		// Skip keypairs that are still in use.
+		if _, inUse := usedKeys[kp.Name]; inUse {
+			continue
+		}
+
+		// Retrieve detailed information in order to obtain the optional
+		// `created_at` field.
+		var detail struct {
+			Keypair struct {
+				CreatedAt string `json:"created_at"`
+			} `json:"keypair"`
+		}
+
+		if err := keypairs.Get(a.computeClient, kp.Name, nil).ExtractInto(&detail); err != nil {
+			// If we fail to obtain details, skip deletion to be safe.
+			plog.Warningf("could not get details for keypair %s: %v", kp.Name, err)
+			continue
+		}
+
+		if detail.Keypair.CreatedAt == "" {
+			// Missing creation timestamp – skip.
+			continue
+		}
+
+		// Attempt to parse the timestamp using a small set of common layouts.
+		var createdTime time.Time
+		var parseErr error
+		for _, layout := range []string{
+			time.RFC3339,
+			"2006-01-02T15:04:05.999999Z07:00", // micro-seconds + TZ
+			"2006-01-02T15:04:05.999999",       // micro-seconds, no TZ
+			"2006-01-02T15:04:05",              // seconds, no TZ
+		} {
+			createdTime, parseErr = time.Parse(layout, detail.Keypair.CreatedAt)
+			if parseErr == nil {
+				// If the layout did not specify timezone information (no "Z07"),
+				// assume the timestamp is in UTC, which is what OpenStack typically
+				// uses internally.
+				if !strings.Contains(layout, "Z07") {
+					createdTime = createdTime.UTC()
+				}
+				break
+			}
+		}
+		if parseErr != nil {
+			plog.Warningf("unable to parse created_at for keypair %s: %v", kp.Name, parseErr)
+			continue
+		}
+
+		if now.Sub(createdTime) > olderThan {
+			if err := a.DeleteKey(kp.Name); err != nil {
+				plog.Warningf("failed deleting stale keypair %s: %v", kp.Name, err)
+			} else {
+				plog.Infof("deleted stale keypair %s (age %s)", kp.Name, now.Sub(createdTime))
+			}
+		} else {
+			plog.Infof("skipping keypair %s (age %s)", kp.Name, now.Sub(createdTime))
+		}
+	}
+
+	return nil
+}
+
 func (a *API) AddKey(name, key string) error {
 	_, err := keypairs.Create(a.computeClient, keypairs.CreateOpts{
 		Name:      name,
@@ -673,6 +782,11 @@ func (a *API) GC(gracePeriod time.Duration) error {
 		if err := a.DeleteImage(image.ID); err != nil {
 			return fmt.Errorf("deleting image with name: %s", image.Name)
 		}
+	}
+
+	err = a.PruneKeys(gracePeriod)
+	if err != nil {
+		return fmt.Errorf("pruning keys: %v", err)
 	}
 
 	return nil
