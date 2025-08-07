@@ -59,8 +59,8 @@ func Execute(main *cobra.Command) {
 	main.PersistentFlags().BoolVarP(&logDebug, "debug", "d", false,
 		"Alias for --log-level=DEBUG")
 
+	// startLogging is called by the wrapper
 	WrapPreRun(main, func(cmd *cobra.Command, args []string) error {
-		startLogging(cmd)
 		return nil
 	})
 
@@ -98,7 +98,9 @@ func WrapPreRun(root *cobra.Command, f PreRunEFunc) {
 	preRun, preRunE := root.PersistentPreRun, root.PersistentPreRunE
 	root.PersistentPreRun, root.PersistentPreRunE = nil, nil
 
+	// Only the first PersistentPreRunE is executed so startLogging needs to be called here
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		startLogging(cmd)
 		if err := f(cmd, args); err != nil {
 			return err
 		}
