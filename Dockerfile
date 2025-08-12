@@ -18,7 +18,7 @@ RUN for i in $(seq 1 5); do \
     if apt-get --fix-broken install --no-install-recommends -y \
         apt-transport-https awscli ca-certificates curl dns-root-data dnsmasq git gnupg2 iptables jq \
         lbzip2 nftables ovmf python-is-python3 python3 python3-pip qemu-efi-aarch64 qemu-system-aarch64 qemu-system-x86 \
-        qemu-utils seabios sqlite3 sudo swtpm; then \
+        qemu-utils rclone seabios sqlite3 sudo swtpm; then \
             echo "succeeded at ${i}"; \
             break; \
     elif test $i -eq 5; then \
