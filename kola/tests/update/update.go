@@ -162,6 +162,21 @@ systemd:
 		Platforms:  []string{"qemu", "qemu-unpriv"},
 		MinVersion: semver.Version{Major: 3620},
 	})
+	register.Register(&register.Test{
+		Name:        "cl.update.payload-boot-part-too-small",
+		Run:         payloadBootPartTooSmall,
+		ClusterSize: 1,
+		NativeFuncs: map[string]func() error{
+			"Omaha": Serve,
+		},
+		Distros: []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms: []string{"qemu", "qemu-unpriv"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			return kola.UpdatePayloadFile == ""
+		},
+		Flags: []register.Flag{register.NoSELinuxAVCChecks},
+	})
 }
 
 func Serve() error {
@@ -247,6 +262,47 @@ func payload(c cluster.TestCluster) {
 	addr, m := payloadPrepareMachine(nil, c)
 	payloadPerformUpdate(addr, m, c)
 	checkNoAVCMessages(c, m)
+}
+
+func payloadBootPartTooSmall(c cluster.TestCluster) {
+	addr, m := payloadPrepareMachine(nil, c)
+	c.MustSSH(m, `sudo dd if=/dev/zero of=/boot/increase_boot_part_usage bs=20M count=1`)
+	configureMachineForUpdate(c, m, addr)
+	updateMachineBootPartTooSmall(c, m)
+	tutil.AssertBootedUsr(c, m, "USR-A")
+
+	// reboot to make sure that the machine can boot with /boot partition 100% full
+	c.Logf("Rebooting test machine")
+	if err := m.Reboot(); err != nil {
+		c.Fatalf("reboot failed: %v", err)
+	}
+	tutil.AssertBootedUsr(c, m, "USR-A")
+}
+
+func updateMachineBootPartTooSmall(c cluster.TestCluster, m platform.Machine) {
+	c.Logf("Triggering update_engine")
+
+	out, stderr, err := m.SSH("update_engine_client -check_for_update")
+	if err != nil {
+		c.Fatalf("Executing update_engine_client failed: %v: %v: %s", out, err, stderr)
+	}
+
+	err = util.WaitUntilReady(60*time.Second, 10*time.Second, func() (bool, error) {
+		envs, stderr, err := m.SSH("update_engine_client -status 2>/dev/null")
+		if err != nil {
+			return false, fmt.Errorf("checking update_engine_client status failed: %v: %s", err, stderr)
+		}
+
+		return splitNewlineEnv(string(envs))["CURRENT_OP"] == "UPDATE_STATUS_IDLE", nil
+	})
+	if err != nil {
+		c.Fatalf("Update did not fail: %v", err)
+	}
+
+	failure_message := string(c.MustSSH(m, `journalctl -xeu update-engine.service | grep -i 'Failed to copy kernel from /boot/flatcar/vmlinuz-a to /boot/flatcar/vmlinuz-b'`))
+	if failure_message == "" {
+		c.Fatalf("Failure message not found in the update-engine.service: 'Failed to copy kernel from /boot/flatcar/vmlinuz-a to /boot/flatcar/vmlinuz-b'")
+	}
 }
 
 func btrfs_compat(c cluster.TestCluster) {
