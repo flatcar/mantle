@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/flatcar/mantle/platform/machine/stackit"
+
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/coreos/go-semver/semver"
@@ -47,6 +49,7 @@ import (
 	hetznerapi "github.com/flatcar/mantle/platform/api/hetzner"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
+	stackitapi "github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/akamai"
 	"github.com/flatcar/mantle/platform/machine/aws"
@@ -81,6 +84,7 @@ var (
 	ExternalOptions  = external.Options{Options: &Options}     // glue to set platform options from main
 	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
 	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
+	STACKITOptions   = stackitapi.Options{Options: &Options}   // glue to set platform options from main
 	QEMUOptions      = qemu.Options{Options: &Options}         // glue to set platform options from main
 	ScalewayOptions  = scalewayapi.Options{Options: &Options}  // glue to set platform options from main
 	HetznerOptions   = hetznerapi.Options{Options: &Options}   // glue to set platform options from main
@@ -262,6 +266,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = hetzner.NewFlight(&HetznerOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
+	case "stackit":
+		flight, err = stackit.NewFlight(&STACKITOptions)
 	case "qemu":
 		flight, err = qemu.NewFlight(&QEMUOptions)
 	case "qemu-unpriv":
@@ -684,6 +690,9 @@ func architecture(pltfrm string) string {
 	if pltfrm == "hetzner" && HetznerOptions.Board != "" {
 		nativeArch = boardToArch(HetznerOptions.Board)
 	}
+	if pltfrm == "stackit" && STACKITOptions.Board != "" {
+		nativeArch = boardToArch(STACKITOptions.Board)
+	}
 	return nativeArch
 }
 
@@ -732,7 +741,7 @@ func UploadKolet(c cluster.TestCluster, mArch string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Unable to locate kolet binary for %s", mArch)
+	return fmt.Errorf("unable to locate kolet binary for %s", mArch)
 }
 
 // ScpKolet searches for a kolet binary and copies it to the
