@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/flatcar/mantle/platform/machine/stackit"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -48,6 +49,7 @@ import (
 	hetznerapi "github.com/flatcar/mantle/platform/api/hetzner"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
+	stackitapi "github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/akamai"
 	"github.com/flatcar/mantle/platform/machine/aws"
@@ -83,6 +85,7 @@ var (
 	ExternalOptions     = external.Options{Options: &Options}        // glue to set platform options from main
 	GCEOptions          = gcloudapi.Options{Options: &Options}       // glue to set platform options from main
 	OpenStackOptions    = openstackapi.Options{Options: &Options}    // glue to set platform options from main
+	STACKITOptions      = stackitapi.Options{Options: &Options}      // glue to set platform options from main
 	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
 	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
 	ScalewayOptions     = scalewayapi.Options{Options: &Options}     // glue to set platform options from main
@@ -265,6 +268,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = hetzner.NewFlight(&HetznerOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
+	case "stackit":
+		flight, err = stackit.NewFlight(&STACKITOptions)
 	case "equinixmetal":
 		flight, err = equinixmetal.NewFlight(&EquinixMetalOptions)
 	case "qemu":
