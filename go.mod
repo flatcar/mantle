@@ -16,7 +16,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.1
 	github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14
-	github.com/apricote/hcloud-upload-image/hcloudimages v0.3.0
+	github.com/apricote/hcloud-upload-image/hcloudimages v1.1.0
 	github.com/aws/aws-sdk-go v1.55.7
 	github.com/brightbox/gobrightbox/v2 v2.2.2
 	github.com/coreos/butane v0.23.0
@@ -34,7 +34,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
-	github.com/hetznercloud/hcloud-go/v2 v2.9.0
+	github.com/hetznercloud/hcloud-go/v2 v2.21.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
 	github.com/linode/linodego v1.52.0
@@ -107,6 +107,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/lestrrat-go/backoff/v2 v2.0.8 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
@@ -115,14 +116,15 @@ require (
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.19.1 // indirect
+	github.com/prometheus/client_golang v1.21.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
-	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/prometheus/common v0.62.0 // indirect
+	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
