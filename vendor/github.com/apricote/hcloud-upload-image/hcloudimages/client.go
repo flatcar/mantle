@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hetznercloud/hcloud-go/v2/hcloud"
+	"github.com/hetznercloud/hcloud-go/v2/hcloud/exp/kit/sshutil"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/apricote/hcloud-upload-image/hcloudimages/contextlogger"
@@ -17,7 +18,6 @@ import (
 	"github.com/apricote/hcloud-upload-image/hcloudimages/internal/control"
 	"github.com/apricote/hcloud-upload-image/hcloudimages/internal/labelutil"
 	"github.com/apricote/hcloud-upload-image/hcloudimages/internal/randomid"
-	"github.com/apricote/hcloud-upload-image/hcloudimages/internal/sshkey"
 	"github.com/apricote/hcloud-upload-image/hcloudimages/internal/sshsession"
 )
 
@@ -43,6 +43,10 @@ var (
 	defaultRescueType = hcloud.ServerRescueTypeLinux64
 
 	defaultSSHDialTimeout = 1 * time.Minute
+
+	// Size observed on x86, 2025-05-03, no idea if that changes.
+	// Might be able to extends this to more of the available memory.
+	rescueSystemRootDiskSizeMB int64 = 960
 )
 
 type UploadOptions struct {
@@ -56,10 +60,14 @@ type UploadOptions struct {
 	// set to anything else, the file will be decompressed before written to the disk.
 	ImageCompression Compression
 
+	ImageFormat Format
+
+	// Can be optionally set to make the client validate that the image can be written to the server.
+	ImageSize int64
+
 	// Possible future additions:
 	// ImageSignatureVerification
 	// ImageLocalPath
-	// ImageType (RawDiskImage, ISO, qcow2, ...)
 
 	// Architecture should match the architecture of the Image. This decides if the Snapshot can later be
 	// used with [hcloud.ArchitectureX86] or [hcloud.ArchitectureARM] servers.
@@ -101,6 +109,19 @@ const (
 	// zip,zstd
 )
 
+type Format string
+
+const (
+	FormatRaw Format = ""
+
+	// FormatQCOW2 allows to upload images in the qcow2 format directly.
+	//
+	// The qcow2 image must fit on the disk available in the rescue system. "qemu-img dd", which is used to convert
+	// qcow2 to raw, requires a file as an input. If [UploadOption.ImageSize] is set and FormatQCOW2 is used, there is a
+	// warning message displayed if there is a high probability of issues.
+	FormatQCOW2 Format = "qcow2"
+)
+
 // NewClient instantiates a new client. It requires a working [*hcloud.Client] to interact with the Hetzner Cloud API.
 func NewClient(c *hcloud.Client) *Client {
 	return &Client{
@@ -134,9 +155,22 @@ func (s *Client) Upload(ctx context.Context, options UploadOptions) (*hcloud.Ima
 	resourceName := resourcePrefix + id
 	labels := labelutil.Merge(DefaultLabels, options.Labels)
 
+	// 0. Validations
+	if options.ImageFormat == FormatQCOW2 && options.ImageSize > 0 {
+		if options.ImageSize > rescueSystemRootDiskSizeMB*1024*1024 {
+			// Just a warning, because the size might change with time.
+			// Alternatively one could add an override flag for the check and make this an error.
+			logger.WarnContext(ctx,
+				fmt.Sprintf("image must be smaller than %d MB (rescue system root disk) for qcow2", rescueSystemRootDiskSizeMB),
+				"maximum-size", rescueSystemRootDiskSizeMB,
+				"actual-size", options.ImageSize/(1024*1024),
+			)
+		}
+	}
+
 	// 1. Create SSH Key
 	logger.InfoContext(ctx, "# Step 1: Generating SSH Key")
-	publicKey, privateKey, err := sshkey.GenerateKeyPair()
+	privateKey, publicKey, err := sshutil.GenerateKeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate temporary ssh key pair: %w", err)
 	}
@@ -282,7 +316,7 @@ func (s *Client) Upload(ctx context.Context, options UploadOptions) (*hcloud.Ima
 
 	err = control.Retry(
 		contextlogger.New(ctx, logger.With("operation", "ssh")),
-		10,
+		100, // ~ 3 minutes
 		func() error {
 			var err error
 			logger.DebugContext(ctx, "trying to connect to server", "ip", server.PublicNet.IPv4.IP)
@@ -293,50 +327,44 @@ func (s *Client) Upload(ctx context.Context, options UploadOptions) (*hcloud.Ima
 	if err != nil {
 		return nil, fmt.Errorf("failed to ssh into temporary server: %w", err)
 	}
-	defer sshClient.Close()
+	defer func() { _ = sshClient.Close() }()
 
-	// 6. SSH On Server: Download Image, Decompress, Write to Root Disk
-	logger.InfoContext(ctx, "# Step 6: Downloading image and writing to disk")
-	cmd := ""
-	if options.ImageURL != nil {
-		cmd += fmt.Sprintf("wget --no-verbose -O - %q | ", options.ImageURL.String())
+	// 6. Wipe existing disk, to avoid storing any bytes from it in the snapshot
+	logger.InfoContext(ctx, "# Step 6: Cleaning existing disk")
+
+	output, err := sshsession.Run(sshClient, "blkdiscard /dev/sda", nil)
+	logger.DebugContext(ctx, string(output))
+	if err != nil {
+		return nil, fmt.Errorf("failed to clean existing disk: %w", err)
 	}
 
-	if options.ImageCompression != CompressionNone {
-		switch options.ImageCompression {
-		case CompressionBZ2:
-			cmd += "bzip2 -cd | "
-		case CompressionXZ:
-			cmd += "xz -cd | "
-		default:
-			return nil, fmt.Errorf("unknown compression: %q", options.ImageCompression)
-		}
+	// 7. SSH On Server: Download Image, Decompress, Write to Root Disk
+	logger.InfoContext(ctx, "# Step 7: Downloading image and writing to disk")
+
+	cmd, err := assembleCommand(options)
+	if err != nil {
+		return nil, err
 	}
 
-	cmd += "dd of=/dev/sda bs=4M && sync"
-
-	// Make sure that we fail early, ie. if the image url does not work.
-	// the pipefail does not work correctly without wrapping in bash.
-	cmd = fmt.Sprintf("bash -c 'set -euo pipefail && %s'", cmd)
 	logger.DebugContext(ctx, "running download, decompress and write to disk command", "cmd", cmd)
 
-	output, err := sshsession.Run(sshClient, cmd, options.ImageReader)
-	logger.InfoContext(ctx, "# Step 6: Finished writing image to disk")
+	output, err = sshsession.Run(sshClient, cmd, options.ImageReader)
+	logger.InfoContext(ctx, "# Step 7: Finished writing image to disk")
 	logger.DebugContext(ctx, string(output))
 	if err != nil {
 		return nil, fmt.Errorf("failed to download and write the image: %w", err)
 	}
 
-	// 7. SSH On Server: Shutdown
-	logger.InfoContext(ctx, "# Step 7: Shutting down server")
+	// 8. SSH On Server: Shutdown
+	logger.InfoContext(ctx, "# Step 8: Shutting down server")
 	_, err = sshsession.Run(sshClient, "shutdown now", nil)
 	if err != nil {
 		// TODO Verify if shutdown error, otherwise return
 		logger.WarnContext(ctx, "shutdown returned error", "err", err)
 	}
 
-	// 8. Create Image from Server
-	logger.InfoContext(ctx, "# Step 8: Creating Image")
+	// 9. Create Image from Server
+	logger.InfoContext(ctx, "# Step 9: Creating Image")
 	createImageResult, _, err := s.c.Server.CreateImage(ctx, server, &hcloud.ServerCreateImageOpts{
 		Type:        hcloud.ImageTypeSnapshot,
 		Description: options.Description,
@@ -480,4 +508,40 @@ func (s *Client) cleanupTempSSHKeys(ctx context.Context, logger *slog.Logger, se
 	}
 
 	return nil
+}
+
+func assembleCommand(options UploadOptions) (string, error) {
+	// Make sure that we fail early, ie. if the image url does not work
+	cmd := "set -euo pipefail && "
+
+	if options.ImageURL != nil {
+		cmd += fmt.Sprintf("wget --no-verbose -O - %q | ", options.ImageURL.String())
+	}
+
+	if options.ImageCompression != CompressionNone {
+		switch options.ImageCompression {
+		case CompressionBZ2:
+			cmd += "bzip2 -cd | "
+		case CompressionXZ:
+			cmd += "xz -cd | "
+		default:
+			return "", fmt.Errorf("unknown compression: %q", options.ImageCompression)
+		}
+	}
+
+	switch options.ImageFormat {
+	case FormatRaw:
+		cmd += "dd of=/dev/sda bs=4M"
+	case FormatQCOW2:
+		cmd += "tee image.qcow2 > /dev/null && qemu-img dd -f qcow2 -O raw if=image.qcow2 of=/dev/sda bs=4M"
+	default:
+		return "", fmt.Errorf("unknown format: %q", options.ImageFormat)
+	}
+
+	cmd += " && sync"
+
+	// the pipefail does not work correctly without wrapping in bash.
+	cmd = fmt.Sprintf("bash -c '%s'", cmd)
+
+	return cmd, nil
 }
