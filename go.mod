@@ -31,6 +31,7 @@ require (
 	github.com/flatcar/container-linux-config-transpiler v0.9.4
 	github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
 	github.com/flatcar/ignition v0.36.2
+	github.com/go-logr/logr v1.4.2
 	github.com/golang/protobuf v1.5.4
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
@@ -44,6 +45,8 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6
+	github.com/stackitcloud/stackit-sdk-go/core v0.17.2
+	github.com/stackitcloud/stackit-sdk-go/services/iaas v0.27.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
@@ -58,6 +61,7 @@ require (
 	golang.org/x/sys v0.34.0
 	google.golang.org/api v0.236.0
 	gopkg.in/yaml.v3 v3.0.1
+	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 )
 
 require (
@@ -90,7 +94,6 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
