@@ -44,7 +44,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.6
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
