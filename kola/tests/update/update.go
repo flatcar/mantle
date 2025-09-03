@@ -489,7 +489,8 @@ func oemPayload(c cluster.TestCluster) {
 	_ = c.MustSSH(m, `test -e /oem/sysext/oem-azure-`+version+`.raw`)
 	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
 	_ = c.MustSSH(m, `curl -fsSLO --retry-delay 1 --retry 60 --retry-connrefused --retry-max-time 60 --connect-timeout 20 https://bincache.flatcar-linux.net/images/`+arch+`/`+version+`/flatcar_test_update-oem-azure.gz`)
-	_ = c.MustSSH(m, `sudo flatcar-update --to-version `+version+` --to-payload /updates/update.gz --extension ./flatcar_test_update-oem-azure.gz --disable-afterwards --force-dev-key`)
+	_ = c.MustSSH(m, `curl -fsSLO --retry-delay 1 --retry 60 --retry-connrefused --retry-max-time 60 --connect-timeout 20 https://bincache.flatcar-linux.net/images/`+arch+`/`+version+`/flatcar_test_update-flatcar-tools.gz`)
+	_ = c.MustSSH(m, `sudo flatcar-update --to-version `+version+` --to-payload /updates/update.gz --extension ./flatcar_test_update-oem-azure.gz --extension ./flatcar_test_update-flatcar-tools.gz --disable-afterwards --force-dev-key`)
 
 	checkNoAVCMessages(c, m)
 
