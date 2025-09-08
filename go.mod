@@ -32,7 +32,7 @@ require (
 	github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
 	github.com/flatcar/ignition v0.36.2
 	github.com/golang/protobuf v1.5.4
-	github.com/gophercloud/gophercloud v0.25.0
+	github.com/gophercloud/gophercloud v1.14.1
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
 	github.com/hetznercloud/hcloud-go/v2 v2.22.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
