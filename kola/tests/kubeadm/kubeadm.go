@@ -103,19 +103,6 @@ var (
 			"PodSubnet":        "192.168.0.0/17",
 			"cgroupv1":         false,
 		},
-		"v1.31.8": map[string]interface{}{
-			"HelmVersion":     "v3.13.2",
-			"MinMajorVersion": 3374,
-			// from https://github.com/flannel-io/flannel/releases
-			"FlannelVersion": "v0.22.0",
-			// from https://github.com/cilium/cilium/releases
-			"CiliumVersion": "1.12.5",
-			// from https://github.com/cilium/cilium-cli/releases
-			"CiliumCLIVersion": "v0.12.12",
-			"DownloadDir":      "/opt/bin",
-			"PodSubnet":        "192.168.0.0/17",
-			"cgroupv1":         false,
-		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
@@ -127,11 +114,11 @@ etcd:
 
 func init() {
 	testConfigCgroupV1 := map[string]map[string]interface{}{}
-	testConfigCgroupV1["v1.31.8"] = map[string]interface{}{}
-	for k, v := range testConfig["v1.31.8"] {
-		testConfigCgroupV1["v1.31.8"][k] = v
+	testConfigCgroupV1["v1.32.4"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.32.4"] {
+		testConfigCgroupV1["v1.32.4"][k] = v
 	}
-	testConfigCgroupV1["v1.31.8"]["cgroupv1"] = true
+	testConfigCgroupV1["v1.32.4"]["cgroupv1"] = true
 
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
