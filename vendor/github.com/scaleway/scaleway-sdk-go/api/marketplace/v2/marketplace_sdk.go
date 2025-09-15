@@ -53,7 +53,7 @@ const (
 func (enum ListImagesRequestOrderBy) String() string {
 	if enum == "" {
 		// return default value if empty
-		return "name_asc"
+		return string(ListImagesRequestOrderByNameAsc)
 	}
 	return string(enum)
 }
@@ -96,7 +96,7 @@ const (
 func (enum ListLocalImagesRequestOrderBy) String() string {
 	if enum == "" {
 		// return default value if empty
-		return "type_asc"
+		return string(ListLocalImagesRequestOrderByTypeAsc)
 	}
 	return string(enum)
 }
@@ -135,7 +135,7 @@ const (
 func (enum ListVersionsRequestOrderBy) String() string {
 	if enum == "" {
 		// return default value if empty
-		return "created_at_asc"
+		return string(ListVersionsRequestOrderByCreatedAtAsc)
 	}
 	return string(enum)
 }
@@ -176,7 +176,7 @@ const (
 func (enum LocalImageType) String() string {
 	if enum == "" {
 		// return default value if empty
-		return "unknown_type"
+		return string(LocalImageTypeUnknownType)
 	}
 	return string(enum)
 }
@@ -327,7 +327,7 @@ func (r *ListCategoriesResponse) UnsafeGetTotalCount() uint32 {
 
 // UnsafeAppend should not be used
 // Internal usage only
-func (r *ListCategoriesResponse) UnsafeAppend(res interface{}) (uint32, error) {
+func (r *ListCategoriesResponse) UnsafeAppend(res any) (uint32, error) {
 	results, ok := res.(*ListCategoriesResponse)
 	if !ok {
 		return 0, errors.New("%T type cannot be appended to type %T", res, r)
@@ -375,7 +375,7 @@ func (r *ListImagesResponse) UnsafeGetTotalCount() uint32 {
 
 // UnsafeAppend should not be used
 // Internal usage only
-func (r *ListImagesResponse) UnsafeAppend(res interface{}) (uint32, error) {
+func (r *ListImagesResponse) UnsafeAppend(res any) (uint32, error) {
 	results, ok := res.(*ListImagesResponse)
 	if !ok {
 		return 0, errors.New("%T type cannot be appended to type %T", res, r)
@@ -433,7 +433,7 @@ func (r *ListLocalImagesResponse) UnsafeGetTotalCount() uint32 {
 
 // UnsafeAppend should not be used
 // Internal usage only
-func (r *ListLocalImagesResponse) UnsafeAppend(res interface{}) (uint32, error) {
+func (r *ListLocalImagesResponse) UnsafeAppend(res any) (uint32, error) {
 	results, ok := res.(*ListLocalImagesResponse)
 	if !ok {
 		return 0, errors.New("%T type cannot be appended to type %T", res, r)
@@ -471,7 +471,7 @@ func (r *ListVersionsResponse) UnsafeGetTotalCount() uint32 {
 
 // UnsafeAppend should not be used
 // Internal usage only
-func (r *ListVersionsResponse) UnsafeAppend(res interface{}) (uint32, error) {
+func (r *ListVersionsResponse) UnsafeAppend(res any) (uint32, error) {
 	results, ok := res.(*ListVersionsResponse)
 	if !ok {
 		return 0, errors.New("%T type cannot be appended to type %T", res, r)
