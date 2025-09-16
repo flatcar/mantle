@@ -115,6 +115,11 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 		return nil, err
 	}
 
+	configPath := filepath.Join(mach.dir, "ignition.json")
+	if err := userDataConf.WriteFile(configPath); err != nil {
+		return nil, err
+	}
+
 	if mach.journal, err = platform.NewJournal(mach.dir); err != nil {
 		return nil, err
 	}
