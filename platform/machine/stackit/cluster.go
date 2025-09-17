@@ -3,6 +3,7 @@ package stackit
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/flatcar/mantle/platform"
@@ -65,7 +66,9 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 		fmt.Printf("conf is %s\n", string(byteConf))
 	}
 
-	configTest := []byte(userDataConf.String())
+	//configTest := []byte(userDataConf.String())
+	configTest := base64.StdEncoding.EncodeToString([]byte(userDataConf.String()))
+	base64Config := []byte(configTest)
 
 	secGroup, err := bc.flight.api.CreateSecurityGroup(ctx, "flatcar_security_group")
 	if err != nil {
@@ -82,7 +85,7 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 	}
 	fmt.Printf("IP Address: %s\n", *ipAddress.Ip)
 
-	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, bc.keypair.Name, &configTest)
+	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, bc.keypair.Name, &base64Config)
 	if err != nil {
 		fmt.Printf("error creating server: %s\n", err)
 		return nil, err
