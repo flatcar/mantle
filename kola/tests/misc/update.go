@@ -125,11 +125,11 @@ func RecoverBadUsr(c cluster.TestCluster) {
 	util.AssertBootedUsr(c, m, "USR-A")
 
 	// create filesystem for USR-B
-	c.MustSSH(m, "sudo mkfs.ext4 -q -b 4096 /dev/disk/by-partlabel/USR-B 25600")
+	c.MustSSH(m, "sudo mkfs.ext4 -q -b 4096 /dev/disk/by-partlabel/USR-B 260094")
 
 	// create verity metadata for USR-B
 	output := c.MustSSH(m, "sudo veritysetup format --hash=sha256 "+
-		"--data-block-size 4096 --hash-block-size 4096 --data-blocks 25600 --hash-offset 104857600 "+
+		"--data-block-size 4096 --hash-block-size 4096 --data-blocks 260094 --hash-offset 1065345024 "+
 		"/dev/disk/by-partlabel/USR-B /dev/disk/by-partlabel/USR-B")
 
 	// extract root hash for USR-B
