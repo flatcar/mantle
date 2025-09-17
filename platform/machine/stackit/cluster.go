@@ -82,10 +82,6 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 	}
 	fmt.Printf("IP Address: %s\n", *ipAddress.Ip)
 
-	bc.flight.api.ListKeyPair(ctx)
-
-	fmt.Printf("Keypair to use is %v", bc.keypair.Name)
-
 	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, bc.keypair.Name, &configTest)
 	if err != nil {
 		fmt.Printf("error creating server: %s\n", err)
