@@ -171,11 +171,11 @@ func (a *API) ListKeyPair(ctx context.Context) {
 	if keys != nil {
 		if len(keys.GetItems()) > 0 {
 			for _, key := range keys.GetItems() {
-				fmt.Printf("Key: %v \n", key)
-				err = a.client.DeleteKeyPair(ctx, key.GetName()).Execute()
-				if err != nil {
-					fmt.Printf("Error deleting key: %v \n", err)
-				}
+				fmt.Printf("Key: %v \n", *key.Name)
+				//err = a.client.DeleteKeyPair(ctx, key.GetName()).Execute()
+				//if err != nil {
+				//	fmt.Printf("Error deleting key: %v \n", err)
+				//}
 			}
 		}
 	}
