@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
@@ -49,10 +48,10 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 `)
 	fmt.Printf("UserData: \n")
 	fmt.Printf(userDataConf.String())
-	byteConf, err := json.Marshal(userDataConf)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling config: %s", err)
-	}
+
+	base64Config := make([]byte, base64.StdEncoding.EncodedLen(len(userDataConf.Bytes())))
+	base64.StdEncoding.Encode(base64Config, userDataConf.Bytes())
+
 	if bc == nil {
 		fmt.Printf("bc is null\n")
 	}
@@ -62,13 +61,6 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 	if bc.keypair == nil {
 		fmt.Printf("bc is keypair is null\n")
 	}
-	if byteConf != nil {
-		fmt.Printf("conf is %s\n", string(byteConf))
-	}
-
-	//configTest := []byte(userDataConf.String())
-	configTest := base64.StdEncoding.EncodeToString([]byte(userDataConf.String()))
-	base64Config := []byte(configTest)
 
 	secGroup, err := bc.flight.api.CreateSecurityGroup(ctx, "flatcar_security_group")
 	if err != nil {
