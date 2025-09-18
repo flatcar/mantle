@@ -94,7 +94,9 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		fmt.Printf("error getting server: %s\n", err)
 	}
-	fmt.Printf("Server: %+v\n", *instance)
+	for _, nic := range instance.GetNics() {
+		fmt.Printf("Server Public IP: %v", nic.GetPublicIp())
+	}
 
 	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)
 	if err != nil {
