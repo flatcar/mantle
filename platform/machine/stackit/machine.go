@@ -2,6 +2,8 @@ package stackit
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"golang.org/x/crypto/ssh"
@@ -45,6 +47,7 @@ func (bm *machine) RuntimeConf() *platform.RuntimeConfig {
 }
 
 func (bm *machine) SSHClient() (*ssh.Client, error) {
+	fmt.Printf("SSH IP: %s\n", bm.IP())
 	return bm.cluster.SSHClient(bm.IP())
 }
 
