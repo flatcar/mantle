@@ -17,6 +17,7 @@ package network
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -50,6 +51,20 @@ type SSHAgent struct {
 	listener *net.UnixListener
 }
 
+func encodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
+	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	privBlock := pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Headers: nil,
+		Bytes:   privDER,
+	}
+
+	privatePEM := pem.EncodeToMemory(&privBlock)
+
+	return privatePEM
+}
+
 // NewSSHAgent constructs a new SSHAgent using dialer to create ssh
 // connections.
 func NewSSHAgent(dialer Dialer) (*SSHAgent, error) {
@@ -63,17 +78,12 @@ func NewSSHAgent(dialer Dialer) (*SSHAgent, error) {
 		Comment:    "core@default",
 	}
 
-	pemBlock := &pem.Block{
-		Type:  "PRIVATE KEY", // Use "PRIVATE KEY" for PKCS#8
-		Bytes: key.D.Bytes(),
-	}
+	privateKeyBytes := encodePrivateKeyToPEM(key)
 
-	// Encode the PEM block to a byte slice
-	pemBytes := pem.EncodeToMemory(pemBlock)
-	err = os.WriteFile("/tmp/id_rsa", pemBytes, 0600)
+	err = os.WriteFile("/tmp/id_rsa", privateKeyBytes, 0600)
 	if err != nil {
 		fmt.Printf("Failed to write key to /tmp/id_rsa: %v", err)
-		fmt.Printf("%v", string(pemBytes))
+		fmt.Printf("%v", string(privateKeyBytes))
 	}
 
 	keyring := agent.NewKeyring()
