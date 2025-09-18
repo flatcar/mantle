@@ -5,19 +5,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/flatcar/mantle/platform"
-	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
-	oapiError "github.com/stackitcloud/stackit-sdk-go/core/oapierror"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas/wait"
 	"io"
-	"k8s.io/utils/ptr"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/flatcar/mantle/platform"
+	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
+	oapiError "github.com/stackitcloud/stackit-sdk-go/core/oapierror"
+	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	"github.com/stackitcloud/stackit-sdk-go/services/iaas/wait"
+	"k8s.io/utils/ptr"
 )
 
 var (
@@ -248,7 +249,7 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 }
 
 func (a *API) GetServer(ctx context.Context, id string) (*Server, error) {
-	server, err := a.client.GetServer(ctx, a.projectID, id).Execute()
+	server, err := a.client.GetServer(ctx, a.projectID, id).Details(true).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get server: %w", err)
 	}

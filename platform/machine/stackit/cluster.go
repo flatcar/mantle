@@ -5,14 +5,14 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 type cluster struct {
@@ -90,7 +90,6 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		fmt.Printf("error attaching public IP address: %s\n", err)
 	}
-	time.Sleep(2 * time.Minute)
 	instance, err = bc.flight.api.GetServer(ctx, *instance.Id)
 	if err != nil {
 		fmt.Printf("error getting server: %s\n", err)
