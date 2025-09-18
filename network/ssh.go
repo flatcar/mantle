@@ -17,6 +17,7 @@ package network
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -60,6 +61,19 @@ func NewSSHAgent(dialer Dialer) (*SSHAgent, error) {
 	addedkey := agent.AddedKey{
 		PrivateKey: key,
 		Comment:    "core@default",
+	}
+
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY", // Use "PRIVATE KEY" for PKCS#8
+		Bytes: key.D.Bytes(),
+	}
+
+	// Encode the PEM block to a byte slice
+	pemBytes := pem.EncodeToMemory(pemBlock)
+	err = os.WriteFile("/tmp/id_rsa", pemBytes, 0600)
+	if err != nil {
+		fmt.Printf("Failed to write key to /tmp/id_rsa: %v", err)
+		fmt.Printf("%v", string(pemBytes))
 	}
 
 	keyring := agent.NewKeyring()
