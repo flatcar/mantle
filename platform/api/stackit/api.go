@@ -214,15 +214,17 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 		Source:              &bootVolumeSource,
 	}
 
+	fmt.Printf("Creating server without keyair: %v\n", *keypairName)
+
 	serverPayload := iaas.CreateServerPayload{
 		AvailabilityZone: ptr.To(a.availabilityZone),
 		BootVolume:       &bootVolume,
-		KeypairName:      keypairName,
-		MachineType:      ptr.To(a.machineType),
-		Name:             name,
-		Networking:       &networkingPayload,
-		UserData:         userData,
-		Labels:           &DefaultLabels,
+		// KeypairName:      keypairName,
+		MachineType: ptr.To(a.machineType),
+		Name:        name,
+		Networking:  &networkingPayload,
+		UserData:    userData,
+		Labels:      &DefaultLabels,
 	}
 
 	serverResponse, err := a.client.CreateServer(ctx, a.projectID).CreateServerPayload(serverPayload).Execute()
