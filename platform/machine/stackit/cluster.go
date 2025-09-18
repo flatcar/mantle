@@ -39,13 +39,13 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	// * The sed 32 is to remove the "/32" from the "${IP}/32" notation
 	// * The 'ip addr add' is a hack: the private link is around but the address is not assigned, on other OS there is a
 	// "linode helper" that does this for you. (You can find the same thing on Cluster API template).
-	userDataConf.AddSystemdUnitDropin("coreos-metadata.service", "00-custom-metadata.conf", `[Service]
-ExecStartPost=/usr/bin/sed -i "s/STACKIT/CUSTOM/" /run/metadata/flatcar
-ExecStartPost=/usr/bin/sed -i "s/PRIVATE_IPV4_0/PRIVATE_IPV4/" /run/metadata/flatcar
-ExecStartPost=/usr/bin/sed -i "s/PUBLIC_IPV4_0/PUBLIC_IPV4/" /run/metadata/flatcar
-ExecStartPost=/usr/bin/sed -i "s#/32##" /run/metadata/flatcar
-ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRIVATE_IPV4 | cut -d '=' -f 2) dev eth0"
-`)
+	//	userDataConf.AddSystemdUnitDropin("coreos-metadata.service", "00-custom-metadata.conf", `[Service]
+	//ExecStartPost=/usr/bin/sed -i "s/STACKIT/CUSTOM/" /run/metadata/flatcar
+	//ExecStartPost=/usr/bin/sed -i "s/PRIVATE_IPV4_0/PRIVATE_IPV4/" /run/metadata/flatcar
+	//ExecStartPost=/usr/bin/sed -i "s/PUBLIC_IPV4_0/PUBLIC_IPV4/" /run/metadata/flatcar
+	//ExecStartPost=/usr/bin/sed -i "s#/32##" /run/metadata/flatcar
+	//ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRIVATE_IPV4 | cut -d '=' -f 2) dev eth0"
+	//`)
 	fmt.Printf("UserData: \n")
 	fmt.Printf(userDataConf.String())
 
