@@ -247,6 +247,14 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 	return &Server{server}, nil
 }
 
+func (a *API) GetServer(ctx context.Context, id string) (*Server, error) {
+	server, err := a.client.GetServer(ctx, a.projectID, id).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get server: %w", err)
+	}
+	return &Server{server}, nil
+}
+
 func (a *API) DeleteServer(ctx context.Context, id string) error {
 	server, err := a.client.GetServer(ctx, a.projectID, id).Execute()
 	if err != nil {

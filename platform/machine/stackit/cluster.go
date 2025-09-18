@@ -90,6 +90,11 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		fmt.Printf("error attaching public IP address: %s\n", err)
 	}
 
+	instance, err = bc.flight.api.GetServer(ctx, *instance.Id)
+	if err != nil {
+		fmt.Printf("error getting server: %s\n", err)
+	}
+
 	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)
 	if err != nil {
 		fmt.Printf("error adding security group: %s\n", err)
