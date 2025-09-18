@@ -94,6 +94,7 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		fmt.Printf("error getting server: %s\n", err)
 	}
+	fmt.Printf("Server: %+v\n", *instance)
 
 	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)
 	if err != nil {
