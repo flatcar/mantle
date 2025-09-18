@@ -95,6 +95,9 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		fmt.Printf("error getting server: %s\n", err)
 	}
+	if !instance.HasNics() {
+		fmt.Printf("no NICs available\n")
+	}
 	for _, nic := range instance.GetNics() {
 		fmt.Printf("Server Public IP: %v", nic.GetPublicIp())
 	}
