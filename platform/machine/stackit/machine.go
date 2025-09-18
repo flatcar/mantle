@@ -25,7 +25,9 @@ func (bm *machine) ID() string {
 // IP returns the IP of the machine.
 func (bm *machine) IP() string {
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
+		fmt.Printf("Hello Loop")
 		for _, nic := range *bm.mach.Nics {
+			fmt.Printf("nicInfo: %+v", nic)
 			return *nic.PublicIp
 		}
 	}
