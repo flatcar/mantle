@@ -29,7 +29,10 @@ func (bm *machine) IP() string {
 		fmt.Printf("Hello Loop")
 		for _, nic := range *bm.mach.Nics {
 			fmt.Printf("nicInfo: %+v", nic)
-			return *nic.PublicIp
+			if nic.HasPublicIp() {
+				return *nic.PublicIp
+			}
+			return ""
 		}
 	}
 	return ""
