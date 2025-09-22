@@ -266,7 +266,8 @@ func payload(c cluster.TestCluster) {
 
 func payloadBootPartTooSmall(c cluster.TestCluster) {
 	addr, m := payloadPrepareMachine(nil, c)
-	c.MustSSH(m, `sudo dd if=/dev/zero of=/boot/increase_boot_part_usage bs=20M count=1`)
+	// Fill as much as we can (9999 MB)
+	c.MustSSH(m, `sudo dd if=/dev/zero of=/boot/increase_boot_part_usage bs=1M count=9999 || true`)
 	configureMachineForUpdate(c, m, addr)
 	updateMachineBootPartTooSmall(c, m)
 	tutil.AssertBootedUsr(c, m, "USR-A")
