@@ -25,6 +25,9 @@ func (bm *machine) ID() string {
 // IP returns the IP of the machine.
 func (bm *machine) IP() string {
 	fmt.Printf("machine info: %+v\n", *bm.mach.Server)
+	if bm.mach.Server.HasErrorMessage() {
+		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
+	}
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
 		fmt.Printf("Hello Loop")
 		for _, nic := range *bm.mach.Nics {
@@ -41,6 +44,9 @@ func (bm *machine) IP() string {
 // PrivateIP returns the private IP of the machine.
 func (bm *machine) PrivateIP() string {
 	fmt.Printf("machine info: %+v\n", *bm.mach.Server)
+	if bm.mach.Server.HasErrorMessage() {
+		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
+	}
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
 		for _, nic := range *bm.mach.Nics {
 			return *nic.Ipv4

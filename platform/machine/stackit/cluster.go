@@ -92,18 +92,15 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	}
 	instance, err = bc.flight.api.GetServer(ctx, *instance.Id)
 	if err != nil {
-		fmt.Printf("error getting server: %s\n", err)
+		return nil, fmt.Errorf("error getting server: %s\n", err)
 	}
 	if !instance.HasNics() {
-		fmt.Printf("no NICs available\n")
-	}
-	for _, nic := range instance.GetNics() {
-		fmt.Printf("Server Public IP: %v", nic.GetPublicIp())
+		return nil, fmt.Errorf("no NICs available\n")
 	}
 
 	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)
 	if err != nil {
-		fmt.Printf("error adding security group: %s\n", err)
+		return nil, fmt.Errorf("error adding security group: %s\n", err)
 	}
 
 	mach := &machine{

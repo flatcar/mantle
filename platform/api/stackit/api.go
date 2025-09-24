@@ -409,6 +409,7 @@ func isOpenAPINotFound(err error) bool {
 
 func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	createdCutoff := time.Now().Add(-gracePeriod)
+	fmt.Printf("GC STACKIT \n")
 
 	if err := a.gcServers(ctx, createdCutoff); err != nil {
 		return fmt.Errorf("failed to gc servers: %w", err)
