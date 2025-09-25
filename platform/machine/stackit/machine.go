@@ -29,9 +29,7 @@ func (bm *machine) IP() string {
 		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
 	}
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
-		fmt.Printf("Hello Loop")
 		for _, nic := range *bm.mach.Nics {
-			fmt.Printf("nicInfo: %+v", nic)
 			if nic.HasPublicIp() {
 				return *nic.PublicIp
 			}
