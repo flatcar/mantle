@@ -51,20 +51,7 @@ func TestRenderTemplate(t *testing.T) {
 	})
 	t.Run("SuccessMasterScript", func(t *testing.T) {
 		for _, CNI := range CNIs {
-			res, err := render(
-				masterScript,
-				map[string]interface{}{
-					"HelmVersion":    "1.2.3",
-					"CiliumVersion":  "v0.11.1",
-					"FlannelVersion": "v0.14.0",
-					"CNI":            CNI,
-					"Endpoints":      []string{"http://1.2.3.4:2379"},
-					"Params":         "amd64",
-					"DownloadDir":    "/opt/bin",
-					"PodSubnet":      "192.168.0.0/17",
-				},
-				false,
-			)
+			res, err := render(masterScript, GetTestMasterScriptRenderParams(CNI), false)
 			require.Nil(t, err)
 			script, err := ioutil.ReadFile(fmt.Sprintf("testdata/master-%s-script.sh", CNI))
 			require.Nil(t, err)
@@ -72,22 +59,8 @@ func TestRenderTemplate(t *testing.T) {
 		}
 	})
 	t.Run("SuccessMasterConfig", func(t *testing.T) {
-		for _, arch := range []string{"amd64", "arm64"} {
-			res, err := render(
-				masterConfig,
-				map[string]interface{}{
-					"HelmVersion":      "1.2.3",
-					"CiliumVersion":    "v0.11.1",
-					"CNI":              "cilium",
-					"CiliumCLIVersion": "v0.9.0",
-					"Endpoints":        []string{"http://1.2.3.4:2379"},
-					"Arch":             arch,
-					"DownloadDir":      "/opt/bin",
-					"PodSubnet":        "192.168.0.0/17",
-					"Release":          "v1.29.2",
-				},
-				false,
-			)
+		for _, arch := range TestArchitectures {
+			res, err := render(masterConfig, GetTestMasterConfigRenderParams(arch), false)
 			require.Nil(t, err)
 			script, err := ioutil.ReadFile(fmt.Sprintf("testdata/master-cilium-%s-config.yml", arch))
 			require.Nil(t, err)
