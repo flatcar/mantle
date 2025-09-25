@@ -24,7 +24,7 @@ func (bm *machine) ID() string {
 
 // IP returns the IP of the machine.
 func (bm *machine) IP() string {
-	fmt.Printf("machine info: %+v\n", *bm.mach.Server)
+	fmt.Printf("IP")
 	if bm.mach.Server.HasErrorMessage() {
 		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
 	}
@@ -41,7 +41,7 @@ func (bm *machine) IP() string {
 
 // PrivateIP returns the private IP of the machine.
 func (bm *machine) PrivateIP() string {
-	fmt.Printf("machine info: %+v\n", *bm.mach.Server)
+	fmt.Printf("PrivateIP")
 	if bm.mach.Server.HasErrorMessage() {
 		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
 	}
