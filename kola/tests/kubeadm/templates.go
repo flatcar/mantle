@@ -180,31 +180,34 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: ${cgroup}
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 nodeRegistration:
   kubeletExtraArgs:
-    volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+    - name: volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
 {{ if eq .Platform "do" }}
     # On Digital Ocean, the private node IP is not reachable from one node to the other - let's use the public one.
-    node-ip: "${ipv4}"
+    - name: node-ip
+      value: "${ipv4}"
 {{ end }}
+timeouts:
+  controlPlaneComponentHealthCheck: 30m0s
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
-apiServer:
-  timeoutForControlPlane: 30m0s
-networking:
-  podSubnet: {{ .PodSubnet }}
-controllerManager:
-  extraArgs:
-    flex-volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
 etcd:
   external:
     endpoints:
     {{ range $endpoint := .Endpoints }}
       - {{ $endpoint }}
     {{ end }}
+networking:
+  podSubnet: {{ .PodSubnet }}
+controllerManager:
+  extraArgs:
+    - name: flex-volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
 EOF
 
 {{ if eq .CNI "calico" }}
@@ -307,18 +310,20 @@ token=$(kubeadm token create)
 certHashes=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
 
 cat << EOF
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
-discovery:
-  bootstrapToken:
-    apiServerEndpoint: ${short_url}
-    token: ${token}
-    caCertHashes:
-    - sha256:${certHashes}
-controlPlane:
 nodeRegistration:
   kubeletExtraArgs:
-    volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+    - name: volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+discovery:
+  bootstrapToken:
+    token: ${token}
+    apiServerEndpoint: ${short_url}
+    caCertHashes:
+    - sha256:${certHashes}
+timeouts:
+  controlPlaneComponentHealthCheck: 30m0s
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
