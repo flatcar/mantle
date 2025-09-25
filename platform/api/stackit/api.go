@@ -336,6 +336,43 @@ func (a *API) DeleteSecurityGroup(ctx context.Context, id string) error {
 	return nil
 }
 
+func (a *API) CreateSecurityGroupRules(ctx context.Context, securityGroupId string) error {
+	tcp := iaas.StringAsCreateProtocol(ptr.To("tcp"))
+	securityGroupRulePayloadTCP := iaas.CreateSecurityGroupRulePayload{
+		Description: ptr.To("TCP"),
+		Direction:   ptr.To("ingress"),
+		PortRange: &iaas.PortRange{
+			Max: ptr.To(int64(65535)),
+			Min: ptr.To(int64(1)),
+		},
+		// SecurityGroupId: ptr.To(securityGroupId),
+		IpRange:  ptr.To("0.0.0.0/0"),
+		Protocol: &tcp,
+	}
+	_, err := a.client.CreateSecurityGroupRule(ctx, a.projectID, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRulePayloadTCP).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to create security group rule TCP: %w", err)
+	}
+
+	udp := iaas.StringAsCreateProtocol(ptr.To("udp"))
+	securityGroupRulePayloadUDP := iaas.CreateSecurityGroupRulePayload{
+		Description: ptr.To("UDP"),
+		Direction:   ptr.To("ingress"),
+		PortRange: &iaas.PortRange{
+			Max: ptr.To(int64(65535)),
+			Min: ptr.To(int64(1)),
+		},
+		// SecurityGroupId: ptr.To(securityGroupId),
+		IpRange:  ptr.To("0.0.0.0/0"),
+		Protocol: &udp,
+	}
+	_, err = a.client.CreateSecurityGroupRule(ctx, a.projectID, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRulePayloadUDP).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to create security group rule UDP: %w", err)
+	}
+	return nil
+}
+
 func (a *API) CreateSecurityGroupRule(ctx context.Context, securityGroupId string) error {
 	protocol := iaas.StringAsCreateProtocol(ptr.To("tcp"))
 	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{

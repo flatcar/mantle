@@ -81,6 +81,18 @@ func (bm *machine) Destroy() {
 		plog.Errorf("deleting server %v: %v", bm.ID(), err)
 	}
 
+	for _, secGroup := range bm.mach.GetSecurityGroups() {
+		err := bm.cluster.flight.api.DeleteSecurityGroup(context.TODO(), secGroup)
+		plog.Errorf("deleting server %v security group: %v", bm.ID(), err)
+	}
+
+	for _, nic := range bm.mach.GetNics() {
+		if nic.HasPublicIp() {
+			err := bm.cluster.flight.api.DeleteIPAddress(context.TODO(), nic.GetPublicIp())
+			plog.Errorf("deleting server %v public IP: %v", bm.ID(), err)
+		}
+	}
+
 	if bm.journal != nil {
 		bm.journal.Destroy()
 	}
