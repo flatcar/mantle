@@ -90,12 +90,27 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		fmt.Printf("error attaching public IP address: %s\n", err)
 	}
-	instance, err = bc.flight.api.GetServer(ctx, *instance.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error getting server: %s\n", err)
-	}
-	if !instance.HasNics() {
-		return nil, fmt.Errorf("no NICs available\n")
+
+	for true {
+		instance, err = bc.flight.api.GetServer(ctx, *instance.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error getting server: %s\n", err)
+		}
+		if !instance.HasNics() {
+			return nil, fmt.Errorf("no NICs available\n")
+		}
+		hasPublicIP := false
+		for _, nic := range instance.GetNics() {
+			if nic.HasPublicIp() {
+				fmt.Printf("Server %s has public IP address %s\n", *instance.Id, *nic.PublicIp)
+				hasPublicIP = true
+			}
+		}
+		if !hasPublicIP {
+			fmt.Printf("Server %s does not have public IP address\n", *instance.Id)
+		} else {
+			break
+		}
 	}
 
 	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)

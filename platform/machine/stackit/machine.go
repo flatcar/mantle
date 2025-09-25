@@ -24,32 +24,38 @@ func (bm *machine) ID() string {
 
 // IP returns the IP of the machine.
 func (bm *machine) IP() string {
-	fmt.Printf("IP")
+	fmt.Printf("IP\n")
 	if bm.mach.Server.HasErrorMessage() {
 		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
 	}
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
 		for _, nic := range *bm.mach.Nics {
 			if nic.HasPublicIp() {
+				fmt.Printf("IP returns %v\n", *nic.PublicIp)
 				return *nic.PublicIp
 			}
+			fmt.Printf("IP returns empty string\n")
 			return ""
 		}
 	}
+	fmt.Printf("IP returns empty string\n")
 	return ""
 }
 
 // PrivateIP returns the private IP of the machine.
 func (bm *machine) PrivateIP() string {
-	fmt.Printf("PrivateIP")
+	fmt.Printf("PrivateIP\n")
 	if bm.mach.Server.HasErrorMessage() {
 		fmt.Printf("Error message: %+v\n", bm.mach.Server.ErrorMessage)
 	}
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
 		for _, nic := range *bm.mach.Nics {
+
+			fmt.Printf("IP returns %v\n", *nic.Ipv4)
 			return *nic.Ipv4
 		}
 	}
+	fmt.Printf("IP returns empty string\n")
 	return ""
 }
 
