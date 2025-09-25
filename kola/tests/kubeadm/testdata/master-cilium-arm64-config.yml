@@ -31,12 +31,10 @@ storage:
     - path: /opt/extensions/kubernetes/kubernetes-v1.29.2-arm64.raw
       contents:
         source: https://extensions.flatcar.org/extensions/kubernetes-v1.29.2-arm64.raw
-  
     - path: /opt/bin/cilium.tar.gz
       mode: 0755
       contents:
         source: https://github.com/cilium/cilium-cli/releases/download/v0.9.0/cilium-linux-arm64.tar.gz
-  
     - path: /home/core/install.sh
       mode: 0755
       contents:

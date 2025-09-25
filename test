@@ -41,8 +41,11 @@ fi
 echo "Checking govet..."
 go vet $pkgs
 
+# remove the internal binaries
+rm -f "${GOBIN}/kubeadmtestdatagen"
+
 echo "Running commands..."
-for cmd in ${GOBIN}/*; do
+for cmd in "${GOBIN}/"*; do
 	echo " Running $(basename ${cmd})..."
 	${cmd} --help > /dev/null
 done

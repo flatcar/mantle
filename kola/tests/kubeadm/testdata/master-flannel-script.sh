@@ -17,28 +17,27 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: ${cgroup}
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 nodeRegistration:
   kubeletExtraArgs:
-    volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
-
+    - name: volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+timeouts:
+  controlPlaneComponentHealthCheck: 30m0s
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
-apiServer:
-  timeoutForControlPlane: 30m0s
+etcd:
+  external:
+    endpoints:
+      - http://1.2.3.4:2379
 networking:
   podSubnet: 192.168.0.0/17
 controllerManager:
   extraArgs:
-    flex-volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
-etcd:
-  external:
-    endpoints:
-    
-      - http://1.2.3.4:2379
-    
+    - name: flex-volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
 EOF
 
 
@@ -68,18 +67,20 @@ token=$(kubeadm token create)
 certHashes=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
 
 cat << EOF
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
-discovery:
-  bootstrapToken:
-    apiServerEndpoint: ${short_url}
-    token: ${token}
-    caCertHashes:
-    - sha256:${certHashes}
-controlPlane:
 nodeRegistration:
   kubeletExtraArgs:
-    volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+    - name: volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+discovery:
+  bootstrapToken:
+    token: ${token}
+    apiServerEndpoint: ${short_url}
+    caCertHashes:
+    - sha256:${certHashes}
+timeouts:
+  controlPlaneComponentHealthCheck: 30m0s
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration

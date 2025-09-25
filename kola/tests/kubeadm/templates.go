@@ -19,24 +19,24 @@ variant: flatcar
 version: 1.0.0
 systemd:
   units:
-{{ if .cgroupv1 }}
+{{- if .cgroupv1 }}
     - name: containerd.service
       dropins:
       - name: 10-use-cgroupfs.conf
         contents: |
           [Service]
           Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml
-{{ end }}
+{{- end}}
 storage:
   links:
     - target: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       path: /etc/extensions/kubernetes.raw
       hard: false
   files:
-{{ if .cgroupv1 }}
+{{- if .cgroupv1 }}
     - path: /etc/flatcar-cgroupv1
       mode: 0444
-{{ end }}
+{{- end }}
     - path: /home/core/install.sh
       mode: 0755
       contents:
@@ -50,13 +50,15 @@ storage:
 variant: flatcar
 version: 1.0.0
 systemd:
-  units:{{ if .cgroupv1 }}
+  units:
+{{- if .cgroupv1 }}
   - name: containerd.service
     dropins:
     - name: 10-use-cgroupfs.conf
       contents: |
         [Service]
-        Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml{{ end }}
+        Environment=CONTAINERD_CONFIG=/usr/share/containerd/config-cgroupfs.toml
+{{- end }}
   - name: prepare-helm.service
     enabled: true
     contents: |
@@ -77,9 +79,11 @@ storage:
     - target: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       path: /etc/extensions/kubernetes.raw
       hard: false
-  files:{{ if .cgroupv1 }}
+  files:
+{{- if .cgroupv1 }}
     - path: /etc/flatcar-cgroupv1
-      mode: 0444{{ end }}
+      mode: 0444
+{{- end }}
     - path: /opt/helm-{{ .HelmVersion }}-linux-{{ .Arch }}.tar.gz
       mode: 0755
       contents:
@@ -87,12 +91,12 @@ storage:
     - path: /opt/extensions/kubernetes/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
       contents:
         source: https://extensions.flatcar.org/extensions/kubernetes-{{ .Release }}-{{ if eq .Arch "amd64" }}x86-64{{ else }}arm64{{ end }}.raw
-  {{ if eq .CNI "cilium" }}
+{{- if eq .CNI "cilium" }}
     - path: {{ .DownloadDir }}/cilium.tar.gz
       mode: 0755
       contents:
         source: https://github.com/cilium/cilium-cli/releases/download/{{ .CiliumCLIVersion }}/cilium-linux-{{ .Arch }}.tar.gz
-  {{ end }}
+{{- end }}
     - path: /home/core/install.sh
       mode: 0755
       contents:
@@ -166,10 +170,10 @@ set -euo pipefail
 # kubelet config for both controller and worker
 cgroup=$(docker info | awk '/Cgroup Driver/ { print $3}')
 
-{{ if eq .Platform "do" }}
+{{ if eq .Platform "do" -}}
 systemctl start --quiet coreos-metadata
 ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '(PUBLIC|LOCAL|DYNAMIC)' | cut -d = -f 2)
-{{ end }}
+{{- end }}
 
 # we create the kubeadm config
 # plugin-volume-dir and flex-volume-plugin-dir are required since /usr is read-only mounted
@@ -180,31 +184,34 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: ${cgroup}
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 nodeRegistration:
   kubeletExtraArgs:
-    volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
-{{ if eq .Platform "do" }}
+    - name: volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+{{- if eq .Platform "do" }}
     # On Digital Ocean, the private node IP is not reachable from one node to the other - let's use the public one.
-    node-ip: "${ipv4}"
-{{ end }}
+    - name: node-ip
+      value: "${ipv4}"
+{{- end }}
+timeouts:
+  controlPlaneComponentHealthCheck: 30m0s
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
-apiServer:
-  timeoutForControlPlane: 30m0s
+etcd:
+  external:
+    endpoints:
+{{- range $endpoint := .Endpoints }}
+      - {{ $endpoint }}
+{{- end }}
 networking:
   podSubnet: {{ .PodSubnet }}
 controllerManager:
   extraArgs:
-    flex-volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
-etcd:
-  external:
-    endpoints:
-    {{ range $endpoint := .Endpoints }}
-      - {{ $endpoint }}
-    {{ end }}
+    - name: flex-volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
 EOF
 
 {{ if eq .CNI "calico" }}
@@ -222,12 +229,12 @@ spec:
   imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
-{{ if eq .Platform "do" }}
+{{- if eq .Platform "do" }}
     # On Digital Ocean, there is two network interfaces: eth0 and eth1
     # We use the one with a public IP (eth0)
     nodeAddressAutodetectionV4:
       interface: eth0
-{{ end }}
+{{- end }}
     ipPools:
     - name: default-ipv4-ippool
       blockSize: 26
@@ -307,18 +314,20 @@ token=$(kubeadm token create)
 certHashes=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
 
 cat << EOF
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
-discovery:
-  bootstrapToken:
-    apiServerEndpoint: ${short_url}
-    token: ${token}
-    caCertHashes:
-    - sha256:${certHashes}
-controlPlane:
 nodeRegistration:
   kubeletExtraArgs:
-    volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+    - name: volume-plugin-dir
+      value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+discovery:
+  bootstrapToken:
+    token: ${token}
+    apiServerEndpoint: ${short_url}
+    caCertHashes:
+    - sha256:${certHashes}
+timeouts:
+  controlPlaneComponentHealthCheck: 30m0s
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
