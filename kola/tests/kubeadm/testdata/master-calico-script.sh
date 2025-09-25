@@ -23,7 +23,6 @@ nodeRegistration:
   kubeletExtraArgs:
     - name: volume-plugin-dir
       value: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
-
 timeouts:
   controlPlaneComponentHealthCheck: 30m0s
 ---
@@ -32,9 +31,7 @@ kind: ClusterConfiguration
 etcd:
   external:
     endpoints:
-    
       - http://1.2.3.4:2379
-    
 networking:
   podSubnet: 192.168.0.0/17
 controllerManager:
@@ -58,7 +55,6 @@ spec:
   imagePath: flatcar/calico
   # Configures Calico networking.
   calicoNetwork:
-
     ipPools:
     - name: default-ipv4-ippool
       blockSize: 26
