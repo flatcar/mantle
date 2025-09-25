@@ -94,7 +94,7 @@ func (bm *machine) Destroy() {
 
 	for _, nic := range bm.mach.GetNics() {
 		if nic.HasPublicIp() {
-			err := bm.cluster.flight.api.DeleteIPAddress(context.TODO(), nic.GetPublicIp())
+			err := bm.cluster.flight.api.DeleteIPAddress(context.TODO(), *nic.PublicIp)
 			plog.Errorf("deleting server %v public IP: %v", bm.ID(), err)
 		}
 	}
