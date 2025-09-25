@@ -357,6 +357,7 @@ func (a *API) CreateSecurityGroupRule(ctx context.Context, securityGroupId strin
 }
 
 func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
+	fmt.Printf("Creating public IP address\n")
 	ipPayload := iaas.CreatePublicIPPayload{
 		Labels: &DefaultLabels,
 	}
@@ -368,6 +369,7 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 }
 
 func (a *API) AttachPublicIPAddress(ctx context.Context, ipAddressId, serverId string) error {
+	fmt.Printf("Attaching public IP address\n")
 	err := a.client.AddPublicIpToServer(ctx, a.projectID, serverId, ipAddressId).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to add public ip to server: %w", err)
