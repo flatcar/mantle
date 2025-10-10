@@ -32,7 +32,7 @@ import (
 
 // The default size of Container Linux disks on AWS, in GiB. See discussion in
 // https://github.com/coreos/mantle/pull/944
-const ContainerLinuxDiskSizeGiB = 8
+const ContainerLinuxDiskSizeGiB = 16
 
 type EC2ImageType string
 
