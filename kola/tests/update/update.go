@@ -487,10 +487,23 @@ func oemPayload(c cluster.TestCluster) {
 	if version == "" {
 		c.Fatalf("Assertion for version string failed")
 	}
-	_ = c.MustSSH(m, `test -e /oem/sysext/oem-azure-`+version+`.raw`)
+	// Here the extension file should be present but the extension shouldn't be active yet
+	_ = c.MustSSH(m, `test -e /oem/sysext/oem-azure-`+version+`.raw && test ! -e /etc/extensions/oem-azure.raw && test ! -e /oem/sysext/active-oem-azure`)
 	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
 	_ = c.MustSSH(m, `curl -fsSLO --retry-delay 1 --retry 60 --retry-connrefused --retry-max-time 60 --connect-timeout 20 https://bincache.flatcar-linux.net/images/`+arch+`/`+version+`/flatcar_test_update-oem-azure.gz`)
-	_ = c.MustSSH(m, `sudo flatcar-update --to-version `+version+` --to-payload /updates/update.gz --extension ./flatcar_test_update-oem-azure.gz --disable-afterwards --force-dev-key`)
+	// Pass a Flatcar extension that can't be on bincache so that the
+	// fallback download won't work and we are sure that it got fetched locally.
+	// The name of the extension won't match and thus it won't be loaded by systemd-sysext
+	// which we fill fix after unpacking by replaying the .raw file
+	_ = c.MustSSH(m, `cp ./flatcar_test_update-oem-azure.gz ./flatcar_test_update-flatcar-unknown.gz`)
+	_ = c.MustSSH(m, `echo unknown | sudo tee -a /etc/flatcar/enabled-sysext.conf`)
+	// Next line in a workaround for a fix that is not backported
+	_ = c.MustSSH(m, `sudo mkdir -p /etc/flatcar/sysext`)
+	_ = c.MustSSH(m, `sudo flatcar-update --to-version `+version+` --to-payload /updates/update.gz --extension ./flatcar_test_update-oem-azure.gz --extension ./flatcar_test_update-flatcar-unknown.gz --disable-afterwards --force-dev-key`)
+	// Now replace the .raw file with something that can be loaded
+	_ = c.MustSSH(m, `sudo rm /etc/flatcar/sysext/flatcar-unknown-`+version+`.raw`)
+	_ = c.MustSSH(m, `mkdir -p /tmp/unknown/usr/lib/extension-release.d/ && echo ID=_any > /tmp/unknown/usr/lib/extension-release.d/extension-release.flatcar-unknown`)
+	_ = c.MustSSH(m, `sudo mkfs.btrfs --mixed -m single -d single --shrink --rootdir /tmp/unknown /etc/flatcar/sysext/flatcar-unknown-`+version+`.raw`)
 
 	checkNoAVCMessages(c, m)
 
@@ -502,7 +515,9 @@ func oemPayload(c cluster.TestCluster) {
 	// Check that the instance has migrated
 	_ = c.MustSSH(m, `test ! -e /oem/python/shouldbedeleted && test ! -e /etc/systemd/system/waagent.service`)
 	_ = c.MustSSH(m, `test -e /oem/sysext/active-oem-azure`)
-	_ = c.MustSSH(m, `systemd-sysext status --json=pretty | jq --raw-output '.[] | select(.hierarchy == "/usr") | .extensions[]' | grep -q oem-azure`)
+	_ = c.MustSSH(m, `systemd-sysext status --json=pretty | jq --raw-output '.[] | select(.hierarchy == "/usr") | .extensions[]' | grep -q -E '(oem-azure|flatcar-unknown)'`)
+	// Check that the extensions exist
+	_ = c.MustSSH(m, `test -e /oem/sysext/oem-azure-`+version+`.raw && test -e /etc/extensions/oem-azure.raw && test -e /etc/extensions/flatcar-unknown.raw && test -e /etc/flatcar/sysext/flatcar-unknown-`+version+`.raw`)
 	checkNoAVCMessages(c, m)
 }
 
