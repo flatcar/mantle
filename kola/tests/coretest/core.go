@@ -71,6 +71,7 @@ func init() {
 			"RandomUUID":       TestFsRandomUUID,
 			"Useradd":          TestUseradd,
 			"MachineID":        TestMachineID,
+			"Microcode":        TestMicrocode,
 		},
 		Distros: []string{"cl"},
 	})
@@ -469,6 +470,19 @@ func TestMachineID() error {
 		return fmt.Errorf("machine-id is empty")
 	} else if id == "COREOS_BLANK_MACHINE_ID" {
 		return fmt.Errorf("machine-id is %s", id)
+	}
+	return nil
+}
+
+// Test that the kernel has built-in microcode firmware files for CPU updates
+func TestMicrocode() error {
+	c := exec.Command("sh", "-c", "zcat /proc/config.gz | grep -m1 EXTRA_FIRMWARE= | grep amd-ucode | grep intel-ucode")
+	out, err := c.Output()
+	if err != nil {
+		return fmt.Errorf("grepping /proc/config.gz for microcode firmware files: %v", err)
+	}
+	if !strings.Contains(string(out), "ucode") {
+		return fmt.Errorf("'ucode' word not found in /proc/config.gz, Out:%v", out)
 	}
 	return nil
 }
