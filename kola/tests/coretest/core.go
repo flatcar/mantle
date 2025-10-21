@@ -476,8 +476,16 @@ func TestMachineID() error {
 
 // Test that the kernel has built-in microcode firmware files for CPU updates
 func TestMicrocode() error {
-	c := exec.Command("sh", "-c", "zcat /proc/config.gz | grep -m1 EXTRA_FIRMWARE= | grep amd-ucode | grep intel-ucode")
+	c := exec.Command("uname", "-m")
 	out, err := c.Output()
+	if err != nil {
+		return fmt.Errorf("checking uname arch: %v", err)
+	}
+	if strings.Contains(string(out), "aarch64") {
+		return nil
+	}
+	c = exec.Command("sh", "-c", "zgrep -m1 EXTRA_FIRMWARE= /proc/config.gz | grep amd-ucode | grep intel-ucode")
+	out, err = c.Output()
 	if err != nil {
 		return fmt.Errorf("grepping /proc/config.gz for microcode firmware files: %v", err)
 	}
