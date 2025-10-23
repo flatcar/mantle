@@ -1,15 +1,15 @@
 # Explicitly using an docker.io/amd64/ image to avoid binary translation (assuming the build host is amd64)
 #
-# golang:1.23-bookworm is based on debian:bookworm, this is important to ensure we have libc compatibility for the copied binary
+# golang:1.24-bookworm is based on debian:bookworm, this is important to ensure we have libc compatibility for the copied binary
 
-FROM --platform=linux/amd64 docker.io/amd64/golang:1.23-bookworm AS builder-amd64
+FROM --platform=linux/amd64 docker.io/amd64/golang:1.24-bookworm AS builder-amd64
 # We use dynamic linking when possible to reduce compile time and binary size
 ENV CGO_ENABLED=1
 COPY . /usr/src/mantle
 # Build both here because variable builder names (to avoid caching and reusing the wrong one) are only supported with buildkit
 RUN bash -c 'cd /usr/src/mantle && ./build ; mv bin bin-amd64 ; CGO_ENABLED=0 GOARCH=arm64 ./build ; mv bin bin-arm64'
 
-# See comment above about golang:1.23-bookworm why debian:bookworm is set here
+# See comment above about golang:1.24-bookworm why debian:bookworm is set here
 FROM docker.io/library/debian:bookworm
 RUN apt-get update && apt-get upgrade -y
 
