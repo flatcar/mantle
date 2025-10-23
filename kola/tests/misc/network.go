@@ -246,7 +246,7 @@ func NetworkListeners(c cluster.TestCluster) {
 		return checkListeners(c, expectedListeners)
 	}
 	if err := util.Retry(3, 5*time.Second, checkList); err != nil {
-		c.Errorf(err.Error())
+		c.Error(err.Error())
 	}
 }
 
