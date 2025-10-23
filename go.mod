@@ -1,6 +1,6 @@
 module github.com/flatcar/mantle
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -41,7 +41,7 @@ require (
 	github.com/packethost/packngo v0.31.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.7
 	github.com/stretchr/testify v1.11.1
@@ -145,9 +145,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
-	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
