@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
+	"github.com/flatcar/mantle/util"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
 )
@@ -48,16 +50,16 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 
 	secGroup, err := bc.flight.api.CreateSecurityGroup(ctx, "flatcar_security_group")
 	if err != nil {
-		return nil, fmt.Errorf("error creating security group: %s", err)
+		return nil, fmt.Errorf("error creating security group: %w", err)
 	}
 	err = bc.flight.api.CreateSecurityGroupRule(ctx, *secGroup.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error creating security group rule: %s", err)
+		return nil, fmt.Errorf("error creating security group rule: %w", err)
 	}
 
 	ipAddress, err := bc.flight.api.CreateIPAddress(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error creating IP address: %s", err)
+		return nil, fmt.Errorf("error creating IP address: %w", err)
 	}
 
 	var keyPairName iaas.CreateServerPayloadGetKeypairNameAttributeType
@@ -66,27 +68,27 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	}
 	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, keyPairName, &base64Config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating server: %w", err)
 	}
 
 	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error adding security group: %s", err)
+		return nil, fmt.Errorf("error adding security group: %w", err)
 	}
 
 	err = bc.flight.api.AttachPublicIPAddress(ctx, *ipAddress.Id, *instance.Id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("attaching public IP address: %w", err)
 	}
 
 	// The API does sometimes need a couple of seconds to report the attached IP address
-	for {
+	err = util.Retry(5, 2*time.Second, func() error {
 		instance, err = bc.flight.api.GetServer(ctx, *instance.Id)
 		if err != nil {
-			return nil, fmt.Errorf("error getting server: %s", err)
+			return fmt.Errorf("error getting server: %w", err)
 		}
 		if !instance.HasNics() {
-			return nil, fmt.Errorf("no NICs available")
+			return fmt.Errorf("no NICs available")
 		}
 		hasPublicIP := false
 		for _, nic := range instance.GetNics() {
@@ -95,8 +97,12 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 			}
 		}
 		if hasPublicIP {
-			break
+			return nil
 		}
+		return fmt.Errorf("server does not have a public IP address")
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	mach := &machine{
@@ -145,9 +151,9 @@ func (bc *cluster) vmname() iaas.CreateServerPayloadGetNameAttributeType {
 func (bc *cluster) Destroy() {
 	bc.BaseCluster.Destroy()
 	if bc.network != nil {
-		if err := bc.flight.api.DeleteNetwork(context.TODO(), *bc.network.NetworkId); err != nil {
-			plog.Errorf("deleting network %v: %v", *bc.network.Name, err)
-		}
+		// if err := bc.flight.api.DeleteNetwork(context.TODO(), *bc.network.NetworkId); err != nil {
+		// 	plog.Errorf("deleting network %v: %v", *bc.network.Name, err)
+		// }
 	}
 
 	bc.flight.DelCluster(bc)

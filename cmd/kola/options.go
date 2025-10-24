@@ -41,7 +41,7 @@ var (
 	kolaDisableSELinuxAVCChecks bool
 	defaultTargetBoard          = sdk.DefaultBoard()
 	kolaArchitectures           = []string{"amd64"}
-	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "stackit", "qemu", "qemu-unpriv", "scaleway"}
+	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "qemu", "qemu-unpriv", "scaleway", "stackit"}
 	kolaDistros                 = []string{"cl", "fcos", "rhcos"}
 	kolaChannels                = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings               = []string{"basic", "pro"}

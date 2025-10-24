@@ -95,11 +95,8 @@ func New(opts *Options) (*API, error) {
 }
 
 func (a *API) UploadImage(ctx context.Context, name, path, board string) (string, error) {
-	var architecture string
-	switch board {
-	case "amd64-usr":
-		architecture = "x86"
-	case "arm64-usr":
+	var architecture string = "x86"
+	if board == "arm64-usr" {
 		architecture = "arm64"
 	}
 	imageConfig := iaas.ImageConfig{
@@ -110,20 +107,19 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 
 	imagePayload := iaas.CreateImagePayload{
 		Config:     &imageConfig,
-		CreatedAt:  nil,
 		DiskFormat: ptr.To(diskFormat),
 		Name:       &name,
 		Labels:     &DefaultLabels,
 	}
 	response, err := a.client.CreateImage(ctx, a.projectID).CreateImagePayload(imagePayload).Execute()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("creating image: %w", err)
 	}
 	log.Printf("Upload image to: %v", *response.UploadUrl)
 
 	file, err := os.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to open file: %v", err)
+		return "", fmt.Errorf("failed to open file: %w", err)
 	}
 	defer func() {
 		if inner := file.Close(); inner != nil {
@@ -132,7 +128,7 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 	}()
 	stat, err := file.Stat()
 	if err != nil {
-		return "", fmt.Errorf("failed to upload file: %v", err)
+		return "", fmt.Errorf("failed to upload file: %w", err)
 	}
 	url := response.GetUploadUrl()
 
@@ -278,25 +274,28 @@ func (a *API) DeleteNetwork(ctx context.Context, id string) error {
 	return nil
 }
 
-func (a *API) DeleteNetworksForServer(ctx context.Context, serverID string) error {
-	server, err := a.client.GetServer(ctx, a.projectID, serverID).Details(true).Execute()
+func (a *API) RemoveSecurityGroupFromServer(ctx context.Context, serverID string, securityGroupID string) error {
+	err := a.client.RemoveSecurityGroupFromServer(ctx, a.projectID, serverID, securityGroupID).Execute()
 	if err != nil {
-		return fmt.Errorf("failed to get server: %w", err)
-	}
-	for _, nic := range server.GetNics() {
-		networkID := nic.GetNetworkId()
-		for _, securityGroup := range nic.GetSecurityGroups() {
-			err = a.client.DeleteSecurityGroup(ctx, a.projectID, securityGroup).Execute()
-			if err != nil {
-				return fmt.Errorf("failed to delete security group: %w", err)
-			}
-		}
-		err = a.client.DeleteNetwork(ctx, a.projectID, networkID).Execute()
-		if err != nil {
-			return fmt.Errorf("failed to delete network: %w", err)
-		}
+		return fmt.Errorf("failed to remove security group from server: %w", err)
 	}
 	return nil
+}
+
+func (a *API) RemoveNetworkFromServer(ctx context.Context, serverID string, networkID string) error {
+	err := a.client.RemoveNetworkFromServer(ctx, a.projectID, serverID, networkID).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to remove server from network: %w", err)
+	}
+	return nil
+}
+
+func (a *API) GetSecurityGroup(ctx context.Context, securityGroupID string) (*SecurityGroup, error) {
+	securityGroup, err := a.client.GetSecurityGroup(ctx, a.projectID, securityGroupID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get security group: %w", err)
+	}
+	return &SecurityGroup{securityGroup}, nil
 }
 
 func (a *API) CreateSecurityGroup(ctx context.Context, name string) (*SecurityGroup, error) {
@@ -311,8 +310,16 @@ func (a *API) CreateSecurityGroup(ctx context.Context, name string) (*SecurityGr
 	return &SecurityGroup{securityGroup}, err
 }
 
-func (a *API) DeleteSecurityGroup(ctx context.Context, id string) error {
-	securityGroup, err := a.client.GetSecurityGroup(ctx, a.projectID, id).Execute()
+func (a *API) DeleteSecurityGroupRule(ctx context.Context, securityGroupID, securityGroupRuleID string) error {
+	err := a.client.DeleteSecurityGroupRule(ctx, a.projectID, securityGroupID, securityGroupRuleID).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to delete security group rule: %w", err)
+	}
+	return nil
+}
+
+func (a *API) DeleteSecurityGroup(ctx context.Context, securityGroupID string) error {
+	securityGroup, err := a.client.GetSecurityGroup(ctx, a.projectID, securityGroupID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to get security group: %w", err)
 	}
@@ -320,7 +327,7 @@ func (a *API) DeleteSecurityGroup(ctx context.Context, id string) error {
 		return nil
 	}
 
-	err = a.client.DeleteSecurityGroup(ctx, a.projectID, id).Execute()
+	err = a.client.DeleteSecurityGroup(ctx, a.projectID, securityGroupID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete security group: %w", err)
 	}
