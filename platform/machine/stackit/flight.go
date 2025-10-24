@@ -32,7 +32,7 @@ func NewFlight(opts *stackit.Options) (platform.Flight, error) {
 	}
 
 	// TODO: Rework the Base Flight to remove the CT dependency.
-	base, err := platform.NewBaseFlight(opts.Options, Platform, ctplatform.Custom)
+	base, err := platform.NewBaseFlight(opts.Options, Platform, ctplatform.OpenStackMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("creating base flight: %w", err)
 	}

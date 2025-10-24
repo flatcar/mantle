@@ -2,9 +2,11 @@ package stackit
 
 import (
 	"context"
+	"time"
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
+	"github.com/flatcar/mantle/util"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -34,7 +36,6 @@ func (bm *machine) IP() string {
 func (bm *machine) PrivateIP() string {
 	if bm.mach.Nics != nil && len(*bm.mach.Nics) > 0 {
 		for _, nic := range *bm.mach.Nics {
-
 			return *nic.Ipv4
 		}
 	}
@@ -63,20 +64,50 @@ func (bm *machine) Reboot() error {
 
 func (bm *machine) Destroy() {
 	// TODO: Add "saveConsole" logic here when STACKIT API will support fetching the console output.
+	ctx := context.TODO()
+	server, err := bm.cluster.flight.api.GetServer(ctx, *bm.mach.Id)
+	if err != nil {
+		plog.Errorf("error getting server: %s", err)
+	}
+
+	for _, nic := range *server.Nics {
+		for _, securityGroupID := range *nic.SecurityGroups {
+			if err := bm.cluster.flight.api.RemoveSecurityGroupFromServer(ctx, server.GetId(), securityGroupID); err != nil {
+				plog.Errorf("error removing security group from server: %s", err)
+			}
+			securityGroup, err := bm.cluster.flight.api.GetSecurityGroup(ctx, securityGroupID)
+			if err != nil {
+				plog.Errorf("error getting security group: %s", err)
+			}
+			for _, securityGroupRule := range securityGroup.GetRules() {
+				if err := bm.cluster.flight.api.DeleteSecurityGroupRule(ctx, securityGroupID, *securityGroupRule.Id); err != nil {
+					plog.Error("error deleting security group rule: %s", err)
+				}
+			}
+			if err := util.Retry(5, 10*time.Second, func() error {
+				return bm.cluster.flight.api.DeleteSecurityGroup(ctx, securityGroupID)
+			}); err != nil {
+				plog.Errorf("error deleting security group: %s", err)
+			}
+		}
+		networkID := nic.GetNetworkId()
+		if err := bm.cluster.flight.api.RemoveNetworkFromServer(ctx, server.GetId(), networkID); err != nil {
+			plog.Errorf("error removing server from network: %s", err)
+		}
+		//if err := util.Retry(5, 10*time.Second, func() error {
+		//	return bm.cluster.flight.api.DeleteNetwork(ctx, networkID)
+		//}); err != nil {
+		//	plog.Errorf("error deleting network: %s", err)
+		//}
+		if nic.HasPublicIp() {
+			if err := bm.cluster.flight.api.DeleteIPAddressByIP(ctx, nic.GetPublicIp()); err != nil {
+				plog.Errorf("error deleting public ip: %s", err)
+			}
+		}
+	}
 
 	if err := bm.cluster.flight.api.DeleteServer(context.TODO(), *bm.mach.Id); err != nil {
 		plog.Errorf("deleting server %v: %v", bm.ID(), err)
-	}
-
-	if err := bm.cluster.flight.api.DeleteNetworksForServer(context.TODO(), *bm.mach.Id); err != nil {
-		plog.Errorf("deleting networks for server %v: %v", bm.ID(), err)
-	}
-
-	for _, nic := range bm.mach.GetNics() {
-		if nic.HasPublicIp() {
-			err := bm.cluster.flight.api.DeleteIPAddressByIP(context.TODO(), *nic.PublicIp)
-			plog.Errorf("deleting server %v public IP: %v", bm.ID(), err)
-		}
 	}
 
 	if bm.journal != nil {

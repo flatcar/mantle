@@ -15,7 +15,6 @@ import (
 
 	"github.com/flatcar/mantle/platform"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
-	oapiError "github.com/stackitcloud/stackit-sdk-go/core/oapierror"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas/wait"
 	"k8s.io/utils/ptr"
@@ -76,7 +75,6 @@ type PublicIP struct {
 
 func New(opts *Options) (*API, error) {
 	options := []sdkconfig.ConfigurationOption{
-		sdkconfig.WithRegion(opts.Region),
 		sdkconfig.WithServiceAccountKeyPath(opts.ServiceAccountKeyPath),
 	}
 	client, err := iaas.NewAPIClient(options...)
@@ -95,11 +93,8 @@ func New(opts *Options) (*API, error) {
 }
 
 func (a *API) UploadImage(ctx context.Context, name, path, board string) (string, error) {
-	var architecture string
-	switch board {
-	case "amd64-usr":
-		architecture = "x86"
-	case "arm64-usr":
+	var architecture string = "x86"
+	if board == "arm64-usr" {
 		architecture = "arm64"
 	}
 	imageConfig := iaas.ImageConfig{
@@ -110,20 +105,19 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 
 	imagePayload := iaas.CreateImagePayload{
 		Config:     &imageConfig,
-		CreatedAt:  nil,
 		DiskFormat: ptr.To(diskFormat),
 		Name:       &name,
 		Labels:     &DefaultLabels,
 	}
-	response, err := a.client.CreateImage(ctx, a.projectID).CreateImagePayload(imagePayload).Execute()
+	response, err := a.client.CreateImage(ctx, a.projectID, a.region).CreateImagePayload(imagePayload).Execute()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("creating image: %w", err)
 	}
 	log.Printf("Upload image to: %v", *response.UploadUrl)
 
 	file, err := os.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to open file: %v", err)
+		return "", fmt.Errorf("failed to open file: %w", err)
 	}
 	defer func() {
 		if inner := file.Close(); inner != nil {
@@ -132,7 +126,7 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 	}()
 	stat, err := file.Stat()
 	if err != nil {
-		return "", fmt.Errorf("failed to upload file: %v", err)
+		return "", fmt.Errorf("failed to get file stat: %w", err)
 	}
 	url := response.GetUploadUrl()
 
@@ -151,12 +145,9 @@ func (a *API) CreateKeyPair(ctx context.Context, name, publicKey string) (*Keypa
 	}
 	keypairResponse, err := a.client.CreateKeyPair(ctx).CreateKeyPairPayload(keypairPayload).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("error creating keypair: %s", err)
+		return nil, fmt.Errorf("failed to create keypair: %w", err)
 	}
-	if isOpenAPINotFound(err) {
-		return nil, ErrorNotFound
-	}
-	return &Keypair{keypairResponse}, err
+	return &Keypair{keypairResponse}, nil
 }
 
 func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
@@ -175,29 +166,33 @@ func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
-	networkingPayload := iaas.CreateServerPayloadNetworking{
+func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, securityGroups iaas.CreateServerPayloadGetSecurityGroupsAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
+	var httpResp *http.Response
+	ctxWithHTTPResp := sdkconfig.WithCaptureHTTPResponse(context.Background(), &httpResp)
+
+	networkingPayload := iaas.CreateServerPayloadGetNetworkingAttributeType(&iaas.CreateServerPayloadNetworking{
 		CreateServerNetworking: &iaas.CreateServerNetworking{NetworkId: networkId},
-	}
+	})
 
 	bootVolumeSource := iaas.BootVolumeSource{
 		Id:   ptr.To(a.opts.ImageId),
 		Type: ptr.To("image"),
 	}
 
-	bootVolume := iaas.CreateServerPayloadBootVolume{
+	bootVolume := iaas.CreateServerPayloadGetBootVolumeAttributeType(&iaas.CreateServerPayloadBootVolume{
 		DeleteOnTermination: ptr.To(true),
 		PerformanceClass:    ptr.To("storage_premium_perf2"),
 		Size:                ptr.To(int64(50)),
 		Source:              &bootVolumeSource,
-	}
+	})
 
 	serverPayload := iaas.CreateServerPayload{
 		AvailabilityZone: ptr.To(a.availabilityZone),
-		BootVolume:       &bootVolume,
+		BootVolume:       bootVolume,
 		MachineType:      ptr.To(a.machineType),
 		Name:             name,
-		Networking:       &networkingPayload,
+		Networking:       networkingPayload,
+		SecurityGroups:   securityGroups,
 		UserData:         userData,
 		Labels:           &DefaultLabels,
 	}
@@ -206,21 +201,25 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 		serverPayload.KeypairName = keypairName
 	}
 
-	serverResponse, err := a.client.CreateServer(ctx, a.projectID).CreateServerPayload(serverPayload).Execute()
+	serverResponse, err := a.client.CreateServer(ctxWithHTTPResp, a.projectID, a.region).CreateServerPayload(serverPayload).Execute()
 
 	if err != nil {
-		return nil, fmt.Errorf("error creating server: %s", err)
+		requestID := httpResp.Header.Get("X-Request-Id")
+		traceId := httpResp.Header.Get("X-Trace-Id")
+		fmt.Printf("[iaas API] requestID: %v\n", requestID)
+		fmt.Printf("[iaas API] traceId: %v\n", traceId)
+		return nil, fmt.Errorf("failed to create server: %w", err)
 	}
-	server, err := wait.CreateServerWaitHandler(ctx, a.client, a.projectID, *serverResponse.Id).WaitWithContext(ctx)
+	server, err := wait.CreateServerWaitHandler(ctx, a.client, a.projectID, a.region, *serverResponse.Id).WaitWithContext(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("error creating server wait: %s", err)
+		return nil, fmt.Errorf("failed to create server wait handler: %w", err)
 	}
 	return &Server{server}, nil
 }
 
 func (a *API) GetServer(ctx context.Context, id string) (*Server, error) {
-	server, err := a.client.GetServer(ctx, a.projectID, id).Details(true).Execute()
+	server, err := a.client.GetServer(ctx, a.projectID, a.region, id).Details(true).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get server: %w", err)
 	}
@@ -228,7 +227,7 @@ func (a *API) GetServer(ctx context.Context, id string) (*Server, error) {
 }
 
 func (a *API) DeleteServer(ctx context.Context, id string) error {
-	server, err := a.client.GetServer(ctx, a.projectID, id).Execute()
+	server, err := a.client.GetServer(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to get server: %w", err)
 	}
@@ -236,7 +235,7 @@ func (a *API) DeleteServer(ctx context.Context, id string) error {
 		return nil
 	}
 
-	err = a.client.DeleteServer(ctx, a.projectID, id).Execute()
+	err = a.client.DeleteServer(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete server: %w", err)
 	}
@@ -248,22 +247,19 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 		Name:   ptr.To(name),
 		Labels: &DefaultLabels,
 	}
-	networkResponse, err := a.client.CreateNetwork(ctx, a.projectID).CreateNetworkPayload(networkPayload).Execute()
-	if isOpenAPINotFound(err) {
-		return nil, ErrorNotFound
-	}
+	networkResponse, err := a.client.CreateNetwork(ctx, a.projectID, a.region).CreateNetworkPayload(networkPayload).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network: %w", err)
 	}
-	network, err := wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, *networkResponse.NetworkId).WaitWithContext(ctx)
-	if isOpenAPINotFound(err) {
-		return nil, ErrorNotFound
+	network, err := wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, a.region, *networkResponse.Id).WaitWithContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create network wait handler")
 	}
 	return &Network{network}, err
 }
 
 func (a *API) DeleteNetwork(ctx context.Context, id string) error {
-	network, err := a.client.GetNetwork(ctx, a.projectID, id).Execute()
+	network, err := a.client.GetNetwork(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to get network: %w", err)
 	}
@@ -271,32 +267,35 @@ func (a *API) DeleteNetwork(ctx context.Context, id string) error {
 		return nil
 	}
 
-	err = a.client.DeleteNetwork(ctx, a.projectID, id).Execute()
+	err = a.client.DeleteNetwork(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete network: %w", err)
 	}
 	return nil
 }
 
-func (a *API) DeleteNetworksForServer(ctx context.Context, serverID string) error {
-	server, err := a.client.GetServer(ctx, a.projectID, serverID).Details(true).Execute()
+func (a *API) RemoveSecurityGroupFromServer(ctx context.Context, serverID string, securityGroupID string) error {
+	err := a.client.RemoveSecurityGroupFromServer(ctx, a.projectID, a.region, serverID, securityGroupID).Execute()
 	if err != nil {
-		return fmt.Errorf("failed to get server: %w", err)
-	}
-	for _, nic := range server.GetNics() {
-		networkID := nic.GetNetworkId()
-		for _, securityGroup := range nic.GetSecurityGroups() {
-			err = a.client.DeleteSecurityGroup(ctx, a.projectID, securityGroup).Execute()
-			if err != nil {
-				return fmt.Errorf("failed to delete security group: %w", err)
-			}
-		}
-		err = a.client.DeleteNetwork(ctx, a.projectID, networkID).Execute()
-		if err != nil {
-			return fmt.Errorf("failed to delete network: %w", err)
-		}
+		return fmt.Errorf("failed to remove security group from server: %w", err)
 	}
 	return nil
+}
+
+func (a *API) RemoveNetworkFromServer(ctx context.Context, serverID string, networkID string) error {
+	err := a.client.RemoveNetworkFromServer(ctx, a.projectID, a.region, serverID, networkID).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to remove server from network: %w", err)
+	}
+	return nil
+}
+
+func (a *API) GetSecurityGroup(ctx context.Context, securityGroupID string) (*SecurityGroup, error) {
+	securityGroup, err := a.client.GetSecurityGroup(ctx, a.projectID, a.region, securityGroupID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get security group: %w", err)
+	}
+	return &SecurityGroup{securityGroup}, nil
 }
 
 func (a *API) CreateSecurityGroup(ctx context.Context, name string) (*SecurityGroup, error) {
@@ -304,15 +303,23 @@ func (a *API) CreateSecurityGroup(ctx context.Context, name string) (*SecurityGr
 		Name:   ptr.To(name),
 		Labels: &DefaultLabels,
 	}
-	securityGroup, err := a.client.CreateSecurityGroup(ctx, a.projectID).CreateSecurityGroupPayload(securityGroupPayload).Execute()
+	securityGroup, err := a.client.CreateSecurityGroup(ctx, a.projectID, a.region).CreateSecurityGroupPayload(securityGroupPayload).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create security group: %w", err)
 	}
 	return &SecurityGroup{securityGroup}, err
 }
 
-func (a *API) DeleteSecurityGroup(ctx context.Context, id string) error {
-	securityGroup, err := a.client.GetSecurityGroup(ctx, a.projectID, id).Execute()
+func (a *API) DeleteSecurityGroupRule(ctx context.Context, securityGroupID, securityGroupRuleID string) error {
+	err := a.client.DeleteSecurityGroupRule(ctx, a.projectID, a.region, securityGroupID, securityGroupRuleID).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to delete security group rule: %w", err)
+	}
+	return nil
+}
+
+func (a *API) DeleteSecurityGroup(ctx context.Context, securityGroupID string) error {
+	securityGroup, err := a.client.GetSecurityGroup(ctx, a.projectID, a.region, securityGroupID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to get security group: %w", err)
 	}
@@ -320,26 +327,45 @@ func (a *API) DeleteSecurityGroup(ctx context.Context, id string) error {
 		return nil
 	}
 
-	err = a.client.DeleteSecurityGroup(ctx, a.projectID, id).Execute()
+	err = a.client.DeleteSecurityGroup(ctx, a.projectID, a.region, securityGroupID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete security group: %w", err)
 	}
 	return nil
 }
 
-func (a *API) CreateSecurityGroupRule(ctx context.Context, securityGroupId string) error {
+func (a *API) CreateSecurityGroupRuleTCP(ctx context.Context, securityGroupId string) error {
 	protocol := iaas.StringAsCreateProtocol(ptr.To("tcp"))
 	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{
 		Description: ptr.To("SSH access"),
 		Direction:   ptr.To("ingress"),
 		PortRange: &iaas.PortRange{
-			Max: ptr.To(int64(22)),
-			Min: ptr.To(int64(22)),
+			Max: ptr.To(int64(65535)),
+			Min: ptr.To(int64(1)),
 		},
 		IpRange:  ptr.To("0.0.0.0/0"),
 		Protocol: &protocol,
 	}
-	_, err := a.client.CreateSecurityGroupRule(ctx, a.projectID, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRulePayload).Execute()
+	_, err := a.client.CreateSecurityGroupRule(ctx, a.projectID, a.region, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRulePayload).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to create security group rule: %w", err)
+	}
+	return nil
+}
+
+func (a *API) CreateSecurityGroupRuleUDP(ctx context.Context, securityGroupId string) error {
+	protocol := iaas.StringAsCreateProtocol(ptr.To("udp"))
+	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{
+		Description: ptr.To("SSH access"),
+		Direction:   ptr.To("ingress"),
+		PortRange: &iaas.PortRange{
+			Max: ptr.To(int64(65535)),
+			Min: ptr.To(int64(1)),
+		},
+		IpRange:  ptr.To("0.0.0.0/0"),
+		Protocol: &protocol,
+	}
+	_, err := a.client.CreateSecurityGroupRule(ctx, a.projectID, a.region, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRulePayload).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create security group rule: %w", err)
 	}
@@ -350,7 +376,7 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 	ipPayload := iaas.CreatePublicIPPayload{
 		Labels: &DefaultLabels,
 	}
-	ipAddress, err := a.client.CreatePublicIP(ctx, a.projectID).CreatePublicIPPayload(ipPayload).Execute()
+	ipAddress, err := a.client.CreatePublicIP(ctx, a.projectID, a.region).CreatePublicIPPayload(ipPayload).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -358,23 +384,15 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 }
 
 func (a *API) AttachPublicIPAddress(ctx context.Context, ipAddressId, serverId string) error {
-	err := a.client.AddPublicIpToServer(ctx, a.projectID, serverId, ipAddressId).Execute()
+	err := a.client.AddPublicIpToServer(ctx, a.projectID, a.region, serverId, ipAddressId).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to add public ip to server: %w", err)
 	}
 	return nil
 }
 
-func (a *API) AddSecurityGroup(ctx context.Context, serverId, securityGroupId string) error {
-	err := a.client.AddSecurityGroupToServer(ctx, a.projectID, serverId, securityGroupId).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to add security group to server: %w", err)
-	}
-	return nil
-}
-
 func (a *API) DeleteIPAddress(ctx context.Context, id string) error {
-	ipAddress, err := a.client.GetPublicIP(ctx, a.projectID, id).Execute()
+	ipAddress, err := a.client.GetPublicIP(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to get public ip: %w", err)
 	}
@@ -382,7 +400,7 @@ func (a *API) DeleteIPAddress(ctx context.Context, id string) error {
 		return nil
 	}
 
-	err = a.client.DeletePublicIP(ctx, a.projectID, id).Execute()
+	err = a.client.DeletePublicIP(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete public ip: %w", err)
 	}
@@ -390,27 +408,19 @@ func (a *API) DeleteIPAddress(ctx context.Context, id string) error {
 }
 
 func (a *API) DeleteIPAddressByIP(ctx context.Context, ipAddress string) error {
-	publicIPs, err := a.client.ListPublicIPs(ctx, a.projectID).Execute()
+	publicIPs, err := a.client.ListPublicIPs(ctx, a.projectID, a.region).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to get public ips: %w", err)
 	}
 	for _, ip := range publicIPs.GetItems() {
 		if *ip.Ip == ipAddress {
-			err = a.client.DeletePublicIP(ctx, a.projectID, *ip.Id).Execute()
+			err = a.client.DeletePublicIP(ctx, a.projectID, a.region, *ip.Id).Execute()
 			if err != nil {
 				return fmt.Errorf("failed to delete public ip: %w", err)
 			}
 		}
 	}
 	return nil
-}
-
-func isOpenAPINotFound(err error) bool {
-	apiErr := &oapiError.GenericOpenAPIError{}
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-	return apiErr.StatusCode == http.StatusNotFound
 }
 
 func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
@@ -472,7 +482,7 @@ func uploadFile(ctx context.Context, reader io.Reader, filesize int64, url strin
 }
 
 func (a *API) gcImages(ctx context.Context, createdCutoff time.Time) error {
-	response, err := a.client.ListImages(ctx, a.projectID).LabelSelector(labelSelector(DefaultLabels)).Execute()
+	response, err := a.client.ListImages(ctx, a.projectID, a.region).LabelSelector(labelSelector(DefaultLabels)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to list current images: %w", err)
 	}
@@ -482,12 +492,12 @@ func (a *API) gcImages(ctx context.Context, createdCutoff time.Time) error {
 			continue
 		}
 
-		err := a.client.DeleteImage(ctx, a.projectID, *image.Id).Execute()
+		err := a.client.DeleteImage(ctx, a.projectID, a.region, *image.Id).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to delete image: %w", err)
 		}
 
-		_, err = wait.DeleteImageWaitHandler(ctx, a.client, a.projectID, *image.Id).WaitWithContext(ctx)
+		_, err = wait.DeleteImageWaitHandler(ctx, a.client, a.projectID, a.region, *image.Id).WaitWithContext(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to delete image: %w", err)
 		}
@@ -496,7 +506,7 @@ func (a *API) gcImages(ctx context.Context, createdCutoff time.Time) error {
 }
 
 func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
-	response, err := a.client.ListNetworks(ctx, a.projectID).LabelSelector(labelSelector(DefaultLabels)).Execute()
+	response, err := a.client.ListNetworks(ctx, a.projectID, a.region).LabelSelector(labelSelector(DefaultLabels)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to list current networks: %w", err)
 	}
@@ -506,12 +516,12 @@ func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
 			continue
 		}
 
-		err := a.client.DeleteNetwork(ctx, a.projectID, *network.NetworkId).Execute()
+		err := a.client.DeleteNetwork(ctx, a.projectID, a.region, *network.Id).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to delete network: %w", err)
 		}
 
-		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, *network.NetworkId).WaitWithContext(ctx)
+		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, *network.Id).WaitWithContext(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to delete network: %w", err)
 		}
@@ -521,7 +531,7 @@ func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
 }
 
 func (a *API) gcServers(ctx context.Context, createdCutoff time.Time) error {
-	response, err := a.client.ListServers(ctx, a.projectID).LabelSelector(labelSelector(DefaultLabels)).Execute()
+	response, err := a.client.ListServers(ctx, a.projectID, a.region).LabelSelector(labelSelector(DefaultLabels)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to list current servers: %w", err)
 	}
@@ -531,12 +541,12 @@ func (a *API) gcServers(ctx context.Context, createdCutoff time.Time) error {
 			continue
 		}
 
-		err := a.client.DeleteServer(ctx, a.projectID, *server.Id).Execute()
+		err := a.client.DeleteServer(ctx, a.projectID, a.region, *server.Id).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to delete server: %w", err)
 		}
 
-		_, err = wait.DeleteServerWaitHandler(ctx, a.client, a.projectID, *server.Id).WaitWithContext(ctx)
+		_, err = wait.DeleteServerWaitHandler(ctx, a.client, a.projectID, a.region, *server.Id).WaitWithContext(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to delete server: %w", err)
 		}
@@ -564,7 +574,7 @@ func (a *API) gcKeyPairs(ctx context.Context, createdCutoff time.Time) error {
 }
 
 func (a *API) gcSecurityGroups(ctx context.Context, createdCutoff time.Time) error {
-	response, err := a.client.ListSecurityGroups(ctx, a.projectID).LabelSelector(labelSelector(DefaultLabels)).Execute()
+	response, err := a.client.ListSecurityGroups(ctx, a.projectID, a.region).LabelSelector(labelSelector(DefaultLabels)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to list current security groups: %w", err)
 	}
@@ -574,7 +584,7 @@ func (a *API) gcSecurityGroups(ctx context.Context, createdCutoff time.Time) err
 			continue
 		}
 
-		err := a.client.DeleteSecurityGroup(ctx, a.projectID, *group.Id).Execute()
+		err := a.client.DeleteSecurityGroup(ctx, a.projectID, a.region, *group.Id).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to delete security group: %w", err)
 		}
@@ -583,7 +593,7 @@ func (a *API) gcSecurityGroups(ctx context.Context, createdCutoff time.Time) err
 }
 
 func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) error {
-	response, err := a.client.ListPublicIPs(ctx, a.projectID).LabelSelector(labelSelector(DefaultLabels)).Execute()
+	response, err := a.client.ListPublicIPs(ctx, a.projectID, a.region).LabelSelector(labelSelector(DefaultLabels)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to list current public IPs: %w", err)
 	}
@@ -611,7 +621,7 @@ func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) 
 			continue
 		}
 
-		err = a.client.DeletePublicIP(ctx, a.projectID, *ip.Id).Execute()
+		err = a.client.DeletePublicIP(ctx, a.projectID, a.region, *ip.Id).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to delete public IP: %w", err)
 		}
