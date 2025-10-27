@@ -37,7 +37,7 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.28.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
-	github.com/linode/linodego v1.52.0
+	github.com/linode/linodego v1.60.0
 	github.com/packethost/packngo v0.31.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
