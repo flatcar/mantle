@@ -69,6 +69,7 @@ type PostgresDatabase struct {
 	UsedDiskSizeGB    int                          `json:"used_disk_size_gb"`
 	TotalDiskSizeGB   int                          `json:"total_disk_size_gb"`
 	EngineConfig      PostgresDatabaseEngineConfig `json:"engine_config"`
+	PrivateNetwork    *DatabasePrivateNetwork      `json:"private_network,omitempty"`
 }
 
 type PostgresDatabaseEngineConfig struct {
@@ -575,6 +576,7 @@ func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created           *parseabletime.ParseableTime `json:"created"`
 		Updated           *parseabletime.ParseableTime `json:"updated"`
 		OldestRestoreTime *parseabletime.ParseableTime `json:"oldest_restore_time"`
@@ -589,6 +591,7 @@ func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
 	d.Created = (*time.Time)(p.Created)
 	d.Updated = (*time.Time)(p.Updated)
 	d.OldestRestoreTime = (*time.Time)(p.OldestRestoreTime)
+
 	return nil
 }
 
@@ -612,18 +615,20 @@ type PostgresCreateOptions struct {
 
 	Fork *DatabaseFork `json:"fork,omitempty"`
 
-	EngineConfig *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	EngineConfig   *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	PrivateNetwork *DatabasePrivateNetwork       `json:"private_network,omitempty"`
 }
 
 // PostgresUpdateOptions fields are used when altering the existing Postgres Database
 type PostgresUpdateOptions struct {
-	Label        string                        `json:"label,omitempty"`
-	AllowList    *[]string                     `json:"allow_list,omitempty"`
-	Updates      *DatabaseMaintenanceWindow    `json:"updates,omitempty"`
-	Type         string                        `json:"type,omitempty"`
-	ClusterSize  int                           `json:"cluster_size,omitempty"`
-	Version      string                        `json:"version,omitempty"`
-	EngineConfig *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	Label          string                        `json:"label,omitempty"`
+	AllowList      *[]string                     `json:"allow_list,omitempty"`
+	Updates        *DatabaseMaintenanceWindow    `json:"updates,omitempty"`
+	Type           string                        `json:"type,omitempty"`
+	ClusterSize    int                           `json:"cluster_size,omitempty"`
+	Version        string                        `json:"version,omitempty"`
+	EngineConfig   *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	PrivateNetwork *DatabasePrivateNetwork       `json:"private_network,omitempty"`
 }
 
 // PostgresDatabaseSSL is the SSL Certificate to access the Linode Managed Postgres Database
@@ -657,6 +662,7 @@ func (d *PostgresDatabaseBackup) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created *parseabletime.ParseableTime `json:"created"`
 	}{
 		Mask: (*Mask)(d),
@@ -667,6 +673,7 @@ func (d *PostgresDatabaseBackup) UnmarshalJSON(b []byte) error {
 	}
 
 	d.Created = (*time.Time)(p.Created)
+
 	return nil
 }
 
