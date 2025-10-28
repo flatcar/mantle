@@ -45,7 +45,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.3
-	github.com/stackitcloud/stackit-sdk-go/services/iaas v0.30.0
+	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.0.0
 	github.com/stretchr/testify v1.11.1
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.3.1
