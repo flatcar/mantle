@@ -171,7 +171,7 @@ func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
+func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, securityGroups iaas.CreateServerPayloadGetSecurityGroupsAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
 	networkingPayload := iaas.CreateServerPayloadNetworking{
 		CreateServerNetworking: &iaas.CreateServerNetworking{NetworkId: networkId},
 	}
@@ -194,6 +194,7 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 		MachineType:      ptr.To(a.machineType),
 		Name:             name,
 		Networking:       &networkingPayload,
+		SecurityGroups:   securityGroups,
 		UserData:         userData,
 		Labels:           &DefaultLabels,
 	}
@@ -368,14 +369,6 @@ func (a *API) AttachPublicIPAddress(ctx context.Context, ipAddressId, serverId s
 	err := a.client.AddPublicIpToServer(ctx, a.projectID, serverId, ipAddressId).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to add public ip to server: %w", err)
-	}
-	return nil
-}
-
-func (a *API) AddSecurityGroup(ctx context.Context, serverId, securityGroupId string) error {
-	err := a.client.AddSecurityGroupToServer(ctx, a.projectID, serverId, securityGroupId).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to add security group to server: %w", err)
 	}
 	return nil
 }
