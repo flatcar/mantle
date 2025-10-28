@@ -335,8 +335,27 @@ func (a *API) DeleteSecurityGroup(ctx context.Context, securityGroupID string) e
 	return nil
 }
 
-func (a *API) CreateSecurityGroupRule(ctx context.Context, securityGroupId string) error {
+func (a *API) CreateSecurityGroupRuleTCP(ctx context.Context, securityGroupId string) error {
 	protocol := iaas.StringAsCreateProtocol(ptr.To("tcp"))
+	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{
+		Description: ptr.To("SSH access"),
+		Direction:   ptr.To("ingress"),
+		PortRange: &iaas.PortRange{
+			Max: ptr.To(int64(65535)),
+			Min: ptr.To(int64(1)),
+		},
+		IpRange:  ptr.To("0.0.0.0/0"),
+		Protocol: &protocol,
+	}
+	_, err := a.client.CreateSecurityGroupRule(ctx, a.projectID, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRulePayload).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to create security group rule: %w", err)
+	}
+	return nil
+}
+
+func (a *API) CreateSecurityGroupRuleUDP(ctx context.Context, securityGroupId string) error {
+	protocol := iaas.StringAsCreateProtocol(ptr.To("udp"))
 	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{
 		Description: ptr.To("SSH access"),
 		Direction:   ptr.To("ingress"),
