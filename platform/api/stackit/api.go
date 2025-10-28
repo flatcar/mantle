@@ -341,8 +341,8 @@ func (a *API) CreateSecurityGroupRule(ctx context.Context, securityGroupId strin
 		Description: ptr.To("SSH access"),
 		Direction:   ptr.To("ingress"),
 		PortRange: &iaas.PortRange{
-			Max: ptr.To(int64(22)),
-			Min: ptr.To(int64(22)),
+			Max: ptr.To(int64(65535)),
+			Min: ptr.To(int64(1)),
 		},
 		IpRange:  ptr.To("0.0.0.0/0"),
 		Protocol: &protocol,
