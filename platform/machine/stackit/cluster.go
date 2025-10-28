@@ -66,14 +66,10 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if bc.keypair != nil {
 		keyPairName = bc.keypair.Name
 	}
-	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, keyPairName, &base64Config)
+	securityGoups := &[]string{*secGroup.Id}
+	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, securityGoups, keyPairName, &base64Config)
 	if err != nil {
 		return nil, fmt.Errorf("creating server: %w", err)
-	}
-
-	err = bc.flight.api.AddSecurityGroup(ctx, *instance.Id, *secGroup.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error adding security group: %w", err)
 	}
 
 	err = bc.flight.api.AttachPublicIPAddress(ctx, *ipAddress.Id, *instance.Id)
