@@ -52,7 +52,11 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		return nil, fmt.Errorf("error creating security group: %w", err)
 	}
-	err = bc.flight.api.CreateSecurityGroupRule(ctx, *secGroup.Id)
+	err = bc.flight.api.CreateSecurityGroupRuleTCP(ctx, *secGroup.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error creating security group rule: %w", err)
+	}
+	err = bc.flight.api.CreateSecurityGroupRuleUDP(ctx, *secGroup.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error creating security group rule: %w", err)
 	}
