@@ -71,7 +71,7 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		keyPairName = bc.keypair.Name
 	}
 	securityGoups := &[]string{*secGroup.Id}
-	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.NetworkId, securityGoups, keyPairName, &base64Config)
+	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.Id, securityGoups, keyPairName, &base64Config)
 	if err != nil {
 		return nil, fmt.Errorf("creating server: %w", err)
 	}
