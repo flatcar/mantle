@@ -94,11 +94,11 @@ func (bm *machine) Destroy() {
 		if err := bm.cluster.flight.api.RemoveNetworkFromServer(ctx, server.GetId(), networkID); err != nil {
 			plog.Errorf("error removing server from network: %s", err)
 		}
-		if err := util.Retry(5, 10*time.Second, func() error {
-			return bm.cluster.flight.api.DeleteNetwork(ctx, networkID)
-		}); err != nil {
-			plog.Errorf("error deleting network: %s", err)
-		}
+		//if err := util.Retry(5, 10*time.Second, func() error {
+		//	return bm.cluster.flight.api.DeleteNetwork(ctx, networkID)
+		//}); err != nil {
+		//	plog.Errorf("error deleting network: %s", err)
+		//}
 		if nic.HasPublicIp() {
 			if err := bm.cluster.flight.api.DeleteIPAddressByIP(ctx, nic.GetPublicIp()); err != nil {
 				plog.Errorf("error deleting public ip: %s", err)

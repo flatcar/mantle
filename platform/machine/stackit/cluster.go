@@ -151,9 +151,9 @@ func (bc *cluster) vmname() iaas.CreateServerPayloadGetNameAttributeType {
 func (bc *cluster) Destroy() {
 	bc.BaseCluster.Destroy()
 	if bc.network != nil {
-		// if err := bc.flight.api.DeleteNetwork(context.TODO(), *bc.network.NetworkId); err != nil {
-		// 	plog.Errorf("deleting network %v: %v", *bc.network.Name, err)
-		// }
+		if err := bc.flight.api.DeleteNetwork(context.TODO(), *bc.network.Id); err != nil {
+			plog.Errorf("deleting network %v: %v", *bc.network.Name, err)
+		}
 	}
 
 	bc.flight.DelCluster(bc)
