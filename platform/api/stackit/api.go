@@ -76,7 +76,6 @@ type PublicIP struct {
 
 func New(opts *Options) (*API, error) {
 	options := []sdkconfig.ConfigurationOption{
-		sdkconfig.WithRegion(opts.Region),
 		sdkconfig.WithServiceAccountKeyPath(opts.ServiceAccountKeyPath),
 	}
 	client, err := iaas.NewAPIClient(options...)
