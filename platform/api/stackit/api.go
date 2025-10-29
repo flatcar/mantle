@@ -171,6 +171,9 @@ func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
 }
 
 func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, securityGroups iaas.CreateServerPayloadGetSecurityGroupsAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
+	var httpResp *http.Response
+	ctxWithHTTPResp := sdkconfig.WithCaptureHTTPResponse(context.Background(), &httpResp)
+
 	networkingPayload := iaas.CreateServerPayloadGetNetworkingAttributeType(&iaas.CreateServerPayloadNetworking{
 		CreateServerNetworking: &iaas.CreateServerNetworking{NetworkId: networkId},
 	})
@@ -202,9 +205,13 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 		serverPayload.KeypairName = keypairName
 	}
 
-	serverResponse, err := a.client.CreateServer(ctx, a.projectID, a.region).CreateServerPayload(serverPayload).Execute()
+	serverResponse, err := a.client.CreateServer(ctxWithHTTPResp, a.projectID, a.region).CreateServerPayload(serverPayload).Execute()
 
 	if err != nil {
+		requestID := httpResp.Header.Get("X-Request-Id")
+		traceId := httpResp.Header.Get("X-Trace-Id")
+		fmt.Printf("[iaas API] requestID: %v\n", requestID)
+		fmt.Printf("[iaas API] traceId: %v\n", traceId)
 		return nil, fmt.Errorf("error creating server: %s", err)
 	}
 	server, err := wait.CreateServerWaitHandler(ctx, a.client, a.projectID, a.region, *serverResponse.Id).WaitWithContext(ctx)
