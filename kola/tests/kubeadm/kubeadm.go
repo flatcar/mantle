@@ -173,9 +173,7 @@ func init() {
 					Distros: []string{"cl"},
 					// This should run on all clouds as a good end-to-end test
 					// Network config problems in qemu-unpriv
-					// akamai: Tests are failing for Kubernetes because we don't use the expected disk size,
-					// so we are running out of free space.
-					ExcludePlatforms: []string{"qemu-unpriv", "akamai"},
+					ExcludePlatforms: []string{"qemu-unpriv"},
 					Run: func(c cluster.TestCluster) {
 						kubeadmBaseTest(c, testParams)
 					},
