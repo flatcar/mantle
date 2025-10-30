@@ -35,15 +35,15 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, err
 	}
 
-	userDataConf.AddSystemdUnitDropin("coreos-metadata.service", "00-custom-metadata.conf", `[Service]
-	Environment=OUTPUT=/run/metadata/flatcar
-	ExecStartPost=/usr/bin/sed -i "s/STACKIT/CUSTOM/" /run/metadata/flatcar
-	ExecStartPost=/usr/bin/sed -i "s/PRIVATE_IPV4_0/PRIVATE_IPV4/" /run/metadata/flatcar
-	ExecStartPost=/usr/bin/sed -i "s/PUBLIC_IPV4_0/PUBLIC_IPV4/" /run/metadata/flatcar
-	ExecStartPost=/usr/bin/sed -i "s#/32##" /run/metadata/flatcar
-	ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=$(ip addr show eth0 | grep "brd" | grep -Po "inet \K[\d.]+")" > ${OUTPUT}'
-	ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep COREOS_CUSTOM_PRIVATE_IPV4 | cut -d '=' -f 2) dev eth0"
-	`)
+	// userDataConf.AddSystemdUnitDropin("coreos-metadata.service", "00-custom-metadata.conf", `[Service]
+	// Environment=OUTPUT=/run/metadata/flatcar
+	// ExecStartPost=/usr/bin/sed -i "s/STACKIT/CUSTOM/" /run/metadata/flatcar
+	// ExecStartPost=/usr/bin/sed -i "s/PRIVATE_IPV4_0/PRIVATE_IPV4/" /run/metadata/flatcar
+	// ExecStartPost=/usr/bin/sed -i "s/PUBLIC_IPV4_0/PUBLIC_IPV4/" /run/metadata/flatcar
+	// ExecStartPost=/usr/bin/sed -i "s#/32##" /run/metadata/flatcar
+	// ExecStart=/usr/bin/bash -c 'echo "COREOS_CUSTOM_PRIVATE_IPV4=$(ip addr show eth0 | grep "brd" | grep -Po "inet \K[\d.]+")" > ${OUTPUT}'
+	// ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep COREOS_CUSTOM_PRIVATE_IPV4 | cut -d '=' -f 2) dev eth0"
+	// `)
 
 	base64Config := make([]byte, base64.StdEncoding.EncodedLen(len(userDataConf.Bytes())))
 	base64.StdEncoding.Encode(base64Config, userDataConf.Bytes())

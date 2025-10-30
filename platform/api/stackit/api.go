@@ -15,7 +15,6 @@ import (
 
 	"github.com/flatcar/mantle/platform"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
-	oapiError "github.com/stackitcloud/stackit-sdk-go/core/oapierror"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas/wait"
 	"k8s.io/utils/ptr"
@@ -148,10 +147,7 @@ func (a *API) CreateKeyPair(ctx context.Context, name, publicKey string) (*Keypa
 	if err != nil {
 		return nil, fmt.Errorf("error creating keypair: %s", err)
 	}
-	if isOpenAPINotFound(err) {
-		return nil, ErrorNotFound
-	}
-	return &Keypair{keypairResponse}, err
+	return &Keypair{keypairResponse}, nil
 }
 
 func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
@@ -212,12 +208,12 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 		traceId := httpResp.Header.Get("X-Trace-Id")
 		fmt.Printf("[iaas API] requestID: %v\n", requestID)
 		fmt.Printf("[iaas API] traceId: %v\n", traceId)
-		return nil, fmt.Errorf("error creating server: %s", err)
+		return nil, fmt.Errorf("failed to create server: %w", err)
 	}
 	server, err := wait.CreateServerWaitHandler(ctx, a.client, a.projectID, a.region, *serverResponse.Id).WaitWithContext(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("error creating server wait: %s", err)
+		return nil, fmt.Errorf("failed to create server wait handler: %w", err)
 	}
 	return &Server{server}, nil
 }
@@ -252,15 +248,12 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 		Labels: &DefaultLabels,
 	}
 	networkResponse, err := a.client.CreateNetwork(ctx, a.projectID, a.region).CreateNetworkPayload(networkPayload).Execute()
-	if isOpenAPINotFound(err) {
-		return nil, ErrorNotFound
-	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network: %w", err)
 	}
 	network, err := wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, a.region, *networkResponse.Id).WaitWithContext(ctx)
-	if isOpenAPINotFound(err) {
-		return nil, ErrorNotFound
+	if err != nil {
+		return nil, fmt.Errorf("failed to create network wait handler")
 	}
 	return &Network{network}, err
 }
@@ -428,14 +421,6 @@ func (a *API) DeleteIPAddressByIP(ctx context.Context, ipAddress string) error {
 		}
 	}
 	return nil
-}
-
-func isOpenAPINotFound(err error) bool {
-	apiErr := &oapiError.GenericOpenAPIError{}
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-	return apiErr.StatusCode == http.StatusNotFound
 }
 
 func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
