@@ -126,7 +126,7 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 	}()
 	stat, err := file.Stat()
 	if err != nil {
-		return "", fmt.Errorf("failed to upload file: %w", err)
+		return "", fmt.Errorf("failed to get file stat: %w", err)
 	}
 	url := response.GetUploadUrl()
 
@@ -145,7 +145,7 @@ func (a *API) CreateKeyPair(ctx context.Context, name, publicKey string) (*Keypa
 	}
 	keypairResponse, err := a.client.CreateKeyPair(ctx).CreateKeyPairPayload(keypairPayload).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("error creating keypair: %s", err)
+		return nil, fmt.Errorf("failed to create keypair: %w", err)
 	}
 	return &Keypair{keypairResponse}, nil
 }
