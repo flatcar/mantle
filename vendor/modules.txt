@@ -399,9 +399,10 @@ github.com/davecgh/go-spew/spew
 # github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 ## explicit; go 1.17
 github.com/decred/dcrd/dcrec/secp256k1/v4
-# github.com/digitalocean/godo v1.45.0
-## explicit; go 1.14
+# github.com/digitalocean/godo v1.168.0
+## explicit; go 1.23.0
 github.com/digitalocean/godo
+github.com/digitalocean/godo/metrics
 # github.com/dustin/go-humanize v1.0.0
 ## explicit
 github.com/dustin/go-humanize
@@ -616,6 +617,12 @@ github.com/gophercloud/gophercloud/pagination
 # github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
 ## explicit; go 1.15
 github.com/gophercloud/utils/openstack/networking/v2/extensions/security/groups
+# github.com/hashicorp/go-cleanhttp v0.5.2
+## explicit; go 1.13
+github.com/hashicorp/go-cleanhttp
+# github.com/hashicorp/go-retryablehttp v0.7.7
+## explicit; go 1.19
+github.com/hashicorp/go-retryablehttp
 # github.com/hetznercloud/hcloud-go/v2 v2.28.0
 ## explicit; go 1.24.0
 github.com/hetznercloud/hcloud-go/v2/hcloud
