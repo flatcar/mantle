@@ -69,6 +69,7 @@ type PostgresDatabase struct {
 	UsedDiskSizeGB    int                          `json:"used_disk_size_gb"`
 	TotalDiskSizeGB   int                          `json:"total_disk_size_gb"`
 	EngineConfig      PostgresDatabaseEngineConfig `json:"engine_config"`
+	PrivateNetwork    *DatabasePrivateNetwork      `json:"private_network,omitempty"`
 }
 
 type PostgresDatabaseEngineConfig struct {
@@ -575,6 +576,7 @@ func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created           *parseabletime.ParseableTime `json:"created"`
 		Updated           *parseabletime.ParseableTime `json:"updated"`
 		OldestRestoreTime *parseabletime.ParseableTime `json:"oldest_restore_time"`
@@ -589,6 +591,7 @@ func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
 	d.Created = (*time.Time)(p.Created)
 	d.Updated = (*time.Time)(p.Updated)
 	d.OldestRestoreTime = (*time.Time)(p.OldestRestoreTime)
+
 	return nil
 }
 
@@ -612,18 +615,20 @@ type PostgresCreateOptions struct {
 
 	Fork *DatabaseFork `json:"fork,omitempty"`
 
-	EngineConfig *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	EngineConfig   *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	PrivateNetwork *DatabasePrivateNetwork       `json:"private_network,omitempty"`
 }
 
 // PostgresUpdateOptions fields are used when altering the existing Postgres Database
 type PostgresUpdateOptions struct {
-	Label        string                        `json:"label,omitempty"`
-	AllowList    *[]string                     `json:"allow_list,omitempty"`
-	Updates      *DatabaseMaintenanceWindow    `json:"updates,omitempty"`
-	Type         string                        `json:"type,omitempty"`
-	ClusterSize  int                           `json:"cluster_size,omitempty"`
-	Version      string                        `json:"version,omitempty"`
-	EngineConfig *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	Label          string                        `json:"label,omitempty"`
+	AllowList      *[]string                     `json:"allow_list,omitempty"`
+	Updates        *DatabaseMaintenanceWindow    `json:"updates,omitempty"`
+	Type           string                        `json:"type,omitempty"`
+	ClusterSize    int                           `json:"cluster_size,omitempty"`
+	Version        string                        `json:"version,omitempty"`
+	EngineConfig   *PostgresDatabaseEngineConfig `json:"engine_config,omitempty"`
+	PrivateNetwork *DatabasePrivateNetwork       `json:"private_network,omitempty"`
 }
 
 // PostgresDatabaseSSL is the SSL Certificate to access the Linode Managed Postgres Database
@@ -643,6 +648,7 @@ func (c *Client) ListPostgresDatabases(ctx context.Context, opts *ListOptions) (
 }
 
 // PostgresDatabaseBackup is information for interacting with a backup for the existing Postgres Database
+//
 // Deprecated: PostgresDatabaseBackup is a deprecated struct, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 type PostgresDatabaseBackup struct {
@@ -657,6 +663,7 @@ func (d *PostgresDatabaseBackup) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created *parseabletime.ParseableTime `json:"created"`
 	}{
 		Mask: (*Mask)(d),
@@ -667,10 +674,12 @@ func (d *PostgresDatabaseBackup) UnmarshalJSON(b []byte) error {
 	}
 
 	d.Created = (*time.Time)(p.Created)
+
 	return nil
 }
 
 // PostgresBackupCreateOptions are options used for CreatePostgresDatabaseBackup(...)
+//
 // Deprecated: PostgresBackupCreateOptions is a deprecated struct, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 type PostgresBackupCreateOptions struct {
@@ -679,6 +688,7 @@ type PostgresBackupCreateOptions struct {
 }
 
 // ListPostgresDatabaseBackups lists all Postgres Database Backups associated with the given Postgres Database
+//
 // Deprecated: ListPostgresDatabaseBackups is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) ListPostgresDatabaseBackups(ctx context.Context, databaseID int, opts *ListOptions) ([]PostgresDatabaseBackup, error) {
@@ -733,6 +743,7 @@ func (c *Client) GetPostgresDatabaseSSL(ctx context.Context, databaseID int) (*P
 }
 
 // GetPostgresDatabaseBackup returns a specific Postgres Database Backup with the given ids
+//
 // Deprecated: GetPostgresDatabaseBackup is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) GetPostgresDatabaseBackup(ctx context.Context, databaseID int, backupID int) (*PostgresDatabaseBackup, error) {
@@ -741,6 +752,7 @@ func (c *Client) GetPostgresDatabaseBackup(ctx context.Context, databaseID int, 
 }
 
 // RestorePostgresDatabaseBackup returns the given Postgres Database with the given Backup
+//
 // Deprecated: RestorePostgresDatabaseBackup is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) RestorePostgresDatabaseBackup(ctx context.Context, databaseID int, backupID int) error {
@@ -749,6 +761,7 @@ func (c *Client) RestorePostgresDatabaseBackup(ctx context.Context, databaseID i
 }
 
 // CreatePostgresDatabaseBackup creates a snapshot for the given Postgres database
+//
 // Deprecated: CreatePostgresDatabaseBackup is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) CreatePostgresDatabaseBackup(ctx context.Context, databaseID int, opts PostgresBackupCreateOptions) error {
