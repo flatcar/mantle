@@ -258,7 +258,7 @@ func init() {
 	sv(&kola.HetznerOptions.Token, "hetzner-token", "", "Hetzner token for client authentication")
 	sv(&kola.HetznerOptions.Location, "hetzner-location", "fsn1", "Hetzner location name")
 	sv(&kola.HetznerOptions.Image, "hetzner-image", "", "Hetzner image ID")
-	sv(&kola.HetznerOptions.ServerType, "hetzner-server-type", "cx22", "Hetzner instance type")
+	sv(&kola.HetznerOptions.ServerType, "hetzner-server-type", "cpx22", "Hetzner instance type")
 
 	// Akamai specific options
 	sv(&kola.AkamaiOptions.Token, "akamai-token", "", "Akamai access token")
