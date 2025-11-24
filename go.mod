@@ -49,7 +49,7 @@ require (
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
 	github.com/vmware/govmomi v0.52.0
-	go.etcd.io/etcd/client/pkg/v3 v3.6.4
+	go.etcd.io/etcd/client/pkg/v3 v3.6.6
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.45.0
