@@ -6,7 +6,7 @@ Kola is Flatcar Container Linux's testing framework, designed to validate system
 
 Kola supports testing on:
 - **Local/Virtual**: QEMU (full-featured), QEMU-unpriv (single-node)
-- **Cloud Platforms**: AWS, Azure, GCE, DigitalOcean, Equinix Metal, OpenStack, ESX, and more
+- **Cloud Platforms**: AWS, Azure, GCE, DigitalOcean, OpenStack, ESX, and more
 
 This documentation serves two primary audiences:
 - **Test Writers** (External Contributors): Learn to write and run tests

@@ -57,15 +57,6 @@ func init() {
 		UserData:    enableMetadataService,
 		Distros:     []string{"cl"},
 	})
-
-	register.Register(&register.Test{
-		Name:        "cl.metadata.equinixmetal",
-		Run:         verifyEquinixMetal,
-		ClusterSize: 1,
-		Platforms:   []string{"equinixmetal"},
-		UserData:    enableMetadataService,
-		Distros:     []string{"cl"},
-	})
 }
 
 func verifyAWS(c cluster.TestCluster) {
@@ -76,10 +67,6 @@ func verifyAzure(c cluster.TestCluster) {
 	verify(c, "COREOS_AZURE_IPV4_DYNAMIC")
 	// kola tests do not spawn machines behind a load balancer on Azure
 	// which is required for COREOS_AZURE_IPV4_VIRTUAL to be present
-}
-
-func verifyEquinixMetal(c cluster.TestCluster) {
-	verify(c, "COREOS_PACKET_HOSTNAME", "COREOS_PACKET_PHONE_HOME_URL", "COREOS_PACKET_IPV4_PUBLIC_0", "COREOS_PACKET_IPV4_PRIVATE_0", "COREOS_PACKET_IPV6_PUBLIC_0")
 }
 
 func verify(c cluster.TestCluster, keys ...string) {

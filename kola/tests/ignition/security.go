@@ -29,7 +29,6 @@ import (
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
-	"github.com/flatcar/mantle/platform/machine/equinixmetal"
 )
 
 var (
@@ -79,8 +78,8 @@ func init() {
 			"TLSServeV3": TLSServeV3,
 		},
 		// DO: https://github.com/coreos/bugs/issues/2205
-		// EquinixMetal & QEMU: https://github.com/coreos/ignition/issues/645
-		ExcludePlatforms: []string{"do", "equinixmetal", "qemu-unpriv"},
+		// QEMU: https://github.com/coreos/ignition/issues/645
+		ExcludePlatforms: []string{"do", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
 		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
@@ -95,10 +94,6 @@ func securityTLS(c cluster.TestCluster) {
 	server := c.Machines()[0]
 
 	ip := server.PrivateIP()
-	if c.Platform() == equinixmetal.Platform {
-		// private IP not configured in the initramfs
-		ip = server.IP()
-	}
 
 	c.MustSSH(server, "sudo mkdir /var/tls")
 	c.MustSSH(server, "sudo openssl ecparam -genkey -name secp384r1 -out /var/tls/server.key")
