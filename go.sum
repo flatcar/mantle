@@ -89,8 +89,8 @@ github.com/anatol/clevis.go v0.0.0-20230629234939-684702e18e07 h1:fy40nbjTIObq7S
 github.com/anatol/clevis.go v0.0.0-20230629234939-684702e18e07/go.mod h1:nEwwKRAb80BFvdT8KoDE6C7ct/Gu9222nBnnpVWQ3gM=
 github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14 h1:/ar8G0JGXDb/O/rG3Z/Q7v1M6KzJFshqYqjN+dMGRY8=
 github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14/go.mod h1:6aDwt+p3xVpKfTsK1ZR5/nFyxe6Jy4T3CJyH4WxfDyc=
-github.com/apricote/hcloud-upload-image/hcloudimages v1.1.0 h1:1guW0IO2/070qbaP6zzNJJ8XsGLKPpxyE1W6fyf7MPc=
-github.com/apricote/hcloud-upload-image/hcloudimages v1.1.0/go.mod h1:iJ95BaLfISZBY9X8K2Y2A5a49dI0RLjAuq+4BqlOSgA=
+github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0 h1:P8e2RBs+2iXDJ0mLP3w3ml0cIDLYUCc9XUTCiUjT5cE=
+github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0/go.mod h1:I+R3+ubW2P+X5hOt2lrsWiM2N7zgrukkDhe41riRNb4=
 github.com/aws/aws-sdk-go v1.8.39/go.mod h1:ZRmQr0FajVIyZ4ZzBYKG5P3ZqPz9IHG41ZoMu1ADI3k=
 github.com/aws/aws-sdk-go v1.55.8 h1:JRmEUbU52aJQZ2AjX4q4Wu7t4uZjOu71uyNmaWlUkJQ=
 github.com/aws/aws-sdk-go v1.55.8/go.mod h1:ZkViS9AqA6otK+JBBNH2++sx1sgxrPKcSzPPvQkUtXk=
@@ -260,8 +260,8 @@ github.com/hashicorp/go-retryablehttp v0.7.7/go.mod h1:pkQpWZeYWskR+D1tR2O5OcBFO
 github.com/hashicorp/go-uuid v1.0.2/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
-github.com/hetznercloud/hcloud-go/v2 v2.28.0 h1:xX8Wq39MdZ5B9Cgvd8nKLbS+UVDpQoaYAVUeN4gCUxk=
-github.com/hetznercloud/hcloud-go/v2 v2.28.0/go.mod h1:XBU4+EDH2KVqu2KU7Ws0+ciZcX4ygukQl/J0L5GS8P8=
+github.com/hetznercloud/hcloud-go/v2 v2.29.0 h1:LzNFw5XLBfftyu3WM1sdSLjOZBlWORtz2hgGydHaYV8=
+github.com/hetznercloud/hcloud-go/v2 v2.29.0/go.mod h1:XBU4+EDH2KVqu2KU7Ws0+ciZcX4ygukQl/J0L5GS8P8=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=

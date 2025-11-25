@@ -16,7 +16,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.8.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.3
 	github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14
-	github.com/apricote/hcloud-upload-image/hcloudimages v1.1.0
+	github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/brightbox/gobrightbox/v2 v2.2.2
 	github.com/coreos/butane v0.25.1
@@ -34,7 +34,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/gophercloud/gophercloud v1.14.1
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
-	github.com/hetznercloud/hcloud-go/v2 v2.28.0
+	github.com/hetznercloud/hcloud-go/v2 v2.29.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
 	github.com/linode/linodego v1.61.0
