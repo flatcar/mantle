@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/flatcar/mantle/platform/machine/stackit"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,6 +48,7 @@ import (
 	hetznerapi "github.com/flatcar/mantle/platform/api/hetzner"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
+	stackitapi "github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/akamai"
 	"github.com/flatcar/mantle/platform/machine/aws"
@@ -71,19 +73,20 @@ const (
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola")
 
-	Options          = platform.Options{}
-	AkamaiOptions    = akamaiapi.Options{Options: &Options}    // glue to set platform options from main
-	AWSOptions       = awsapi.Options{Options: &Options}       // glue to set platform options from main
-	AzureOptions     = azureapi.Options{Options: &Options}     // glue to set platform options from main
-	BrightboxOptions = brightboxapi.Options{Options: &Options} // glue to set platform options from main
-	DOOptions        = doapi.Options{Options: &Options}        // glue to set platform options from main
-	ESXOptions       = esxapi.Options{Options: &Options}       // glue to set platform options from main
-	ExternalOptions  = external.Options{Options: &Options}     // glue to set platform options from main
-	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
-	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
-	QEMUOptions      = qemu.Options{Options: &Options}         // glue to set platform options from main
-	ScalewayOptions  = scalewayapi.Options{Options: &Options}  // glue to set platform options from main
-	HetznerOptions   = hetznerapi.Options{Options: &Options}   // glue to set platform options from main
+	Options             = platform.Options{}
+	AkamaiOptions       = akamaiapi.Options{Options: &Options}       // glue to set platform options from main
+	AWSOptions          = awsapi.Options{Options: &Options}          // glue to set platform options from main
+	AzureOptions        = azureapi.Options{Options: &Options}        // glue to set platform options from main
+	BrightboxOptions    = brightboxapi.Options{Options: &Options}    // glue to set platform options from main
+	DOOptions           = doapi.Options{Options: &Options}           // glue to set platform options from main
+	ESXOptions          = esxapi.Options{Options: &Options}          // glue to set platform options from main
+	ExternalOptions     = external.Options{Options: &Options}        // glue to set platform options from main
+	GCEOptions          = gcloudapi.Options{Options: &Options}       // glue to set platform options from main
+	OpenStackOptions    = openstackapi.Options{Options: &Options}    // glue to set platform options from main
+	STACKITOptions      = stackitapi.Options{Options: &Options}      // glue to set platform options from main
+	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
+	ScalewayOptions     = scalewayapi.Options{Options: &Options}     // glue to set platform options from main
+	HetznerOptions      = hetznerapi.Options{Options: &Options}      // glue to set platform options from main
 
 	TestParallelism        int    //glue var to set test parallelism from main
 	TAPFile                string // if not "", write TAP results here
@@ -262,6 +265,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = hetzner.NewFlight(&HetznerOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
+	case "equinixmetal":
+		flight, err = equinixmetal.NewFlight(&EquinixMetalOptions)
 	case "qemu":
 		flight, err = qemu.NewFlight(&QEMUOptions)
 	case "qemu-unpriv":
