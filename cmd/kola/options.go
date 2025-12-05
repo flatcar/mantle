@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/user"
@@ -42,7 +41,7 @@ var (
 	kolaDisableSELinuxAVCChecks bool
 	defaultTargetBoard          = sdk.DefaultBoard()
 	kolaArchitectures           = []string{"amd64"}
-	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "qemu", "qemu-unpriv", "scaleway"}
+	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "qemu", "qemu-unpriv", "scaleway", "stackit"}
 	kolaDistros                 = []string{"cl", "fcos", "rhcos"}
 	kolaChannels                = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings               = []string{"basic", "pro"}
@@ -225,12 +224,20 @@ func init() {
 	sv(&kola.AkamaiOptions.Image, "akamai-image", "", "Akamai image ID")
 	sv(&kola.AkamaiOptions.Region, "akamai-region", "", "Akamai region")
 	sv(&kola.AkamaiOptions.Type, "akamai-type", "g6-nanode-1", "Akamai instance type")
+
+	// STACKIT specific options
+	sv(&kola.STACKITOptions.Region, "stackit-region", "eu01", "STACKIT region")
+	sv(&kola.STACKITOptions.ProjectId, "stackit-project-id", "", "STACKIT project ID")
+	sv(&kola.STACKITOptions.ServiceAccountKeyPath, "stackit-service-account-key-path", "$HOME/.stackit/credentials.json", "STACKIT service account key path")
+	sv(&kola.STACKITOptions.MachineType, "stackit-type", "c2i.8", "STACKIT instance type")
+	sv(&kola.STACKITOptions.AvailabilityZone, "stackit-availability-zone", "eu01-2", "STACKIT availability zone")
+	sv(&kola.STACKITOptions.ImageId, "stackit-image-id", "", "STACKIT image ID")
 }
 
 // Sync up the command line options if there is dependency
 func syncOptions() error {
 	// sync `Board` option with other cloud provider
-	// it seems kola has a strong dependency to qemu and it has been
+	// it seems kola has a strong dependency to qemu, and it has been
 	// build around that's why the `Board` is associated to `QEMU`
 	// but it can be helpful for other provider to get access to the Board in the runtime
 	board := kola.QEMUOptions.Board
@@ -245,6 +252,7 @@ func syncOptions() error {
 	kola.ScalewayOptions.Board = board
 	kola.HetznerOptions.Board = board
 	kola.AkamaiOptions.Board = board
+	kola.STACKITOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
@@ -284,7 +292,7 @@ func syncOptions() error {
 		kola.QEMUOptions.Firmware = kolaDefaultFirmware[kola.QEMUOptions.Board]
 	}
 	if kola.QEMUOptions.EnableSecureboot && kola.QEMUOptions.OVMFVars == "" {
-		return fmt.Errorf("Secureboot requires OVMF vars file")
+		return fmt.Errorf("secureboot requires OVMF vars file")
 	}
 	units, _ := root.PersistentFlags().GetStringSlice("debug-systemd-units")
 	for _, unit := range units {
@@ -302,7 +310,7 @@ func syncOptions() error {
 	if kola.Options.IgnitionVersion == "" {
 		kola.Options.IgnitionVersion, ok = kolaIgnitionVersionDefaults[kola.Options.Distribution]
 		if !ok {
-			return fmt.Errorf("Distribution %q has no default Ignition version", kola.Options.Distribution)
+			return fmt.Errorf("distribution %q has no default Ignition version", kola.Options.Distribution)
 		}
 	}
 
@@ -310,7 +318,7 @@ func syncOptions() error {
 		kola.Options.SSHRetries = kolaSSHRetries
 	}
 	if kola.Options.SSHRetries < 0 {
-		return fmt.Errorf("Number of SSH retries can't be negative, is %d", kola.Options.SSHRetries)
+		return fmt.Errorf("number of SSH retries can't be negative, is %d", kola.Options.SSHRetries)
 	}
 	if kola.Options.SSHTimeout == 0 {
 		kola.Options.SSHTimeout = kolaSSHTimeout
@@ -331,14 +339,14 @@ func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
 		if agentEnv != "" {
 			f, err := net.Dial("unix", agentEnv)
 			if err != nil {
-				return nil, fmt.Errorf("Couldn't connect to unix socket %q: %v", agentEnv, err)
+				return nil, fmt.Errorf("couldn't connect to unix socket %q: %v", agentEnv, err)
 			}
 			defer f.Close()
 
 			agent := agent.NewClient(f)
 			keys, err := agent.List()
 			if err != nil {
-				return nil, fmt.Errorf("Couldn't talk to ssh-agent: %v", err)
+				return nil, fmt.Errorf("couldn't talk to ssh-agent: %v", err)
 			}
 			for _, key := range keys {
 				allKeys = append(allKeys, *key)
@@ -359,7 +367,7 @@ func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
 	}
 	// read key files, failing if any are missing
 	for _, path := range sshKeys {
-		keybytes, err := ioutil.ReadFile(path)
+		keybytes, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
