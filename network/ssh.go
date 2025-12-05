@@ -18,7 +18,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -68,7 +67,7 @@ func NewSSHAgent(dialer Dialer) (*SSHAgent, error) {
 		return nil, err
 	}
 
-	sockDir, err := ioutil.TempDir("", "mantle-ssh-")
+	sockDir, err := os.MkdirTemp("", "mantle-ssh-")
 	if err != nil {
 		return nil, err
 	}
