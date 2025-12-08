@@ -8,9 +8,11 @@ import (
 	"github.com/flatcar/mantle/util"
 	"io"
 	"log"
+	"maps"
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -388,8 +390,12 @@ func (a *API) CreateSecurityGroupRuleUDP(ctx context.Context, securityGroupId st
 }
 
 func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
+	labels := maps.Clone(DefaultLabels)
+	now := time.Now()
+	unixString := strconv.FormatInt(now.Unix(), 10)
+	labels["createdAt"] = unixString
 	ipPayload := iaas.CreatePublicIPPayload{
-		Labels: &DefaultLabels,
+		Labels: &labels,
 	}
 	ipAddress, err := a.client.CreatePublicIP(ctx, a.projectID, a.region).CreatePublicIPPayload(ipPayload).Execute()
 	if err != nil {
@@ -620,10 +626,11 @@ func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) 
 			return fmt.Errorf("label 'createdAt' is not a string")
 		}
 
-		createdAtDate, err := time.Parse(time.RFC3339, dateStr)
+		seconds, err := strconv.ParseInt(dateStr, 10, 64)
 		if err != nil {
-			return fmt.Errorf("label 'createdAt' is not a RFC3339 date")
+			return fmt.Errorf("failed to parse 'createdAt': %w", err)
 		}
+		createdAtDate := time.Unix(seconds, 0)
 		if createdAtDate.After(createdCutoff) {
 			continue
 		}
