@@ -696,7 +696,7 @@ func architecture(pltfrm string) string {
 	return nativeArch
 }
 
-// returns the arch part of an sdk board name
+// returns the arch part of a sdk board name
 func boardToArch(board string) string {
 	return strings.SplitN(board, "-", 2)[0]
 }

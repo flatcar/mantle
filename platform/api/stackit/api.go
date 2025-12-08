@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/flatcar/mantle/util"
 	"io"
 	"log"
 	"net/http"
@@ -134,6 +135,20 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 	err = uploadFile(ctx, file, stat.Size(), url)
 	if err != nil {
 		return "", fmt.Errorf("failed to upload file: %w", err)
+	}
+
+	err = util.Retry(12, 5*time.Second, func() error {
+		res, err := a.client.GetImage(ctx, a.projectID, a.region, response.GetId()).Execute()
+		if err != nil {
+			return fmt.Errorf("getting image: %w", err)
+		}
+		if *res.Status == "AVAILABLE" {
+			return nil
+		}
+		return fmt.Errorf("image not available: %w", err)
+	})
+	if err != nil {
+		return "", err
 	}
 	return response.GetId(), nil
 }
@@ -391,22 +406,6 @@ func (a *API) AttachPublicIPAddress(ctx context.Context, ipAddressId, serverId s
 	return nil
 }
 
-func (a *API) DeleteIPAddress(ctx context.Context, id string) error {
-	ipAddress, err := a.client.GetPublicIP(ctx, a.projectID, a.region, id).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to get public ip: %w", err)
-	}
-	if ipAddress == nil {
-		return nil
-	}
-
-	err = a.client.DeletePublicIP(ctx, a.projectID, a.region, id).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to delete public ip: %w", err)
-	}
-	return nil
-}
-
 func (a *API) DeleteIPAddressByIP(ctx context.Context, ipAddress string) error {
 	publicIPs, err := a.client.ListPublicIPs(ctx, a.projectID, a.region).Execute()
 	if err != nil {
@@ -416,7 +415,7 @@ func (a *API) DeleteIPAddressByIP(ctx context.Context, ipAddress string) error {
 		if *ip.Ip == ipAddress {
 			err = a.client.DeletePublicIP(ctx, a.projectID, a.region, *ip.Id).Execute()
 			if err != nil {
-				return fmt.Errorf("failed to delete public ip: %w", err)
+				return fmt.Errorf("failed to delete public ip %s: %w", ip.GetIp(), err)
 			}
 		}
 	}
