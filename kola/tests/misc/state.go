@@ -76,13 +76,15 @@ func OverlayCleanup(c cluster.TestCluster) {
 	// special cases are recreating a directory but empty, deleting a file, deleting a directory,
 	// and recreating a directory with same contents plus a new file.
 	// /etc/sssd should have the same permissions but the only difference is that the overlay
-	// will add the overlay.opaque xattr, /etc/samba is an empty directory in case of samba <= 4.15,
-	// but the test would also be valid if it had contents, /etc/bash/bashrc must exist for the test
+	// will add the overlay.opaque xattr, /etc/wireguard is a directory that must exist in the lowerdir
+	// but it's ok to delete it as nothing uses/recreates it, /etc/bash/bashrc must exist for the test
 	// to work and the contents should get frozen and not touched by the cleanup because here we
 	// recreate the folder (and add a new file in it) which means that the lowerdir folder isn't used
 	// and deleting equal contents would not result in it being available.
 	// All these files should not be part of the tmpfiles rules for the test to work.
-	_ = c.MustSSH(m, `sudo rm -r /etc/sssd && sudo mkdir /etc/sssd && sudo chmod 700 /etc/sssd && sudo rm /etc/kexec.conf && sudo rm -rf /etc/samba && sudo rm -r /etc/bash && sudo cp -a /usr/share/flatcar/etc/bash /etc/bash && sudo touch /etc/bash/hello`)
+	// NOTE: When this test fails due to package updates not shipping these files/directories under /etc
+	// then you should fix the test by finding a similar file/directory to be used.
+	_ = c.MustSSH(m, `sudo rm -r /etc/sssd && sudo mkdir /etc/sssd && sudo chmod 700 /etc/sssd && sudo rm /etc/kexec.conf && sudo rm -r /etc/wireguard && sudo rm -r /etc/bash && sudo cp -a /usr/share/flatcar/etc/bash /etc/bash && sudo touch /etc/bash/hello`)
 
 	// Test that /etc/resolv.conf will be recreated when removed
 	_ = c.MustSSH(m, `sudo rm /etc/resolv.conf`)
@@ -96,7 +98,7 @@ func OverlayCleanup(c cluster.TestCluster) {
 	}
 
 	_ = c.MustSSH(m, fmt.Sprintf(overlayCheck, "after reboot"))
-	_ = c.MustSSH(m, `if sudo test -e /etc/sssd/sssd.conf || test -e /etc/kexec.conf || test -e /etc/samba || test ! -e /etc/bash/hello || test ! -e /etc/bash/bashrc ; then echo "Deletion or modification lost: $_" ; exit 1; fi`)
+	_ = c.MustSSH(m, `if sudo test -e /etc/sssd/sssd.conf || test -e /etc/kexec.conf || test -e /etc/wireguard || test ! -e /etc/bash/hello || test ! -e /etc/bash/bashrc ; then echo "Deletion or modification lost: $_" ; exit 1; fi`)
 	_ = c.MustSSH(m, `if test ! -e /etc/resolv.conf ; then echo "Files with tmpfile rule not recreated: $_" ; exit 1; fi && if ! sudo unshare -m bash -c 'umount /etc && test ! -e /etc/resolv.conf'; then echo "File with tmpfile rule exists as upcopy: $_"; exit 1; fi`)
 }
 
