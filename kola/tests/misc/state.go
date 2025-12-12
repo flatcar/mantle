@@ -69,7 +69,7 @@ func OverlayCleanup(c cluster.TestCluster) {
 	// systemd-tmpfiles to cause any recreation at boot: This was observed with C, L, and d entries
 	// (file or tree copy, symlink setup, directory creation) and thus they are dropped during image
 	// build as workaround.
-	overlayCheck := `sudo unshare -m bash -c 'umount /etc || { echo "Could not unmount /etc"; exit 1; }; if test -e "/etc/hosts" || test -e "/etc/security" || test -e "/etc/profile.d" || test -e "/etc/shells" || test -e "/etc/os-release" ; then echo "Unexpected overlay copy in /etc %s: $_" ; exit 1; fi'`
+	overlayCheck := `sudo unshare -m bash -c 'umount -l /etc || { echo "Could not unmount /etc"; exit 1; }; if test -e "/etc/hosts" || test -e "/etc/security" || test -e "/etc/profile.d" || test -e "/etc/shells" || test -e "/etc/os-release" ; then echo "Unexpected overlay copy in /etc %s: $_" ; exit 1; fi'`
 	_ = c.MustSSH(m, fmt.Sprintf(overlayCheck, "on initial boot"))
 
 	// Do some local modifications that are expected to be kept:
@@ -92,14 +92,14 @@ func OverlayCleanup(c cluster.TestCluster) {
 	// The migration path for old machines with a full /etc and the cleanup of unwanted duplicates/
 	// upcopies can be tested the same way by copying duplicates to /etc and then rebooting to
 	// check that they get cleaned up.
-	_ = c.MustSSH(m, `sudo unshare -m bash -c 'umount /etc && cp -a /usr/share/flatcar/etc/{hosts,shells,os-release} /etc/ && mkdir /etc/security /etc/profile.d'`)
+	_ = c.MustSSH(m, `sudo unshare -m bash -c 'umount -l /etc && cp -a /usr/share/flatcar/etc/{hosts,shells,os-release} /etc/ && mkdir /etc/security /etc/profile.d'`)
 	if err := m.Reboot(); err != nil {
 		c.Fatalf("could not reboot: %v", err)
 	}
 
 	_ = c.MustSSH(m, fmt.Sprintf(overlayCheck, "after reboot"))
 	_ = c.MustSSH(m, `if sudo test -e /etc/sssd/sssd.conf || test -e /etc/kexec.conf || test -e /etc/wireguard || test ! -e /etc/bash/hello || test ! -e /etc/bash/bashrc ; then echo "Deletion or modification lost: $_" ; exit 1; fi`)
-	_ = c.MustSSH(m, `if test ! -e /etc/resolv.conf ; then echo "Files with tmpfile rule not recreated: $_" ; exit 1; fi && if ! sudo unshare -m bash -c 'umount /etc && test ! -e /etc/resolv.conf'; then echo "File with tmpfile rule exists as upcopy: $_"; exit 1; fi`)
+	_ = c.MustSSH(m, `if test ! -e /etc/resolv.conf ; then echo "Files with tmpfile rule not recreated: $_" ; exit 1; fi && if ! sudo unshare -m bash -c 'umount -l /etc && test ! -e /etc/resolv.conf'; then echo "File with tmpfile rule exists as upcopy: $_"; exit 1; fi`)
 }
 
 // Check the OS reset logic with flatcar-reset to be able to

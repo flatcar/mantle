@@ -125,8 +125,9 @@ if [[ "${oem_test_type}" != 'raw' ]]; then
 fi
 
 oem_test_path=$(jq --raw-output '.path' <<<"${list_oem_test}")
-if [[ "${oem_test_path}" != '/etc/extensions/oem-test.raw' ]]; then
-        echo "oem test image path should be '/etc/extensions/oem-test.raw', is '${oem_test_path}'"
+oem_test_real_path=$(readlink -f /etc/extensions/oem-test.raw)
+if [[ "${oem_test_path}" != "${oem_test_real_path}" ]] && [[ "${oem_test_path}" != '/etc/extensions/oem-test.raw' ]]; then
+        echo "oem test image path should be '${oem_test_real_path}' or '/etc/extensions/oem-test.raw', is '${oem_test_path}'"
         exit 1
 fi
 
@@ -240,6 +241,14 @@ func init() {
           sysext works`),
 	})
 	register.Register(&register.Test{
+		Name:        "confext.skiprefresh",
+		Run:         checkConfextSkipRefresh,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 4548}})
+	register.Register(&register.Test{
 		Name:        "sysext.custom-docker.torcx",
 		Run:         checkSysextCustomDocker,
 		ClusterSize: 1,
@@ -324,6 +333,12 @@ func checkSysextSimple(c cluster.TestCluster, oemMountpoint string) {
 	checkHelper(c, oemMountpoint)
 }
 
+func checkConfextSkipRefresh(c cluster.TestCluster) {
+	// This test uses no extra extension images
+	_ = c.MustSSH(c.Machines()[0], `if sudo journalctl -u systemd-confext -b0 | grep "Merged extensions into"; then echo "Unexpected confext merge, expected skip" ; exit 1 ; fi`)
+	_ = c.MustSSH(c.Machines()[0], `if ! findmnt -O rw --target /etc >/dev/null; then echo "Missing or wrong /etc mount, expected rw"; exit 1; fi`)
+}
+
 func checkSysextCustomDocker(c cluster.TestCluster) {
 	arch := strings.SplitN(kola.QEMUOptions.Board, "-", 2)[0]
 	if arch == "arm64" {
@@ -341,13 +356,14 @@ func checkSysextCustomDocker(c cluster.TestCluster) {
 	// Flatcar has no mksquashfs and btrfs is missing a bugfix but at least ext4 works
 	// The first test is for a fixed Docker version, which with the time will get old and older but is still expected to work because users may also "freeze" their Docker version this way
 	_ = c.MustSSH(c.Machines()[0], fmt.Sprintf(`ARCH=%[1]s ONLY_DOCKER=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 docker && ARCH=%[1]s ONLY_CONTAINERD=1 FORMAT=ext4 sysext-bakery/create_docker_sysext.sh 20.10.21 containerd && sudo mv docker.raw containerd.raw /etc/extensions/`, arch))
-	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext`)
+	// Explicit daemon-reload and docker start because the old bake.sh does not set EXTENSION_RELOAD_MANAGER=1
+	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext && sudo systemctl daemon-reload`)
 	// We should now be able to use Docker
 	_ = c.MustSSH(c.Machines()[0], cmdWorking)
 	// The next test is with a recent Docker version, here the one from the Flatcar image to couple it to something that doesn't change under our feet
 	version := string(c.MustSSH(c.Machines()[0], `bzcat /usr/share/licenses/licenses.json.bz2 | grep -m 1 -o 'app-\(containers\|emulation\)/docker-[0-9][^:]*' | cut -d - -f 3`))
 	_ = c.MustSSH(c.Machines()[0], fmt.Sprintf(`ONLY_DOCKER=1 FORMAT=ext4 ARCH=%[2]s sysext-bakery/create_docker_sysext.sh %[1]s docker && ONLY_CONTAINERD=1 FORMAT=ext4 ARCH=%[2]s sysext-bakery/create_docker_sysext.sh %[1]s containerd && sudo mv docker.raw containerd.raw /etc/extensions/`, version, arch))
-	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext && sudo systemctl restart docker containerd`)
+	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext && sudo systemctl daemon-reload && sudo systemctl restart docker containerd`)
 	// We should now still be able to use Docker
 	_ = c.MustSSH(c.Machines()[0], cmdWorking)
 }
