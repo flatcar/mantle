@@ -125,8 +125,9 @@ if [[ "${oem_test_type}" != 'raw' ]]; then
 fi
 
 oem_test_path=$(jq --raw-output '.path' <<<"${list_oem_test}")
-if [[ "${oem_test_path}" != '/etc/extensions/oem-test.raw' ]]; then
-        echo "oem test image path should be '/etc/extensions/oem-test.raw', is '${oem_test_path}'"
+oem_test_real_path=$(readlink -f /etc/extensions/oem-test.raw)
+if [[ "${oem_test_path}" != "${oem_test_real_path}" ]] && [[ "${oem_test_path}" != '/etc/extensions/oem-test.raw' ]]; then
+        echo "oem test image path should be '${oem_test_real_path}' or '/etc/extensions/oem-test.raw', is '${oem_test_path}'"
         exit 1
 fi
 
@@ -240,6 +241,14 @@ func init() {
           sysext works`),
 	})
 	register.Register(&register.Test{
+		Name:        "confext.skiprefresh",
+		Run:         checkConfextSkipRefresh,
+		ClusterSize: 1,
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:  []string{"qemu", "qemu-unpriv"},
+		MinVersion: semver.Version{Major: 4548}})
+	register.Register(&register.Test{
 		Name:        "sysext.custom-docker.torcx",
 		Run:         checkSysextCustomDocker,
 		ClusterSize: 1,
@@ -322,6 +331,12 @@ func checkSysextSimple(c cluster.TestCluster, oemMountpoint string) {
 	_ = c.MustSSH(c.Machines()[0], `sudo systemctl restart systemd-sysext`)
 	// Second check after reloading the extensions (e.g., to add/remove/update them)
 	checkHelper(c, oemMountpoint)
+}
+
+func checkConfextSkipRefresh(c cluster.TestCluster) {
+	// This test uses no extra extension images
+	_ = c.MustSSH(c.Machines()[0], `if sudo journalctl -u systemd-confext -b0 | grep "Merged extensions into"; then echo "Unexpected confext merge, expected skip" ; exit 1 ; fi`)
+	_ = c.MustSSH(c.Machines()[0], `if ! findmnt -o VFS-OPTIONS --raw --noheadings --target /etc | grep -q rw; then echo "Missing or wrong /etc mount, expected rw"; exit 1; fi`)
 }
 
 func checkSysextCustomDocker(c cluster.TestCluster) {
