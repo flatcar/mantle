@@ -1,3 +1,30 @@
+## v1.3.0
+- **Feature:** Add `CreateIsolatedNetwork` functionality
+- **Feature:** Add `ImageFromVolumePayload` functionality
+- **Feature:** Add `SystemRoutes` to `UpdateRoutingTableOfAreaPayload`
+
+## v1.2.4
+- Bump STACKIT SDK resourcemanager module from `v0.18.1` to `v0.18.2`
+
+## v1.2.3
+- Bump STACKIT SDK core module from `v0.20.0` to `v0.20.1`
+
+## v1.2.2
+- Bump STACKIT SDK resourcemanager module from `v0.18.0` to `v0.18.1`
+
+## v1.2.1
+- Bump STACKIT SDK core module from `v0.19.0` to `v0.20.0`
+
+## v1.2.0
+- **Feature:** Add new field `Encrypted` to `Backup` model, which indicates if a backup is encrypted
+- **Feature:** Add new field `ImportProgress` to `Image` model, which indicates the import progress of an image
+
+## v1.1.0
+- **Breaking Change:** Removal of unused model structs: `Area`, `AreaConfig`, `AreaPrefixConfigIPv4`, `UpdateAreaIPv4`, `NetworkAreaIPv4`, `CreateAreaAddressFamily`, `CreateAreaIPv4`, `CreateNetworkAddressFamily`, `CreateNetworkIPv4Body`, `CreateNetworkIPv6Body`, `CreateServerPayloadBootVolume`, `CreateServerPayloadNetworking`, `NullableUpdateAreaAddressFamily`, `CreateServerPayloadNetworking`, `UpdateNetworkAddressFamily`, `CreateServerPayloadNetworking`, `CreateServerPayloadNetworking`
+
+## v1.0.1
+- Bump STACKIT resourcemanager SDK module from `v0.17.1` to `v0.18.0`
+
 ## v1.0.0
 - **Breaking Change:** The region is no longer specified within the client configuration. Instead, the region must be passed as a parameter to any region-specific request.
 - **Feature:** Add new methods to manage routing tables: `AddRoutingTableToArea`, `DeleteRoutingTableFromArea`, `GetRoutingTableOfArea`, `ListRoutingTablesOfArea`, `UpdateRoutingTableOfArea`

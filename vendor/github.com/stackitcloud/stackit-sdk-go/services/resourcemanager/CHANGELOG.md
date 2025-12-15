@@ -1,3 +1,12 @@
+## v0.18.2
+  - Bump STACKIT SDK core module from `v0.20.0` to `v0.20.1`
+
+## v0.18.1
+  - Bump STACKIT SDK core module from `v0.19.0` to `v0.20.0`
+
+## v0.18.0
+  - **Feature:** Add new model `ContainerSearchResult`
+
 ## v0.17.1
   - **Dependencies:** Bump `github.com/golang-jwt/jwt/v5` from `v5.2.2` to `v5.2.3`
 
