@@ -26,7 +26,7 @@ require (
 	github.com/coreos/ignition/v2 v2.24.0
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 	github.com/coreos/pkg v0.0.0-20240122114842-bbd7aa9bf6fb
-	github.com/digitalocean/godo v1.169.0
+	github.com/digitalocean/godo v1.170.0
 	github.com/flatcar/azure-vhd-utils v0.0.0-20240612122125-a90d3151f166
 	github.com/flatcar/container-linux-config-transpiler v0.9.4
 	github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
