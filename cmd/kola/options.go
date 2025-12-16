@@ -229,7 +229,7 @@ func init() {
 	sv(&kola.STACKITOptions.Region, "stackit-region", "eu01", "STACKIT region")
 	sv(&kola.STACKITOptions.ProjectId, "stackit-project-id", "", "STACKIT project ID")
 	sv(&kola.STACKITOptions.ServiceAccountKeyPath, "stackit-service-account-key-path", "$HOME/.stackit/credentials.json", "STACKIT service account key path")
-	sv(&kola.STACKITOptions.MachineType, "stackit-type", "c2i.8", "STACKIT instance type")
+	sv(&kola.STACKITOptions.MachineType, "stackit-type", "c2i.2", "STACKIT instance type")
 	sv(&kola.STACKITOptions.AvailabilityZone, "stackit-availability-zone", "eu01-2", "STACKIT availability zone")
 	sv(&kola.STACKITOptions.ImageId, "stackit-image-id", "", "STACKIT image ID")
 }
