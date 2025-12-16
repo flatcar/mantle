@@ -59,7 +59,7 @@ etcd:
   enable_v2:                   true`),
 		Distros: []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 
 	register.Register(&register.Test{
@@ -78,7 +78,7 @@ etcd:
 `, uuid.New())),
 		Distros: []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 }
 
