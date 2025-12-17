@@ -38,7 +38,7 @@ func init() {
 		Run:         locksmithCluster,
 		ClusterSize: 3,
 		// When cl.etcd-member.discovery runs on all clouds to test CLC IP templating, we can skip running this
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		// This test already specifies the update.conf file in the userdata.
 		// Disabling of the public server is done explicitly.
 		Flags: []register.Flag{register.NoDisableUpdates},
@@ -61,7 +61,7 @@ etcd:
 		Run:         locksmithReboot,
 		ClusterSize: 1,
 		// This test is normally not be related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		Distros:   []string{"cl"},
 	})
 	register.Register(&register.Test{
@@ -72,7 +72,7 @@ etcd:
 		Flags:       []register.Flag{register.NoDisableUpdates},
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.Ignition(`{
   "ignition": { "version": "2.0.0" },
   "systemd": {

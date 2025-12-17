@@ -66,7 +66,7 @@ func init() {
 		ClusterSize: 1,
 		Name:        "cl.network.wireguard",
 		Distros:     []string{"cl"},
-		Platforms:   []string{"qemu", "qemu-unpriv", "esx"},
+		Platforms:   []string{"qemu", "qemu-unpriv", "esx", "azure"},
 		UserData: conf.Butane(`---
 variant: flatcar
 version: 1.0.0
@@ -109,7 +109,7 @@ systemd:
 		ClusterSize: 1,
 		MinVersion:  semver.Version{Major: 4345},
 		Name:        "cl.network.nftables",
-		Platforms:   []string{"qemu", "qemu-uefi"},
+		Platforms:   []string{"qemu", "qemu-uefi", "azure"},
 		Distros:     []string{"cl"},
 		UserData: conf.Butane(`---
 variant: flatcar
@@ -136,7 +136,7 @@ systemd:
 		Run:         firewall,
 		ClusterSize: 1,
 		Name:        "cl.network.iptables",
-		Platforms:   []string{"qemu", "qemu-uefi"},
+		Platforms:   []string{"qemu", "qemu-uefi", "azure"},
 		Distros:     []string{"cl"},
 		UserData: conf.Butane(`---
 variant: flatcar

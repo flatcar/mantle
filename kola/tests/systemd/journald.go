@@ -74,7 +74,7 @@ func init() {
 		Distros: []string{"cl"},
 
 		// This test is normally not related to the cloud environment
-		Platforms:   []string{"qemu", "qemu-unpriv"},
+		Platforms:   []string{"qemu", "qemu-unpriv", "azure"},
 		DefaultUser: "flatcar",
 		ClusterSize: 1,
 		MinVersion:  semver.Version{Major: 3549},

@@ -64,7 +64,7 @@ func init() {
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 2942},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		// Skip AVC checks, we will do our own.
 		Flags: []register.Flag{register.NoSELinuxAVCChecks},
 	})
@@ -105,7 +105,7 @@ func init() {
 		Name:        "docker.userns",
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:
@@ -148,7 +148,7 @@ passwd:
 		Name:        `docker.base`,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 
 	register.Register(&register.Test{
@@ -156,7 +156,7 @@ passwd:
 		ClusterSize: 1,
 		Name:        "docker.btrfs-storage",
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		// Note: copied verbatim from https://github.com/coreos/docs/blob/master/os/mounting-storage.md#creating-and-mounting-a-btrfs-volume-file
 		// Added explicit btrfs driver selection because overlay2 is the default for btrfs FS in docker 23 and above
 		UserData: conf.ContainerLinuxConfig(`
@@ -208,7 +208,7 @@ systemd:
 		ClusterSize: 1,
 		Name:        "docker.devicemapper-storage",
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		// Added explicit devicemapper driver selection to override overlay2 default
 		UserData: conf.Butane(`
 variant: flatcar
@@ -236,7 +236,7 @@ storage:
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:
@@ -280,7 +280,7 @@ systemd:
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.ContainerLinuxConfig(`
 systemd:
   units:
