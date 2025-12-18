@@ -165,6 +165,11 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 					},
 				},
 			},
+			SecurityProfile: &armcompute.SecurityProfile{
+				UefiSettings: &armcompute.UefiSettings{
+					VTpmEnabled: &a.Opts.EnableTPM,
+				},
+			},
 			DiagnosticsProfile: &armcompute.DiagnosticsProfile{
 				BootDiagnostics: &armcompute.BootDiagnostics{
 					Enabled: to.Ptr(true),

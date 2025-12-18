@@ -119,7 +119,7 @@ func init() {
 	sv(&kola.AzureOptions.Sku, "azure-sku", "alpha", "Azure image sku/channel (default \"alpha\"")
 	sv(&kola.AzureOptions.Version, "azure-version", "", "Azure image version")
 	sv(&kola.AzureOptions.Location, "azure-location", "westus", "Azure location (default \"westus\"")
-	sv(&kola.AzureOptions.Size, "azure-size", "Standard_DS2_v2", "Azure machine size (default \"Standard_DS2_v2\")")
+	sv(&kola.AzureOptions.Size, "azure-size", "Standard_D2s_v5", "Azure machine size")
 	sv(&kola.AzureOptions.HyperVGeneration, "azure-hyper-v-generation", "V1", "Azure Hyper-V Generation (\"V1\" or \"V2\")")
 	sv(&kola.AzureOptions.VnetSubnetName, "azure-vnet-subnet-name", "", "Use a pre-existing virtual network for created instances. Specify as vnet-name/subnet-name. If subnet name is omitted then \"default\" is assumed")
 	bv(&kola.AzureOptions.UseGallery, "azure-use-gallery", false, "Use gallery image instead of managed image")
@@ -129,6 +129,7 @@ func init() {
 	sv(&kola.AzureOptions.ResourceGroupBasename, "azure-resource-group-basename", "kola-cluster", "Prefix used for creating new resource groups")
 	sv(&kola.AzureOptions.AvailabilitySet, "azure-availability-set", "", "Deploy instances with an existing availibity set")
 	sv(&kola.AzureOptions.KolaVnet, "azure-kola-vnet", "", "Pass the vnet/subnet that kola is being ran from to restrict network access to created storage accounts")
+	bv(&kola.AzureOptions.EnableTPM, "azure-enable-tpm", true, "Enable the vTPM feature for test VMs. Can be \"true\" or \"false\".")
 	sv(&kola.AzureOptions.VMIdentity, "azure-vm-identity", "", "Assign a managed identity to the VM by name (will be looked up for its ID)")
 
 	// do-specific options

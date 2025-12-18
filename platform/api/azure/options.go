@@ -63,6 +63,9 @@ type Options struct {
 	ResourceGroupBasename string
 	// AvailabilitySet is an existing availability set to deploy the instance in.
 	AvailabilitySet string
+	// Enable vTPM feature for TPM / SecureBoot / Trusted Boot related tests.
+	// The field name mirrors the QEMU config.
+	EnableTPM bool
 	// VMIdentity is the name of a managed identity to assign to the VM.
 	VMIdentity string
 }
