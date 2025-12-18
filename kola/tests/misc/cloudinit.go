@@ -177,7 +177,7 @@ chmod 600 ~core/.ssh/authorized_keys`),
 		Distros:          []string{"cl"},
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		// When cl.cloudinit.basic passed we don't need to run this on all clouds
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 	register.Register(&register.Test{
 		Run:         CloudInitMultipartMime,
@@ -185,7 +185,7 @@ chmod 600 ~core/.ssh/authorized_keys`),
 		Name:        "cl.cloudinit.multipart-mime",
 		UserData:    conf.MultipartMimeConfig(multipartMimeUserdata),
 		Distros:     []string{"cl"},
-		Platforms:   []string{"qemu", "qemu-unpriv"},
+		Platforms:   []string{"qemu", "qemu-unpriv", "azure"},
 		MinVersion:  semver.Version{Major: 3620},
 	})
 }

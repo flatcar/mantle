@@ -16,7 +16,7 @@ func init() {
 		Run:         writeAbsoluteSymlink,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.Ignition(`{
 		  "ignition": {
 		      "version": "3.0.0"

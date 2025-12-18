@@ -225,7 +225,7 @@ func init() {
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
 		MinVersion: semver.Version{Major: 3603},
 		UserData: conf.ContainerLinuxConfig(`storage:
   files:
@@ -262,7 +262,7 @@ func init() {
 		ClusterSize: 1,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		// Sysext docker was introduced after release 3760.
 		// NOTE that 3761 is a developer version which was never released.
 		// However, the next largest Alpha major release shipped sysext.

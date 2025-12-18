@@ -51,7 +51,8 @@ type MySQLDatabase struct {
 	TotalDiskSizeGB   int                       `json:"total_disk_size_gb"`
 	Port              int                       `json:"port"`
 
-	EngineConfig MySQLDatabaseEngineConfig `json:"engine_config"`
+	EngineConfig   MySQLDatabaseEngineConfig `json:"engine_config"`
+	PrivateNetwork *DatabasePrivateNetwork   `json:"private_network,omitempty"`
 }
 
 type MySQLDatabaseEngineConfig struct {
@@ -377,6 +378,7 @@ func (d *MySQLDatabase) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created           *parseabletime.ParseableTime `json:"created"`
 		Updated           *parseabletime.ParseableTime `json:"updated"`
 		OldestRestoreTime *parseabletime.ParseableTime `json:"oldest_restore_time"`
@@ -391,6 +393,7 @@ func (d *MySQLDatabase) UnmarshalJSON(b []byte) error {
 	d.Created = (*time.Time)(p.Created)
 	d.Updated = (*time.Time)(p.Updated)
 	d.OldestRestoreTime = (*time.Time)(p.OldestRestoreTime)
+
 	return nil
 }
 
@@ -410,22 +413,25 @@ type MySQLCreateOptions struct {
 	// Deprecated: SSLConnection is a deprecated property, as it is no longer supported in DBaaS V2.
 	SSLConnection bool `json:"ssl_connection,omitempty"`
 
-	Fork         *DatabaseFork              `json:"fork,omitempty"`
-	EngineConfig *MySQLDatabaseEngineConfig `json:"engine_config,omitempty"`
+	Fork           *DatabaseFork              `json:"fork,omitempty"`
+	EngineConfig   *MySQLDatabaseEngineConfig `json:"engine_config,omitempty"`
+	PrivateNetwork *DatabasePrivateNetwork    `json:"private_network,omitempty"`
 }
 
 // MySQLUpdateOptions fields are used when altering the existing MySQL Database
 type MySQLUpdateOptions struct {
-	Label        string                     `json:"label,omitempty"`
-	AllowList    *[]string                  `json:"allow_list,omitempty"`
-	Updates      *DatabaseMaintenanceWindow `json:"updates,omitempty"`
-	Type         string                     `json:"type,omitempty"`
-	ClusterSize  int                        `json:"cluster_size,omitempty"`
-	Version      string                     `json:"version,omitempty"`
-	EngineConfig *MySQLDatabaseEngineConfig `json:"engine_config,omitempty"`
+	Label          string                     `json:"label,omitempty"`
+	AllowList      *[]string                  `json:"allow_list,omitempty"`
+	Updates        *DatabaseMaintenanceWindow `json:"updates,omitempty"`
+	Type           string                     `json:"type,omitempty"`
+	ClusterSize    int                        `json:"cluster_size,omitempty"`
+	Version        string                     `json:"version,omitempty"`
+	EngineConfig   *MySQLDatabaseEngineConfig `json:"engine_config,omitempty"`
+	PrivateNetwork **DatabasePrivateNetwork   `json:"private_network,omitempty"`
 }
 
 // MySQLDatabaseBackup is information for interacting with a backup for the existing MySQL Database
+
 // Deprecated: MySQLDatabaseBackup is a deprecated struct, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 type MySQLDatabaseBackup struct {
@@ -436,6 +442,7 @@ type MySQLDatabaseBackup struct {
 }
 
 // MySQLBackupCreateOptions are options used for CreateMySQLDatabaseBackup(...)
+//
 // Deprecated: MySQLBackupCreateOptions is a deprecated struct, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 type MySQLBackupCreateOptions struct {
@@ -448,6 +455,7 @@ func (d *MySQLDatabaseBackup) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created *parseabletime.ParseableTime `json:"created"`
 	}{
 		Mask: (*Mask)(d),
@@ -458,6 +466,7 @@ func (d *MySQLDatabaseBackup) UnmarshalJSON(b []byte) error {
 	}
 
 	d.Created = (*time.Time)(p.Created)
+
 	return nil
 }
 
@@ -478,6 +487,7 @@ func (c *Client) ListMySQLDatabases(ctx context.Context, opts *ListOptions) ([]M
 }
 
 // ListMySQLDatabaseBackups lists all MySQL Database Backups associated with the given MySQL Database
+//
 // Deprecated: ListMySQLDatabaseBackups is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) ListMySQLDatabaseBackups(ctx context.Context, databaseID int, opts *ListOptions) ([]MySQLDatabaseBackup, error) {
@@ -526,6 +536,7 @@ func (c *Client) ResetMySQLDatabaseCredentials(ctx context.Context, databaseID i
 }
 
 // GetMySQLDatabaseBackup returns a specific MySQL Database Backup with the given ids
+//
 // Deprecated: GetMySQLDatabaseBackup is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) GetMySQLDatabaseBackup(ctx context.Context, databaseID int, backupID int) (*MySQLDatabaseBackup, error) {
@@ -534,6 +545,7 @@ func (c *Client) GetMySQLDatabaseBackup(ctx context.Context, databaseID int, bac
 }
 
 // RestoreMySQLDatabaseBackup returns the given MySQL Database with the given Backup
+//
 // Deprecated: RestoreMySQLDatabaseBackup is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) RestoreMySQLDatabaseBackup(ctx context.Context, databaseID int, backupID int) error {
@@ -542,6 +554,7 @@ func (c *Client) RestoreMySQLDatabaseBackup(ctx context.Context, databaseID int,
 }
 
 // CreateMySQLDatabaseBackup creates a snapshot for the given MySQL database
+//
 // Deprecated: CreateMySQLDatabaseBackup is a deprecated method, as the backup endpoints are no longer supported in DBaaS V2.
 // In DBaaS V2, databases can be backed up via database forking.
 func (c *Client) CreateMySQLDatabaseBackup(ctx context.Context, databaseID int, opts MySQLBackupCreateOptions) error {

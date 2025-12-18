@@ -47,7 +47,7 @@ func init() {
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadVerity,
@@ -57,7 +57,7 @@ func init() {
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 	register.Register(&register.Test{
 		Run:         RecoverBadUsr,
@@ -67,7 +67,7 @@ func init() {
 		UserData:    disableUpdateEngine,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 }
 

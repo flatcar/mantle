@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/user"
@@ -42,7 +41,7 @@ var (
 	kolaDisableSELinuxAVCChecks bool
 	defaultTargetBoard          = sdk.DefaultBoard()
 	kolaArchitectures           = []string{"amd64"}
-	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "equinixmetal", "qemu", "qemu-unpriv", "scaleway"}
+	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "qemu", "qemu-unpriv", "scaleway", "stackit"}
 	kolaDistros                 = []string{"cl", "fcos", "rhcos"}
 	kolaChannels                = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings               = []string{"basic", "pro"}
@@ -186,46 +185,6 @@ func init() {
 	sv(&kola.OpenStackOptions.User, "openstack-user", "", "User is the one used for the SSH connection to the Host")
 	sv(&kola.OpenStackOptions.Keyfile, "openstack-keyfile", "", "Keyfile is the absolute path to private SSH key file for the User on the Host")
 
-	// packet-specific options (kept for compatiblity but marked as deprecated)
-	sv(&kola.EquinixMetalOptions.ConfigPath, "packet-config-file", "", "Packet config file (default \"~/"+auth.EquinixMetalConfigPath+"\")")
-	sv(&kola.EquinixMetalOptions.Profile, "packet-profile", "", "Packet profile (default \"default\")")
-	sv(&kola.EquinixMetalOptions.ApiKey, "packet-api-key", "", "Packet API key (overrides config file)")
-	sv(&kola.EquinixMetalOptions.Project, "packet-project", "", "Packet project UUID (overrides config file)")
-	sv(&kola.EquinixMetalOptions.Plan, "packet-plan", "c3.small.x86", "Packet plan slug (default board-dependent, e.g. \"baremetal_0\")")
-	sv(&kola.EquinixMetalOptions.InstallerImageBaseURL, "packet-installer-image-base-url", "", "Packet installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
-	sv(&kola.EquinixMetalOptions.InstallerImageKernelURL, "packet-installer-image-kernel-url", "", "Packet installer image kernel URL, (default packet-installer-image-base-url/flatcar_production_pxe.vmlinuz)")
-	sv(&kola.EquinixMetalOptions.InstallerImageCpioURL, "packet-installer-image-cpio-url", "", "Packet installer image cpio URL, (default packet-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
-	sv(&kola.EquinixMetalOptions.ImageURL, "packet-image-url", "", "Packet image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
-	sv(&kola.EquinixMetalOptions.StorageURL, "packet-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Google Storage base URL for temporary uploads")
-	root.PersistentFlags().MarkDeprecated("packet-config-file", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-profile", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-api-key", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-project", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-plan", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-installer-image-base-url", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-installer-image-kernel-url", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-installer-image-cpio-url", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-image-url", "packet options are deprecated, please update to equinixmetal options")
-	root.PersistentFlags().MarkDeprecated("packet-storage-url", "packet options are deprecated, please update to equinixmetal options")
-
-	// equinixmetal-specific options
-	sv(&kola.EquinixMetalOptions.ConfigPath, "equinixmetal-config-file", "", "EquinixMetal config file (default \"~/"+auth.EquinixMetalConfigPath+"\")")
-	sv(&kola.EquinixMetalOptions.Profile, "equinixmetal-profile", "", "EquinixMetal profile (default \"default\")")
-	sv(&kola.EquinixMetalOptions.ApiKey, "equinixmetal-api-key", "", "EquinixMetal API key (overrides config file)")
-	sv(&kola.EquinixMetalOptions.Project, "equinixmetal-project", "", "EquinixMetal project UUID (overrides config file)")
-	sv(&kola.EquinixMetalOptions.Plan, "equinixmetal-plan", "c3.small.x86", "EquinixMetal plan slug (default board-dependent, e.g. \"baremetal_0\")")
-	sv(&kola.EquinixMetalOptions.InstallerImageBaseURL, "equinixmetal-installer-image-base-url", "", "EquinixMetal installer image base URL, non-https (default board-dependent, e.g. \"http://stable.release.flatcar-linux.net/amd64-usr/current\")")
-	sv(&kola.EquinixMetalOptions.InstallerImageKernelURL, "equinixmetal-installer-image-kernel-url", "", "EquinixMetal installer image kernel URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe.vmlinuz)")
-	sv(&kola.EquinixMetalOptions.InstallerImageCpioURL, "equinixmetal-installer-image-cpio-url", "", "EquinixMetal installer image cpio URL, (default equinixmetal-installer-image-base-url/flatcar_production_pxe_image.cpio.gz)")
-	sv(&kola.EquinixMetalOptions.ImageURL, "equinixmetal-image-url", "", "EquinixMetal image URL (default board-dependent, e.g. \"https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_production_packet_image.bin.bz2\")")
-	sv(&kola.EquinixMetalOptions.StorageURL, "equinixmetal-storage-url", "gs://users.developer.core-os.net/"+os.Getenv("USER")+"/mantle", "Storage URL for temporary uploads (supported: gs, ssh+http, ssh+https or ssh which defaults to https for download)")
-	sv(&kola.EquinixMetalOptions.Metro, "equinixmetal-metro", "", "the Metro where you want your server to live")
-	sv(&kola.EquinixMetalOptions.RemoteUser, "equinixmetal-remote-user", "core", "the user for SSH connection to the remote storage")
-	sv(&kola.EquinixMetalOptions.RemoteSSHPrivateKeyPath, "equinixmetal-remote-ssh-private-key-path", "./id_rsa", "the path to SSH private key for SSH connection to the remote storage")
-	sv(&kola.EquinixMetalOptions.RemoteDocumentRoot, "equinixmetal-remote-document-root", "/var/www", "the absolute path to the document root of the webserver for serving temporary files")
-	dv(&kola.EquinixMetalOptions.LaunchTimeout, "equinixmetal-launch-timeout", 0, "Timeout used for waiting for instance to launch")
-	dv(&kola.EquinixMetalOptions.InstallTimeout, "equinixmetal-install-timeout", 0, "Timeout used for waiting for installation to finish")
-
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
@@ -265,12 +224,20 @@ func init() {
 	sv(&kola.AkamaiOptions.Image, "akamai-image", "", "Akamai image ID")
 	sv(&kola.AkamaiOptions.Region, "akamai-region", "", "Akamai region")
 	sv(&kola.AkamaiOptions.Type, "akamai-type", "g6-nanode-1", "Akamai instance type")
+
+	// STACKIT specific options
+	sv(&kola.STACKITOptions.Region, "stackit-region", "eu01", "STACKIT region")
+	sv(&kola.STACKITOptions.ProjectId, "stackit-project-id", "", "STACKIT project ID")
+	sv(&kola.STACKITOptions.ServiceAccountKeyPath, "stackit-service-account-key-path", "$HOME/.stackit/credentials.json", "STACKIT service account key path")
+	sv(&kola.STACKITOptions.MachineType, "stackit-type", "c2i.2", "STACKIT instance type")
+	sv(&kola.STACKITOptions.AvailabilityZone, "stackit-availability-zone", "eu01-2", "STACKIT availability zone")
+	sv(&kola.STACKITOptions.ImageId, "stackit-image-id", "", "STACKIT image ID")
 }
 
 // Sync up the command line options if there is dependency
 func syncOptions() error {
 	// sync `Board` option with other cloud provider
-	// it seems kola has a strong dependency to qemu and it has been
+	// it seems kola has a strong dependency to qemu, and it has been
 	// build around that's why the `Board` is associated to `QEMU`
 	// but it can be helpful for other provider to get access to the Board in the runtime
 	board := kola.QEMUOptions.Board
@@ -281,12 +248,11 @@ func syncOptions() error {
 	kola.DOOptions.Board = board
 	kola.AzureOptions.Board = board
 	kola.AWSOptions.Board = board
-	kola.EquinixMetalOptions.Board = board
-	kola.EquinixMetalOptions.GSOptions = &kola.GCEOptions
 	kola.BrightboxOptions.Board = board
 	kola.ScalewayOptions.Board = board
 	kola.HetznerOptions.Board = board
 	kola.AkamaiOptions.Board = board
+	kola.STACKITOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
@@ -295,11 +261,6 @@ func syncOptions() error {
 			}
 		}
 		return fmt.Errorf("unsupported %v %q", name, item)
-	}
-
-	if kolaPlatform == "packet" {
-		fmt.Println("packet platform is deprecated, updating to equinixmetal")
-		kolaPlatform = "equinixmetal"
 	}
 
 	if err := validateOption("platform", kolaPlatform, kolaPlatforms); err != nil {
@@ -331,7 +292,7 @@ func syncOptions() error {
 		kola.QEMUOptions.Firmware = kolaDefaultFirmware[kola.QEMUOptions.Board]
 	}
 	if kola.QEMUOptions.EnableSecureboot && kola.QEMUOptions.OVMFVars == "" {
-		return fmt.Errorf("Secureboot requires OVMF vars file")
+		return fmt.Errorf("secureboot requires OVMF vars file")
 	}
 	units, _ := root.PersistentFlags().GetStringSlice("debug-systemd-units")
 	for _, unit := range units {
@@ -349,7 +310,7 @@ func syncOptions() error {
 	if kola.Options.IgnitionVersion == "" {
 		kola.Options.IgnitionVersion, ok = kolaIgnitionVersionDefaults[kola.Options.Distribution]
 		if !ok {
-			return fmt.Errorf("Distribution %q has no default Ignition version", kola.Options.Distribution)
+			return fmt.Errorf("distribution %q has no default Ignition version", kola.Options.Distribution)
 		}
 	}
 
@@ -357,7 +318,7 @@ func syncOptions() error {
 		kola.Options.SSHRetries = kolaSSHRetries
 	}
 	if kola.Options.SSHRetries < 0 {
-		return fmt.Errorf("Number of SSH retries can't be negative, is %d", kola.Options.SSHRetries)
+		return fmt.Errorf("number of SSH retries can't be negative, is %d", kola.Options.SSHRetries)
 	}
 	if kola.Options.SSHTimeout == 0 {
 		kola.Options.SSHTimeout = kolaSSHTimeout
@@ -378,14 +339,14 @@ func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
 		if agentEnv != "" {
 			f, err := net.Dial("unix", agentEnv)
 			if err != nil {
-				return nil, fmt.Errorf("Couldn't connect to unix socket %q: %v", agentEnv, err)
+				return nil, fmt.Errorf("couldn't connect to unix socket %q: %v", agentEnv, err)
 			}
 			defer f.Close()
 
 			agent := agent.NewClient(f)
 			keys, err := agent.List()
 			if err != nil {
-				return nil, fmt.Errorf("Couldn't talk to ssh-agent: %v", err)
+				return nil, fmt.Errorf("couldn't talk to ssh-agent: %v", err)
 			}
 			for _, key := range keys {
 				allKeys = append(allKeys, *key)
@@ -406,7 +367,7 @@ func GetSSHKeys(sshKeys []string) ([]agent.Key, error) {
 	}
 	// read key files, failing if any are missing
 	for _, path := range sshKeys {
-		keybytes, err := ioutil.ReadFile(path)
+		keybytes, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}

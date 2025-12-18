@@ -136,7 +136,11 @@ func SUIDFiles(c cluster.TestCluster) {
 }
 
 func SGIDFiles(c cluster.TestCluster) {
-	validfiles := []string{}
+	validfiles := []string{
+		"/usr/bin/chage",
+		"/usr/bin/expiry",
+		"/usr/bin/unix_chkpwd",
+	}
 
 	sugidFiles(c, validfiles, "2000")
 }

@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/flatcar/mantle/platform/machine/stackit"
+
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/coreos/go-semver/semver"
@@ -42,19 +44,18 @@ import (
 	azureapi "github.com/flatcar/mantle/platform/api/azure"
 	brightboxapi "github.com/flatcar/mantle/platform/api/brightbox"
 	doapi "github.com/flatcar/mantle/platform/api/do"
-	equinixmetalapi "github.com/flatcar/mantle/platform/api/equinixmetal"
 	esxapi "github.com/flatcar/mantle/platform/api/esx"
 	gcloudapi "github.com/flatcar/mantle/platform/api/gcloud"
 	hetznerapi "github.com/flatcar/mantle/platform/api/hetzner"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
+	stackitapi "github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/platform/machine/akamai"
 	"github.com/flatcar/mantle/platform/machine/aws"
 	"github.com/flatcar/mantle/platform/machine/azure"
 	"github.com/flatcar/mantle/platform/machine/brightbox"
 	"github.com/flatcar/mantle/platform/machine/do"
-	"github.com/flatcar/mantle/platform/machine/equinixmetal"
 	"github.com/flatcar/mantle/platform/machine/esx"
 	"github.com/flatcar/mantle/platform/machine/external"
 	"github.com/flatcar/mantle/platform/machine/gcloud"
@@ -73,20 +74,20 @@ const (
 var (
 	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola")
 
-	Options             = platform.Options{}
-	AkamaiOptions       = akamaiapi.Options{Options: &Options}       // glue to set platform options from main
-	AWSOptions          = awsapi.Options{Options: &Options}          // glue to set platform options from main
-	AzureOptions        = azureapi.Options{Options: &Options}        // glue to set platform options from main
-	BrightboxOptions    = brightboxapi.Options{Options: &Options}    // glue to set platform options from main
-	DOOptions           = doapi.Options{Options: &Options}           // glue to set platform options from main
-	ESXOptions          = esxapi.Options{Options: &Options}          // glue to set platform options from main
-	ExternalOptions     = external.Options{Options: &Options}        // glue to set platform options from main
-	GCEOptions          = gcloudapi.Options{Options: &Options}       // glue to set platform options from main
-	OpenStackOptions    = openstackapi.Options{Options: &Options}    // glue to set platform options from main
-	EquinixMetalOptions = equinixmetalapi.Options{Options: &Options} // glue to set platform options from main
-	QEMUOptions         = qemu.Options{Options: &Options}            // glue to set platform options from main
-	ScalewayOptions     = scalewayapi.Options{Options: &Options}     // glue to set platform options from main
-	HetznerOptions      = hetznerapi.Options{Options: &Options}      // glue to set platform options from main
+	Options          = platform.Options{}
+	AkamaiOptions    = akamaiapi.Options{Options: &Options}    // glue to set platform options from main
+	AWSOptions       = awsapi.Options{Options: &Options}       // glue to set platform options from main
+	AzureOptions     = azureapi.Options{Options: &Options}     // glue to set platform options from main
+	BrightboxOptions = brightboxapi.Options{Options: &Options} // glue to set platform options from main
+	DOOptions        = doapi.Options{Options: &Options}        // glue to set platform options from main
+	ESXOptions       = esxapi.Options{Options: &Options}       // glue to set platform options from main
+	ExternalOptions  = external.Options{Options: &Options}     // glue to set platform options from main
+	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
+	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
+	STACKITOptions   = stackitapi.Options{Options: &Options}   // glue to set platform options from main
+	QEMUOptions      = qemu.Options{Options: &Options}         // glue to set platform options from main
+	ScalewayOptions  = scalewayapi.Options{Options: &Options}  // glue to set platform options from main
+	HetznerOptions   = hetznerapi.Options{Options: &Options}   // glue to set platform options from main
 
 	TestParallelism        int    //glue var to set test parallelism from main
 	TAPFile                string // if not "", write TAP results here
@@ -265,8 +266,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = hetzner.NewFlight(&HetznerOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
-	case "equinixmetal":
-		flight, err = equinixmetal.NewFlight(&EquinixMetalOptions)
+	case "stackit":
+		flight, err = stackit.NewFlight(&STACKITOptions)
 	case "qemu":
 		flight, err = qemu.NewFlight(&QEMUOptions)
 	case "qemu-unpriv":
@@ -680,9 +681,6 @@ func architecture(pltfrm string) string {
 	if pltfrm == "qemu" && QEMUOptions.Board != "" {
 		nativeArch = boardToArch(QEMUOptions.Board)
 	}
-	if pltfrm == "equinixmetal" && EquinixMetalOptions.Board != "" {
-		nativeArch = boardToArch(EquinixMetalOptions.Board)
-	}
 	if pltfrm == "aws" && AWSOptions.Board != "" {
 		nativeArch = boardToArch(AWSOptions.Board)
 	}
@@ -692,10 +690,13 @@ func architecture(pltfrm string) string {
 	if pltfrm == "hetzner" && HetznerOptions.Board != "" {
 		nativeArch = boardToArch(HetznerOptions.Board)
 	}
+	if pltfrm == "stackit" && STACKITOptions.Board != "" {
+		nativeArch = boardToArch(STACKITOptions.Board)
+	}
 	return nativeArch
 }
 
-// returns the arch part of an sdk board name
+// returns the arch part of a sdk board name
 func boardToArch(board string) string {
 	return strings.SplitN(board, "-", 2)[0]
 }
@@ -740,7 +741,7 @@ func UploadKolet(c cluster.TestCluster, mArch string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Unable to locate kolet binary for %s", mArch)
+	return fmt.Errorf("unable to locate kolet binary for %s", mArch)
 }
 
 // ScpKolet searches for a kolet binary and copies it to the

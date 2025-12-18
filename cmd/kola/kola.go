@@ -188,31 +188,24 @@ func writeProps() error {
 		Image  string `json:"image"`
 		Flavor string `json:"flavor"`
 	}
-	type EquinixMetal struct {
-		Metro                 string `json:"metro"`
-		Plan                  string `json:"plan"`
-		InstallerImageBaseURL string `json:"installer"`
-		ImageURL              string `json:"image"`
-	}
 	type QEMU struct {
 		Image   string `json:"image"`
 		Mangled bool   `json:"mangled"`
 	}
 	return enc.Encode(&struct {
-		Cmdline         []string     `json:"cmdline"`
-		Platform        string       `json:"platform"`
-		Distro          string       `json:"distro"`
-		IgnitionVersion string       `json:"ignitionversion"`
-		Board           string       `json:"board"`
-		OSContainer     string       `json:"oscontainer"`
-		AWS             AWS          `json:"aws"`
-		Azure           Azure        `json:"azure"`
-		DO              DO           `json:"do"`
-		ESX             ESX          `json:"esx"`
-		GCE             GCE          `json:"gce"`
-		OpenStack       OpenStack    `json:"openstack"`
-		EquinixMetal    EquinixMetal `json:"equinixmetal"`
-		QEMU            QEMU         `json:"qemu"`
+		Cmdline         []string  `json:"cmdline"`
+		Platform        string    `json:"platform"`
+		Distro          string    `json:"distro"`
+		IgnitionVersion string    `json:"ignitionversion"`
+		Board           string    `json:"board"`
+		OSContainer     string    `json:"oscontainer"`
+		AWS             AWS       `json:"aws"`
+		Azure           Azure     `json:"azure"`
+		DO              DO        `json:"do"`
+		ESX             ESX       `json:"esx"`
+		GCE             GCE       `json:"gce"`
+		OpenStack       OpenStack `json:"openstack"`
+		QEMU            QEMU      `json:"qemu"`
 	}{
 		Cmdline:         os.Args,
 		Platform:        kolaPlatform,
@@ -253,12 +246,6 @@ func writeProps() error {
 			Region: kola.OpenStackOptions.Region,
 			Image:  kola.OpenStackOptions.Image,
 			Flavor: kola.OpenStackOptions.Flavor,
-		},
-		EquinixMetal: EquinixMetal{
-			Metro:                 kola.EquinixMetalOptions.Metro,
-			Plan:                  kola.EquinixMetalOptions.Plan,
-			InstallerImageBaseURL: kola.EquinixMetalOptions.InstallerImageBaseURL,
-			ImageURL:              kola.EquinixMetalOptions.ImageURL,
 		},
 		QEMU: QEMU{
 			Image:   kola.QEMUOptions.DiskImage,
