@@ -31,7 +31,7 @@ type Options struct {
 	*platform.Options
 	// Image is the ID of the Hetzner image to deploy.
 	Image string
-	// ServerType is the type of the instance (e.g. cx22).
+	// ServerType is the type of the instance (e.g. cpx22).
 	ServerType string
 	// Location is used as "default" zone for all requests.
 	Location string
