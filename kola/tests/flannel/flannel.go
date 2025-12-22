@@ -70,6 +70,7 @@ func init() {
 		// Fails to work for some reason
 		ExcludePlatforms: []string{"qemu-unpriv"},
 		UserData:         flannelConf.Subst("$type", "udp"),
+		Architectures:    []string{"amd64"},
 		// Should run on all cloud environments to check for network problems
 	})
 
