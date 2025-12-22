@@ -34,7 +34,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/gophercloud/gophercloud v1.14.1
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
-	github.com/hetznercloud/hcloud-go/v2 v2.32.0
+	github.com/hetznercloud/hcloud-go/v2 v2.33.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
 	github.com/linode/linodego v1.61.0
@@ -54,7 +54,7 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.46.0
-	golang.org/x/net v0.47.0
+	golang.org/x/net v0.48.0
 	golang.org/x/oauth2 v0.33.0
 	golang.org/x/sys v0.39.0
 	google.golang.org/api v0.257.0
