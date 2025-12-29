@@ -94,8 +94,8 @@ github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0/go.mod h1:I+R3+ubW2P
 github.com/aws/aws-sdk-go v1.8.39/go.mod h1:ZRmQr0FajVIyZ4ZzBYKG5P3ZqPz9IHG41ZoMu1ADI3k=
 github.com/aws/aws-sdk-go v1.55.8 h1:JRmEUbU52aJQZ2AjX4q4Wu7t4uZjOu71uyNmaWlUkJQ=
 github.com/aws/aws-sdk-go v1.55.8/go.mod h1:ZkViS9AqA6otK+JBBNH2++sx1sgxrPKcSzPPvQkUtXk=
-github.com/aws/aws-sdk-go-v2 v1.39.2 h1:EJLg8IdbzgeD7xgvZ+I8M1e0fL0ptn/M47lianzth0I=
-github.com/aws/aws-sdk-go-v2 v1.39.2/go.mod h1:sDioUELIUO9Znk23YVmIk86/9DOpkbyyVb1i/gUNFXY=
+github.com/aws/aws-sdk-go-v2 v1.41.0 h1:tNvqh1s+v0vFYdA1xq0aOJH+Y5cRyZ5upu6roPgPKd4=
+github.com/aws/aws-sdk-go-v2 v1.41.0/go.mod h1:MayyLB8y+buD9hZqkCW3kX1AKq07Y5pXxtgB+rRFhz0=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/brightbox/gobrightbox/v2 v2.2.2 h1:2MfOeJ/v+uJA4DVtQiLmWFAn1/8VsIAdMlYfb/8X0u0=
@@ -130,8 +130,8 @@ github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf h1:iW4rZ826su+pq
 github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd/v22 v22.6.0 h1:aGVa/v8B7hpb0TKl0MWoAavPDmHvobFe5R5zn0bCJWo=
 github.com/coreos/go-systemd/v22 v22.6.0/go.mod h1:iG+pp635Fo7ZmV/j14KUcmEyWF+0X7Lua8rrTWzYgWU=
-github.com/coreos/ignition/v2 v2.24.0 h1:TVcsSWiYvhXihD8Mss3CTRuKaNZM2OIfpoKiudIhrKo=
-github.com/coreos/ignition/v2 v2.24.0/go.mod h1:HelGgFZ1WZ4ZPOIDS0a06A2JTdbbdAine5r3AkSYz5s=
+github.com/coreos/ignition/v2 v2.25.1 h1:mrXOVwb4ZPlLG1tIki5em604Yiz5oRFlWkISrEYpHds=
+github.com/coreos/ignition/v2 v2.25.1/go.mod h1:Px9MZK4oLhMUM3QMzzRhKbHowc5Hkf+VUu67i0gmsNw=
 github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b h1:mpeSDqY0vMUyJmazX0p62MrHtgwlmOf7Y8rqOYL1cmc=
 github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b/go.mod h1:JIWRG8HSwVYUrjdR/JsFg7DEby0nhQcWFPIQvXJyih8=
 github.com/coreos/pkg v0.0.0-20240122114842-bbd7aa9bf6fb h1:GIzvVQ9UkUlOhSDlqmrQAAAUd6R3E+caIisNEyWXvNE=

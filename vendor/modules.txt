@@ -227,8 +227,8 @@ github.com/aws/aws-sdk-go/service/sso/ssoiface
 github.com/aws/aws-sdk-go/service/ssooidc
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
-# github.com/aws/aws-sdk-go-v2 v1.39.2
-## explicit; go 1.22
+# github.com/aws/aws-sdk-go-v2 v1.41.0
+## explicit; go 1.23
 github.com/aws/aws-sdk-go-v2/aws/arn
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
@@ -355,7 +355,7 @@ github.com/coreos/go-systemd/unit
 ## explicit; go 1.23
 github.com/coreos/go-systemd/v22/journal
 github.com/coreos/go-systemd/v22/unit
-# github.com/coreos/ignition/v2 v2.24.0
+# github.com/coreos/ignition/v2 v2.25.1
 ## explicit; go 1.24.0
 github.com/coreos/ignition/v2/config/merge
 github.com/coreos/ignition/v2/config/shared/errors
