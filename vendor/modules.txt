@@ -159,7 +159,7 @@ github.com/alecthomas/units
 # github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14
 ## explicit; go 1.18
 github.com/anatol/tang.go
-# github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0
+# github.com/apricote/hcloud-upload-image/hcloudimages v1.3.0
 ## explicit; go 1.24.0
 github.com/apricote/hcloud-upload-image/hcloudimages
 github.com/apricote/hcloud-upload-image/hcloudimages/contextlogger

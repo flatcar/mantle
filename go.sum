@@ -89,8 +89,8 @@ github.com/anatol/clevis.go v0.0.0-20230629234939-684702e18e07 h1:fy40nbjTIObq7S
 github.com/anatol/clevis.go v0.0.0-20230629234939-684702e18e07/go.mod h1:nEwwKRAb80BFvdT8KoDE6C7ct/Gu9222nBnnpVWQ3gM=
 github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14 h1:/ar8G0JGXDb/O/rG3Z/Q7v1M6KzJFshqYqjN+dMGRY8=
 github.com/anatol/tang.go v0.0.0-20230725175645-dcc6e9494f14/go.mod h1:6aDwt+p3xVpKfTsK1ZR5/nFyxe6Jy4T3CJyH4WxfDyc=
-github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0 h1:P8e2RBs+2iXDJ0mLP3w3ml0cIDLYUCc9XUTCiUjT5cE=
-github.com/apricote/hcloud-upload-image/hcloudimages v1.2.0/go.mod h1:I+R3+ubW2P+X5hOt2lrsWiM2N7zgrukkDhe41riRNb4=
+github.com/apricote/hcloud-upload-image/hcloudimages v1.3.0 h1:FVIKGSqpxdkO4+t1N8a8xu/xxc+13vHy2QaTAWICuQo=
+github.com/apricote/hcloud-upload-image/hcloudimages v1.3.0/go.mod h1:NiCZ7xGoYNbWeK9L083leB7/g5oa7SAOZq405XkUSeQ=
 github.com/aws/aws-sdk-go v1.8.39/go.mod h1:ZRmQr0FajVIyZ4ZzBYKG5P3ZqPz9IHG41ZoMu1ADI3k=
 github.com/aws/aws-sdk-go v1.55.8 h1:JRmEUbU52aJQZ2AjX4q4Wu7t4uZjOu71uyNmaWlUkJQ=
 github.com/aws/aws-sdk-go v1.55.8/go.mod h1:ZkViS9AqA6otK+JBBNH2++sx1sgxrPKcSzPPvQkUtXk=
