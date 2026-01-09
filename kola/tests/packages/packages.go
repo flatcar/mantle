@@ -26,7 +26,7 @@ func init() {
 		Name:        "packages",
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
+		Platforms: []string{"qemu", "qemu-unpriv"},
 	})
 }
 
