@@ -677,7 +677,7 @@ github.com/lestrrat-go/jwx/x25519
 # github.com/lestrrat-go/option v1.0.1
 ## explicit; go 1.16
 github.com/lestrrat-go/option
-# github.com/linode/linodego v1.63.0
+# github.com/linode/linodego v1.64.0
 ## explicit; go 1.24.0
 github.com/linode/linodego
 github.com/linode/linodego/internal/duration
