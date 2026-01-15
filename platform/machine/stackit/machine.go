@@ -81,7 +81,7 @@ func (bm *machine) Destroy() {
 			}
 			for _, securityGroupRule := range securityGroup.GetRules() {
 				if err := bm.cluster.flight.api.DeleteSecurityGroupRule(ctx, securityGroupID, *securityGroupRule.Id); err != nil {
-					plog.Error("error deleting security group rule: %s", err)
+					plog.Errorf("error deleting security group rule: %s", err)
 				}
 			}
 			if err := util.Retry(5, 10*time.Second, func() error {
