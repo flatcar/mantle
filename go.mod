@@ -19,7 +19,7 @@ require (
 	github.com/apricote/hcloud-upload-image/hcloudimages v1.3.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/brightbox/gobrightbox/v2 v2.2.2
-	github.com/coreos/butane v0.25.1
+	github.com/coreos/butane v0.26.0
 	github.com/coreos/go-iptables v0.8.0
 	github.com/coreos/go-omaha v0.0.0-20170526203809-f8acb2d7b76c
 	github.com/coreos/go-semver v0.3.1
