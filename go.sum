@@ -113,8 +113,8 @@ github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f h1:Y8xYupdHxryycyPlc9Y
 github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f/go.mod h1:HlzOvOjVBOfTGSRXRyY0OiCS/3J1akRGQQpRO/7zyF4=
 github.com/cockroachdb/datadriven v1.0.2 h1:H9MtNqVoVhvd9nCBwOyDjUEdZCREqbIdCJD93PBm/jA=
 github.com/cockroachdb/datadriven v1.0.2/go.mod h1:a9RdTaap04u637JoCzcUoIcDmvwSUtcUFtT/C3kJlTU=
-github.com/coreos/butane v0.25.1 h1:Nm2WDRD7h3f6GUpazGlge1o417Z+eIC9bQlkpgVdNms=
-github.com/coreos/butane v0.25.1/go.mod h1:N5JMWID5tmPsfsp3SR9w9xQk32rru8RDHSTerQiq8vI=
+github.com/coreos/butane v0.26.0 h1:Cqrz5Ud0eLZUQFHVc67A8l+rJ9N4UoWXW4cjqVrMsfQ=
+github.com/coreos/butane v0.26.0/go.mod h1:syp2EmtkDFDFzANxWogkSvMgcW/6taTbdvqyd8V/dgM=
 github.com/coreos/go-iptables v0.8.0 h1:MPc2P89IhuVpLI7ETL/2tx3XZ61VeICZjYqDEgNsPRc=
 github.com/coreos/go-iptables v0.8.0/go.mod h1:Qe8Bv2Xik5FyTXwgIbLAnv2sWSBmvWdFETJConOQ//Q=
 github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb h1:rmqyI19j3Z/74bIRhuC59RB442rXUazKNueVpfJPxg4=

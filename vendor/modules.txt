@@ -277,8 +277,8 @@ github.com/cncf/xds/go/xds/data/orca/v3
 github.com/cncf/xds/go/xds/service/orca/v3
 github.com/cncf/xds/go/xds/type/matcher/v3
 github.com/cncf/xds/go/xds/type/v3
-# github.com/coreos/butane v0.25.1
-## explicit; go 1.23.0
+# github.com/coreos/butane v0.26.0
+## explicit; go 1.24.0
 github.com/coreos/butane/base/util
 github.com/coreos/butane/base/v0_1
 github.com/coreos/butane/base/v0_2
@@ -324,8 +324,10 @@ github.com/coreos/butane/config/openshift/v4_19
 github.com/coreos/butane/config/openshift/v4_19/result
 github.com/coreos/butane/config/openshift/v4_20
 github.com/coreos/butane/config/openshift/v4_20/result
-github.com/coreos/butane/config/openshift/v4_21_exp
-github.com/coreos/butane/config/openshift/v4_21_exp/result
+github.com/coreos/butane/config/openshift/v4_21
+github.com/coreos/butane/config/openshift/v4_21/result
+github.com/coreos/butane/config/openshift/v4_22_exp
+github.com/coreos/butane/config/openshift/v4_22_exp/result
 github.com/coreos/butane/config/openshift/v4_8
 github.com/coreos/butane/config/openshift/v4_8/result
 github.com/coreos/butane/config/openshift/v4_9
