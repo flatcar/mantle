@@ -131,7 +131,7 @@ func init() {
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
 		MinVersion: semver.Version{Major: 3902},
 		SkipFunc:   skipZfs,
 	})
@@ -142,7 +142,7 @@ func init() {
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
 		MinVersion: semver.Version{Major: 3902},
 		SkipFunc:   skipZfs,
 	})
@@ -153,7 +153,7 @@ func init() {
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
 		MinVersion: semver.Version{Major: 3902},
 		SkipFunc:   skipZfs,
 	})

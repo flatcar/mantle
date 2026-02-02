@@ -188,21 +188,21 @@ func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
 }
 
 func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, securityGroups iaas.CreateServerPayloadGetSecurityGroupsAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
-	networkingPayload := iaas.CreateServerPayloadGetNetworkingAttributeType(&iaas.CreateServerPayloadNetworking{
+	networkingPayload := &iaas.CreateServerPayloadAllOfNetworking{
 		CreateServerNetworking: &iaas.CreateServerNetworking{NetworkId: networkId},
-	})
+	}
 
 	bootVolumeSource := iaas.BootVolumeSource{
 		Id:   ptr.To(a.opts.ImageId),
 		Type: ptr.To("image"),
 	}
 
-	bootVolume := iaas.CreateServerPayloadGetBootVolumeAttributeType(&iaas.CreateServerPayloadBootVolume{
+	bootVolume := &iaas.ServerBootVolume{
 		DeleteOnTermination: ptr.To(true),
 		PerformanceClass:    ptr.To("storage_premium_perf2"),
 		Size:                ptr.To(int64(50)),
 		Source:              &bootVolumeSource,
-	})
+	}
 
 	serverPayload := iaas.CreateServerPayload{
 		AvailabilityZone: ptr.To(a.availabilityZone),

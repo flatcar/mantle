@@ -14,7 +14,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         dockerDisable,
 		ClusterSize: 1,
-		Platforms:   []string{"qemu", "qemu-unpriv"},
+		Platforms:   []string{"qemu", "qemu-unpriv", "azure"},
 		Name:        "sysext.disable-docker",
 		// Sysext docker was introduced after release 3760.
 		// NOTE that 3761 is a developer version which was never released.

@@ -26,7 +26,7 @@ func init() {
 		Name:        "coreos.auth.verify",
 		Distros:     []string{"cl", "fcos", "rhcos"},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 	})
 }
 

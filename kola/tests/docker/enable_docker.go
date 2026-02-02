@@ -53,7 +53,7 @@ systemd:
 		Run:         dockerEnable,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv"},
+		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
 		Name:       "docker.enable-service.sysext",
 		MinVersion: semver.Version{Major: 3746},
 		UserData: conf.Butane(`

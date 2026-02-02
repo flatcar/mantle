@@ -105,7 +105,7 @@ func init() {
 		// "client version 1.41 is too new. Maximum supported API version is 1.40"
 		MinVersion: semver.Version{Major: 3033},
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446

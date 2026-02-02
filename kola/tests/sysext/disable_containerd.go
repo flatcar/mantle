@@ -14,7 +14,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         containerdDisable,
 		ClusterSize: 1,
-		Platforms:   []string{"qemu", "qemu-unpriv"},
+		Platforms:   []string{"qemu", "qemu-unpriv", "azure"},
 		Name:        "sysext.disable-containerd",
 		// Sysext containerd was introduced after release 3760.
 		// NOTE that 3761 is a developer version which was never released.

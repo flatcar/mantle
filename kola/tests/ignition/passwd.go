@@ -30,7 +30,7 @@ func init() {
 		Run:         groups,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.Ignition(`{
 		             "ignitionVersion": 1,
 		             "systemd": {
@@ -60,7 +60,7 @@ func init() {
 		Run:         groups,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.Ignition(`{
 		             "ignition": { "version": "2.0.0" },
 		             "systemd": {
@@ -112,7 +112,7 @@ func init() {
 		Run:         users,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.Ignition(`{
 		             "ignitionVersion": 1,
 		             "systemd": {
@@ -148,7 +148,7 @@ func init() {
 		Run:         users,
 		ClusterSize: 1,
 		// This test is normally not related to the cloud environment
-		Platforms: []string{"qemu", "qemu-unpriv"},
+		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
 		UserData: conf.Ignition(`{
 		             "ignition": { "version": "2.0.0" },
 		             "systemd": {
