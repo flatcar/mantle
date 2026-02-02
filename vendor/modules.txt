@@ -778,11 +778,11 @@ github.com/stackitcloud/stackit-sdk-go/core/oapierror
 github.com/stackitcloud/stackit-sdk-go/core/oidcadapters
 github.com/stackitcloud/stackit-sdk-go/core/utils
 github.com/stackitcloud/stackit-sdk-go/core/wait
-# github.com/stackitcloud/stackit-sdk-go/services/iaas v1.3.0
+# github.com/stackitcloud/stackit-sdk-go/services/iaas v1.3.2
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/services/iaas
 github.com/stackitcloud/stackit-sdk-go/services/iaas/wait
-# github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.18.2
+# github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.18.3
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/services/resourcemanager
 # github.com/stretchr/testify v1.11.1
