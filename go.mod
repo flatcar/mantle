@@ -43,7 +43,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/stackitcloud/stackit-sdk-go/core v0.21.0
+	github.com/stackitcloud/stackit-sdk-go/core v0.21.1
 	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.3.2
 	github.com/stretchr/testify v1.11.1
 	github.com/vincent-petithory/dataurl v1.0.0
@@ -99,7 +99,7 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
