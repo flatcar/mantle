@@ -66,7 +66,7 @@ for platform in "${platforms[@]}"; do
     tag="${dstname}-${platform}"
     # we tag the image to create the mirrored image
     docker tag "${var}" "${tag}"
-    docker push "${tag}"
+    docker push --platform="linux/${platform}" "${tag}"
     tags+=( "${tag}" )
 done
 
