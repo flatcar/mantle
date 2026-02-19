@@ -131,6 +131,7 @@ func init() {
 	sv(&kola.AzureOptions.KolaVnet, "azure-kola-vnet", "", "Pass the vnet/subnet that kola is being ran from to restrict network access to created storage accounts")
 	sv(&kola.AzureOptions.VMIdentity, "azure-vm-identity", "", "Assign a managed identity to the VM by name (will be looked up for its ID)")
 	bv(&kola.AzureOptions.TrustedLaunch, "azure-trusted-launch", false, "Enable trusted launch for VMs (default \"false\")")
+	bv(&kola.AzureOptions.ConfidentialVM, "azure-confidential-vm", false, "Enable confidential VMs (default \"false\", mutually exclusive with trusted launch)")
 
 	// do-specific options
 	sv(&kola.DOOptions.ConfigPath, "do-config-file", "", "DigitalOcean config file (default \"~/"+auth.DOConfigPath+"\")")
@@ -326,6 +327,19 @@ func syncOptions() error {
 	}
 	if kola.Options.SSHTimeout < 0 {
 		return fmt.Errorf("SSH timeout can't be negative, is %v", kola.Options.SSHTimeout)
+	}
+
+	if kola.AzureOptions.TrustedLaunch && kola.AzureOptions.ConfidentialVM {
+		return fmt.Errorf("--azure-trusted-launch and --azure-confidential-vm are mutually exclusive")
+	}
+
+	if kola.AzureOptions.ConfidentialVM {
+		if kola.AzureOptions.HyperVGeneration != "V2" {
+			return fmt.Errorf("--azure-confidential-vm requires --azure-hyper-v-generation=V2")
+		}
+		if kola.QEMUOptions.Board != "amd64-usr" {
+			return fmt.Errorf("--azure-confidential-vm requires --board=amd64-usr")
+		}
 	}
 
 	return nil
