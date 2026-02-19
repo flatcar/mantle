@@ -205,6 +205,12 @@ func (a *API) createNIC(ip *armnetwork.PublicIPAddress, subnet *armnetwork.Subne
 	ipconf := randomName("nic-ipconf")
 	plog.Infof("Creating NIC %s", name)
 
+	enableAcceleratedNetworking := true
+	if a.Opts.ConfidentialVM {
+		enableAcceleratedNetworking = false
+		plog.Infof("Disabling accelerated networking for Confidential VM mode")
+	}
+
 	poller, err := a.intClient.BeginCreateOrUpdate(context.TODO(), resourceGroup, name, armnetwork.Interface{
 		Location: &a.Opts.Location,
 		Properties: &armnetwork.InterfacePropertiesFormat{
@@ -218,7 +224,7 @@ func (a *API) createNIC(ip *armnetwork.PublicIPAddress, subnet *armnetwork.Subne
 					},
 				},
 			},
-			EnableAcceleratedNetworking: to.Ptr(true),
+			EnableAcceleratedNetworking: to.Ptr(enableAcceleratedNetworking),
 		},
 	}, nil)
 	if err != nil {

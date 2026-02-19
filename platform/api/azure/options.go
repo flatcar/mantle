@@ -53,6 +53,7 @@ type Options struct {
 	UseGallery       bool
 	UsePrivateIPs    bool
 	TrustedLaunch    bool
+	ConfidentialVM   bool
 
 	DiskController string
 

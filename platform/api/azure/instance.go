@@ -137,6 +137,12 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 		osDisk.DiskSizeGB = &options.DiskSizeGB
 	}
 
+	if a.Opts.ConfidentialVM {
+		osDisk.ManagedDisk.SecurityProfile = &armcompute.VMDiskSecurityProfile{
+			SecurityEncryptionType: to.Ptr(armcompute.SecurityEncryptionTypesVMGuestStateOnly),
+		}
+	}
+
 	// Set up the VM configuration
 	vm := armcompute.VirtualMachine{
 		Name:     &name,
@@ -173,15 +179,20 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 		},
 	}
 
-	if a.Opts.TrustedLaunch {
+	if a.Opts.TrustedLaunch || a.Opts.ConfidentialVM {
+		securityMode := "TrustedLaunch"
+		securityType := armcompute.SecurityTypesTrustedLaunch
+		if a.Opts.ConfidentialVM {
+			securityMode = "ConfidentialVM"
+			securityType = armcompute.SecurityTypesConfidentialVM
+		}
+
 		if a.Opts.HyperVGeneration != string(armcompute.HyperVGenerationTypeV2) {
-			plog.Warningf("TrustedLaunch is only supported for HyperVGeneration v2; ignoring")
+			plog.Warningf("%s is only supported for HyperVGeneration v2; ignoring", securityMode)
 		}
-		if a.Opts.Board != "amd64-usr" {
-			plog.Warningf("TrustedLaunch is only supported for amd64-usr; ignoring")
-		}
+
 		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
-			SecurityType: to.Ptr(armcompute.SecurityTypesTrustedLaunch),
+			SecurityType: to.Ptr(securityType),
 			UefiSettings: &armcompute.UefiSettings{
 				SecureBootEnabled: to.Ptr(false),
 				VTpmEnabled:       to.Ptr(true),

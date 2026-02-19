@@ -160,15 +160,17 @@ func writeProps() error {
 		InstanceType string `json:"type"`
 	}
 	type Azure struct {
-		DiskURI   string `json:"diskUri"`
-		BlobURL   string `json:"blobUrl"`
-		ImageFile string `json:"imageFile"`
-		Publisher string `json:"publisher"`
-		Offer     string `json:"offer"`
-		Sku       string `json:"sku"`
-		Version   string `json:"version"`
-		Location  string `json:"location"`
-		Size      string `json:"size"`
+		DiskURI        string `json:"diskUri"`
+		BlobURL        string `json:"blobUrl"`
+		ImageFile      string `json:"imageFile"`
+		Publisher      string `json:"publisher"`
+		Offer          string `json:"offer"`
+		Sku            string `json:"sku"`
+		Version        string `json:"version"`
+		Location       string `json:"location"`
+		Size           string `json:"size"`
+		TrustedLaunch  bool   `json:"trustedLaunch"`
+		ConfidentialVM bool   `json:"confidentialVm"`
 	}
 	type DO struct {
 		Region string `json:"region"`
@@ -219,15 +221,17 @@ func writeProps() error {
 			InstanceType: kola.AWSOptions.InstanceType,
 		},
 		Azure: Azure{
-			DiskURI:   kola.AzureOptions.DiskURI,
-			BlobURL:   kola.AzureOptions.BlobURL,
-			ImageFile: kola.AzureOptions.ImageFile,
-			Publisher: kola.AzureOptions.Publisher,
-			Offer:     kola.AzureOptions.Offer,
-			Sku:       kola.AzureOptions.Sku,
-			Version:   kola.AzureOptions.Version,
-			Location:  kola.AzureOptions.Location,
-			Size:      kola.AzureOptions.Size,
+			DiskURI:        kola.AzureOptions.DiskURI,
+			BlobURL:        kola.AzureOptions.BlobURL,
+			ImageFile:      kola.AzureOptions.ImageFile,
+			Publisher:      kola.AzureOptions.Publisher,
+			Offer:          kola.AzureOptions.Offer,
+			Sku:            kola.AzureOptions.Sku,
+			Version:        kola.AzureOptions.Version,
+			Location:       kola.AzureOptions.Location,
+			Size:           kola.AzureOptions.Size,
+			TrustedLaunch:  kola.AzureOptions.TrustedLaunch,
+			ConfidentialVM: kola.AzureOptions.ConfidentialVM,
 		},
 		DO: DO{
 			Region: kola.DOOptions.Region,
