@@ -95,7 +95,7 @@
           },
           {
             "name": "SecurityType",
-            "value": "[if(equals(parameters('hyperVGeneration'), 'V2'), 'TrustedLaunchSupported', 'None')]"
+            "value": "[if(equals(parameters('hyperVGeneration'), 'V2'), 'TrustedLaunchAndConfidentialVMSupported', 'None')]"
           },
           {
             "name": "IsAcceleratedNetworkSupported",
