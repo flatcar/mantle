@@ -197,9 +197,7 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 		if a.Opts.HyperVGeneration != string(armcompute.HyperVGenerationTypeV2) {
 			plog.Warningf("%s is only supported for HyperVGeneration v2; ignoring", securityMode)
 		}
-		if a.Opts.Board != "amd64-usr" {
-			plog.Warningf("%s is only supported for amd64-usr; ignoring", securityMode)
-		}
+
 		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
 			SecurityType: to.Ptr(securityType),
 			UefiSettings: &armcompute.UefiSettings{
