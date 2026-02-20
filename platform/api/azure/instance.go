@@ -194,7 +194,7 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
 			SecurityType: to.Ptr(securityType),
 			UefiSettings: &armcompute.UefiSettings{
-				SecureBootEnabled: to.Ptr(false),
+				SecureBootEnabled: to.Ptr(a.Opts.EnableSecureboot),
 				VTpmEnabled:       to.Ptr(true),
 			},
 		}

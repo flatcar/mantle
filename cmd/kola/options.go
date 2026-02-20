@@ -293,7 +293,7 @@ func syncOptions() error {
 	if kola.QEMUOptions.Firmware == "" {
 		kola.QEMUOptions.Firmware = kolaDefaultFirmware[kola.QEMUOptions.Board]
 	}
-	if kola.QEMUOptions.EnableSecureboot && kola.QEMUOptions.OVMFVars == "" {
+	if kolaPlatform == "qemu" && kola.QEMUOptions.EnableSecureboot && kola.QEMUOptions.OVMFVars == "" {
 		return fmt.Errorf("secureboot requires OVMF vars file")
 	}
 	units, _ := root.PersistentFlags().GetStringSlice("debug-systemd-units")
