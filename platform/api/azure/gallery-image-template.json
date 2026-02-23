@@ -2,6 +2,10 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "db": {
+      "type": "string",
+      "defaultValue": ""
+    },
     "galleries_name": {
       "type": "string",
       "defaultValue": "kolaSIG"
@@ -13,6 +17,10 @@
     "image_version": {
       "type": "string",
       "defaultValue": "1.0.0"
+    },
+    "secure_image_version": {
+      "type": "string",
+      "defaultValue": "1.0.1"
     },
     "storageAccounts_name": {
       "type": "string",
@@ -84,6 +92,14 @@
           {
             "name": "DiskControllerTypes",
             "value": "NVMe,SCSI"
+          },
+          {
+            "name": "SecurityType",
+            "value": "[if(equals(parameters('hyperVGeneration'), 'V2'), 'TrustedLaunchAndConfidentialVMSupported', 'None')]"
+          },
+          {
+            "name": "IsAcceleratedNetworkSupported",
+            "value": "true"
           }
         ]
       },
@@ -91,6 +107,7 @@
     },
     {
       "apiVersion": "2023-07-03",
+      "condition": "[equals(parameters('db'), '')]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/galleries/images', parameters('galleries_name'), parameters('image_name'))]",
         "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
@@ -117,6 +134,56 @@
             "source": {
               "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_name'))]",
               "uri": "[parameters('vhd_uri')]"
+            }
+          }
+        }
+      },
+      "type": "Microsoft.Compute/galleries/images/versions"
+    },
+    {
+      "apiVersion": "2023-07-03",
+      "condition": "[not(equals(parameters('db'), ''))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/galleries/images', parameters('galleries_name'), parameters('image_name'))]",
+        "[resourceId('Microsoft.Compute/galleries', parameters('galleries_name'))]"
+      ],
+      "location": "[parameters('location')]",
+      "name": "[concat(parameters('galleries_name'), '/', parameters('image_name'), '/', parameters('secure_image_version'))]",
+      "properties": {
+        "publishingProfile": {
+          "excludeFromLatest": false,
+          "replicaCount": 1,
+          "replicationMode": "Shallow",
+          "storageAccountType": "Standard_LRS",
+          "targetRegions": [
+            {
+              "name": "[parameters('location')]",
+              "regionalReplicaCount": 1,
+              "storageAccountType": "Standard_LRS"
+            }
+          ]
+        },
+        "storageProfile": {
+          "osDiskImage": {
+            "hostCaching": "ReadOnly",
+            "source": {
+              "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_name'))]",
+              "uri": "[parameters('vhd_uri')]"
+            }
+          }
+        },
+        "securityProfile": {
+          "uefiSettings": {
+            "signatureTemplateNames": [
+              "MicrosoftUefiCertificateAuthorityTemplate"
+            ],
+            "additionalSignatures": {
+              "db": [
+                {
+                  "type": "x509",
+                  "value": ["[parameters('db')]"]
+                }
+              ]
             }
           }
         }

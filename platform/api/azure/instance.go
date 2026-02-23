@@ -137,6 +137,12 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 		osDisk.DiskSizeGB = &options.DiskSizeGB
 	}
 
+	if a.Opts.ConfidentialVM {
+		osDisk.ManagedDisk.SecurityProfile = &armcompute.VMDiskSecurityProfile{
+			SecurityEncryptionType: to.Ptr(armcompute.SecurityEncryptionTypesVMGuestStateOnly),
+		}
+	}
+
 	// Set up the VM configuration
 	vm := armcompute.VirtualMachine{
 		Name:     &name,
@@ -171,6 +177,27 @@ func (a *API) getVMParameters(name, sshkey string, userdata *conf.Conf, ip *armn
 				},
 			},
 		},
+	}
+
+	if a.Opts.TrustedLaunch || a.Opts.ConfidentialVM {
+		securityMode := "TrustedLaunch"
+		securityType := armcompute.SecurityTypesTrustedLaunch
+		if a.Opts.ConfidentialVM {
+			securityMode = "ConfidentialVM"
+			securityType = armcompute.SecurityTypesConfidentialVM
+		}
+
+		if a.Opts.HyperVGeneration != string(armcompute.HyperVGenerationTypeV2) {
+			plog.Warningf("%s is only supported for HyperVGeneration v2; ignoring", securityMode)
+		}
+
+		vm.Properties.SecurityProfile = &armcompute.SecurityProfile{
+			SecurityType: to.Ptr(securityType),
+			UefiSettings: &armcompute.UefiSettings{
+				SecureBootEnabled: to.Ptr(a.Opts.EnableSecureboot),
+				VTpmEnabled:       to.Ptr(true),
+			},
+		}
 	}
 
 	// Configure disk controller if specified
@@ -255,7 +282,7 @@ func (a *API) CreateInstance(name, sshkey, resourceGroup string, userdata *conf.
 	}
 	_, err = poller.PollUntilDone(context.TODO(), nil)
 	if err != nil {
-		return &Machine{ID: name, CreateError: fmt.Errorf("PollUntilDone: %w", err)}, nil
+		return &Machine{ID: name, CreateError: fmt.Errorf("PollUntilDone(%s): %w", name, err)}, nil
 	}
 	plog.Infof("Instance %s created", name)
 
