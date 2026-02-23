@@ -1,8 +1,6 @@
 module github.com/flatcar/mantle
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.24.13
 
 require (
 	cloud.google.com/go/storage v1.60.0
@@ -49,7 +47,7 @@ require (
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
-	github.com/vmware/govmomi v0.52.0
+	github.com/vmware/govmomi v0.53.0
 	go.etcd.io/etcd/client/pkg/v3 v3.6.7
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.27.1
