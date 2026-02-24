@@ -51,7 +51,7 @@ func execsnoopTest(c cluster.TestCluster) {
 
 	// filter commands with `docker ps`
 	plog.Infof("running %s container", containerName)
-	cmd := fmt.Sprintf(cmdPrefix, containerName, "/usr/share/bcc/tools/execsnoop -n docker -l ps")
+	cmd := fmt.Sprintf(cmdPrefix, containerName, "execsnoop -n docker -l ps")
 	if _, err := c.SSH(m, cmd); err != nil {
 		c.Fatalf("unable to run SSH command '%s': %v", cmd, err)
 	}

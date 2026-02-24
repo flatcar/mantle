@@ -1,47 +1,86 @@
-name: Build and push iovisor/bcc ubuntu 22.04
+name: Build and push iovisor/bcc
 on:
+  schedule:
+    # run on Monday at 7
+    - cron:  '0 7 * * 1'
   workflow_dispatch:
     inputs:
-      ghcr_org:
+      ghcr_account:
         type: string
         required: false
         default: flatcar
         description: |
-          The name of the GitHub org where the docker images should be pushed.
+          The name of the GitHub org or user where the docker images should be pushed.
+      ghcr_account_type:
+        type: string
+        required: false
+        default: org
+        description: |
+          The type of the GitHub account, must be either "org" or "user".
+      force:
+        type: boolean
+        required: false
+        default: false
+        description: |
+          Forces the build, even if latest version already exists.
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build_and_push:
-    permissions:
-      packages: write
     strategy:
       fail-fast: true
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Mantle checkout
+      uses: actions/checkout@v6
       with:
-        repository: iovisor/bcc
+        ref: main
+        sparse-checkout: |
+          /other-dockerfiles/bcc/**
+          /.github/**
+        sparse-checkout-cone-mode: false
+        path: mantle
+    - name: Sparse Gentoo checkout
+      uses: actions/checkout@v6
+      with:
+        repository: gentoo/gentoo
         ref: master
-        fetch-depth: 0
-        fetch-tags: true
+        sparse-checkout: /dev-util/bcc/**
+        sparse-checkout-cone-mode: false
+        path: gentoo
+    - name: Get bcc versions from Gentoo and ghcr.io
+      id: bcc-versions
+      shell: bash
+      env:
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ACCOUNT: ${{ inputs.ghcr_account }}
+        ACCOUNT_TYPE: ${{ inputs.ghcr_account_type }}
+        FORCE: ${{ inputs.force }}
+      run: mantle/.github/workflows/bcc_versions.sh
     - name: Set up QEMU
+      if: ${{ steps.bcc-versions.outputs.BUILD_VERSION != '' }}
       uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
+      if: ${{ steps.bcc-versions.outputs.BUILD_VERSION != '' }}
       uses: docker/setup-buildx-action@v3
     - name: Login to GitHub Container Registry (ghcr)
+      if: ${{ steps.bcc-versions.outputs.BUILD_VERSION != '' }}
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push image
-      id: docker_build
-      uses: docker/build-push-action@v5
+      if: ${{ steps.bcc-versions.outputs.BUILD_VERSION != '' }}
+      uses: docker/build-push-action@v6
       with:
-        context: .
-        file: ./docker/Dockerfile.ubuntu
-        platforms: linux/amd64,linux/arm64/v8
+        context: ./mantle/other-dockerfiles/bcc
+        file: ./mantle/other-dockerfiles/bcc/Dockerfile
+        platforms: linux/amd64,linux/arm64
         push: true
-        tags: ghcr.io/${{ inputs.ghcr_org }}/bcc:latest
+        tags: |
+          ghcr.io/${{ inputs.ghcr_account }}/bcc:latest
+          ghcr.io/${{ inputs.ghcr_account }}/bcc:${{ steps.bcc-versions.outputs.BUILD_VERSION }}
