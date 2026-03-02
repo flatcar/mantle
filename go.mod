@@ -52,7 +52,7 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sys v0.41.0
 	google.golang.org/api v0.269.0
