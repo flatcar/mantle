@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.)
 
-package v1_7_exp
+package v1_8_exp
 
 import (
 	"regexp"
 	"strings"
 
-	base "github.com/coreos/butane/base/v0_7_exp"
+	base "github.com/coreos/butane/base/v0_8_exp"
 	"github.com/coreos/butane/config/common"
 	"github.com/coreos/ignition/v2/config/shared/errors"
 	"github.com/coreos/ignition/v2/config/util"

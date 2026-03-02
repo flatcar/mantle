@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.)
 
-package v0_7_exp
+package v0_7
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ import (
 
 	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/coreos/ignition/v2/config/util"
-	"github.com/coreos/ignition/v2/config/v3_6_experimental/types"
+	"github.com/coreos/ignition/v2/config/v3_6/types"
 	"github.com/coreos/vcontext/path"
 	"github.com/coreos/vcontext/report"
 )

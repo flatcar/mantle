@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.)
 
-package v0_7_exp
+package v0_8_exp
 
 import (
 	common "github.com/coreos/butane/config/common"
 	"github.com/coreos/ignition/v2/config/shared/errors"
 	"github.com/coreos/ignition/v2/config/util"
-	"github.com/coreos/ignition/v2/config/v3_6_experimental/types"
+	"github.com/coreos/ignition/v2/config/v3_7_experimental/types"
 	"github.com/coreos/ignition/v2/config/validate"
 	"github.com/coreos/vcontext/path"
 	"github.com/coreos/vcontext/report"
