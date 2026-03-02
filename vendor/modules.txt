@@ -227,7 +227,7 @@ github.com/aws/aws-sdk-go/service/sso/ssoiface
 github.com/aws/aws-sdk-go/service/ssooidc
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
-# github.com/aws/aws-sdk-go-v2 v1.41.0
+# github.com/aws/aws-sdk-go-v2 v1.41.1
 ## explicit; go 1.23
 github.com/aws/aws-sdk-go-v2/aws/arn
 # github.com/beorn7/perks v1.0.1
@@ -277,7 +277,7 @@ github.com/cncf/xds/go/xds/data/orca/v3
 github.com/cncf/xds/go/xds/service/orca/v3
 github.com/cncf/xds/go/xds/type/matcher/v3
 github.com/cncf/xds/go/xds/type/v3
-# github.com/coreos/butane v0.26.0
+# github.com/coreos/butane v0.27.0
 ## explicit; go 1.24.0
 github.com/coreos/butane/base/util
 github.com/coreos/butane/base/v0_1
@@ -286,7 +286,8 @@ github.com/coreos/butane/base/v0_3
 github.com/coreos/butane/base/v0_4
 github.com/coreos/butane/base/v0_5
 github.com/coreos/butane/base/v0_6
-github.com/coreos/butane/base/v0_7_exp
+github.com/coreos/butane/base/v0_7
+github.com/coreos/butane/base/v0_8_exp
 github.com/coreos/butane/config
 github.com/coreos/butane/config/common
 github.com/coreos/butane/config/fcos/v1_0
@@ -296,7 +297,8 @@ github.com/coreos/butane/config/fcos/v1_3
 github.com/coreos/butane/config/fcos/v1_4
 github.com/coreos/butane/config/fcos/v1_5
 github.com/coreos/butane/config/fcos/v1_6
-github.com/coreos/butane/config/fcos/v1_7_exp
+github.com/coreos/butane/config/fcos/v1_7
+github.com/coreos/butane/config/fcos/v1_8_exp
 github.com/coreos/butane/config/fiot/v1_0
 github.com/coreos/butane/config/fiot/v1_1_exp
 github.com/coreos/butane/config/flatcar/v1_0
@@ -353,11 +355,11 @@ github.com/coreos/go-semver/semver
 ## explicit
 github.com/coreos/go-systemd/journal
 github.com/coreos/go-systemd/unit
-# github.com/coreos/go-systemd/v22 v22.6.0
+# github.com/coreos/go-systemd/v22 v22.7.0
 ## explicit; go 1.23
 github.com/coreos/go-systemd/v22/journal
 github.com/coreos/go-systemd/v22/unit
-# github.com/coreos/ignition/v2 v2.25.1
+# github.com/coreos/ignition/v2 v2.26.0
 ## explicit; go 1.24.0
 github.com/coreos/ignition/v2/config/merge
 github.com/coreos/ignition/v2/config/shared/errors
@@ -378,7 +380,8 @@ github.com/coreos/ignition/v2/config/v3_3/translate
 github.com/coreos/ignition/v2/config/v3_3/types
 github.com/coreos/ignition/v2/config/v3_4/types
 github.com/coreos/ignition/v2/config/v3_5/types
-github.com/coreos/ignition/v2/config/v3_6_experimental/types
+github.com/coreos/ignition/v2/config/v3_6/types
+github.com/coreos/ignition/v2/config/v3_7_experimental/types
 github.com/coreos/ignition/v2/config/validate
 # github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 ## explicit
@@ -401,7 +404,7 @@ github.com/davecgh/go-spew/spew
 # github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 ## explicit; go 1.17
 github.com/decred/dcrd/dcrec/secp256k1/v4
-# github.com/digitalocean/godo v1.175.0
+# github.com/digitalocean/godo v1.176.0
 ## explicit; go 1.23.0
 github.com/digitalocean/godo
 github.com/digitalocean/godo/metrics
