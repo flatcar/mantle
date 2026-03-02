@@ -1,4 +1,4 @@
-// Copyright 2022 Red Hat, Inc
+// Copyright 2020 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -10,14 +10,33 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License.)
+// limitations under the License.
 
-package v1_2_exp
+package types
 
 import (
-	base "github.com/coreos/butane/base/v0_8_exp"
+	"path"
+
+	"github.com/coreos/ignition/v2/config/shared/errors"
+	"github.com/coreos/ignition/v2/config/util"
 )
 
-type Config struct {
-	base.Config `yaml:",inline"`
+func validatePath(p string) error {
+	if p == "" {
+		return errors.ErrNoPath
+	}
+	if !path.IsAbs(p) {
+		return errors.ErrPathRelative
+	}
+	if path.Clean(p) != p {
+		return errors.ErrDirtyPath
+	}
+	return nil
+}
+
+func validatePathNilOK(p *string) error {
+	if util.NilOrEmpty(p) {
+		return nil
+	}
+	return validatePath(*p)
 }
