@@ -374,12 +374,12 @@ func CheckMachine(ctx context.Context, m Machine) error {
 	}
 
 	// ensure we're talking to a Container Linux system
-	out, stderr, err := m.SSH("grep ^ID= /etc/os-release")
+	out, stderr, err := m.SSH(". /etc/os-release && echo \"${ID}\"")
 	if err != nil {
 		return fmt.Errorf("no /etc/os-release file: %v: %s", err, stderr)
 	}
 
-	if !bytes.Equal(out, []byte("ID=flatcar")) {
+	if !bytes.Equal(out, []byte("flatcar")) {
 		return fmt.Errorf("not a Flatcar Container Linux instance")
 	}
 
