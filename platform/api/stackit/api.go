@@ -144,10 +144,13 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 		if err != nil {
 			return fmt.Errorf("getting image: %w", err)
 		}
-		if *res.Status == "AVAILABLE" {
+
+		status := *res.Status
+		if status == "AVAILABLE" {
 			return nil
 		}
-		return fmt.Errorf("image not available: %w", err)
+
+		return fmt.Errorf("image is not 'AVAILABLE' but '%s'", status)
 	})
 	if err != nil {
 		return "", err
