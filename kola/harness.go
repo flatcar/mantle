@@ -540,7 +540,7 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 		return nil, fmt.Errorf("creating new machine for semver check: %v", err)
 	}
 
-	out, stderr, err := m.SSH("grep ^VERSION= /etc/os-release")
+	out, stderr, err := m.SSH(`. /etc/os-release && echo "${VERSION}"`)
 	if err != nil {
 		return nil, fmt.Errorf("parsing /etc/os-release for VERSION_ID: %v: %s", err, stderr)
 	}
