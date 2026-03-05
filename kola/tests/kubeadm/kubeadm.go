@@ -317,7 +317,7 @@ func setup(c cluster.TestCluster, params map[string]interface{}) (platform.Machi
 		return nil, fmt.Errorf("unable to create etcd node: %w", err)
 	}
 
-	v := string(c.MustSSH(etcdNode, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	v := string(c.MustSSH(etcdNode, `. /etc/os-release && echo "${VERSION}"`))
 	if v == "" {
 		c.Fatalf("Assertion for version string failed")
 	}

@@ -195,7 +195,7 @@ func Serve() error {
 }
 
 func checkNoAVCMessages(c cluster.TestCluster, m platform.Machine) {
-	version := c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`)
+	version := c.MustSSH(m, `. /etc/os-release && echo "${VERSION}"`)
 	if len(version) == 0 {
 		c.Fatalf("got an empty version from os-release")
 	}
@@ -483,7 +483,7 @@ func oemPayload(c cluster.TestCluster) {
 	// Check that the instance is not yet migrated
 	_ = c.MustSSH(m, `test -e /oem/python/shouldbedeleted && test -e /etc/systemd/system/waagent.service`)
 	_ = c.MustSSH(m, `test ! -e /oem/sysext/active-oem-azure`)
-	version := string(c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	version := string(c.MustSSH(m, `. /etc/os-release && echo "${VERSION}"`))
 	if version == "" {
 		c.Fatalf("Assertion for version string failed")
 	}
@@ -537,7 +537,7 @@ func sysextBootLogic(c cluster.TestCluster, oemMountpoint string) {
 	if err != nil {
 		c.Fatalf("creating test machine: %v", err)
 	}
-	version := string(c.MustSSH(noIgnition, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	version := string(c.MustSSH(noIgnition, `. /etc/os-release && echo "${VERSION}"`))
 	if version == "" {
 		c.Fatalf("Assertion for version string failed")
 	}
@@ -636,7 +636,7 @@ func sysextFallbackDownload(c cluster.TestCluster) {
 	// Check that we don't have an OEM sysext image
 	_ = c.MustSSH(m, `test ! -e /etc/extensions/oem-qemu.raw`)
 
-	version := string(c.MustSSH(m, `set -euo pipefail; grep -m 1 "^VERSION=" /usr/lib/os-release | cut -d = -f 2`))
+	version := string(c.MustSSH(m, `. /etc/os-release && echo "${VERSION}"`))
 	if version == "" {
 		c.Fatalf("Assertion for version string failed")
 	}
