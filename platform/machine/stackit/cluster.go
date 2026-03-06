@@ -65,13 +65,12 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	if err != nil {
 		return nil, fmt.Errorf("creating server: %w", err)
 	}
+	ID := *instance.Id
 
 	err = bc.flight.api.AttachPublicIPAddress(ctx, *ipAddress.Id, *instance.Id)
 	if err != nil {
 		return nil, fmt.Errorf("attaching public IP address: %w", err)
 	}
-
-	ID := *instance.Id
 
 	// The API does sometimes need a couple of seconds to report the attached IP address
 	err = util.Retry(5, 2*time.Second, func() error {
