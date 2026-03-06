@@ -139,7 +139,7 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 		return "", fmt.Errorf("failed to upload file: %w", err)
 	}
 
-	err = util.Retry(12, 5*time.Second, func() error {
+	err = util.Retry(36, 5*time.Second, func() error {
 		res, err := a.client.GetImage(ctx, a.projectID, a.region, response.GetId()).Execute()
 		if err != nil {
 			return fmt.Errorf("getting image: %w", err)
