@@ -67,7 +67,7 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	}
 	ID := *instance.Id
 
-	err = bc.flight.api.AttachPublicIPAddress(ctx, *ipAddress.Id, *instance.Id)
+	err = bc.flight.api.AttachPublicIPAddress(ctx, *ipAddress.Id, ID)
 	if err != nil {
 		return nil, fmt.Errorf("attaching public IP address: %w", err)
 	}
