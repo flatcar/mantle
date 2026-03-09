@@ -35,7 +35,7 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.36.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
-	github.com/linode/linodego v1.65.0
+	github.com/linode/linodego v1.66.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36
@@ -93,7 +93,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-resty/resty/v2 v2.17.1 // indirect
+	github.com/go-resty/resty/v2 v2.17.2 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
