@@ -773,7 +773,7 @@ github.com/spiffe/go-spiffe/v2/internal/jwtutil
 github.com/spiffe/go-spiffe/v2/internal/pemutil
 github.com/spiffe/go-spiffe/v2/internal/x509util
 github.com/spiffe/go-spiffe/v2/spiffeid
-# github.com/stackitcloud/stackit-sdk-go/core v0.21.1
+# github.com/stackitcloud/stackit-sdk-go/core v0.22.0
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/core/auth
 github.com/stackitcloud/stackit-sdk-go/core/clients
