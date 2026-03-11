@@ -18,7 +18,6 @@ locally or in a cloud.
 ## Overview
 Mantle is composed of many utilities:
  - `cork` for handling the Container Linux SDK
- - `gangue` for downloading from Google Storage
  - `kola` for launching instances and running tests
  - `kolet` an agent for kola that runs on instances
  - `ore` for interfacing with cloud providers
@@ -33,13 +32,6 @@ and options.
 Cork is a now-deprecated tool that was used to help in working with Container Linux images and the SDK.
 
 Please see [developer guides](https://www.flatcar.org/docs/latest/reference/developer-guides/) to see how to work with Flatcar SDK.
-
-### gangue
-Gangue is a tool for downloading and verifying files from Google Storage with authenticated requests.
-It is primarily used by the SDK.
-
-#### gangue get
-Get a file from Google Storage and verify it using GPG.
 
 ### kola
 Kola is a framework for testing software integration in Container Linux instances
