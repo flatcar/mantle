@@ -17,7 +17,6 @@ locally or in a cloud.
 
 ## Overview
 Mantle is composed of many utilities:
- - `cork` for handling the Container Linux SDK
  - `kola` for launching instances and running tests
  - `kolet` an agent for kola that runs on instances
  - `ore` for interfacing with cloud providers
@@ -27,11 +26,6 @@ All of the utilities support the `help` command to get a full listing of their s
 and options.
 
 ## Tools
-
-### cork
-Cork is a now-deprecated tool that was used to help in working with Container Linux images and the SDK.
-
-Please see [developer guides](https://www.flatcar.org/docs/latest/reference/developer-guides/) to see how to work with Flatcar SDK.
 
 ### kola
 Kola is a framework for testing software integration in Container Linux instances
