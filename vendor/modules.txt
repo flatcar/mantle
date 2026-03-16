@@ -657,7 +657,7 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.10
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stackitcloud/stackit-sdk-go/core v0.22.0
+# github.com/stackitcloud/stackit-sdk-go/core v0.23.0
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/core/auth
 github.com/stackitcloud/stackit-sdk-go/core/clients
