@@ -7,6 +7,7 @@ import (
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/util"
+	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -70,7 +71,12 @@ func (bm *machine) Destroy() {
 		plog.Errorf("error getting server: %s", err)
 	}
 
-	for _, nic := range *server.Nics {
+	nics := []iaas.ServerNetwork{}
+	if server != nil {
+		nics = *server.Nics
+	}
+
+	for _, nic := range nics {
 		for _, securityGroupID := range *nic.SecurityGroups {
 			if err := bm.cluster.flight.api.RemoveSecurityGroupFromServer(ctx, server.GetId(), securityGroupID); err != nil {
 				plog.Errorf("error removing security group from server: %s", err)
