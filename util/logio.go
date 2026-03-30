@@ -33,7 +33,7 @@ func LogFrom(l capnslog.LogLevel, r io.Reader) {
 		plog.Log(l, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		plog.Errorf("Reading %s failed: %v", r, err)
+		plog.Errorf("Reading failed: %v", err)
 	}
 }
 
