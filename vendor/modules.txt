@@ -657,7 +657,7 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.10
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stackitcloud/stackit-sdk-go/core v0.23.0
+# github.com/stackitcloud/stackit-sdk-go/core v0.24.0
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/core/auth
 github.com/stackitcloud/stackit-sdk-go/core/clients
@@ -666,11 +666,11 @@ github.com/stackitcloud/stackit-sdk-go/core/oapierror
 github.com/stackitcloud/stackit-sdk-go/core/oidcadapters
 github.com/stackitcloud/stackit-sdk-go/core/utils
 github.com/stackitcloud/stackit-sdk-go/core/wait
-# github.com/stackitcloud/stackit-sdk-go/services/iaas v1.7.0
+# github.com/stackitcloud/stackit-sdk-go/services/iaas v1.9.0
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/services/iaas
 github.com/stackitcloud/stackit-sdk-go/services/iaas/wait
-# github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.20.1
+# github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.1
 ## explicit; go 1.21
 github.com/stackitcloud/stackit-sdk-go/services/resourcemanager
 # github.com/stretchr/testify v1.11.1
