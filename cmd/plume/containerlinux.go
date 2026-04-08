@@ -69,7 +69,6 @@ var (
 				"sa-east-1",
 				"ca-central-1",
 				"ap-east-1",
-				"me-south-1",
 			},
 		},
 		"china": awsPartitionSpec{
