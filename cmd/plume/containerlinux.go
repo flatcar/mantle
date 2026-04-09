@@ -173,7 +173,7 @@ func newAzureSpec(environments []azureEnvironmentSpec, container, label, categor
 	return azureSpec{
 		Offer:             "Flatcar",
 		Image:             fmt.Sprintf("flatcar_production_azure%s_image.vhd.bz2", category),
-		StorageAccount:    "flatcar",
+		StorageAccount:    "flatcar0001",
 		ResourceGroup:     "flatcar",
 		Container:         container,
 		Environments:      environments,
