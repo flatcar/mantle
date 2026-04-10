@@ -544,13 +544,14 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 	if err != nil {
 		return nil, fmt.Errorf("parsing /etc/os-release for VERSION_ID: %v: %s", err, stderr)
 	}
-	ver := strings.Split(string(out), "=")[1]
+	ver := string(out)
 
-	out, stderr, err = m.SSH("grep ^BUILD_ID= /etc/os-release")
+	out, stderr, err = m.SSH(`. /etc/os-release && echo "${BUILD_ID}"`)
 	if err != nil {
 		return nil, fmt.Errorf("parsing /etc/os-release for BUILD_ID: %v: %s", err, stderr)
 	}
-	build_id := strings.Split(string(out), "=")[1]
+	build_id := string(out)
+
 	if strings.HasPrefix(build_id, "dev-main-nightly-") || strings.HasPrefix(build_id, "dev-flatcar-master-") {
 		// "main" is a nightly build of the main branch,
 		// "flatcar-master" refers to the manifest branch where dev builds are started
