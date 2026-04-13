@@ -1,6 +1,6 @@
 # Governance
 
-For details on the Flatcar project governance model, decision-making process, and roles, please see the [main Flatcar Governance document](https://github.com/flatcar/Flatcar/blob/main/GOVERNANCE.md).
+For details on the Flatcar project governance model, decision-making process, and roles, please see the [main Flatcar Governance document](https://github.com/flatcar/Flatcar/blob/main/governance.md).
 
 ---
 
