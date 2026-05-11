@@ -34,7 +34,7 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.39.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
-	github.com/linode/linodego v1.68.0
+	github.com/linode/linodego v1.69.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36
@@ -138,6 +138,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gopkg.in/ini.v1 v1.67.1 // indirect
+	gopkg.in/ini.v1 v1.67.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
