@@ -81,6 +81,7 @@ type LoadBalancerServiceHTTP struct {
 	Certificates   []*Certificate
 	RedirectHTTP   bool
 	StickySessions bool
+	TimeoutIdle    time.Duration
 }
 
 // LoadBalancerServiceHealthCheck stores configuration for a service health check.
@@ -427,6 +428,7 @@ type LoadBalancerCreateOptsServiceHTTP struct {
 	Certificates   []*Certificate
 	RedirectHTTP   *bool
 	StickySessions *bool
+	TimeoutIdle    *time.Duration
 }
 
 // LoadBalancerCreateOptsServiceHealthCheck holds options for specifying a service
@@ -465,7 +467,7 @@ func (c *LoadBalancerClient) Create(ctx context.Context, opts LoadBalancerCreate
 
 	reqPath := opPath
 
-	reqBody := loadBalancerCreateOptsToSchema(opts)
+	reqBody := SchemaFromLoadBalancerCreateOpts(opts)
 
 	respBody, resp, err := postRequest[schema.LoadBalancerCreateResponse](ctx, c.client, reqPath, reqBody)
 	if err != nil {
@@ -620,6 +622,7 @@ type LoadBalancerAddServiceOptsHTTP struct {
 	Certificates   []*Certificate
 	RedirectHTTP   *bool
 	StickySessions *bool
+	TimeoutIdle    *time.Duration
 }
 
 // LoadBalancerAddServiceOptsHealthCheck holds options for specifying a health check
@@ -650,7 +653,7 @@ func (c *LoadBalancerClient) AddService(ctx context.Context, loadBalancer *LoadB
 
 	reqPath := fmt.Sprintf(opPath, loadBalancer.ID)
 
-	reqBody := loadBalancerAddServiceOptsToSchema(opts)
+	reqBody := SchemaFromLoadBalancerAddServiceOpts(opts)
 
 	respBody, resp, err := postRequest[schema.LoadBalancerActionAddServiceResponse](ctx, c.client, reqPath, reqBody)
 	if err != nil {
@@ -676,6 +679,7 @@ type LoadBalancerUpdateServiceOptsHTTP struct {
 	Certificates   []*Certificate
 	RedirectHTTP   *bool
 	StickySessions *bool
+	TimeoutIdle    *time.Duration
 }
 
 // LoadBalancerUpdateServiceOptsHealthCheck specifies options for updating
@@ -706,7 +710,7 @@ func (c *LoadBalancerClient) UpdateService(ctx context.Context, loadBalancer *Lo
 
 	reqPath := fmt.Sprintf(opPath, loadBalancer.ID)
 
-	reqBody := loadBalancerUpdateServiceOptsToSchema(opts)
+	reqBody := SchemaFromLoadBalancerUpdateServiceOpts(opts)
 	reqBody.ListenPort = listenPort
 
 	respBody, resp, err := postRequest[schema.LoadBalancerActionUpdateServiceResponse](ctx, c.client, reqPath, reqBody)
@@ -982,7 +986,7 @@ func (c *LoadBalancerClient) GetMetrics(
 		return nil, resp, err
 	}
 
-	metrics, err := loadBalancerMetricsFromSchema(&respBody)
+	metrics, err := LoadBalancerMetricsFromSchema(&respBody)
 	if err != nil {
 		return nil, nil, fmt.Errorf("convert response body: %w", err)
 	}
