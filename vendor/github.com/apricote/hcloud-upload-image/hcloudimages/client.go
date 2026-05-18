@@ -91,7 +91,7 @@ type UploadOptions struct {
 	// Labels will be added to the resulting image (snapshot). Use these to filter the image list if you
 	// need to identify the image later on.
 	//
-	// We also always add a label `apricote.de/created-by=hcloud-image-upload` ([CreatedByLabel], [CreatedByValue]).
+	// We also always add a label `apricote.de/created-by=hcloud-upload-image` ([CreatedByLabel], [CreatedByValue]).
 	Labels map[string]string
 
 	// Location is the datacenter location for the temporary server.
@@ -543,7 +543,10 @@ func assembleCommand(options UploadOptions) (string, error) {
 
 	switch options.ImageFormat {
 	case FormatRaw:
-		cmd += "dd of=/dev/sda bs=4M"
+		// With conv=sparse dd will skip any zero blocks and not write them to the disk, this makes it faster if you
+		// have a large raw image with multiple (nearly) empty but large partitions.
+		// For example Flatcar has ~12 GB, with ~90% being zero blocks.
+		cmd += "dd of=/dev/sda bs=4M conv=sparse"
 	case FormatQCOW2:
 		cmd += "tee image.qcow2 > /dev/null && qemu-img dd -f qcow2 -O raw if=image.qcow2 of=/dev/sda bs=4M"
 	default:
