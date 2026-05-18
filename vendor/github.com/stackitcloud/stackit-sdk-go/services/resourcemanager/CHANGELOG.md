@@ -1,3 +1,9 @@
+## v0.23.0
+- **Feature:** Added `_UNKNOWN_DEFAULT_OPEN_API` fallback value to all enums to handle unknown API values gracefully.
+
+## v0.22.2
+- **Dependencies:** Bump STACKIT SDK core module to `v0.26.0`
+
 ## v0.22.1
 - **Dependencies:** Bump STACKIT SDK core module from `v0.24.1` to `v0.25.0`
 
