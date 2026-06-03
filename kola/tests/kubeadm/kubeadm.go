@@ -77,6 +77,19 @@ var (
 	// testConfig holds params for various kubernetes releases
 	// and the nested params are used to render script templates
 	testConfig = map[string]map[string]interface{}{
+		"v1.36.1": map[string]interface{}{
+			"HelmVersion":     "v3.17.3",
+			"MinMajorVersion": 3374,
+			// from https://github.com/flannel-io/flannel/releases
+			"FlannelVersion": "v0.26.7",
+			// from https://github.com/cilium/cilium/releases
+			"CiliumVersion": "1.12.5",
+			// from https://github.com/cilium/cilium-cli/releases
+			"CiliumCLIVersion": "v0.12.12",
+			"DownloadDir":      "/opt/bin",
+			"PodSubnet":        "192.168.0.0/17",
+			"cgroupv1":         false,
+		},
 		"v1.35.1": map[string]interface{}{
 			"HelmVersion":     "v3.17.3",
 			"MinMajorVersion": 3374,
@@ -103,19 +116,6 @@ var (
 			"PodSubnet":        "192.168.0.0/17",
 			"cgroupv1":         false,
 		},
-		"v1.33.8": map[string]interface{}{
-			"HelmVersion":     "v3.17.3",
-			"MinMajorVersion": 3374,
-			// from https://github.com/flannel-io/flannel/releases
-			"FlannelVersion": "v0.26.7",
-			// from https://github.com/cilium/cilium/releases
-			"CiliumVersion": "1.12.5",
-			// from https://github.com/cilium/cilium-cli/releases
-			"CiliumCLIVersion": "v0.12.12",
-			"DownloadDir":      "/opt/bin",
-			"PodSubnet":        "192.168.0.0/17",
-			"cgroupv1":         false,
-		},
 	}
 	plog       = capnslog.NewPackageLogger("github.com/flatcar/mantle", "kola/tests/kubeadm")
 	etcdConfig = conf.ContainerLinuxConfig(`
@@ -127,11 +127,11 @@ etcd:
 
 func init() {
 	testConfigCgroupV1 := map[string]map[string]interface{}{}
-	testConfigCgroupV1["v1.33.8"] = map[string]interface{}{}
-	for k, v := range testConfig["v1.33.8"] {
-		testConfigCgroupV1["v1.33.8"][k] = v
+	testConfigCgroupV1["v1.34.4"] = map[string]interface{}{}
+	for k, v := range testConfig["v1.34.4"] {
+		testConfigCgroupV1["v1.34.4"][k] = v
 	}
-	testConfigCgroupV1["v1.33.8"]["cgroupv1"] = true
+	testConfigCgroupV1["v1.34.4"]["cgroupv1"] = true
 
 	registerTests := func(config map[string]map[string]interface{}) {
 		for version, params := range config {
