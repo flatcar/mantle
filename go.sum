@@ -87,8 +87,8 @@ github.com/clarketm/json v1.17.1/go.mod h1:ynr2LRfb0fQU34l07csRNBTcivjySLLiY1YzQ
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cockroachdb/datadriven v1.0.2 h1:H9MtNqVoVhvd9nCBwOyDjUEdZCREqbIdCJD93PBm/jA=
 github.com/cockroachdb/datadriven v1.0.2/go.mod h1:a9RdTaap04u637JoCzcUoIcDmvwSUtcUFtT/C3kJlTU=
-github.com/coreos/butane v0.27.0 h1:ses2MWOD7MsOHDvyFRdUTGJj4ZZRcThyCj1NTr+CEkc=
-github.com/coreos/butane v0.27.0/go.mod h1:cWzlkZC8bTNxfT9EaNFUPLqp6/gEM4qhunp1U6cMvrM=
+github.com/coreos/butane v0.28.0 h1:D+T5c9Q1pUQqFCcTkinCVxvG4K4v7RKzXshbBbz0hMA=
+github.com/coreos/butane v0.28.0/go.mod h1:cWzlkZC8bTNxfT9EaNFUPLqp6/gEM4qhunp1U6cMvrM=
 github.com/coreos/go-iptables v0.8.0 h1:MPc2P89IhuVpLI7ETL/2tx3XZ61VeICZjYqDEgNsPRc=
 github.com/coreos/go-iptables v0.8.0/go.mod h1:Qe8Bv2Xik5FyTXwgIbLAnv2sWSBmvWdFETJConOQ//Q=
 github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb h1:rmqyI19j3Z/74bIRhuC59RB442rXUazKNueVpfJPxg4=
