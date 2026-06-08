@@ -3,7 +3,7 @@ module github.com/flatcar/mantle
 go 1.25.0
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi v1.3.0
@@ -51,7 +51,7 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.52.0
-	golang.org/x/net v0.54.0
+	golang.org/x/net v0.55.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sys v0.45.0
 	google.golang.org/api v0.277.0
