@@ -231,7 +231,7 @@ github.com/cespare/xxhash/v2
 # github.com/clarketm/json v1.17.1
 ## explicit
 github.com/clarketm/json
-# github.com/coreos/butane v0.27.0
+# github.com/coreos/butane v0.28.0
 ## explicit; go 1.24.0
 github.com/coreos/butane/base/util
 github.com/coreos/butane/base/v0_1
@@ -282,8 +282,10 @@ github.com/coreos/butane/config/openshift/v4_20
 github.com/coreos/butane/config/openshift/v4_20/result
 github.com/coreos/butane/config/openshift/v4_21
 github.com/coreos/butane/config/openshift/v4_21/result
-github.com/coreos/butane/config/openshift/v4_22_exp
-github.com/coreos/butane/config/openshift/v4_22_exp/result
+github.com/coreos/butane/config/openshift/v4_22
+github.com/coreos/butane/config/openshift/v4_22/result
+github.com/coreos/butane/config/openshift/v4_23_exp
+github.com/coreos/butane/config/openshift/v4_23_exp/result
 github.com/coreos/butane/config/openshift/v4_8
 github.com/coreos/butane/config/openshift/v4_8/result
 github.com/coreos/butane/config/openshift/v4_9
