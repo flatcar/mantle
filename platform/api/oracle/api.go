@@ -198,6 +198,47 @@ func (a *API) TerminateInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
+func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
+	createdCutoff := time.Now().Add(-gracePeriod)
+
+	var page *string
+	for {
+		resp, err := a.compute.ListInstances(ctx, core.ListInstancesRequest{
+			CompartmentId: common.String(a.opts.CompartmentID),
+			Page:          page,
+		})
+		if err != nil {
+			return fmt.Errorf("listing instances: %w", err)
+		}
+
+		for _, instance := range resp.Items {
+			if instance.LifecycleState == core.InstanceLifecycleStateTerminated || instance.LifecycleState == core.InstanceLifecycleStateTerminating {
+				continue
+			}
+			if instance.FreeformTags["managed-by"] != "mantle" {
+				continue
+			}
+			if instance.TimeCreated == nil || instance.TimeCreated.After(createdCutoff) {
+				continue
+			}
+			if instance.Id == nil {
+				continue
+			}
+
+			if err := a.TerminateInstance(ctx, *instance.Id); err != nil {
+				return fmt.Errorf("terminating instance %q: %w", *instance.Id, err)
+			}
+		}
+
+		if resp.OpcNextPage == nil {
+			break
+		}
+		page = resp.OpcNextPage
+	}
+
+	return nil
+}
+
 func expandPath(path string) (string, error) {
 	if path == "" || path[0] != '~' {
 		return path, nil
