@@ -48,6 +48,7 @@ import (
 	gcloudapi "github.com/flatcar/mantle/platform/api/gcloud"
 	hetznerapi "github.com/flatcar/mantle/platform/api/hetzner"
 	openstackapi "github.com/flatcar/mantle/platform/api/openstack"
+	oracleapi "github.com/flatcar/mantle/platform/api/oracle"
 	scalewayapi "github.com/flatcar/mantle/platform/api/scaleway"
 	stackitapi "github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
@@ -61,6 +62,7 @@ import (
 	"github.com/flatcar/mantle/platform/machine/gcloud"
 	"github.com/flatcar/mantle/platform/machine/hetzner"
 	"github.com/flatcar/mantle/platform/machine/openstack"
+	"github.com/flatcar/mantle/platform/machine/oracle"
 	"github.com/flatcar/mantle/platform/machine/qemu"
 	"github.com/flatcar/mantle/platform/machine/scaleway"
 	"github.com/flatcar/mantle/platform/machine/unprivqemu"
@@ -84,6 +86,7 @@ var (
 	ExternalOptions  = external.Options{Options: &Options}     // glue to set platform options from main
 	GCEOptions       = gcloudapi.Options{Options: &Options}    // glue to set platform options from main
 	OpenStackOptions = openstackapi.Options{Options: &Options} // glue to set platform options from main
+	OracleOptions    = oracleapi.Options{Options: &Options}    // glue to set platform options from main
 	STACKITOptions   = stackitapi.Options{Options: &Options}   // glue to set platform options from main
 	QEMUOptions      = qemu.Options{Options: &Options}         // glue to set platform options from main
 	ScalewayOptions  = scalewayapi.Options{Options: &Options}  // glue to set platform options from main
@@ -266,6 +269,8 @@ func NewFlight(pltfrm string) (flight platform.Flight, err error) {
 		flight, err = hetzner.NewFlight(&HetznerOptions)
 	case "openstack":
 		flight, err = openstack.NewFlight(&OpenStackOptions)
+	case "oracle":
+		flight, err = oracle.NewFlight(&OracleOptions)
 	case "stackit":
 		flight, err = stackit.NewFlight(&STACKITOptions)
 	case "qemu":
@@ -690,6 +695,9 @@ func architecture(pltfrm string) string {
 	}
 	if pltfrm == "hetzner" && HetznerOptions.Board != "" {
 		nativeArch = boardToArch(HetznerOptions.Board)
+	}
+	if pltfrm == "oracle" && OracleOptions.Board != "" {
+		nativeArch = boardToArch(OracleOptions.Board)
 	}
 	if pltfrm == "stackit" && STACKITOptions.Board != "" {
 		nativeArch = boardToArch(STACKITOptions.Board)
