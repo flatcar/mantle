@@ -106,10 +106,20 @@ create images from the image file.
 
 ## OpenStack
 
- - The OpenStack platform wraps [gophercloud](https://github.com/gophercloud/gophercloud).
- - By default SSH keys will be passed via both the OpenStack metadata AND the userdata.
- - UserData is passed to the instances via the OpenStack metadata service.
- - Instances are tagged with `CreatedBy: mantle` which is used when filtering instances for `GC`.
+  - The OpenStack platform wraps [gophercloud](https://github.com/gophercloud/gophercloud).
+  - By default SSH keys will be passed via both the OpenStack metadata AND the userdata.
+  - UserData is passed to the instances via the OpenStack metadata service.
+  - Instances are tagged with `CreatedBy: mantle` which is used when filtering instances for `GC`.
+
+## Oracle Cloud Infrastructure
+
+  - The Oracle platform wraps [oci-go-sdk](https://github.com/oracle/oci-go-sdk).
+  - UserData is passed to instances via OCI instance metadata as base64-encoded `user_data`.
+  - Instances and VNICs are tagged with `managed-by: mantle`.
+  - `kola` requires `--oracle-compartment-id`, `--oracle-availability-domain`, `--oracle-subnet-id`, and `--oracle-image-id`.
+  - Test success is reported by the `kola` harness, not by the machine journal. Check terminal output for `PASS, output in ...`, `<output-dir>/test.tap`, or `<output-dir>/reports/report.json`.
+  - Machine logs are collected under `<output-dir>/<instance-id>/journal.txt` for diagnostics.
+  - `ore oracle gc` terminates old mantle-managed instances in the configured compartment.
 
 ## Packet
 
