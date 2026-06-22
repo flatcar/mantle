@@ -219,6 +219,19 @@ for more information about the `.boto` file.
 
 `user_domain` is required on some newer versions of OpenStack using Keystone V3 but is optional on older versions. `floating_ip_pool` and `region_name` can be optionally specified here to be used as a default if not specified on the command line.
 
+### oracle
+`oracle` uses the OCI SDK config file, defaulting to `~/.oci/config`, and profile `DEFAULT`.
+Use `--oracle-config-file` and `--oracle-profile` to override those values.
+
+The Oracle platform also requires the target compartment, availability domain, subnet, and image:
+```
+kola run -p oracle <test-name> \
+  --oracle-compartment-id=<compartment-ocid> \
+  --oracle-availability-domain=<availability-domain> \
+  --oracle-subnet-id=<subnet-ocid> \
+  --oracle-image-id=<image-ocid>
+```
+
 ### packet
 `packet` uses `~/.config/packet.json`. This can be configured manually:
 ```
