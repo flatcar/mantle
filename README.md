@@ -232,6 +232,23 @@ kola run -p oracle <test-name> \
   --oracle-image-id=<image-ocid>
 ```
 
+For CI runs with a local image, upload and import the image first:
+```
+IMAGE_ID=$(ore oracle \
+  --oracle-compartment-id=<compartment-ocid> \
+  --oracle-bucket=<object-storage-bucket> \
+  create-image \
+  --board=<arch>-usr \
+  --name=<image-name> \
+  --file=<flatcar-oracle-image.qcow2>)
+
+kola run -p oracle <test-name> \
+  --oracle-compartment-id=<compartment-ocid> \
+  --oracle-availability-domain=<availability-domain> \
+  --oracle-subnet-id=<subnet-ocid> \
+  --oracle-image-id="${IMAGE_ID}"
+```
+
 ### packet
 `packet` uses `~/.config/packet.json`. This can be configured manually:
 ```
