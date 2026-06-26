@@ -611,6 +611,7 @@ github.com/oracle/oci-go-sdk/v65/common
 github.com/oracle/oci-go-sdk/v65/common/auth
 github.com/oracle/oci-go-sdk/v65/common/utils
 github.com/oracle/oci-go-sdk/v65/core
+github.com/oracle/oci-go-sdk/v65/objectstorage
 # github.com/pborman/uuid v1.2.1
 ## explicit
 github.com/pborman/uuid
