@@ -117,9 +117,10 @@ create images from the image file.
   - UserData is passed to instances via OCI instance metadata as base64-encoded `user_data`.
   - Instances and VNICs are tagged with `managed-by: mantle`.
   - `kola` requires `--oracle-compartment-id`, `--oracle-availability-domain`, `--oracle-subnet-id`, and `--oracle-image-id`.
+  - `ore oracle create-image` uploads a local QCOW2 or VMDK image to Object Storage, imports it as an OCI custom image, waits for the image to become available, deletes the temporary object, and prints the image OCID.
   - Test success is reported by the `kola` harness, not by the machine journal. Check terminal output for `PASS, output in ...`, `<output-dir>/test.tap`, or `<output-dir>/reports/report.json`.
   - Machine logs are collected under `<output-dir>/<instance-id>/journal.txt` for diagnostics.
-  - `ore oracle gc` terminates old mantle-managed instances in the configured compartment.
+  - `ore oracle gc` deletes old mantle-managed custom images and terminates old mantle-managed instances in the configured compartment.
 
 ## Packet
 
