@@ -7,13 +7,16 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
+	"github.com/oracle/oci-go-sdk/v65/objectstorage"
 )
 
 var DefaultTags = map[string]string{
@@ -32,12 +35,15 @@ type Options struct {
 	Shape              string
 	OCPUs              float32
 	MemoryGB           float32
+	Namespace          string
+	Bucket             string
 }
 
 // API is a wrapper around Oracle Cloud Infrastructure clients.
 type API struct {
 	opts           *Options
 	compute        core.ComputeClient
+	objectStorage  objectstorage.ObjectStorageClient
 	virtualNetwork core.VirtualNetworkClient
 }
 
@@ -64,10 +70,15 @@ func New(opts *Options) (*API, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating virtual network client: %w", err)
 	}
+	objectStorage, err := objectstorage.NewObjectStorageClientWithConfigurationProvider(provider)
+	if err != nil {
+		return nil, fmt.Errorf("creating object storage client: %w", err)
+	}
 
 	return &API{
 		opts:           opts,
 		compute:        compute,
+		objectStorage:  objectStorage,
 		virtualNetwork: virtualNetwork,
 	}, nil
 }
@@ -198,8 +209,181 @@ func (a *API) TerminateInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
+func (a *API) UploadImage(ctx context.Context, name, path, objectName, sourceImageType string) (string, error) {
+	if a.opts.CompartmentID == "" {
+		return "", fmt.Errorf("compartment ID is required")
+	}
+	if a.opts.Bucket == "" {
+		return "", fmt.Errorf("bucket is required")
+	}
+
+	namespace := a.opts.Namespace
+	if namespace == "" {
+		var err error
+		namespace, err = a.GetNamespace(ctx)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("opening image %q: %w", path, err)
+	}
+	defer f.Close()
+
+	st, err := f.Stat()
+	if err != nil {
+		return "", fmt.Errorf("stat image %q: %w", path, err)
+	}
+
+	if objectName == "" {
+		objectName = filepath.Base(path)
+	}
+
+	if err := a.UploadObject(ctx, namespace, a.opts.Bucket, objectName, f, st.Size()); err != nil {
+		return "", err
+	}
+
+	imageID, err := a.CreateImageFromObject(ctx, name, namespace, a.opts.Bucket, objectName, sourceImageType)
+	if err != nil {
+		if deleteErr := a.DeleteObject(ctx, namespace, a.opts.Bucket, objectName); deleteErr != nil {
+			return "", fmt.Errorf("%w; additionally failed deleting uploaded object %q: %v", err, objectName, deleteErr)
+		}
+		return "", err
+	}
+
+	if _, err := a.WaitForImageState(ctx, imageID, core.ImageLifecycleStateAvailable); err != nil {
+		return "", fmt.Errorf("waiting for image import %q: %w; uploaded object %q was left in bucket %q", imageID, err, objectName, a.opts.Bucket)
+	}
+
+	if err := a.DeleteObject(ctx, namespace, a.opts.Bucket, objectName); err != nil {
+		return "", fmt.Errorf("deleting uploaded object %q: %w", objectName, err)
+	}
+
+	return imageID, nil
+}
+
+func (a *API) GetNamespace(ctx context.Context) (string, error) {
+	resp, err := a.objectStorage.GetNamespace(ctx, objectstorage.GetNamespaceRequest{
+		CompartmentId: common.String(a.opts.CompartmentID),
+	})
+	if err != nil {
+		return "", fmt.Errorf("getting object storage namespace: %w", err)
+	}
+	if resp.Value == nil || *resp.Value == "" {
+		return "", fmt.Errorf("object storage namespace is empty")
+	}
+	return *resp.Value, nil
+}
+
+func (a *API) UploadObject(ctx context.Context, namespace, bucket, objectName string, body io.ReadCloser, size int64) error {
+	_, err := a.objectStorage.PutObject(ctx, objectstorage.PutObjectRequest{
+		NamespaceName: common.String(namespace),
+		BucketName:    common.String(bucket),
+		ObjectName:    common.String(objectName),
+		ContentLength: common.Int64(size),
+		PutObjectBody: body,
+		ContentType:   common.String("application/octet-stream"),
+	})
+	if err != nil {
+		return fmt.Errorf("uploading object %q to bucket %q: %w", objectName, bucket, err)
+	}
+	return nil
+}
+
+func (a *API) DeleteObject(ctx context.Context, namespace, bucket, objectName string) error {
+	_, err := a.objectStorage.DeleteObject(ctx, objectstorage.DeleteObjectRequest{
+		NamespaceName: common.String(namespace),
+		BucketName:    common.String(bucket),
+		ObjectName:    common.String(objectName),
+	})
+	if err != nil {
+		return fmt.Errorf("deleting object %q from bucket %q: %w", objectName, bucket, err)
+	}
+	return nil
+}
+
+func (a *API) CreateImageFromObject(ctx context.Context, name, namespace, bucket, objectName, sourceImageType string) (string, error) {
+	sourceType, err := parseSourceImageType(sourceImageType)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := a.compute.CreateImage(ctx, core.CreateImageRequest{
+		CreateImageDetails: core.CreateImageDetails{
+			CompartmentId: common.String(a.opts.CompartmentID),
+			DisplayName:   common.String(name),
+			FreeformTags:  DefaultTags,
+			ImageSourceDetails: core.ImageSourceViaObjectStorageTupleDetails{
+				BucketName:             common.String(bucket),
+				NamespaceName:          common.String(namespace),
+				ObjectName:             common.String(objectName),
+				OperatingSystem:        common.String("Flatcar"),
+				OperatingSystemVersion: common.String("Container Linux"),
+				SourceImageType:        sourceType,
+			},
+			LaunchMode: core.CreateImageDetailsLaunchModeParavirtualized,
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("creating image from object %q: %w", objectName, err)
+	}
+	if resp.Image.Id == nil {
+		return "", fmt.Errorf("created image response did not include an image ID")
+	}
+	return *resp.Image.Id, nil
+}
+
+func (a *API) WaitForImageState(ctx context.Context, imageID string, state core.ImageLifecycleStateEnum) (*core.Image, error) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	timeout := time.NewTimer(2 * time.Hour)
+	defer timeout.Stop()
+
+	for {
+		resp, err := a.compute.GetImage(ctx, core.GetImageRequest{
+			ImageId: common.String(imageID),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("getting image %q: %w", imageID, err)
+		}
+
+		if resp.Image.LifecycleState == state {
+			return &resp.Image, nil
+		}
+
+		switch resp.Image.LifecycleState {
+		case core.ImageLifecycleStateDeleted, core.ImageLifecycleStateDisabled:
+			return nil, fmt.Errorf("image %q entered state %q while waiting for %q", imageID, resp.Image.LifecycleState, state)
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-timeout.C:
+			return nil, fmt.Errorf("timed out waiting for image %q to reach %q", imageID, state)
+		case <-ticker.C:
+		}
+	}
+}
+
 func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	createdCutoff := time.Now().Add(-gracePeriod)
+
+	if err := a.gcImages(ctx, createdCutoff); err != nil {
+		return fmt.Errorf("failed to gc images: %w", err)
+	}
+
+	if err := a.gcInstances(ctx, createdCutoff); err != nil {
+		return fmt.Errorf("failed to gc instances: %w", err)
+	}
+
+	return nil
+}
+
+func (a *API) gcInstances(ctx context.Context, createdCutoff time.Time) error {
 
 	var page *string
 	for {
@@ -237,6 +421,59 @@ func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	}
 
 	return nil
+}
+
+func (a *API) gcImages(ctx context.Context, createdCutoff time.Time) error {
+	var page *string
+	for {
+		resp, err := a.compute.ListImages(ctx, core.ListImagesRequest{
+			CompartmentId: common.String(a.opts.CompartmentID),
+			Page:          page,
+		})
+		if err != nil {
+			return fmt.Errorf("listing images: %w", err)
+		}
+
+		for _, image := range resp.Items {
+			if image.LifecycleState == core.ImageLifecycleStateDeleted {
+				continue
+			}
+			if image.FreeformTags["managed-by"] != "mantle" {
+				continue
+			}
+			if image.TimeCreated == nil || image.TimeCreated.After(createdCutoff) {
+				continue
+			}
+			if image.Id == nil {
+				continue
+			}
+
+			_, err := a.compute.DeleteImage(ctx, core.DeleteImageRequest{
+				ImageId: image.Id,
+			})
+			if err != nil {
+				return fmt.Errorf("deleting image %q: %w", *image.Id, err)
+			}
+		}
+
+		if resp.OpcNextPage == nil {
+			break
+		}
+		page = resp.OpcNextPage
+	}
+
+	return nil
+}
+
+func parseSourceImageType(sourceImageType string) (core.ImageSourceDetailsSourceImageTypeEnum, error) {
+	switch strings.ToUpper(sourceImageType) {
+	case "", "QCOW2":
+		return core.ImageSourceDetailsSourceImageTypeQcow2, nil
+	case "VMDK":
+		return core.ImageSourceDetailsSourceImageTypeVmdk, nil
+	default:
+		return "", fmt.Errorf("unsupported source image type %q", sourceImageType)
+	}
 }
 
 func expandPath(path string) (string, error) {
