@@ -75,6 +75,14 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("creating object storage client: %w", err)
 	}
 
+	retryPolicy := common.DefaultRetryPolicy()
+	retryConfig := common.CustomClientConfiguration{
+		RetryPolicy: &retryPolicy,
+	}
+	compute.SetCustomClientConfiguration(retryConfig)
+	virtualNetwork.SetCustomClientConfiguration(retryConfig)
+	objectStorage.SetCustomClientConfiguration(retryConfig)
+
 	return &API{
 		opts:           opts,
 		compute:        compute,
@@ -140,27 +148,35 @@ func (a *API) WaitForInstanceState(ctx context.Context, instanceID string, state
 	timeout := time.NewTimer(10 * time.Minute)
 	defer timeout.Stop()
 
+	var lastErr error
 	for {
 		resp, err := a.compute.GetInstance(ctx, core.GetInstanceRequest{
 			InstanceId: common.String(instanceID),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("getting instance %q: %w", instanceID, err)
-		}
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			lastErr = fmt.Errorf("getting instance %q: %w", instanceID, err)
+		} else {
+			lastErr = nil
+			if resp.Instance.LifecycleState == state {
+				return &resp.Instance, nil
+			}
 
-		if resp.Instance.LifecycleState == state {
-			return &resp.Instance, nil
-		}
-
-		switch resp.Instance.LifecycleState {
-		case core.InstanceLifecycleStateTerminated, core.InstanceLifecycleStateTerminating:
-			return nil, fmt.Errorf("instance %q entered state %q while waiting for %q", instanceID, resp.Instance.LifecycleState, state)
+			switch resp.Instance.LifecycleState {
+			case core.InstanceLifecycleStateTerminated, core.InstanceLifecycleStateTerminating:
+				return nil, fmt.Errorf("instance %q entered state %q while waiting for %q", instanceID, resp.Instance.LifecycleState, state)
+			}
 		}
 
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-timeout.C:
+			if lastErr != nil {
+				return nil, fmt.Errorf("timed out waiting for instance %q to reach %q: last error: %w", instanceID, state, lastErr)
+			}
 			return nil, fmt.Errorf("timed out waiting for instance %q to reach %q", instanceID, state)
 		case <-ticker.C:
 		}
@@ -342,27 +358,35 @@ func (a *API) WaitForImageState(ctx context.Context, imageID string, state core.
 	timeout := time.NewTimer(2 * time.Hour)
 	defer timeout.Stop()
 
+	var lastErr error
 	for {
 		resp, err := a.compute.GetImage(ctx, core.GetImageRequest{
 			ImageId: common.String(imageID),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("getting image %q: %w", imageID, err)
-		}
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			lastErr = fmt.Errorf("getting image %q: %w", imageID, err)
+		} else {
+			lastErr = nil
+			if resp.Image.LifecycleState == state {
+				return &resp.Image, nil
+			}
 
-		if resp.Image.LifecycleState == state {
-			return &resp.Image, nil
-		}
-
-		switch resp.Image.LifecycleState {
-		case core.ImageLifecycleStateDeleted, core.ImageLifecycleStateDisabled:
-			return nil, fmt.Errorf("image %q entered state %q while waiting for %q", imageID, resp.Image.LifecycleState, state)
+			switch resp.Image.LifecycleState {
+			case core.ImageLifecycleStateDeleted, core.ImageLifecycleStateDisabled:
+				return nil, fmt.Errorf("image %q entered state %q while waiting for %q", imageID, resp.Image.LifecycleState, state)
+			}
 		}
 
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-timeout.C:
+			if lastErr != nil {
+				return nil, fmt.Errorf("timed out waiting for image %q to reach %q: last error: %w", imageID, state, lastErr)
+			}
 			return nil, fmt.Errorf("timed out waiting for image %q to reach %q", imageID, state)
 		case <-ticker.C:
 		}
