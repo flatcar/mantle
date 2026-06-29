@@ -9,9 +9,6 @@ import (
 	"github.com/hetznercloud/hcloud-go/v2/hcloud/schema"
 )
 
-//go:generate go run github.com/hexdigest/gowrap/cmd/gowrap gen -g -p . -i converter -t schema.tmpl -o zz_schema.go
-//go:generate go run github.com/jmattheis/goverter/cmd/goverter gen ./...
-
 /*
 This file generates conversions methods between the schema and the hcloud package.
 Goverter (https://github.com/jmattheis/goverter) is used to generate these conversion
@@ -717,7 +714,7 @@ func intSecondsFromDuration(d time.Duration) int {
 	return int(d.Seconds())
 }
 
-func errorDetailsFromSchema(d interface{}) interface{} {
+func errorDetailsFromSchema(d any) any {
 	switch typed := d.(type) {
 	case schema.ErrorDetailsInvalidInput:
 		details := ErrorDetailsInvalidInput{
@@ -739,7 +736,7 @@ func errorDetailsFromSchema(d interface{}) interface{} {
 	return nil
 }
 
-func schemaFromErrorDetails(d interface{}) interface{} {
+func schemaFromErrorDetails(d any) any {
 	switch typed := d.(type) {
 	case ErrorDetailsInvalidInput:
 		details := schema.ErrorDetailsInvalidInput{
@@ -933,7 +930,7 @@ func serverMetricsTimeSeriesFromSchema(s schema.ServerTimeSeriesVals) ([]ServerM
 	for i, rawVal := range s.Values {
 		var val ServerMetricsValue
 
-		tup, ok := rawVal.([]interface{})
+		tup, ok := rawVal.([]any)
 		if !ok {
 			return nil, fmt.Errorf("failed to convert value to tuple: %v", rawVal)
 		}
@@ -963,7 +960,7 @@ func loadBalancerMetricsTimeSeriesFromSchema(s schema.LoadBalancerTimeSeriesVals
 	for i, rawVal := range s.Values {
 		var val LoadBalancerMetricsValue
 
-		tup, ok := rawVal.([]interface{})
+		tup, ok := rawVal.([]any)
 		if !ok {
 			return nil, fmt.Errorf("failed to convert value to tuple: %v", rawVal)
 		}
@@ -1044,7 +1041,7 @@ func stringMapToStringMapPtr(m map[string]string) *map[string]string {
 	return &m
 }
 
-func rawSchemaFromErrorDetails(v interface{}) json.RawMessage {
+func rawSchemaFromErrorDetails(v any) json.RawMessage {
 	d := schemaFromErrorDetails(v)
 	if v == nil {
 		return nil
