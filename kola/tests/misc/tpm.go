@@ -250,7 +250,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         runRootTPMCryptenroll,
 		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
+		Platforms:   []string{"qemu", "azure"},
 		Name:        "cl.tpm.root-cryptenroll",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
@@ -261,7 +261,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         runRootTPMCryptenrollPcrNoUpdate,
 		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
+		Platforms:   []string{"qemu", "azure"},
 		Name:        "cl.tpm.root-cryptenroll-pcr-noupdate",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
@@ -272,7 +272,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         runRootTPMCryptenrollPcrWithUpdate,
 		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
+		Platforms:   []string{"qemu", "azure"},
 		Name:        "cl.tpm.root-cryptenroll-pcr-withupdate",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
@@ -284,7 +284,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         runRootTPM,
 		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
+		Platforms:   []string{"qemu", "azure"},
 		Name:        "cl.tpm.root",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
@@ -296,7 +296,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         runNonRootTPM,
 		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
+		Platforms:   []string{"qemu", "azure"},
 		Name:        "cl.tpm.nonroot",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 3913, Minor: 0, Patch: 1},
@@ -305,7 +305,7 @@ func init() {
 	register.Register(&register.Test{
 		Run:         eventLogTest,
 		ClusterSize: 0,
-		Platforms:   []string{"qemu"},
+		Platforms:   []string{"qemu", "azure"},
 		Name:        "cl.tpm.eventlog",
 		Distros:     []string{"cl"},
 		MinVersion:  semver.Version{Major: 4082},
