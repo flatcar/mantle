@@ -190,6 +190,13 @@ func writeProps() error {
 		Image  string `json:"image"`
 		Flavor string `json:"flavor"`
 	}
+	type Oracle struct {
+		AvailabilityDomain string  `json:"availabilityDomain"`
+		ImageID            string  `json:"imageId"`
+		Shape              string  `json:"shape"`
+		OCPUs              float32 `json:"ocpus"`
+		MemoryGB           float32 `json:"memoryGb"`
+	}
 	type QEMU struct {
 		Image   string `json:"image"`
 		Mangled bool   `json:"mangled"`
@@ -207,6 +214,7 @@ func writeProps() error {
 		ESX             ESX       `json:"esx"`
 		GCE             GCE       `json:"gce"`
 		OpenStack       OpenStack `json:"openstack"`
+		Oracle          Oracle    `json:"oracle"`
 		QEMU            QEMU      `json:"qemu"`
 	}{
 		Cmdline:         os.Args,
@@ -250,6 +258,13 @@ func writeProps() error {
 			Region: kola.OpenStackOptions.Region,
 			Image:  kola.OpenStackOptions.Image,
 			Flavor: kola.OpenStackOptions.Flavor,
+		},
+		Oracle: Oracle{
+			AvailabilityDomain: kola.OracleOptions.AvailabilityDomain,
+			ImageID:            kola.OracleOptions.ImageID,
+			Shape:              kola.OracleOptions.Shape,
+			OCPUs:              kola.OracleOptions.OCPUs,
+			MemoryGB:           kola.OracleOptions.MemoryGB,
 		},
 		QEMU: QEMU{
 			Image:   kola.QEMUOptions.DiskImage,

@@ -41,7 +41,7 @@ var (
 	kolaDisableSELinuxAVCChecks bool
 	defaultTargetBoard          = sdk.DefaultBoard()
 	kolaArchitectures           = []string{"amd64"}
-	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "qemu", "qemu-unpriv", "scaleway", "stackit"}
+	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "oracle", "qemu", "qemu-unpriv", "scaleway", "stackit"}
 	kolaDistros                 = []string{"cl", "fcos", "rhcos"}
 	kolaChannels                = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings               = []string{"basic", "pro"}
@@ -70,6 +70,7 @@ func init() {
 	ss := root.PersistentFlags().StringSlice
 	dv := root.PersistentFlags().DurationVar
 	iv := root.PersistentFlags().IntVar
+	f32v := root.PersistentFlags().Float32Var
 
 	// general options
 	sv(&outputDir, "output-dir", "", "Temporary output directory for test data and logs")
@@ -187,6 +188,17 @@ func init() {
 	sv(&kola.OpenStackOptions.User, "openstack-user", "", "User is the one used for the SSH connection to the Host")
 	sv(&kola.OpenStackOptions.Keyfile, "openstack-keyfile", "", "Keyfile is the absolute path to private SSH key file for the User on the Host")
 
+	// Oracle Cloud Infrastructure specific options
+	sv(&kola.OracleOptions.ConfigFile, "oracle-config-file", "~/.oci/config", "Oracle Cloud Infrastructure config file")
+	sv(&kola.OracleOptions.Profile, "oracle-profile", "DEFAULT", "Oracle Cloud Infrastructure config profile")
+	sv(&kola.OracleOptions.CompartmentID, "oracle-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
+	sv(&kola.OracleOptions.AvailabilityDomain, "oracle-availability-domain", "", "Oracle Cloud Infrastructure availability domain")
+	sv(&kola.OracleOptions.SubnetID, "oracle-subnet-id", "", "Oracle Cloud Infrastructure subnet OCID")
+	sv(&kola.OracleOptions.ImageID, "oracle-image-id", "", "Oracle Cloud Infrastructure custom image OCID")
+	sv(&kola.OracleOptions.Shape, "oracle-shape", "VM.Standard.E4.Flex", "Oracle Cloud Infrastructure instance shape")
+	f32v(&kola.OracleOptions.OCPUs, "oracle-ocpus", 1, "Oracle Cloud Infrastructure flexible shape OCPUs")
+	f32v(&kola.OracleOptions.MemoryGB, "oracle-memory-gb", 8, "Oracle Cloud Infrastructure flexible shape memory in GB")
+
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
@@ -254,6 +266,7 @@ func syncOptions() error {
 	kola.ScalewayOptions.Board = board
 	kola.HetznerOptions.Board = board
 	kola.AkamaiOptions.Board = board
+	kola.OracleOptions.Board = board
 	kola.STACKITOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
@@ -339,6 +352,23 @@ func syncOptions() error {
 		}
 		if kola.QEMUOptions.Board != "amd64-usr" {
 			return fmt.Errorf("--azure-confidential-vm requires --board=amd64-usr")
+		}
+	}
+
+	if kolaPlatform == "oracle" {
+		required := []struct {
+			name  string
+			value string
+		}{
+			{"oracle-compartment-id", kola.OracleOptions.CompartmentID},
+			{"oracle-availability-domain", kola.OracleOptions.AvailabilityDomain},
+			{"oracle-subnet-id", kola.OracleOptions.SubnetID},
+			{"oracle-image-id", kola.OracleOptions.ImageID},
+		}
+		for _, item := range required {
+			if item.value == "" {
+				return fmt.Errorf("--%s is required for --platform=oracle", item.name)
+			}
 		}
 	}
 
