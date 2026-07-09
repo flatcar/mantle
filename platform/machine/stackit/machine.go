@@ -2,11 +2,9 @@ package stackit
 
 import (
 	"context"
-	"time"
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
-	"github.com/flatcar/mantle/util"
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"golang.org/x/crypto/ssh"
 )
@@ -76,20 +74,6 @@ func (bm *machine) Destroy() {
 		for _, securityGroupID := range nic.SecurityGroups {
 			if err := bm.cluster.flight.api.RemoveSecurityGroupFromServer(ctx, server.GetId(), securityGroupID); err != nil {
 				plog.Errorf("error removing security group from server: %s", err)
-			}
-			securityGroup, err := bm.cluster.flight.api.GetSecurityGroup(ctx, securityGroupID)
-			if err != nil {
-				plog.Errorf("error getting security group: %s", err)
-			}
-			for _, securityGroupRule := range securityGroup.GetRules() {
-				if err := bm.cluster.flight.api.DeleteSecurityGroupRule(ctx, securityGroupID, *securityGroupRule.Id); err != nil {
-					plog.Errorf("error deleting security group rule: %s", err)
-				}
-			}
-			if err := util.Retry(5, 10*time.Second, func() error {
-				return bm.cluster.flight.api.DeleteSecurityGroup(ctx, securityGroupID)
-			}); err != nil {
-				plog.Errorf("error deleting security group: %s", err)
 			}
 		}
 		networkID := nic.GetNetworkId()
