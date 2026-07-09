@@ -233,6 +233,23 @@ func (a *API) CreateServer(ctx context.Context, name string, networkId *string, 
 	if err != nil {
 		return nil, fmt.Errorf("error creating server wait: %s", err)
 	}
+
+	// The labels sometimes get lost during creation. Verify them and patch
+	// the server if they are missing. The server is ready at this point,
+	// so no retry is needed.
+	for key := range DefaultLabels {
+		if _, ok := server.Labels[key]; ok {
+			continue
+		}
+		updated, err := a.client.UpdateServer(ctx, a.projectID, a.region, *server.Id).UpdateServerPayload(iaas.UpdateServerPayload{
+			Labels: DefaultLabels,
+		}).Execute()
+		if err != nil {
+			return nil, fmt.Errorf("updating server labels: %w", err)
+		}
+		server = updated
+		break
+	}
 	return &Server{server}, nil
 }
 
@@ -348,7 +365,23 @@ func (a *API) CreateSecurityGroup(ctx context.Context, name string) (*SecurityGr
 	if err != nil {
 		return nil, fmt.Errorf("failed to create security group: %w", err)
 	}
-	return &SecurityGroup{securityGroup}, err
+
+	// The labels sometimes get lost during creation. Verify them and patch
+	// the security group if they are missing.
+	for key := range DefaultLabels {
+		if _, ok := securityGroup.Labels[key]; ok {
+			continue
+		}
+		updated, err := a.client.UpdateSecurityGroup(ctx, a.projectID, a.region, *securityGroup.Id).UpdateSecurityGroupPayload(iaas.UpdateSecurityGroupPayload{
+			Labels: DefaultLabels,
+		}).Execute()
+		if err != nil {
+			return nil, fmt.Errorf("updating security group labels: %w", err)
+		}
+		securityGroup = updated
+		break
+	}
+	return &SecurityGroup{securityGroup}, nil
 }
 
 func (a *API) DeleteSecurityGroupRule(ctx context.Context, securityGroupID, securityGroupRuleID string) error {
