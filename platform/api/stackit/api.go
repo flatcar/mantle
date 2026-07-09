@@ -276,7 +276,27 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 	if isOpenAPINotFound(err) {
 		return nil, ErrorNotFound
 	}
-	return &Network{network}, err
+	if err != nil {
+		return nil, fmt.Errorf("waiting for network creation: %w", err)
+	}
+
+	// The labels sometimes get lost during creation. Verify them and patch
+	// the network if they are missing. The network is ready at this point,
+	// so no retry is needed.
+	for key := range DefaultLabels {
+		if _, ok := network.Labels[key]; ok {
+			continue
+		}
+		err := a.client.PartialUpdateNetwork(ctx, a.projectID, a.region, network.Id).PartialUpdateNetworkPayload(iaas.PartialUpdateNetworkPayload{
+			Labels: DefaultLabels,
+		}).Execute()
+		if err != nil {
+			return nil, fmt.Errorf("updating network labels: %w", err)
+		}
+		network.Labels = DefaultLabels
+		break
+	}
+	return &Network{network}, nil
 }
 
 func (a *API) DeleteNetwork(ctx context.Context, id string) error {
