@@ -470,35 +470,39 @@ func isOpenAPINotFound(err error) bool {
 func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	createdCutoff := time.Now().Add(-gracePeriod)
 
+	// Best effort: try to clean up all resource types, even if some fail
+	// (e.g. networks that are still in use), and report the errors at the end.
+	var errs []error
+
 	if err := a.gcServers(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc servers: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc servers: %w", err))
 	}
 
 	if err := a.gcImages(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc images: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc images: %w", err))
 	}
 
 	if err := a.gcNetworks(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc networks: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc networks: %w", err))
 	}
 
 	if err := a.gcFailedNetworks(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc failed networks: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc failed networks: %w", err))
 	}
 
 	if err := a.gcSecurityGroups(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc security groups: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc security groups: %w", err))
 	}
 
 	if err := a.gcKeyPairs(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc keypairs: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc keypairs: %w", err))
 	}
 
 	if err := a.gcPublicIPAddresses(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc public ip addresses: %w", err)
+		errs = append(errs, fmt.Errorf("failed to gc public ip addresses: %w", err))
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func uploadFile(ctx context.Context, reader io.Reader, filesize int64, url string) error {
@@ -535,6 +539,7 @@ func (a *API) gcImages(ctx context.Context, createdCutoff time.Time) error {
 		return fmt.Errorf("failed to list current images: %w", err)
 	}
 
+	var errs []error
 	for _, image := range response.GetItems() {
 		if image.CreatedAt.After(createdCutoff) {
 			continue
@@ -542,15 +547,16 @@ func (a *API) gcImages(ctx context.Context, createdCutoff time.Time) error {
 
 		err := a.client.DeleteImage(ctx, a.projectID, a.region, *image.Id).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete image: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete image %v: %w", *image.Id, err))
+			continue
 		}
 
 		_, err = wait.DeleteImageWaitHandler(ctx, a.client, a.projectID, a.region, *image.Id).WaitWithContext(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to delete image: %w", err)
+			errs = append(errs, fmt.Errorf("failed to wait for deletion of image %v: %w", *image.Id, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
@@ -559,6 +565,7 @@ func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
 		return fmt.Errorf("failed to list current networks: %w", err)
 	}
 
+	var errs []error
 	for _, network := range response.GetItems() {
 		if network.CreatedAt.After(createdCutoff) {
 			continue
@@ -566,16 +573,16 @@ func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
 
 		err := a.client.DeleteNetwork(ctx, a.projectID, a.region, network.Id).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete network: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete network %v: %w", network.Id, err))
+			continue
 		}
 
 		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, network.Id).WaitWithContext(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to delete network: %w", err)
+			errs = append(errs, fmt.Errorf("failed to wait for deletion of network %v: %w", network.Id, err))
 		}
-
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (a *API) gcFailedNetworks(ctx context.Context, createdCutoff time.Time) error {
@@ -584,6 +591,7 @@ func (a *API) gcFailedNetworks(ctx context.Context, createdCutoff time.Time) err
 		return fmt.Errorf("failed to list current networks: %w", err)
 	}
 
+	var errs []error
 	for _, network := range response.GetItems() {
 		if network.Status != "" && network.Status != "FAILED" {
 			continue
@@ -591,16 +599,16 @@ func (a *API) gcFailedNetworks(ctx context.Context, createdCutoff time.Time) err
 
 		err := a.client.DeleteNetwork(ctx, a.projectID, a.region, network.Id).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete network: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete network %v: %w", network.Id, err))
+			continue
 		}
 
 		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, network.Id).WaitWithContext(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to delete network: %w", err)
+			errs = append(errs, fmt.Errorf("failed to wait for deletion of network %v: %w", network.Id, err))
 		}
-
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (a *API) gcServers(ctx context.Context, createdCutoff time.Time) error {
@@ -609,6 +617,7 @@ func (a *API) gcServers(ctx context.Context, createdCutoff time.Time) error {
 		return fmt.Errorf("failed to list current servers: %w", err)
 	}
 
+	var errs []error
 	for _, server := range response.GetItems() {
 		if server.CreatedAt.After(createdCutoff) {
 			continue
@@ -616,15 +625,16 @@ func (a *API) gcServers(ctx context.Context, createdCutoff time.Time) error {
 
 		err := a.client.DeleteServer(ctx, a.projectID, a.region, *server.Id).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete server: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete server %v: %w", *server.Id, err))
+			continue
 		}
 
 		_, err = wait.DeleteServerWaitHandler(ctx, a.client, a.projectID, a.region, *server.Id).WaitWithContext(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to delete server: %w", err)
+			errs = append(errs, fmt.Errorf("failed to wait for deletion of server %v: %w", *server.Id, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (a *API) gcKeyPairs(ctx context.Context, createdCutoff time.Time) error {
@@ -633,6 +643,7 @@ func (a *API) gcKeyPairs(ctx context.Context, createdCutoff time.Time) error {
 		return fmt.Errorf("failed to list current keys: %w", err)
 	}
 
+	var errs []error
 	for _, keyPair := range response.GetItems() {
 		if keyPair.CreatedAt.After(createdCutoff) {
 			continue
@@ -640,10 +651,10 @@ func (a *API) gcKeyPairs(ctx context.Context, createdCutoff time.Time) error {
 
 		err := a.client.DeleteKeyPair(ctx, *keyPair.Name).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete keypair: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete keypair %v: %w", *keyPair.Name, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (a *API) gcSecurityGroups(ctx context.Context, createdCutoff time.Time) error {
@@ -652,6 +663,7 @@ func (a *API) gcSecurityGroups(ctx context.Context, createdCutoff time.Time) err
 		return fmt.Errorf("failed to list current security groups: %w", err)
 	}
 
+	var errs []error
 	for _, group := range response.GetItems() {
 		if group.CreatedAt.After(createdCutoff) {
 			continue
@@ -659,10 +671,10 @@ func (a *API) gcSecurityGroups(ctx context.Context, createdCutoff time.Time) err
 
 		err := a.client.DeleteSecurityGroup(ctx, a.projectID, a.region, *group.Id).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete security group: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete security group %v: %w", *group.Id, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) error {
@@ -671,24 +683,24 @@ func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) 
 		return fmt.Errorf("failed to list current public IPs: %w", err)
 	}
 
+	var errs []error
 	for _, ip := range response.GetItems() {
-		if ip.Labels == nil {
-			return fmt.Errorf("no public IP labels found for %v", ip.Id)
-		}
-
 		createdAtValue, ok := ip.Labels["createdAt"]
 		if !ok {
-			return fmt.Errorf("no createdAt label found for public IP %v", ip.Id)
+			errs = append(errs, fmt.Errorf("no createdAt label found for public IP %v", *ip.Id))
+			continue
 		}
 
 		dateStr, ok := createdAtValue.(string)
 		if !ok {
-			return fmt.Errorf("label 'createdAt' is not a string")
+			errs = append(errs, fmt.Errorf("label 'createdAt' of public IP %v is not a string", *ip.Id))
+			continue
 		}
 
 		seconds, err := strconv.ParseInt(dateStr, 10, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse 'createdAt': %w", err)
+			errs = append(errs, fmt.Errorf("failed to parse 'createdAt' of public IP %v: %w", *ip.Id, err))
+			continue
 		}
 		createdAtDate := time.Unix(seconds, 0)
 		if createdAtDate.After(createdCutoff) {
@@ -697,10 +709,10 @@ func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) 
 
 		err = a.client.DeletePublicIP(ctx, a.projectID, a.region, *ip.Id).Execute()
 		if err != nil {
-			return fmt.Errorf("failed to delete public IP: %w", err)
+			errs = append(errs, fmt.Errorf("failed to delete public IP %v: %w", *ip.Id, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func labelSelector(labels map[string]interface{}) string {
