@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/flatcar/mantle/util"
 	"io"
 	"log"
 	"maps"
@@ -16,11 +15,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/flatcar/mantle/util"
+
 	"github.com/flatcar/mantle/platform"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	oapiError "github.com/stackitcloud/stackit-sdk-go/core/oapierror"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas/wait"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
+	"github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api/wait"
 	"k8s.io/utils/ptr"
 )
 
@@ -35,7 +36,7 @@ var (
 )
 
 type API struct {
-	client           *iaas.APIClient
+	client           iaas.DefaultAPI
 	projectID        string
 	region           string
 	availabilityZone string
@@ -87,7 +88,7 @@ func New(opts *Options) (*API, error) {
 	}
 
 	return &API{
-		client:           client,
+		client:           client.DefaultAPI,
 		projectID:        opts.ProjectId,
 		region:           opts.Region,
 		machineType:      opts.MachineType,
@@ -109,15 +110,15 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 
 	imagePayload := iaas.CreateImagePayload{
 		Config:     &imageConfig,
-		DiskFormat: ptr.To(diskFormat),
-		Name:       &name,
-		Labels:     &DefaultLabels,
+		DiskFormat: diskFormat,
+		Name:       name,
+		Labels:     DefaultLabels,
 	}
 	response, err := a.client.CreateImage(ctx, a.projectID, a.region).CreateImagePayload(imagePayload).Execute()
 	if err != nil {
 		return "", fmt.Errorf("creating image: %w", err)
 	}
-	log.Printf("Upload image to: %v", *response.UploadUrl)
+	log.Printf("Upload image to: %v", response.UploadUrl)
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -160,9 +161,9 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (string
 
 func (a *API) CreateKeyPair(ctx context.Context, name, publicKey string) (*Keypair, error) {
 	keypairPayload := iaas.CreateKeyPairPayload{
-		PublicKey: ptr.To(publicKey),
+		PublicKey: publicKey,
 		Name:      ptr.To(name),
-		Labels:    &DefaultLabels,
+		Labels:    DefaultLabels,
 	}
 	keypairResponse, err := a.client.CreateKeyPair(ctx).CreateKeyPairPayload(keypairPayload).Execute()
 	if err != nil {
@@ -190,17 +191,17 @@ func (a *API) DeleteKeyPair(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGetNameAttributeType, networkId iaas.CreateServerNetworkingGetNetworkIdAttributeType, securityGroups iaas.CreateServerPayloadGetSecurityGroupsAttributeType, keypairName iaas.CreateServerPayloadGetKeypairNameAttributeType, userData iaas.CreateServerPayloadGetUserDataAttributeType) (*Server, error) {
-	networkingPayload := &iaas.CreateServerPayloadAllOfNetworking{
-		CreateServerNetworking: &iaas.CreateServerNetworking{NetworkId: networkId},
-	}
+func (a *API) CreateServer(ctx context.Context, name string, networkId *string, securityGroups []string, keypairName *string, userData *string) (*Server, error) {
+	networkingPayload := iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(
+		&iaas.CreateServerNetworking{NetworkId: networkId},
+	)
 
 	bootVolumeSource := iaas.BootVolumeSource{
-		Id:   ptr.To(a.opts.ImageId),
-		Type: ptr.To("image"),
+		Id:   a.opts.ImageId,
+		Type: "image",
 	}
 
-	bootVolume := &iaas.ServerBootVolume{
+	bootVolume := &iaas.BootVolume{
 		DeleteOnTermination: ptr.To(true),
 		PerformanceClass:    ptr.To("storage_premium_perf2"),
 		Size:                ptr.To(int64(50)),
@@ -210,12 +211,12 @@ func (a *API) CreateServer(ctx context.Context, name iaas.CreateServerPayloadGet
 	serverPayload := iaas.CreateServerPayload{
 		AvailabilityZone: ptr.To(a.availabilityZone),
 		BootVolume:       bootVolume,
-		MachineType:      ptr.To(a.machineType),
+		MachineType:      a.machineType,
 		Name:             name,
 		Networking:       networkingPayload,
 		SecurityGroups:   securityGroups,
 		UserData:         userData,
-		Labels:           &DefaultLabels,
+		Labels:           DefaultLabels,
 	}
 
 	if keypairName != nil {
@@ -261,8 +262,8 @@ func (a *API) DeleteServer(ctx context.Context, id string) error {
 
 func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) {
 	networkPayload := iaas.CreateNetworkPayload{
-		Name:   ptr.To(name),
-		Labels: &DefaultLabels,
+		Name:   name,
+		Labels: DefaultLabels,
 	}
 	networkResponse, err := a.client.CreateNetwork(ctx, a.projectID, a.region).CreateNetworkPayload(networkPayload).Execute()
 	if isOpenAPINotFound(err) {
@@ -271,7 +272,7 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network: %w", err)
 	}
-	network, err := wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, a.region, *networkResponse.Id).WaitWithContext(ctx)
+	network, err := wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, a.region, networkResponse.Id).WaitWithContext(ctx)
 	if isOpenAPINotFound(err) {
 		return nil, ErrorNotFound
 	}
@@ -320,8 +321,8 @@ func (a *API) GetSecurityGroup(ctx context.Context, securityGroupID string) (*Se
 
 func (a *API) CreateSecurityGroup(ctx context.Context, name string) (*SecurityGroup, error) {
 	securityGroupPayload := iaas.CreateSecurityGroupPayload{
-		Name:   ptr.To(name),
-		Labels: &DefaultLabels,
+		Name:   name,
+		Labels: DefaultLabels,
 	}
 	securityGroup, err := a.client.CreateSecurityGroup(ctx, a.projectID, a.region).CreateSecurityGroupPayload(securityGroupPayload).Execute()
 	if err != nil {
@@ -358,10 +359,10 @@ func (a *API) CreateSecurityGroupRuleTCP(ctx context.Context, securityGroupId st
 	protocol := iaas.StringAsCreateProtocol(ptr.To("tcp"))
 	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{
 		Description: ptr.To("SSH access"),
-		Direction:   ptr.To("ingress"),
+		Direction:   "ingress",
 		PortRange: &iaas.PortRange{
-			Max: ptr.To(int64(65535)),
-			Min: ptr.To(int64(1)),
+			Max: int64(65535),
+			Min: int64(1),
 		},
 		IpRange:  ptr.To("0.0.0.0/0"),
 		Protocol: &protocol,
@@ -377,10 +378,10 @@ func (a *API) CreateSecurityGroupRuleUDP(ctx context.Context, securityGroupId st
 	protocol := iaas.StringAsCreateProtocol(ptr.To("udp"))
 	securityGroupRulePayload := iaas.CreateSecurityGroupRulePayload{
 		Description: ptr.To("SSH access"),
-		Direction:   ptr.To("ingress"),
+		Direction:   "ingress",
 		PortRange: &iaas.PortRange{
-			Max: ptr.To(int64(65535)),
-			Min: ptr.To(int64(1)),
+			Max: int64(65535),
+			Min: int64(1),
 		},
 		IpRange:  ptr.To("0.0.0.0/0"),
 		Protocol: &protocol,
@@ -398,7 +399,7 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 	unixString := strconv.FormatInt(now.Unix(), 10)
 	labels["createdAt"] = unixString
 	ipPayload := iaas.CreatePublicIPPayload{
-		Labels: &labels,
+		Labels: labels,
 	}
 	ipAddress, err := a.client.CreatePublicIP(ctx, a.projectID, a.region).CreatePublicIPPayload(ipPayload).Execute()
 	if err != nil {
@@ -532,12 +533,12 @@ func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
 			continue
 		}
 
-		err := a.client.DeleteNetwork(ctx, a.projectID, a.region, *network.Id).Execute()
+		err := a.client.DeleteNetwork(ctx, a.projectID, a.region, network.Id).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to delete network: %w", err)
 		}
 
-		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, *network.Id).WaitWithContext(ctx)
+		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, network.Id).WaitWithContext(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to delete network: %w", err)
 		}
@@ -619,7 +620,7 @@ func (a *API) gcPublicIPAddresses(ctx context.Context, createdCutoff time.Time) 
 			return fmt.Errorf("no public IP labels found for %v", ip.Id)
 		}
 
-		createdAtValue, ok := (*ip.Labels)["createdAt"]
+		createdAtValue, ok := ip.Labels["createdAt"]
 		if !ok {
 			return fmt.Errorf("no createdAt label found for public IP %v", ip.Id)
 		}

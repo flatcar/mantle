@@ -13,7 +13,6 @@ import (
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/util"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
 )
 
@@ -56,12 +55,12 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		return nil, fmt.Errorf("error creating IP address: %w", err)
 	}
 
-	var keyPairName iaas.CreateServerPayloadGetKeypairNameAttributeType
+	var keyPairName *string
 	if bc.keypair != nil {
 		keyPairName = bc.keypair.Name
 	}
-	securityGoups := &[]string{*secGroup.Id}
-	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.Id, securityGoups, keyPairName, &base64Config)
+	securityGoups := []string{*secGroup.Id}
+	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), ptr.To(bc.network.Id), securityGoups, keyPairName, ptr.To(string(base64Config)))
 	if err != nil {
 		return nil, fmt.Errorf("creating server: %w", err)
 	}
@@ -133,17 +132,17 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 
 }
 
-func (bc *cluster) vmname() iaas.CreateServerPayloadGetNameAttributeType {
+func (bc *cluster) vmname() string {
 	b := make([]byte, 5)
 	rand.Read(b)
-	return ptr.To(fmt.Sprintf("%s-%x", bc.Name()[0:13], b))
+	return fmt.Sprintf("%s-%x", bc.Name()[0:13], b)
 }
 
 func (bc *cluster) Destroy() {
 	bc.BaseCluster.Destroy()
 	if bc.network != nil {
-		if err := bc.flight.api.DeleteNetwork(context.TODO(), *bc.network.Id); err != nil {
-			plog.Errorf("deleting network %v: %v", *bc.network.Name, err)
+		if err := bc.flight.api.DeleteNetwork(context.TODO(), bc.network.Id); err != nil {
+			plog.Errorf("deleting network %v: %v", bc.network.Name, err)
 		}
 	}
 
