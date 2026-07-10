@@ -482,6 +482,10 @@ func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 		return fmt.Errorf("failed to gc networks: %w", err)
 	}
 
+	if err := a.gcFailedNetworks(ctx, createdCutoff); err != nil {
+		return fmt.Errorf("failed to gc failed networks: %w", err)
+	}
+
 	if err := a.gcSecurityGroups(ctx, createdCutoff); err != nil {
 		return fmt.Errorf("failed to gc security groups: %w", err)
 	}
@@ -557,6 +561,31 @@ func (a *API) gcNetworks(ctx context.Context, createdCutoff time.Time) error {
 
 	for _, network := range response.GetItems() {
 		if network.CreatedAt.After(createdCutoff) {
+			continue
+		}
+
+		err := a.client.DeleteNetwork(ctx, a.projectID, a.region, network.Id).Execute()
+		if err != nil {
+			return fmt.Errorf("failed to delete network: %w", err)
+		}
+
+		_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, network.Id).WaitWithContext(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to delete network: %w", err)
+		}
+
+	}
+	return nil
+}
+
+func (a *API) gcFailedNetworks(ctx context.Context, createdCutoff time.Time) error {
+	response, err := a.client.ListNetworks(ctx, a.projectID, a.region).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to list current networks: %w", err)
+	}
+
+	for _, network := range response.GetItems() {
+		if network.Status != "" && network.Status != "FAILED" {
 			continue
 		}
 
