@@ -460,14 +460,14 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 	}
 	// The labels sometimes get lost during creation. Verify them and patch the
 	// public IP if they are missing. Retry as the IP might not be ready yet.
-	var verifiedIpAddress *iaas.PublicIp
 	err = util.Retry(6, 5*time.Second, func() error {
 		ip, err := a.client.GetPublicIP(ctx, a.projectID, a.region, ipAddress.GetId()).Execute()
 		if err != nil {
 			return fmt.Errorf("getting public IP: %w", err)
 		}
+		ipAddress = ip
 		for key := range labels {
-			if _, ok := ip.Labels[key]; ok {
+			if _, ok := ipAddress.Labels[key]; ok {
 				continue
 			}
 			_, err = a.client.UpdatePublicIP(ctx, a.projectID, a.region, ipAddress.GetId()).UpdatePublicIPPayload(iaas.UpdatePublicIPPayload{
@@ -476,16 +476,15 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 			if err != nil {
 				return fmt.Errorf("updating public IP labels: %w", err)
 			}
-			ip.Labels = labels
+			ipAddress.Labels = labels
 			break
 		}
-		verifiedIpAddress = ip
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify public IP labels: %w", err)
 	}
-	return &PublicIP{verifiedIpAddress}, nil
+	return &PublicIP{ipAddress}, nil
 }
 
 func (a *API) AttachPublicIPAddress(ctx context.Context, ipAddressId, serverId string) error {
