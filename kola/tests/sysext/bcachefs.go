@@ -68,7 +68,7 @@ storage:
     mode: 0644
     contents:
       inline: |
-        /var/lib/bcachefs *(rw,no_root_squash,no_subtree_check,fsid=0)
+        /var/lib/bcachefs *(rw,no_subtree_check,fsid=0)
 systemd:
   units:
   - name: nfs-server.service
@@ -148,7 +148,10 @@ func createBcachefsMachine(c cluster.TestCluster, userdata *conf.UserData) platf
 
 func checkSysextBcachefs(c cluster.TestCluster) {
 	m := createBcachefsMachine(c, bcachefsUserData)
-	c.AssertCmdOutputContains(m, "findmnt /var/lib/bcachefs", "bcachefs")
+	// Assert on the FSTYPE column rather than the raw findmnt output — the
+	// mount point and source device both contain the substring "bcachefs"
+	// and would match even if the FS were mounted as something else.
+	c.AssertCmdOutputContains(m, "findmnt -n -o FSTYPE /var/lib/bcachefs", "bcachefs")
 	c.AssertCmdOutputContains(m, "lsmod", "bcachefs")
 	c.AssertCmdOutputContains(m, "grep bcachefs /proc/filesystems", "bcachefs")
 	c.MustSSH(m, "sudo chown core /var/lib/bcachefs/ && echo world >/var/lib/bcachefs/hello")
@@ -157,13 +160,13 @@ func checkSysextBcachefs(c cluster.TestCluster) {
 		c.Fatalf("could not reboot: %v", err)
 	}
 	c.AssertCmdOutputContains(m, "lsmod", "bcachefs")
-	c.AssertCmdOutputContains(m, "findmnt /var/lib/bcachefs", "bcachefs")
+	c.AssertCmdOutputContains(m, "findmnt -n -o FSTYPE /var/lib/bcachefs", "bcachefs")
 	c.AssertCmdOutputContains(m, "grep --with-filename . /var/lib/bcachefs/hello", "hello:world")
 }
 
 func checkBcachefsNfs(c cluster.TestCluster) {
 	m := createBcachefsMachine(c, bcachefsNfsUserData)
-	c.AssertCmdOutputContains(m, "findmnt /var/lib/bcachefs", "bcachefs")
+	c.AssertCmdOutputContains(m, "findmnt -n -o FSTYPE /var/lib/bcachefs", "bcachefs")
 	c.MustSSH(m, "sudo chown core /var/lib/bcachefs/")
 	c.MustSSH(m, "echo world >/var/lib/bcachefs/hello")
 	m2, err := c.NewMachine(nfsClientUserData)
