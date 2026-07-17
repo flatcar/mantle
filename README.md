@@ -220,7 +220,7 @@ for more information about the `.boto` file.
 `user_domain` is required on some newer versions of OpenStack using Keystone V3 but is optional on older versions. `floating_ip_pool` and `region_name` can be optionally specified here to be used as a default if not specified on the command line.
 
 ### oraclecloud
-`oraclecloud` uses the OCI SDK config file, defaulting to `~/.oci/config`, and profile `DEFAULT`.
+`oraclecloud` uses the OCI SDK config file at the absolute path `$HOME/.oci/config` by default, and profile `DEFAULT`.
 Use `--oraclecloud-config-file` and `--oraclecloud-profile` to override those values.
 
 The Oracle platform also requires the target compartment, availability domain, subnet, and image:
