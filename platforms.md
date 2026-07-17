@@ -114,6 +114,7 @@ create images from the image file.
 ## Oracle Cloud Infrastructure
 
   - The Oracle platform wraps [oci-go-sdk](https://github.com/oracle/oci-go-sdk).
+  - OCI API requests use the SDK's default exponential-backoff retry policy for transient service and eventual-consistency failures. Mantle separately polls asynchronous instance and image lifecycle state.
   - UserData is passed to instances via OCI instance metadata as base64-encoded `user_data`.
   - Instances and VNICs are tagged with `managed-by: mantle`.
   - `kola` requires `--oraclecloud-compartment-id`, `--oraclecloud-availability-domain`, `--oraclecloud-subnet-id`, and `--oraclecloud-image-id`.
