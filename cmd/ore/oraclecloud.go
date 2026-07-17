@@ -3,8 +3,8 @@
 
 package main
 
-import "github.com/flatcar/mantle/cmd/ore/oracle"
+import "github.com/flatcar/mantle/cmd/ore/oraclecloud"
 
 func init() {
-	root.AddCommand(oracle.Oracle)
+	root.AddCommand(oraclecloud.OracleCloud)
 }

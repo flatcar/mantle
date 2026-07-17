@@ -1,7 +1,7 @@
 // Copyright The Mantle Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package oracle
+package oraclecloud
 
 import (
 	"context"
@@ -9,12 +9,12 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/flatcar/mantle/platform"
-	"github.com/flatcar/mantle/platform/api/oracle"
+	"github.com/flatcar/mantle/platform/api/oraclecloud"
 )
 
 type machine struct {
 	cluster *cluster
-	mach    *oracle.Instance
+	mach    *oraclecloud.Instance
 	dir     string
 	journal *platform.Journal
 	console string

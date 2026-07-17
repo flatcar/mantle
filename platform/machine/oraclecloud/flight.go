@@ -1,7 +1,7 @@
 // Copyright The Mantle Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package oracle
+package oraclecloud
 
 import (
 	"fmt"
@@ -10,26 +10,26 @@ import (
 	ctplatform "github.com/flatcar/container-linux-config-transpiler/config/platform"
 
 	"github.com/flatcar/mantle/platform"
-	"github.com/flatcar/mantle/platform/api/oracle"
+	"github.com/flatcar/mantle/platform/api/oraclecloud"
 )
 
 const (
-	Platform platform.Name = "oracle"
+	Platform platform.Name = "oraclecloud"
 )
 
 var (
-	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/machine/oracle")
+	plog = capnslog.NewPackageLogger("github.com/flatcar/mantle", "platform/machine/oraclecloud")
 )
 
 type flight struct {
 	*platform.BaseFlight
-	api *oracle.API
+	api *oraclecloud.API
 }
 
-func NewFlight(opts *oracle.Options) (platform.Flight, error) {
-	api, err := oracle.New(opts)
+func NewFlight(opts *oraclecloud.Options) (platform.Flight, error) {
+	api, err := oraclecloud.New(opts)
 	if err != nil {
-		return nil, fmt.Errorf("creating oracle API client: %w", err)
+		return nil, fmt.Errorf("creating oraclecloud API client: %w", err)
 	}
 
 	base, err := platform.NewBaseFlight(opts.Options, Platform, ctplatform.Custom)
@@ -46,7 +46,7 @@ func NewFlight(opts *oracle.Options) (platform.Flight, error) {
 func (bf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, error) {
 	bc, err := platform.NewBaseCluster(bf.BaseFlight, rconf)
 	if err != nil {
-		return nil, fmt.Errorf("creating oracle base cluster: %w", err)
+		return nil, fmt.Errorf("creating oraclecloud base cluster: %w", err)
 	}
 
 	c := &cluster{
