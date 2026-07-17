@@ -6,6 +6,7 @@ package oraclecloud
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/cli"
@@ -27,8 +28,13 @@ var (
 )
 
 func init() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Sprintf("getting home directory: %v", err))
+	}
+	oracleCloudConfigFile := filepath.Join(home, ".oci", "config")
 	cli.WrapPreRun(OracleCloud, preflightCheck)
-	OracleCloud.PersistentFlags().StringVar(&options.ConfigFile, "oraclecloud-config-file", "~/.oci/config", "Oracle Cloud Infrastructure config file (default: ~/.oci/config)")
+	OracleCloud.PersistentFlags().StringVar(&options.ConfigFile, "oraclecloud-config-file", oracleCloudConfigFile, fmt.Sprintf("Oracle Cloud Infrastructure config file (default: %s)", oracleCloudConfigFile))
 	OracleCloud.PersistentFlags().StringVar(&options.Profile, "oraclecloud-profile", "DEFAULT", "Oracle Cloud Infrastructure config profile")
 	OracleCloud.PersistentFlags().StringVar(&options.CompartmentID, "oraclecloud-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
 }
