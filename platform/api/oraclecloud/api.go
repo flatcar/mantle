@@ -54,12 +54,7 @@ type Instance struct {
 }
 
 func New(opts *Options) (*API, error) {
-	configFile, err := expandPath(opts.ConfigFile)
-	if err != nil {
-		return nil, err
-	}
-
-	provider := common.CustomProfileConfigProvider(configFile, opts.Profile)
+	provider := common.CustomProfileConfigProvider(opts.ConfigFile, opts.Profile)
 
 	compute, err := core.NewComputeClientWithConfigurationProvider(provider)
 	if err != nil {
@@ -498,26 +493,6 @@ func parseSourceImageType(sourceImageType string) (core.ImageSourceDetailsSource
 	default:
 		return "", fmt.Errorf("unsupported source image type %q", sourceImageType)
 	}
-}
-
-func expandPath(path string) (string, error) {
-	if path == "" || path[0] != '~' {
-		return path, nil
-	}
-	if len(path) > 1 && path[1] != '/' {
-		return "", fmt.Errorf("unsupported path %q", path)
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("getting home directory: %w", err)
-	}
-
-	if len(path) == 1 {
-		return home, nil
-	}
-
-	return filepath.Join(home, path[2:]), nil
 }
 
 func stringValue(s *string) string {
