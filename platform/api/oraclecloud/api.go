@@ -71,6 +71,11 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("creating object storage client: %w", err)
 	}
 
+	// DefaultRetryPolicy retries selected 409 responses, 429 responses, and
+	// most 5xx responses. It makes up to eight attempts using exponential
+	// backoff with jitter, capped at about 30 seconds per delay. It also handles
+	// eventual-consistency failures with up to nine attempts. See:
+	// https://pkg.go.dev/github.com/oracle/oci-go-sdk/v65/common#DefaultRetryPolicy
 	retryPolicy := common.DefaultRetryPolicy()
 	retryConfig := common.CustomClientConfiguration{
 		RetryPolicy: &retryPolicy,
