@@ -18,27 +18,29 @@ var (
 		RunE:  runCreateImage,
 		Example: `IMAGE_ID=$(ore oraclecloud \
   --oraclecloud-compartment-id "${ORACLE_COMPARTMENT_ID}" \
-  --oraclecloud-bucket "${ORACLE_BUCKET}" \
   create-image \
+  --oraclecloud-bucket "${ORACLE_BUCKET}" \
   --board "${CIA_ARCH}-usr" \
   --name "${kola_test_basename}" \
   --file "${ORACLE_IMAGE_NAME}")`,
 	}
 
-	createImageFile            string
-	createImageName            string
-	createImageBoard           string
-	createImageObjectName      string
-	createImageSourceImageType string
+	imageFile            string
+	imageName            string
+	imageBoard           string
+	imageObjectName      string
+	imageSourceImageType string
 )
 
 func init() {
 	OracleCloud.AddCommand(cmdCreateImage)
-	cmdCreateImage.Flags().StringVar(&createImageFile, "file", "flatcar_production_oraclecloud_image.qcow2", "path to local Flatcar image (.qcow2 or .vmdk)")
-	cmdCreateImage.Flags().StringVar(&createImageName, "name", "flatcar-kola-test", "name of the image")
-	cmdCreateImage.Flags().StringVar(&createImageBoard, "board", "amd64-usr", "board of the image")
-	cmdCreateImage.Flags().StringVar(&createImageObjectName, "oraclecloud-object-name", "", "Object Storage object name to use for the upload (default: <board>/<basename of --file>)")
-	cmdCreateImage.Flags().StringVar(&createImageSourceImageType, "source-image-type", "QCOW2", "image import source type: QCOW2 or VMDK")
+	cmdCreateImage.Flags().StringVar(&options.Namespace, "oraclecloud-namespace", "", "Oracle Cloud Infrastructure Object Storage namespace (default: auto-detect)")
+	cmdCreateImage.Flags().StringVar(&options.Bucket, "oraclecloud-bucket", "", "Oracle Cloud Infrastructure Object Storage bucket for image uploads")
+	cmdCreateImage.Flags().StringVar(&imageFile, "file", "flatcar_production_oraclecloud_image.qcow2", "path to local Flatcar image (.qcow2 or .vmdk)")
+	cmdCreateImage.Flags().StringVar(&imageName, "name", "flatcar-kola-test", "name of the image")
+	cmdCreateImage.Flags().StringVar(&imageBoard, "board", "amd64-usr", "board of the image")
+	cmdCreateImage.Flags().StringVar(&imageObjectName, "oraclecloud-object-name", "", "Object Storage object name to use for the upload (default: <board>/<basename of --file>)")
+	cmdCreateImage.Flags().StringVar(&imageSourceImageType, "source-image-type", "QCOW2", "image import source type: QCOW2 or VMDK")
 }
 
 func runCreateImage(cmd *cobra.Command, args []string) error {
@@ -49,12 +51,12 @@ func runCreateImage(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--oraclecloud-bucket is required")
 	}
 
-	objectName := createImageObjectName
+	objectName := imageObjectName
 	if objectName == "" {
-		objectName = fmt.Sprintf("%s/%s", createImageBoard, filepath.Base(createImageFile))
+		objectName = fmt.Sprintf("%s/%s", imageBoard, filepath.Base(imageFile))
 	}
 
-	ID, err := api.UploadImage(cmd.Context(), createImageName, createImageFile, objectName, createImageSourceImageType)
+	ID, err := api.UploadImage(cmd.Context(), imageName, imageFile, objectName, imageSourceImageType)
 	if err != nil {
 		return fmt.Errorf("creating Flatcar image: %w", err)
 	}
