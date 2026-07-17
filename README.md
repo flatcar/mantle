@@ -222,6 +222,7 @@ for more information about the `.boto` file.
 ### oraclecloud
 `oraclecloud` uses the OCI SDK config file at the absolute path `$HOME/.oci/config` by default, and profile `DEFAULT`.
 Use `--oraclecloud-config-file` and `--oraclecloud-profile` to override those values.
+OCI API requests use the SDK's default retry policy for transient service and eventual-consistency failures. Mantle separately polls instance and image lifecycle state until each resource is ready.
 
 The Oracle platform also requires the target compartment, availability domain, subnet, and image:
 ```
