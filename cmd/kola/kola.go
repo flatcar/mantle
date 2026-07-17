@@ -190,7 +190,7 @@ func writeProps() error {
 		Image  string `json:"image"`
 		Flavor string `json:"flavor"`
 	}
-	type Oracle struct {
+	type OracleCloud struct {
 		AvailabilityDomain string  `json:"availabilityDomain"`
 		ImageID            string  `json:"imageId"`
 		Shape              string  `json:"shape"`
@@ -202,20 +202,20 @@ func writeProps() error {
 		Mangled bool   `json:"mangled"`
 	}
 	return enc.Encode(&struct {
-		Cmdline         []string  `json:"cmdline"`
-		Platform        string    `json:"platform"`
-		Distro          string    `json:"distro"`
-		IgnitionVersion string    `json:"ignitionversion"`
-		Board           string    `json:"board"`
-		OSContainer     string    `json:"oscontainer"`
-		AWS             AWS       `json:"aws"`
-		Azure           Azure     `json:"azure"`
-		DO              DO        `json:"do"`
-		ESX             ESX       `json:"esx"`
-		GCE             GCE       `json:"gce"`
-		OpenStack       OpenStack `json:"openstack"`
-		Oracle          Oracle    `json:"oracle"`
-		QEMU            QEMU      `json:"qemu"`
+		Cmdline         []string    `json:"cmdline"`
+		Platform        string      `json:"platform"`
+		Distro          string      `json:"distro"`
+		IgnitionVersion string      `json:"ignitionversion"`
+		Board           string      `json:"board"`
+		OSContainer     string      `json:"oscontainer"`
+		AWS             AWS         `json:"aws"`
+		Azure           Azure       `json:"azure"`
+		DO              DO          `json:"do"`
+		ESX             ESX         `json:"esx"`
+		GCE             GCE         `json:"gce"`
+		OpenStack       OpenStack   `json:"openstack"`
+		OracleCloud     OracleCloud `json:"oraclecloud"`
+		QEMU            QEMU        `json:"qemu"`
 	}{
 		Cmdline:         os.Args,
 		Platform:        kolaPlatform,
@@ -259,12 +259,12 @@ func writeProps() error {
 			Image:  kola.OpenStackOptions.Image,
 			Flavor: kola.OpenStackOptions.Flavor,
 		},
-		Oracle: Oracle{
-			AvailabilityDomain: kola.OracleOptions.AvailabilityDomain,
-			ImageID:            kola.OracleOptions.ImageID,
-			Shape:              kola.OracleOptions.Shape,
-			OCPUs:              kola.OracleOptions.OCPUs,
-			MemoryGB:           kola.OracleOptions.MemoryGB,
+		OracleCloud: OracleCloud{
+			AvailabilityDomain: kola.OracleCloudOptions.AvailabilityDomain,
+			ImageID:            kola.OracleCloudOptions.ImageID,
+			Shape:              kola.OracleCloudOptions.Shape,
+			OCPUs:              kola.OracleCloudOptions.OCPUs,
+			MemoryGB:           kola.OracleCloudOptions.MemoryGB,
 		},
 		QEMU: QEMU{
 			Image:   kola.QEMUOptions.DiskImage,
