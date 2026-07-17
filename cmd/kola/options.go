@@ -65,6 +65,10 @@ var (
 )
 
 func init() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Sprintf("getting home directory: %v", err))
+	}
 	sv := root.PersistentFlags().StringVar
 	bv := root.PersistentFlags().BoolVar
 	ss := root.PersistentFlags().StringSlice
@@ -189,7 +193,8 @@ func init() {
 	sv(&kola.OpenStackOptions.Keyfile, "openstack-keyfile", "", "Keyfile is the absolute path to private SSH key file for the User on the Host")
 
 	// Oracle Cloud Infrastructure specific options
-	sv(&kola.OracleCloudOptions.ConfigFile, "oraclecloud-config-file", "~/.oci/config", "Oracle Cloud Infrastructure config file (default: ~/.oci/config)")
+	oracleCloudConfigFile := filepath.Join(home, ".oci", "config")
+	sv(&kola.OracleCloudOptions.ConfigFile, "oraclecloud-config-file", oracleCloudConfigFile, fmt.Sprintf("Oracle Cloud Infrastructure config file (default: %s)", oracleCloudConfigFile))
 	sv(&kola.OracleCloudOptions.Profile, "oraclecloud-profile", "DEFAULT", "Oracle Cloud Infrastructure config profile")
 	sv(&kola.OracleCloudOptions.CompartmentID, "oraclecloud-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
 	sv(&kola.OracleCloudOptions.AvailabilityDomain, "oraclecloud-availability-domain", "", "Oracle Cloud Infrastructure availability domain")
