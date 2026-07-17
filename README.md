@@ -236,8 +236,8 @@ For CI runs with a local image, upload and import the image first:
 ```
 IMAGE_ID=$(ore oraclecloud \
   --oraclecloud-compartment-id=<compartment-ocid> \
-  --oraclecloud-bucket=<object-storage-bucket> \
   create-image \
+  --oraclecloud-bucket=<object-storage-bucket> \
   --board=<arch>-usr \
   --name=<image-name> \
   --file=<flatcar-oraclecloud-image.qcow2>)
