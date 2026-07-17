@@ -1,7 +1,7 @@
 // Copyright The Mantle Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package oracle
+package oraclecloud
 
 import (
 	"fmt"
@@ -22,13 +22,13 @@ var (
 )
 
 func init() {
-	Oracle.AddCommand(cmdGC)
+	OracleCloud.AddCommand(cmdGC)
 	cmdGC.Flags().DurationVar(&gcDuration, "duration", 5*time.Hour, "how old resources must be before they're considered garbage")
 }
 
 func runGC(cmd *cobra.Command, args []string) error {
 	if options.CompartmentID == "" {
-		return fmt.Errorf("--oracle-compartment-id is required")
+		return fmt.Errorf("--oraclecloud-compartment-id is required")
 	}
 
 	if err := api.GC(cmd.Context(), gcDuration); err != nil {

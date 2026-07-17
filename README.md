@@ -219,34 +219,34 @@ for more information about the `.boto` file.
 
 `user_domain` is required on some newer versions of OpenStack using Keystone V3 but is optional on older versions. `floating_ip_pool` and `region_name` can be optionally specified here to be used as a default if not specified on the command line.
 
-### oracle
-`oracle` uses the OCI SDK config file, defaulting to `~/.oci/config`, and profile `DEFAULT`.
-Use `--oracle-config-file` and `--oracle-profile` to override those values.
+### oraclecloud
+`oraclecloud` uses the OCI SDK config file, defaulting to `~/.oci/config`, and profile `DEFAULT`.
+Use `--oraclecloud-config-file` and `--oraclecloud-profile` to override those values.
 
 The Oracle platform also requires the target compartment, availability domain, subnet, and image:
 ```
-kola run -p oracle <test-name> \
-  --oracle-compartment-id=<compartment-ocid> \
-  --oracle-availability-domain=<availability-domain> \
-  --oracle-subnet-id=<subnet-ocid> \
-  --oracle-image-id=<image-ocid>
+kola run -p oraclecloud <test-name> \
+  --oraclecloud-compartment-id=<compartment-ocid> \
+  --oraclecloud-availability-domain=<availability-domain> \
+  --oraclecloud-subnet-id=<subnet-ocid> \
+  --oraclecloud-image-id=<image-ocid>
 ```
 
 For CI runs with a local image, upload and import the image first:
 ```
-IMAGE_ID=$(ore oracle \
-  --oracle-compartment-id=<compartment-ocid> \
-  --oracle-bucket=<object-storage-bucket> \
+IMAGE_ID=$(ore oraclecloud \
+  --oraclecloud-compartment-id=<compartment-ocid> \
+  --oraclecloud-bucket=<object-storage-bucket> \
   create-image \
   --board=<arch>-usr \
   --name=<image-name> \
-  --file=<flatcar-oracle-image.qcow2>)
+  --file=<flatcar-oraclecloud-image.qcow2>)
 
-kola run -p oracle <test-name> \
-  --oracle-compartment-id=<compartment-ocid> \
-  --oracle-availability-domain=<availability-domain> \
-  --oracle-subnet-id=<subnet-ocid> \
-  --oracle-image-id="${IMAGE_ID}"
+kola run -p oraclecloud <test-name> \
+  --oraclecloud-compartment-id=<compartment-ocid> \
+  --oraclecloud-availability-domain=<availability-domain> \
+  --oraclecloud-subnet-id=<subnet-ocid> \
+  --oraclecloud-image-id="${IMAGE_ID}"
 ```
 
 ### packet
