@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/util"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
 	"github.com/oracle/oci-go-sdk/v65/objectstorage"
@@ -126,7 +127,7 @@ func (a *API) CreateInstance(ctx context.Context, name, userData string) (*Insta
 
 	vnic, err := a.PrimaryVNIC(ctx, *instance.Id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting primary vnic: %w", err)
 	}
 
 	return &Instance{
@@ -137,45 +138,40 @@ func (a *API) CreateInstance(ctx context.Context, name, userData string) (*Insta
 }
 
 func (a *API) WaitForInstanceState(ctx context.Context, instanceID string, state core.InstanceLifecycleStateEnum) (*core.Instance, error) {
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	timeout := time.NewTimer(10 * time.Minute)
-	defer timeout.Stop()
-
-	var lastErr error
-	for {
+	var instance *core.Instance
+	var terminalErr error
+	err := util.Retry(60, 10*time.Second, func() error {
 		resp, err := a.compute.GetInstance(ctx, core.GetInstanceRequest{
 			InstanceId: common.String(instanceID),
 		})
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				terminalErr = ctx.Err()
+				return nil
 			}
-			lastErr = fmt.Errorf("getting instance %q: %w", instanceID, err)
-		} else {
-			lastErr = nil
-			if resp.Instance.LifecycleState == state {
-				return &resp.Instance, nil
-			}
-
-			switch resp.Instance.LifecycleState {
-			case core.InstanceLifecycleStateTerminated, core.InstanceLifecycleStateTerminating:
-				return nil, fmt.Errorf("instance %q entered state %q while waiting for %q", instanceID, resp.Instance.LifecycleState, state)
-			}
+			return fmt.Errorf("getting instance %q: %w", instanceID, err)
 		}
 
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-timeout.C:
-			if lastErr != nil {
-				return nil, fmt.Errorf("timed out waiting for instance %q to reach %q: last error: %w", instanceID, state, lastErr)
-			}
-			return nil, fmt.Errorf("timed out waiting for instance %q to reach %q", instanceID, state)
-		case <-ticker.C:
+		if resp.Instance.LifecycleState == state {
+			instance = &resp.Instance
+			return nil
 		}
+
+		switch resp.Instance.LifecycleState {
+		case core.InstanceLifecycleStateTerminated, core.InstanceLifecycleStateTerminating:
+			terminalErr = fmt.Errorf("instance %q entered state %q while waiting for %q", instanceID, resp.Instance.LifecycleState, state)
+			return nil
+		}
+
+		return fmt.Errorf("instance %q is in state %q, waiting for %q", instanceID, resp.Instance.LifecycleState, state)
+	})
+	if terminalErr != nil {
+		return nil, terminalErr
 	}
+	if err != nil {
+		return nil, fmt.Errorf("waiting for instance %q to reach %q: %w", instanceID, state, err)
+	}
+	return instance, nil
 }
 
 func (a *API) PrimaryVNIC(ctx context.Context, instanceID string) (*core.Vnic, error) {
@@ -347,45 +343,40 @@ func (a *API) CreateImageFromObject(ctx context.Context, name, namespace, bucket
 }
 
 func (a *API) WaitForImageState(ctx context.Context, imageID string, state core.ImageLifecycleStateEnum) (*core.Image, error) {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	timeout := time.NewTimer(2 * time.Hour)
-	defer timeout.Stop()
-
-	var lastErr error
-	for {
+	var image *core.Image
+	var terminalErr error
+	err := util.Retry(240, 30*time.Second, func() error {
 		resp, err := a.compute.GetImage(ctx, core.GetImageRequest{
 			ImageId: common.String(imageID),
 		})
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				terminalErr = ctx.Err()
+				return nil
 			}
-			lastErr = fmt.Errorf("getting image %q: %w", imageID, err)
-		} else {
-			lastErr = nil
-			if resp.Image.LifecycleState == state {
-				return &resp.Image, nil
-			}
-
-			switch resp.Image.LifecycleState {
-			case core.ImageLifecycleStateDeleted, core.ImageLifecycleStateDisabled:
-				return nil, fmt.Errorf("image %q entered state %q while waiting for %q", imageID, resp.Image.LifecycleState, state)
-			}
+			return fmt.Errorf("getting image %q: %w", imageID, err)
 		}
 
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-timeout.C:
-			if lastErr != nil {
-				return nil, fmt.Errorf("timed out waiting for image %q to reach %q: last error: %w", imageID, state, lastErr)
-			}
-			return nil, fmt.Errorf("timed out waiting for image %q to reach %q", imageID, state)
-		case <-ticker.C:
+		if resp.Image.LifecycleState == state {
+			image = &resp.Image
+			return nil
 		}
+
+		switch resp.Image.LifecycleState {
+		case core.ImageLifecycleStateDeleted, core.ImageLifecycleStateDisabled:
+			terminalErr = fmt.Errorf("image %q entered state %q while waiting for %q", imageID, resp.Image.LifecycleState, state)
+			return nil
+		}
+
+		return fmt.Errorf("image %q is in state %q, waiting for %q", imageID, resp.Image.LifecycleState, state)
+	})
+	if terminalErr != nil {
+		return nil, terminalErr
 	}
+	if err != nil {
+		return nil, fmt.Errorf("waiting for image %q to reach %q: %w", imageID, state, err)
+	}
+	return image, nil
 }
 
 func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
