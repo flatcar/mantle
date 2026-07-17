@@ -196,7 +196,7 @@ func init() {
 	sv(&kola.OracleCloudOptions.SubnetID, "oraclecloud-subnet-id", "", "Oracle Cloud Infrastructure subnet OCID")
 	sv(&kola.OracleCloudOptions.ImageID, "oraclecloud-image-id", "", "Oracle Cloud Infrastructure custom image OCID")
 	sv(&kola.OracleCloudOptions.Shape, "oraclecloud-shape", "VM.Standard.E4.Flex", "Oracle Cloud Infrastructure instance shape")
-	f32v(&kola.OracleCloudOptions.OCPUs, "oraclecloud-ocpus", 1, "Oracle Cloud Infrastructure flexible shape OCPUs")
+	f32v(&kola.OracleCloudOptions.OCPUs, "oraclecloud-ocpus", 2, "Oracle Cloud Infrastructure flexible shape OCPUs")
 	f32v(&kola.OracleCloudOptions.MemoryGB, "oraclecloud-memory-gb", 8, "Oracle Cloud Infrastructure flexible shape memory in GB")
 
 	// QEMU-specific options
