@@ -28,11 +28,9 @@ var (
 
 func init() {
 	cli.WrapPreRun(OracleCloud, preflightCheck)
-	OracleCloud.PersistentFlags().StringVar(&options.ConfigFile, "oraclecloud-config-file", "~/.oci/config", "Oracle Cloud Infrastructure config file")
+	OracleCloud.PersistentFlags().StringVar(&options.ConfigFile, "oraclecloud-config-file", "~/.oci/config", "Oracle Cloud Infrastructure config file (default: ~/.oci/config)")
 	OracleCloud.PersistentFlags().StringVar(&options.Profile, "oraclecloud-profile", "DEFAULT", "Oracle Cloud Infrastructure config profile")
 	OracleCloud.PersistentFlags().StringVar(&options.CompartmentID, "oraclecloud-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
-	OracleCloud.PersistentFlags().StringVar(&options.Namespace, "oraclecloud-namespace", "", "Oracle Cloud Infrastructure Object Storage namespace (default: auto-detect)")
-	OracleCloud.PersistentFlags().StringVar(&options.Bucket, "oraclecloud-bucket", "", "Oracle Cloud Infrastructure Object Storage bucket for image uploads")
 }
 
 func preflightCheck(cmd *cobra.Command, args []string) error {
