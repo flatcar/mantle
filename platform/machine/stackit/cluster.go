@@ -13,15 +13,15 @@ import (
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/util"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
 )
 
 type cluster struct {
 	*platform.BaseCluster
-	flight  *flight
-	network *stackit.Network
-	keypair *stackit.Keypair
+	flight   *flight
+	network  *stackit.Network
+	keypair  *stackit.Keypair
+	secGroup *stackit.SecurityGroup
 }
 
 func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
@@ -38,30 +38,17 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	base64Config := make([]byte, base64.StdEncoding.EncodedLen(len(userDataConf.Bytes())))
 	base64.StdEncoding.Encode(base64Config, userDataConf.Bytes())
 
-	secGroup, err := bc.flight.api.CreateSecurityGroup(ctx, "flatcar_security_group")
-	if err != nil {
-		return nil, fmt.Errorf("error creating security group: %w", err)
-	}
-	err = bc.flight.api.CreateSecurityGroupRuleTCP(ctx, *secGroup.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error creating security group rule: %w", err)
-	}
-	err = bc.flight.api.CreateSecurityGroupRuleUDP(ctx, *secGroup.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error creating security group rule: %w", err)
-	}
-
 	ipAddress, err := bc.flight.api.CreateIPAddress(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating IP address: %w", err)
 	}
 
-	var keyPairName iaas.CreateServerPayloadGetKeypairNameAttributeType
+	var keyPairName *string
 	if bc.keypair != nil {
 		keyPairName = bc.keypair.Name
 	}
-	securityGoups := &[]string{*secGroup.Id}
-	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), bc.network.Id, securityGoups, keyPairName, &base64Config)
+	securityGoups := []string{*bc.secGroup.Id}
+	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), ptr.To(bc.network.Id), securityGoups, keyPairName, ptr.To(string(base64Config)))
 	if err != nil {
 		return nil, fmt.Errorf("creating server: %w", err)
 	}
@@ -133,17 +120,27 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 
 }
 
-func (bc *cluster) vmname() iaas.CreateServerPayloadGetNameAttributeType {
+func (bc *cluster) vmname() string {
 	b := make([]byte, 5)
 	rand.Read(b)
-	return ptr.To(fmt.Sprintf("%s-%x", bc.Name()[0:13], b))
+	return fmt.Sprintf("%s-%x", bc.Name()[0:13], b)
 }
 
 func (bc *cluster) Destroy() {
 	bc.BaseCluster.Destroy()
+	if bc.secGroup != nil {
+		// The security group can only be deleted once it is no longer
+		// referenced by any server, which may take a moment after the
+		// machines have been destroyed.
+		if err := util.Retry(5, 10*time.Second, func() error {
+			return bc.flight.api.DeleteSecurityGroup(context.TODO(), *bc.secGroup.Id)
+		}); err != nil {
+			plog.Errorf("deleting security group %v: %v", *bc.secGroup.Id, err)
+		}
+	}
 	if bc.network != nil {
-		if err := bc.flight.api.DeleteNetwork(context.TODO(), *bc.network.Id); err != nil {
-			plog.Errorf("deleting network %v: %v", *bc.network.Name, err)
+		if err := bc.flight.api.DeleteNetwork(context.TODO(), bc.network.Id); err != nil {
+			plog.Errorf("deleting network %v: %v", bc.network.Name, err)
 		}
 	}
 

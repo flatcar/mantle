@@ -78,6 +78,17 @@ func (bf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		return nil, fmt.Errorf("creating network for cluster: %w", err)
 	}
 
+	c.secGroup, err = bf.api.CreateSecurityGroup(context.Background(), bc.Name())
+	if err != nil {
+		return nil, fmt.Errorf("creating security group for cluster: %w", err)
+	}
+	if err := bf.api.CreateSecurityGroupRuleTCP(context.Background(), *c.secGroup.Id); err != nil {
+		return nil, fmt.Errorf("creating security group rule: %w", err)
+	}
+	if err := bf.api.CreateSecurityGroupRuleUDP(context.Background(), *c.secGroup.Id); err != nil {
+		return nil, fmt.Errorf("creating security group rule: %w", err)
+	}
+
 	bf.AddCluster(c)
 
 	return c, nil
