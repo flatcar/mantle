@@ -1,6 +1,6 @@
 module github.com/flatcar/mantle
 
-go 1.25.8
+go 1.26
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
@@ -47,7 +47,7 @@ require (
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
 	github.com/vmware/govmomi v0.55.1
-	go.etcd.io/etcd/client/pkg/v3 v3.6.13
+	go.etcd.io/etcd/client/pkg/v3 v3.7.0
 	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.54.0
