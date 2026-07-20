@@ -27,8 +27,13 @@ var DefaultTags = map[string]string{
 // Options hold the specific Oracle Cloud Infrastructure options.
 type Options struct {
 	*platform.Options
-	ConfigFile         string
-	Profile            string
+	Tenancy              string
+	User                 string
+	Fingerprint          string
+	PrivateKeyPath       string
+	PrivateKeyPassphrase string
+	Region               string
+
 	CompartmentID      string
 	AvailabilityDomain string
 	SubnetID           string
@@ -55,7 +60,16 @@ type Instance struct {
 }
 
 func New(opts *Options) (*API, error) {
-	provider := common.CustomProfileConfigProvider(opts.ConfigFile, opts.Profile)
+	pk := []byte{}
+	if opts.PrivateKeyPath != "" {
+		var err error
+		pk, err = os.ReadFile(opts.PrivateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading private key: %w", err)
+		}
+	}
+
+	provider := common.NewRawConfigurationProvider(opts.Tenancy, opts.User, opts.Region, opts.Fingerprint, string(pk), nil)
 
 	compute, err := core.NewComputeClientWithConfigurationProvider(provider)
 	if err != nil {
