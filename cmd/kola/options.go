@@ -65,10 +65,6 @@ var (
 )
 
 func init() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic(fmt.Sprintf("getting home directory: %v", err))
-	}
 	sv := root.PersistentFlags().StringVar
 	bv := root.PersistentFlags().BoolVar
 	ss := root.PersistentFlags().StringSlice
@@ -193,9 +189,13 @@ func init() {
 	sv(&kola.OpenStackOptions.Keyfile, "openstack-keyfile", "", "Keyfile is the absolute path to private SSH key file for the User on the Host")
 
 	// Oracle Cloud Infrastructure specific options
-	oracleCloudConfigFile := filepath.Join(home, ".oci", "config")
-	sv(&kola.OracleCloudOptions.ConfigFile, "oraclecloud-config-file", oracleCloudConfigFile, fmt.Sprintf("Oracle Cloud Infrastructure config file (default: %s)", oracleCloudConfigFile))
-	sv(&kola.OracleCloudOptions.Profile, "oraclecloud-profile", "DEFAULT", "Oracle Cloud Infrastructure config profile")
+	sv(&kola.OracleCloudOptions.Tenancy, "oraclecloud-tenancy", "", "Oracle Cloud tenancy")
+	sv(&kola.OracleCloudOptions.User, "oraclecloud-user", "", "Oracle Cloud user")
+	sv(&kola.OracleCloudOptions.Region, "oraclecloud-region", "", "Oracle Cloud fingerprint")
+	sv(&kola.OracleCloudOptions.PrivateKey, "oraclecloud-private-key", "", "Oracle Cloud private key")
+	sv(&kola.OracleCloudOptions.PrivateKeyPassphrase, "oraclecloud-private-key-passphrase", "", "Oracle Cloud private key passphrase")
+	sv(&kola.OracleCloudOptions.Fingerprint, "oraclecloud-fingerprint", "", "Oracle Cloud fingerprint")
+
 	sv(&kola.OracleCloudOptions.CompartmentID, "oraclecloud-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
 	sv(&kola.OracleCloudOptions.AvailabilityDomain, "oraclecloud-availability-domain", "", "Oracle Cloud Infrastructure availability domain")
 	sv(&kola.OracleCloudOptions.SubnetID, "oraclecloud-subnet-id", "", "Oracle Cloud Infrastructure subnet OCID")

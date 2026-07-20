@@ -27,8 +27,13 @@ var DefaultTags = map[string]string{
 // Options hold the specific Oracle Cloud Infrastructure options.
 type Options struct {
 	*platform.Options
-	ConfigFile         string
-	Profile            string
+	Tenancy              string
+	User                 string
+	Fingerprint          string
+	PrivateKey           string
+	PrivateKeyPassphrase string
+	Region               string
+
 	CompartmentID      string
 	AvailabilityDomain string
 	SubnetID           string
@@ -55,7 +60,7 @@ type Instance struct {
 }
 
 func New(opts *Options) (*API, error) {
-	provider := common.CustomProfileConfigProvider(opts.ConfigFile, opts.Profile)
+	provider := common.NewRawConfigurationProvider(opts.Tenancy, opts.User, opts.Region, opts.Fingerprint, opts.PrivateKey, nil)
 
 	compute, err := core.NewComputeClientWithConfigurationProvider(provider)
 	if err != nil {

@@ -6,7 +6,6 @@ package oraclecloud
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/cli"
@@ -28,14 +27,13 @@ var (
 )
 
 func init() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic(fmt.Sprintf("getting home directory: %v", err))
-	}
-	oracleCloudConfigFile := filepath.Join(home, ".oci", "config")
 	cli.WrapPreRun(OracleCloud, preflightCheck)
-	OracleCloud.PersistentFlags().StringVar(&options.ConfigFile, "oraclecloud-config-file", oracleCloudConfigFile, fmt.Sprintf("Oracle Cloud Infrastructure config file (default: %s)", oracleCloudConfigFile))
-	OracleCloud.PersistentFlags().StringVar(&options.Profile, "oraclecloud-profile", "DEFAULT", "Oracle Cloud Infrastructure config profile")
+	OracleCloud.PersistentFlags().StringVar(&options.Tenancy, "oraclecloud-tenancy", "", "Oracle Cloud tenancy")
+	OracleCloud.PersistentFlags().StringVar(&options.User, "oraclecloud-user", "", "Oracle Cloud user")
+	OracleCloud.PersistentFlags().StringVar(&options.Region, "oraclecloud-region", "us-ashburn-1", "Oracle Cloud fingerprint")
+	OracleCloud.PersistentFlags().StringVar(&options.PrivateKey, "oraclecloud-private-key", "", "Oracle Cloud private key")
+	OracleCloud.PersistentFlags().StringVar(&options.PrivateKeyPassphrase, "oraclecloud-private-key-passphrase", "", "Oracle Cloud private key passphrase")
+	OracleCloud.PersistentFlags().StringVar(&options.Fingerprint, "oraclecloud-fingerprint", "", "Oracle Cloud fingerprint")
 	OracleCloud.PersistentFlags().StringVar(&options.CompartmentID, "oraclecloud-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
 }
 
