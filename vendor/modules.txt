@@ -669,7 +669,7 @@ github.com/stackitcloud/stackit-sdk-go/core/oapierror
 github.com/stackitcloud/stackit-sdk-go/core/oidcadapters
 github.com/stackitcloud/stackit-sdk-go/core/utils
 github.com/stackitcloud/stackit-sdk-go/core/wait
-# github.com/stackitcloud/stackit-sdk-go/services/iaas v1.12.2
+# github.com/stackitcloud/stackit-sdk-go/services/iaas v1.13.0
 ## explicit; go 1.25
 github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api
 github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api/wait
