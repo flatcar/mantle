@@ -219,6 +219,37 @@ for more information about the `.boto` file.
 
 `user_domain` is required on some newer versions of OpenStack using Keystone V3 but is optional on older versions. `floating_ip_pool` and `region_name` can be optionally specified here to be used as a default if not specified on the command line.
 
+### oraclecloud
+`oraclecloud` uses the OCI SDK config file at the absolute path `$HOME/.oci/config` by default, and profile `DEFAULT`.
+Use `--oraclecloud-config-file` and `--oraclecloud-profile` to override those values.
+OCI API requests use the SDK's default retry policy for transient service and eventual-consistency failures. Mantle separately polls instance and image lifecycle state until each resource is ready.
+
+The Oracle platform also requires the target compartment, availability domain, subnet, and image:
+```
+kola run -p oraclecloud <test-name> \
+  --oraclecloud-compartment-id=<compartment-ocid> \
+  --oraclecloud-availability-domain=<availability-domain> \
+  --oraclecloud-subnet-id=<subnet-ocid> \
+  --oraclecloud-image-id=<image-ocid>
+```
+
+For CI runs with a local image, upload and import the image first:
+```
+IMAGE_ID=$(ore oraclecloud \
+  --oraclecloud-compartment-id=<compartment-ocid> \
+  create-image \
+  --oraclecloud-bucket=<object-storage-bucket> \
+  --board=<arch>-usr \
+  --name=<image-name> \
+  --file=<flatcar-oraclecloud-image.qcow2>)
+
+kola run -p oraclecloud <test-name> \
+  --oraclecloud-compartment-id=<compartment-ocid> \
+  --oraclecloud-availability-domain=<availability-domain> \
+  --oraclecloud-subnet-id=<subnet-ocid> \
+  --oraclecloud-image-id="${IMAGE_ID}"
+```
+
 ### packet
 `packet` uses `~/.config/packet.json`. This can be configured manually:
 ```
