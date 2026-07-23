@@ -683,11 +683,17 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 	// Canonicalize info
 	sort.Strings(info.SecurityOptions)
 
-	// Because we prefer overlay2/overlay for different docker versions, figure
+	expectedOverlayDriver := "overlayfs"
+
+	// Because we prefer overlayfs/overlay2 for different docker versions, figure
 	// out the correct driver to be testing for based on our docker version.
-	expectedOverlayDriver := "overlay2"
-	if strings.HasPrefix(info.ServerVersion, "1.12.") || strings.HasPrefix(info.ServerVersion, "17.04.") {
-		expectedOverlayDriver = "overlay"
+	sv, err := semver.NewVersion(info.ServerVersion)
+	if err != nil {
+		c.Errorf("failed to parse Docker server version: %v", err)
+	}
+
+	if sv.LessThan(semver.Version{Major: 29}) {
+		expectedOverlayDriver = "overlay2"
 	}
 
 	expectedFsDriverMap := map[string]string{
