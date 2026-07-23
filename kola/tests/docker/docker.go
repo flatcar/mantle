@@ -733,7 +733,21 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 // the Docker security option is enabled (seccomp, selinux).
 func hasSecurityOptions(opts []string) bool {
 	for _, opt := range opts {
-		switch opt {
+		// opt = "name=seccomp,profile=builtin"
+		splitOpt := strings.Split(opt, ",")
+
+		if len(splitOpt) < 1 {
+			return false
+		}
+
+		// splitOpt = [name=seccomp profile=builtin]
+		name := strings.SplitN(splitOpt[0], "=", 2)
+		if len(name) < 2 {
+			return false
+		}
+
+		// name = [name seccomp]
+		switch name[1] {
 		case "selinux", "seccomp", "cgroupns":
 		default:
 			return false
