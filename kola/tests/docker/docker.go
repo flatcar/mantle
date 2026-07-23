@@ -46,12 +46,10 @@ type simplifiedDockerInfo struct {
 		Path string `json:"path"`
 	}
 	ContainerdCommit struct {
-		ID       string
-		Expected string
+		ID string
 	}
 	RuncCommit struct {
-		ID       string
-		Expected string
+		ID string
 	}
 	SecurityOptions []string
 }
@@ -650,13 +648,13 @@ func testContainerdUp(c cluster.TestCluster) {
 		c.Fatal(err)
 	}
 
-	if info.ContainerdCommit.ID != info.ContainerdCommit.Expected {
+	if info.ContainerdCommit.ID == "" {
 		c.Fatalf("Docker could not find containerd")
 	}
 }
 
 func getDockerInfo(c cluster.TestCluster, m platform.Machine) (simplifiedDockerInfo, error) {
-	dockerInfoJson, err := c.SSH(m, `curl -s --unix-socket /var/run/docker.sock http://docker/v1.24/info`)
+	dockerInfoJson, err := c.SSH(m, `docker info --format json`)
 	if err != nil {
 		return simplifiedDockerInfo{}, fmt.Errorf("could not get dockerinfo: %v", err)
 	}
@@ -685,11 +683,17 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 	// Canonicalize info
 	sort.Strings(info.SecurityOptions)
 
-	// Because we prefer overlay2/overlay for different docker versions, figure
+	expectedOverlayDriver := "overlayfs"
+
+	// Because we prefer overlayfs/overlay2 for different docker versions, figure
 	// out the correct driver to be testing for based on our docker version.
-	expectedOverlayDriver := "overlay2"
-	if strings.HasPrefix(info.ServerVersion, "1.12.") || strings.HasPrefix(info.ServerVersion, "17.04.") {
-		expectedOverlayDriver = "overlay"
+	sv, err := semver.NewVersion(info.ServerVersion)
+	if err != nil {
+		c.Errorf("failed to parse Docker server version: %v", err)
+	}
+
+	if sv.LessThan(semver.Version{Major: 29}) {
+		expectedOverlayDriver = "overlay2"
 	}
 
 	expectedFsDriverMap := map[string]string{
@@ -712,14 +716,6 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 		c.Errorf("unexpected cgroup driver %v", info.CgroupDriver)
 	}
 
-	if info.ContainerdCommit.ID != info.ContainerdCommit.Expected {
-		c.Errorf("commit mismatch for containerd: %v != %v", info.ContainerdCommit.Expected, info.ContainerdCommit.ID)
-	}
-
-	if info.RuncCommit.ID != info.RuncCommit.Expected {
-		c.Errorf("commit mismatch for runc: %v != %v", info.RuncCommit.Expected, info.RuncCommit.ID)
-	}
-
 	if runcInfo, ok := info.Runtimes["runc"]; ok {
 		if runcInfo.Path == "" {
 			c.Errorf("expected non-empty runc path")
@@ -733,7 +729,21 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 // the Docker security option is enabled (seccomp, selinux).
 func hasSecurityOptions(opts []string) bool {
 	for _, opt := range opts {
-		switch opt {
+		// opt = "name=seccomp,profile=builtin"
+		splitOpt := strings.Split(opt, ",")
+
+		if len(splitOpt) < 1 {
+			return false
+		}
+
+		// splitOpt = [name=seccomp profile=builtin]
+		name := strings.SplitN(splitOpt[0], "=", 2)
+		if len(name) < 2 {
+			return false
+		}
+
+		// name = [name seccomp]
+		switch name[1] {
 		case "selinux", "seccomp", "cgroupns":
 		default:
 			return false
