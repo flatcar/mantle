@@ -106,10 +106,22 @@ create images from the image file.
 
 ## OpenStack
 
- - The OpenStack platform wraps [gophercloud](https://github.com/gophercloud/gophercloud).
- - By default SSH keys will be passed via both the OpenStack metadata AND the userdata.
- - UserData is passed to the instances via the OpenStack metadata service.
- - Instances are tagged with `CreatedBy: mantle` which is used when filtering instances for `GC`.
+  - The OpenStack platform wraps [gophercloud](https://github.com/gophercloud/gophercloud).
+  - By default SSH keys will be passed via both the OpenStack metadata AND the userdata.
+  - UserData is passed to the instances via the OpenStack metadata service.
+  - Instances are tagged with `CreatedBy: mantle` which is used when filtering instances for `GC`.
+
+## Oracle Cloud Infrastructure
+
+  - The Oracle platform wraps [oci-go-sdk](https://github.com/oracle/oci-go-sdk).
+  - OCI API requests use the SDK's default exponential-backoff retry policy for transient service and eventual-consistency failures. Mantle separately polls asynchronous instance and image lifecycle state.
+  - UserData is passed to instances via OCI instance metadata as base64-encoded `user_data`.
+  - Instances and VNICs are tagged with `managed-by: mantle`.
+  - `kola` requires `--oraclecloud-compartment-id`, `--oraclecloud-availability-domain`, `--oraclecloud-subnet-id`, and `--oraclecloud-image-id`.
+  - `ore oraclecloud create-image` uploads a local QCOW2 or VMDK image to Object Storage, imports it as an OCI custom image, waits for the image to become available, deletes the temporary object, and prints the image OCID.
+  - Test success is reported by the `kola` harness, not by the machine journal. Check terminal output for `PASS, output in ...`, `<output-dir>/test.tap`, or `<output-dir>/reports/report.json`.
+  - Machine logs are collected under `<output-dir>/<instance-id>/journal.txt` for diagnostics.
+  - `ore oraclecloud gc` deletes old mantle-managed custom images and terminates old mantle-managed instances in the configured compartment.
 
 ## Packet
 

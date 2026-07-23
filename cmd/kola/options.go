@@ -41,7 +41,7 @@ var (
 	kolaDisableSELinuxAVCChecks bool
 	defaultTargetBoard          = sdk.DefaultBoard()
 	kolaArchitectures           = []string{"amd64"}
-	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "qemu", "qemu-unpriv", "scaleway", "stackit"}
+	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "oraclecloud", "qemu", "qemu-unpriv", "scaleway", "stackit"}
 	kolaDistros                 = []string{"cl", "fcos", "rhcos"}
 	kolaChannels                = []string{"alpha", "beta", "stable", "edge", "lts"}
 	kolaOfferings               = []string{"basic", "pro"}
@@ -70,6 +70,7 @@ func init() {
 	ss := root.PersistentFlags().StringSlice
 	dv := root.PersistentFlags().DurationVar
 	iv := root.PersistentFlags().IntVar
+	f32v := root.PersistentFlags().Float32Var
 
 	// general options
 	sv(&outputDir, "output-dir", "", "Temporary output directory for test data and logs")
@@ -187,6 +188,22 @@ func init() {
 	sv(&kola.OpenStackOptions.User, "openstack-user", "", "User is the one used for the SSH connection to the Host")
 	sv(&kola.OpenStackOptions.Keyfile, "openstack-keyfile", "", "Keyfile is the absolute path to private SSH key file for the User on the Host")
 
+	// Oracle Cloud Infrastructure specific options
+	sv(&kola.OracleCloudOptions.Tenancy, "oraclecloud-tenancy", "", "Oracle Cloud tenancy")
+	sv(&kola.OracleCloudOptions.User, "oraclecloud-user", "", "Oracle Cloud user")
+	sv(&kola.OracleCloudOptions.Region, "oraclecloud-region", "us-ashburn-1", "Oracle Cloud fingerprint")
+	sv(&kola.OracleCloudOptions.PrivateKeyPath, "oraclecloud-private-key-path", "", "Oracle Cloud private key path")
+	sv(&kola.OracleCloudOptions.PrivateKeyPassphrase, "oraclecloud-private-key-passphrase", "", "Oracle Cloud private key passphrase")
+	sv(&kola.OracleCloudOptions.Fingerprint, "oraclecloud-fingerprint", "", "Oracle Cloud fingerprint")
+
+	sv(&kola.OracleCloudOptions.CompartmentID, "oraclecloud-compartment-id", "", "Oracle Cloud Infrastructure compartment OCID")
+	sv(&kola.OracleCloudOptions.AvailabilityDomain, "oraclecloud-availability-domain", "", "Oracle Cloud Infrastructure availability domain")
+	sv(&kola.OracleCloudOptions.SubnetID, "oraclecloud-subnet-id", "", "Oracle Cloud Infrastructure subnet OCID")
+	sv(&kola.OracleCloudOptions.ImageID, "oraclecloud-image-id", "", "Oracle Cloud Infrastructure custom image OCID")
+	sv(&kola.OracleCloudOptions.Shape, "oraclecloud-shape", "VM.Standard.E4.Flex", "Oracle Cloud Infrastructure instance shape")
+	f32v(&kola.OracleCloudOptions.OCPUs, "oraclecloud-ocpus", 2, "Oracle Cloud Infrastructure flexible shape OCPUs")
+	f32v(&kola.OracleCloudOptions.MemoryGB, "oraclecloud-memory-gb", 8, "Oracle Cloud Infrastructure flexible shape memory in GB")
+
 	// QEMU-specific options
 	sv(&kola.QEMUOptions.Board, "board", defaultTargetBoard, "target board")
 	sv(&kola.QEMUOptions.DiskImage, "qemu-image", "", "path to CoreOS disk image")
@@ -254,6 +271,7 @@ func syncOptions() error {
 	kola.ScalewayOptions.Board = board
 	kola.HetznerOptions.Board = board
 	kola.AkamaiOptions.Board = board
+	kola.OracleCloudOptions.Board = board
 	kola.STACKITOptions.Board = board
 
 	validateOption := func(name, item string, valid []string) error {
@@ -339,6 +357,23 @@ func syncOptions() error {
 		}
 		if kola.QEMUOptions.Board != "amd64-usr" {
 			return fmt.Errorf("--azure-confidential-vm requires --board=amd64-usr")
+		}
+	}
+
+	if kolaPlatform == "oraclecloud" {
+		required := []struct {
+			name  string
+			value string
+		}{
+			{"oraclecloud-compartment-id", kola.OracleCloudOptions.CompartmentID},
+			{"oraclecloud-availability-domain", kola.OracleCloudOptions.AvailabilityDomain},
+			{"oraclecloud-subnet-id", kola.OracleCloudOptions.SubnetID},
+			{"oraclecloud-image-id", kola.OracleCloudOptions.ImageID},
+		}
+		for _, item := range required {
+			if item.value == "" {
+				return fmt.Errorf("--%s is required for --platform=oraclecloud", item.name)
+			}
 		}
 	}
 
