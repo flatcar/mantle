@@ -656,7 +656,7 @@ func testContainerdUp(c cluster.TestCluster) {
 }
 
 func getDockerInfo(c cluster.TestCluster, m platform.Machine) (simplifiedDockerInfo, error) {
-	dockerInfoJson, err := c.SSH(m, `curl -s --unix-socket /var/run/docker.sock http://docker/v1.24/info`)
+	dockerInfoJson, err := c.SSH(m, `docker info --format json`)
 	if err != nil {
 		return simplifiedDockerInfo{}, fmt.Errorf("could not get dockerinfo: %v", err)
 	}
