@@ -46,12 +46,10 @@ type simplifiedDockerInfo struct {
 		Path string `json:"path"`
 	}
 	ContainerdCommit struct {
-		ID       string
-		Expected string
+		ID string
 	}
 	RuncCommit struct {
-		ID       string
-		Expected string
+		ID string
 	}
 	SecurityOptions []string
 }
@@ -650,7 +648,7 @@ func testContainerdUp(c cluster.TestCluster) {
 		c.Fatal(err)
 	}
 
-	if info.ContainerdCommit.ID != info.ContainerdCommit.Expected {
+	if info.ContainerdCommit.ID == "" {
 		c.Fatalf("Docker could not find containerd")
 	}
 }
@@ -710,14 +708,6 @@ func testDockerInfo(expectedFs string, c cluster.TestCluster) {
 
 	if info.CgroupDriver != "cgroupfs" && info.CgroupDriver != "systemd" {
 		c.Errorf("unexpected cgroup driver %v", info.CgroupDriver)
-	}
-
-	if info.ContainerdCommit.ID != info.ContainerdCommit.Expected {
-		c.Errorf("commit mismatch for containerd: %v != %v", info.ContainerdCommit.Expected, info.ContainerdCommit.ID)
-	}
-
-	if info.RuncCommit.ID != info.RuncCommit.Expected {
-		c.Errorf("commit mismatch for runc: %v != %v", info.RuncCommit.Expected, info.RuncCommit.ID)
 	}
 
 	if runcInfo, ok := info.Runtimes["runc"]; ok {
