@@ -39,7 +39,7 @@ func (om *machine) ID() string {
 
 func (om *machine) IP() string {
 	if om.mach.FloatingIP != nil {
-		return om.mach.FloatingIP.IP
+		return om.mach.FloatingIP.FloatingIP
 	}
 
 	// we try to get the IPv4 address.
