@@ -285,7 +285,7 @@ func ostreeRemoteTest(c cluster.TestCluster) {
 		}
 
 		if refCount != remoteRefsCount {
-			c.Fatalf(`Did not find correct number of refs in remote summary; expected %q, got %q`, remoteRefsCount, refCount)
+			c.Fatalf(`Did not find correct number of refs in remote summary; expected %d, got %d`, remoteRefsCount, refCount)
 		}
 	})
 
