@@ -679,7 +679,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 // architecture returns the machine architecture of the given platform.
 func architecture(pltfrm string) string {
 	nativeArch := "amd64"
-	if pltfrm == "qemu" && QEMUOptions.Board != "" {
+	if (pltfrm == "qemu" || pltfrm == "qemu-unpriv") && QEMUOptions.Board != "" {
 		nativeArch = boardToArch(QEMUOptions.Board)
 	}
 	if pltfrm == "aws" && AWSOptions.Board != "" {
