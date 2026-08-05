@@ -15,28 +15,34 @@
 package openstack
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
 	"net/url"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/coreos/pkg/capnslog"
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/floatingips"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/keypairs"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
-	computeImages "github.com/gophercloud/gophercloud/openstack/compute/v2/images"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imagedata"
-	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/imageimport"
-	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
-	"github.com/gophercloud/gophercloud/pagination"
-	ugroups "github.com/gophercloud/utils/openstack/networking/v2/extensions/security/groups"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/v2/openstack/config"
+	"github.com/gophercloud/gophercloud/v2/openstack/config/clouds"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
+	"github.com/gophercloud/gophercloud/v2/pagination"
+	ugroups "github.com/gophercloud/utils/v2/openstack/networking/v2/extensions/security/groups"
 
 	"github.com/flatcar/mantle/auth"
 	"github.com/flatcar/mantle/platform"
@@ -88,48 +94,107 @@ type API struct {
 }
 
 func New(opts *Options) (*API, error) {
-	profiles, err := auth.ReadOpenStackConfig(opts.ConfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't read OpenStack config: %v", err)
+	ctx := context.TODO()
+	var osOpts gophercloud.AuthOptions
+	var eoOpts gophercloud.EndpointOpts
+	var tlsConfig *tls.Config
+
+	isHomemadeConfig := false
+	configPath := opts.ConfigPath
+	if configPath == "" {
+		user, err := user.Current()
+		if err == nil {
+			defaultPath := filepath.Join(user.HomeDir, auth.OpenStackConfigPath)
+			if _, err := os.Stat(defaultPath); err == nil {
+				configPath = defaultPath
+				isHomemadeConfig = true
+			}
+		}
+	} else {
+		if strings.HasSuffix(strings.ToLower(configPath), ".json") {
+			isHomemadeConfig = true
+		}
 	}
 
-	if opts.Profile == "" {
-		opts.Profile = "default"
-	}
-	profile, ok := profiles[opts.Profile]
-	if !ok {
-		return nil, fmt.Errorf("no such profile %q", opts.Profile)
+	if isHomemadeConfig {
+		plog.Warningf("Mantle's JSON configuration format is deprecated; please migrate to standard clouds.yaml configuration.")
+		profiles, err := auth.ReadOpenStackConfig(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't read OpenStack config: %v", err)
+		}
+
+		if opts.Profile == "" {
+			opts.Profile = "default"
+		}
+		profile, ok := profiles[opts.Profile]
+		if !ok {
+			return nil, fmt.Errorf("no such profile %q", opts.Profile)
+		}
+
+		if opts.Domain == "" {
+			opts.Domain = profile.Domain
+		}
+
+		osOpts = gophercloud.AuthOptions{
+			IdentityEndpoint: profile.AuthURL,
+			TenantID:         profile.TenantID,
+			TenantName:       profile.TenantName,
+			Username:         profile.Username,
+			Password:         profile.Password,
+			DomainID:         profile.DomainID,
+			AllowReauth:      true,
+		}
+		eoOpts = gophercloud.EndpointOpts{
+			Region: profile.Region,
+		}
+		if opts.FloatingIPPool == "" {
+			opts.FloatingIPPool = profile.FloatingIPPool
+		}
+	} else {
+		var parseOpts []clouds.ParseOption
+		if opts.ConfigPath != "" {
+			parseOpts = append(parseOpts, clouds.WithLocations(opts.ConfigPath))
+		}
+		if opts.Profile != "" {
+			parseOpts = append(parseOpts, clouds.WithCloudName(opts.Profile))
+		}
+
+		parsedOSOpts, parsedEOOpts, parsedTLSConfig, err := clouds.Parse(parseOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse clouds config: %v", err)
+		}
+		osOpts = parsedOSOpts
+		osOpts.AllowReauth = true
+		eoOpts = parsedEOOpts
+		tlsConfig = parsedTLSConfig
+
+		yamlPath := auth.FindCloudsYAML(opts.ConfigPath)
+		profileName := opts.Profile
+		if profileName == "" {
+			profileName = os.Getenv("OS_CLOUD")
+			if profileName == "" {
+				profileName = "default"
+			}
+		}
+		pool, err := auth.ReadFloatingIPPoolFromClouds(yamlPath, profileName)
+		if err == nil && pool != "" && opts.FloatingIPPool == "" {
+			opts.FloatingIPPool = pool
+		}
 	}
 
-	if opts.Domain == "" {
-		opts.Domain = profile.Domain
+	var provider *gophercloud.ProviderClient
+	var err error
+	if tlsConfig != nil {
+		provider, err = config.NewProviderClient(ctx, osOpts, config.WithTLSConfig(tlsConfig))
+	} else {
+		provider, err = openstack.AuthenticatedClient(ctx, osOpts)
 	}
-
-	osOpts := gophercloud.AuthOptions{
-		IdentityEndpoint: profile.AuthURL,
-		TenantID:         profile.TenantID,
-		TenantName:       profile.TenantName,
-		Username:         profile.Username,
-		Password:         profile.Password,
-		DomainID:         profile.DomainID,
-		// Enable automatic re‑authentication so that long‑running
-		// kola test suites do not fail once the Keystone token
-		// expires (typically after one hour).  With AllowReauth set
-		// to true, gophercloud will transparently obtain a fresh
-		// token whenever it receives a 401 response, preventing
-		// intermittent "Authentication failed" errors during console
-		// log retrieval, security‑group operations, etc.
-		// See https://pkg.go.dev/github.com/gophercloud/gophercloud#AuthOptions
-		AllowReauth: true,
-	}
-
-	provider, err := openstack.AuthenticatedClient(osOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating provider: %v", err)
 	}
 
 	if opts.Region == "" {
-		opts.Region = profile.Region
+		opts.Region = eoOpts.Region
 	}
 
 	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
@@ -140,7 +205,7 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("failed to create compute client: %v", err)
 	}
 
-	imageClient, err := openstack.NewImageServiceV2(provider, gophercloud.EndpointOpts{
+	imageClient, err := openstack.NewImageV2(provider, gophercloud.EndpointOpts{
 		Name:   "glance",
 		Region: opts.Region,
 	})
@@ -152,6 +217,9 @@ func New(opts *Options) (*API, error) {
 		Name:   "neutron",
 		Region: opts.Region,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create network client: %v", err)
+	}
 
 	a := &API{
 		opts:          opts,
@@ -184,19 +252,15 @@ func New(opts *Options) (*API, error) {
 		a.opts.Network = tmp
 	}
 
-	if a.opts.FloatingIPPool == "" {
-		a.opts.FloatingIPPool = profile.FloatingIPPool
-	}
-
 	return a, nil
 }
 
-func unwrapPages(pager pagination.Pager, allowEmpty bool) (pagination.Page, error) {
+func unwrapPages(ctx context.Context, pager pagination.Pager, allowEmpty bool) (pagination.Page, error) {
 	if pager.Err != nil {
 		return nil, fmt.Errorf("retrieving pager: %v", pager.Err)
 	}
 
-	pages, err := pager.AllPages()
+	pages, err := pager.AllPages(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving pages: %v", err)
 	}
@@ -214,9 +278,10 @@ func unwrapPages(pager pagination.Pager, allowEmpty bool) (pagination.Page, erro
 }
 
 func (a *API) resolveFlavor() (string, error) {
+	ctx := context.TODO()
 	pager := flavors.ListDetail(a.computeClient, flavors.ListOpts{})
 
-	pages, err := unwrapPages(pager, false)
+	pages, err := unwrapPages(ctx, pager, false)
 	if err != nil {
 		return "", fmt.Errorf("flavors: %v", err)
 	}
@@ -236,25 +301,41 @@ func (a *API) resolveFlavor() (string, error) {
 }
 
 func (a *API) ResolveImage(img string) (string, error) {
-	pager := computeImages.ListDetail(a.computeClient, computeImages.ListOpts{})
+	ctx := context.TODO()
+	pager := images.List(a.imageClient, images.ListOpts{})
 
-	pages, err := unwrapPages(pager, false)
+	pages, err := unwrapPages(ctx, pager, false)
 	if err != nil {
 		return "", fmt.Errorf("images: %v", err)
 	}
 
-	images, err := computeImages.ExtractImages(pages)
+	allImages, err := images.ExtractImages(pages)
 	if err != nil {
 		return "", fmt.Errorf("extracting images: %v", err)
 	}
 
-	for _, image := range images {
+	for _, image := range allImages {
 		if image.ID == img || image.Name == img {
 			return image.ID, nil
 		}
 	}
 
 	return "", fmt.Errorf("specified image %q not found", img)
+}
+
+func (a *API) resolveFloatingIPNetwork(pool string) (string, error) {
+	networks, err := a.getNetworks()
+	if err != nil {
+		return "", err
+	}
+
+	for _, network := range networks {
+		if network.ID == pool || network.Name == pool {
+			return network.ID, nil
+		}
+	}
+
+	return "", fmt.Errorf("specified floating IP pool network %q not found", pool)
 }
 
 func (a *API) resolveNetwork() (string, error) {
@@ -273,13 +354,17 @@ func (a *API) resolveNetwork() (string, error) {
 }
 
 func (a *API) PreflightCheck() error {
-	if err := servers.List(a.computeClient, servers.ListOpts{}).Err; err != nil {
+	ctx := context.TODO()
+	pager := servers.List(a.computeClient, servers.ListOpts{})
+	_, err := pager.AllPages(ctx)
+	if err != nil {
 		return fmt.Errorf("listing servers: %v", err)
 	}
 	return nil
 }
 
 func (a *API) CreateServer(name, sshKeyID, userdata string) (*Server, error) {
+	ctx := context.TODO()
 	networkID := a.opts.Network
 	if networkID == "" {
 		networks, err := a.getNetworks()
@@ -294,7 +379,7 @@ func (a *API) CreateServer(name, sshKeyID, userdata string) (*Server, error) {
 		return nil, fmt.Errorf("retrieving security group: %v", err)
 	}
 
-	server, err := servers.Create(a.computeClient, keypairs.CreateOptsExt{
+	server, err := servers.Create(ctx, a.computeClient, keypairs.CreateOptsExt{
 		CreateOptsBuilder: servers.CreateOpts{
 			Name:      name,
 			FlavorRef: a.opts.Flavor,
@@ -311,7 +396,7 @@ func (a *API) CreateServer(name, sshKeyID, userdata string) (*Server, error) {
 			UserData: []byte(userdata),
 		},
 		KeyName: sshKeyID,
-	}).Extract()
+	}, nil).Extract()
 	if err != nil {
 		return nil, fmt.Errorf("creating server: %v", err)
 	}
@@ -320,7 +405,7 @@ func (a *API) CreateServer(name, sshKeyID, userdata string) (*Server, error) {
 
 	err = util.WaitUntilReady(5*time.Minute, 10*time.Second, func() (bool, error) {
 		var err error
-		server, err = servers.Get(a.computeClient, serverID).Extract()
+		server, err = servers.Get(ctx, a.computeClient, serverID).Extract()
 		if err != nil {
 			return false, err
 		}
@@ -338,18 +423,33 @@ func (a *API) CreateServer(name, sshKeyID, userdata string) (*Server, error) {
 			a.DeleteServer(serverID)
 			return nil, fmt.Errorf("creating floating ip: %v", err)
 		}
-		err = floatingips.AssociateInstance(a.computeClient, serverID, floatingips.AssociateOpts{
-			FloatingIP: floatingip.IP,
-		}).ExtractErr()
+
+		portPager := ports.List(a.networkClient, ports.ListOpts{
+			DeviceID: serverID,
+		})
+		portPages, err := unwrapPages(ctx, portPager, false)
 		if err != nil {
 			a.DeleteServer(serverID)
-			// Explicitly delete the floating ip as DeleteServer only deletes floating IPs that are
-			// associated with servers
+			a.deleteFloatingIP(floatingip.ID)
+			return nil, fmt.Errorf("listing ports for server %s: %v", serverID, err)
+		}
+		allPorts, err := ports.ExtractPorts(portPages)
+		if err != nil || len(allPorts) == 0 {
+			a.DeleteServer(serverID)
+			a.deleteFloatingIP(floatingip.ID)
+			return nil, fmt.Errorf("no ports found for server %s to associate floating IP", serverID)
+		}
+
+		_, err = floatingips.Update(ctx, a.networkClient, floatingip.ID, floatingips.UpdateOpts{
+			PortID: &allPorts[0].ID,
+		}).Extract()
+		if err != nil {
+			a.DeleteServer(serverID)
 			a.deleteFloatingIP(floatingip.ID)
 			return nil, fmt.Errorf("associating floating ip: %v", err)
 		}
 
-		server, err = servers.Get(a.computeClient, serverID).Extract()
+		server, err = servers.Get(ctx, a.computeClient, serverID).Extract()
 		if err != nil {
 			a.DeleteServer(serverID)
 			return nil, fmt.Errorf("retrieving server info: %v", err)
@@ -363,9 +463,10 @@ func (a *API) CreateServer(name, sshKeyID, userdata string) (*Server, error) {
 }
 
 func (a *API) getNetworks() ([]networks.Network, error) {
+	ctx := context.TODO()
 	pager := networks.List(a.networkClient, networks.ListOpts{})
 
-	pages, err := unwrapPages(pager, false)
+	pages, err := unwrapPages(ctx, pager, false)
 	if err != nil {
 		return nil, fmt.Errorf("networks: %v", err)
 	}
@@ -378,7 +479,8 @@ func (a *API) getNetworks() ([]networks.Network, error) {
 }
 
 func (a *API) getSecurityGroup() (string, error) {
-	id, err := ugroups.IDFromName(a.networkClient, "kola")
+	ctx := context.TODO()
+	id, err := ugroups.IDFromName(ctx, a.networkClient, "kola")
 	if err != nil {
 		if _, ok := err.(gophercloud.ErrResourceNotFound); ok {
 			return a.createSecurityGroup()
@@ -389,7 +491,8 @@ func (a *API) getSecurityGroup() (string, error) {
 }
 
 func (a *API) createSecurityGroup() (string, error) {
-	securityGroup, err := groups.Create(a.networkClient, groups.CreateOpts{
+	ctx := context.TODO()
+	securityGroup, err := groups.Create(ctx, a.networkClient, groups.CreateOpts{
 		Name: "kola",
 	}).Extract()
 	if err != nil {
@@ -434,7 +537,7 @@ func (a *API) createSecurityGroup() (string, error) {
 	}
 
 	for _, rule := range ruleSet {
-		_, err = rules.Create(a.networkClient, rules.CreateOpts{
+		_, err = rules.Create(ctx, a.networkClient, rules.CreateOpts{
 			Direction:      rule.Direction,
 			EtherType:      rule.EtherType,
 			SecGroupID:     securityGroup.ID,
@@ -454,41 +557,62 @@ func (a *API) createSecurityGroup() (string, error) {
 }
 
 func (a *API) deleteSecurityGroup(id string) error {
-	return groups.Delete(a.networkClient, id).ExtractErr()
+	ctx := context.TODO()
+	return groups.Delete(ctx, a.networkClient, id).ExtractErr()
 }
 
 func (a *API) createFloatingIP() (*floatingips.FloatingIP, error) {
-	return floatingips.Create(a.computeClient, floatingips.CreateOpts{
-		Pool: a.opts.FloatingIPPool,
+	ctx := context.TODO()
+	poolID, err := a.resolveFloatingIPNetwork(a.opts.FloatingIPPool)
+	if err != nil {
+		return nil, err
+	}
+	return floatingips.Create(ctx, a.networkClient, floatingips.CreateOpts{
+		FloatingNetworkID: poolID,
 	}).Extract()
 }
 
 func (a *API) disassociateFloatingIP(serverID, id string) error {
-	return floatingips.DisassociateInstance(a.computeClient, serverID, floatingips.DisassociateOpts{
-		FloatingIP: id,
-	}).ExtractErr()
+	ctx := context.TODO()
+	_, err := floatingips.Update(ctx, a.networkClient, id, floatingips.UpdateOpts{
+		PortID: new(string),
+	}).Extract()
+	return err
 }
 
 func (a *API) deleteFloatingIP(id string) error {
-	return floatingips.Delete(a.computeClient, id).ExtractErr()
+	ctx := context.TODO()
+	return floatingips.Delete(ctx, a.networkClient, id).ExtractErr()
 }
 
 func (a *API) findFloatingIP(serverID string) (*floatingips.FloatingIP, error) {
-	pager := floatingips.List(a.computeClient)
-
-	pages, err := unwrapPages(pager, true)
+	ctx := context.TODO()
+	pager := ports.List(a.networkClient, ports.ListOpts{
+		DeviceID: serverID,
+	})
+	pages, err := unwrapPages(ctx, pager, true)
 	if err != nil {
-		return nil, fmt.Errorf("floating ips: %v", err)
+		return nil, fmt.Errorf("listing ports for server %s: %v", serverID, err)
+	}
+	allPorts, err := ports.ExtractPorts(pages)
+	if err != nil {
+		return nil, fmt.Errorf("extracting ports for server %s: %v", serverID, err)
 	}
 
-	floatingiplist, err := floatingips.ExtractFloatingIPs(pages)
-	if err != nil {
-		return nil, fmt.Errorf("extracting floating ips: %v", err)
-	}
-
-	for _, floatingip := range floatingiplist {
-		if floatingip.InstanceID == serverID {
-			return &floatingip, nil
+	for _, port := range allPorts {
+		fipPager := floatingips.List(a.networkClient, floatingips.ListOpts{
+			PortID: port.ID,
+		})
+		fipPages, err := unwrapPages(ctx, fipPager, true)
+		if err != nil {
+			return nil, fmt.Errorf("listing floating IPs for port %s: %v", port.ID, err)
+		}
+		fips, err := floatingips.ExtractFloatingIPs(fipPages)
+		if err != nil {
+			return nil, fmt.Errorf("extracting floating IPs for port %s: %v", port.ID, err)
+		}
+		if len(fips) > 0 {
+			return &fips[0], nil
 		}
 	}
 
@@ -497,12 +621,13 @@ func (a *API) findFloatingIP(serverID string) (*floatingips.FloatingIP, error) {
 
 // Deletes the server, and disassociates & deletes any floating IP associated with the given server.
 func (a *API) DeleteServer(id string) error {
+	ctx := context.TODO()
 	fip, err := a.findFloatingIP(id)
 	if err != nil {
 		return err
 	}
 	if fip != nil {
-		if err := a.disassociateFloatingIP(id, fip.IP); err != nil {
+		if err := a.disassociateFloatingIP(id, fip.ID); err != nil {
 			return fmt.Errorf("couldn't disassociate floating ip %s from server %s: %v", fip.ID, id, err)
 		}
 		if err := a.deleteFloatingIP(fip.ID); err != nil {
@@ -512,7 +637,7 @@ func (a *API) DeleteServer(id string) error {
 		}
 	}
 
-	if err := servers.Delete(a.computeClient, id).ExtractErr(); err != nil {
+	if err := servers.Delete(ctx, a.computeClient, id).ExtractErr(); err != nil {
 		return fmt.Errorf("deleting server: %v: %v", id, err)
 	}
 
@@ -520,16 +645,18 @@ func (a *API) DeleteServer(id string) error {
 }
 
 func (a *API) GetConsoleOutput(id string) (string, error) {
-	return servers.ShowConsoleOutput(a.computeClient, id, servers.ShowConsoleOutputOpts{}).Extract()
+	ctx := context.TODO()
+	return servers.ShowConsoleOutput(ctx, a.computeClient, id, servers.ShowConsoleOutputOpts{}).Extract()
 }
 
 func (a *API) webUpload(ID, URI string) error {
+	ctx := context.TODO()
 	createOpts := imageimport.CreateOpts{
 		Name: imageimport.WebDownloadMethod,
 		URI:  URI,
 	}
 
-	if err := imageimport.Create(a.imageClient, ID, createOpts).ExtractErr(); err != nil {
+	if err := imageimport.Create(ctx, a.imageClient, ID, createOpts).ExtractErr(); err != nil {
 		return fmt.Errorf("importing web image: %w", err)
 	}
 
@@ -537,7 +664,8 @@ func (a *API) webUpload(ID, URI string) error {
 }
 
 func (a *API) UploadImage(name, path string) (string, error) {
-	image, err := images.Create(a.imageClient, images.CreateOpts{
+	ctx := context.TODO()
+	image, err := images.Create(ctx, a.imageClient, images.CreateOpts{
 		Name:            name,
 		ContainerFormat: "bare",
 		DiskFormat:      "qcow2",
@@ -557,7 +685,7 @@ func (a *API) UploadImage(name, path string) (string, error) {
 
 		// It usually takes around 10 seconds to extract the image.
 		if err := util.WaitUntilReady(1*time.Minute, 5*time.Second, func() (bool, error) {
-			image, err = images.Get(a.imageClient, image.ID).Extract()
+			image, err = images.Get(ctx, a.imageClient, image.ID).Extract()
 			if err != nil {
 				return false, fmt.Errorf("getting image status: %w", err)
 			}
@@ -579,7 +707,7 @@ func (a *API) UploadImage(name, path string) (string, error) {
 	}
 	defer data.Close()
 
-	err = imagedata.Upload(a.imageClient, image.ID, data).ExtractErr()
+	err = imagedata.Upload(ctx, a.imageClient, image.ID, data).ExtractErr()
 	if err != nil {
 		a.DeleteImage(image.ID)
 		return "", fmt.Errorf("uploading image data: %v", err)
@@ -589,16 +717,18 @@ func (a *API) UploadImage(name, path string) (string, error) {
 }
 
 func (a *API) DeleteImage(imageID string) error {
-	return images.Delete(a.imageClient, imageID).ExtractErr()
+	ctx := context.TODO()
+	return images.Delete(ctx, a.imageClient, imageID).ExtractErr()
 }
 
 func (a *API) PruneKeys(olderThan time.Duration) error {
+	ctx := context.TODO()
 	// Build a set of keypair names that are still in use by active servers so
 	// that we don't delete keys that are currently required.
 	usedKeys := make(map[string]struct{})
 
 	srvPager := servers.List(a.computeClient, servers.ListOpts{})
-	srvPages, err := unwrapPages(srvPager, true)
+	srvPages, err := unwrapPages(ctx, srvPager, true)
 	if err != nil {
 		return fmt.Errorf("listing servers: %v", err)
 	}
@@ -616,7 +746,7 @@ func (a *API) PruneKeys(olderThan time.Duration) error {
 
 	// List all keypairs in the project.
 	kpPager := keypairs.List(a.computeClient, keypairs.ListOpts{})
-	kpPages, err := unwrapPages(kpPager, true)
+	kpPages, err := unwrapPages(ctx, kpPager, true)
 	if err != nil {
 		return fmt.Errorf("listing keypairs: %v", err)
 	}
@@ -642,7 +772,7 @@ func (a *API) PruneKeys(olderThan time.Duration) error {
 			} `json:"keypair"`
 		}
 
-		if err := keypairs.Get(a.computeClient, kp.Name, nil).ExtractInto(&detail); err != nil {
+		if err := keypairs.Get(ctx, a.computeClient, kp.Name, nil).ExtractInto(&detail); err != nil {
 			// If we fail to obtain details, skip deletion to be safe.
 			plog.Warningf("could not get details for keypair %s: %v", kp.Name, err)
 			continue
@@ -693,7 +823,8 @@ func (a *API) PruneKeys(olderThan time.Duration) error {
 }
 
 func (a *API) AddKey(name, key string) error {
-	_, err := keypairs.Create(a.computeClient, keypairs.CreateOpts{
+	ctx := context.TODO()
+	_, err := keypairs.Create(ctx, a.computeClient, keypairs.CreateOpts{
 		Name:      name,
 		PublicKey: key,
 	}).Extract()
@@ -701,13 +832,15 @@ func (a *API) AddKey(name, key string) error {
 }
 
 func (a *API) DeleteKey(name string) error {
-	return keypairs.Delete(a.computeClient, name, nil).ExtractErr()
+	ctx := context.TODO()
+	return keypairs.Delete(ctx, a.computeClient, name, nil).ExtractErr()
 }
 
 func (a *API) listServersWithMetadata(metadata map[string]string) ([]servers.Server, error) {
+	ctx := context.TODO()
 	pager := servers.List(a.computeClient, servers.ListOpts{})
 
-	pages, err := unwrapPages(pager, true)
+	pages, err := unwrapPages(ctx, pager, true)
 	if err != nil {
 		return nil, fmt.Errorf("servers: %v", err)
 	}
@@ -733,11 +866,12 @@ func (a *API) listServersWithMetadata(metadata map[string]string) ([]servers.Ser
 }
 
 func (a *API) listImagesWithTags(tags []string) ([]images.Image, error) {
+	ctx := context.TODO()
 	listOpts := images.ListOpts{
 		Tags: tags,
 	}
 
-	allPages, err := images.List(a.imageClient, listOpts).AllPages()
+	allPages, err := images.List(a.imageClient, listOpts).AllPages(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing images: %w", err)
 	}

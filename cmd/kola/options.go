@@ -175,7 +175,7 @@ func init() {
 	sv(&kola.GCEOptions.JSONKeyFile, "gce-json-key", "", "use a service account's JSON key for authentication")
 
 	// openstack-specific options
-	sv(&kola.OpenStackOptions.ConfigPath, "openstack-config-file", "", "OpenStack config file (default \"~/"+auth.OpenStackConfigPath+"\")")
+	sv(&kola.OpenStackOptions.ConfigPath, "openstack-config-file", "", "OpenStack config file (default \"~/"+auth.OpenStackConfigPath+"\" or search clouds.yaml in standard paths)")
 	sv(&kola.OpenStackOptions.Profile, "openstack-profile", "", "OpenStack profile (default \"default\")")
 	sv(&kola.OpenStackOptions.Region, "openstack-region", "", "OpenStack region")
 	sv(&kola.OpenStackOptions.Image, "openstack-image", "", "OpenStack image ref")

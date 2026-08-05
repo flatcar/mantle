@@ -38,7 +38,7 @@ var (
 )
 
 func init() {
-	OpenStack.PersistentFlags().StringVar(&options.ConfigPath, "config-file", "", "config file (default \"~/"+auth.OpenStackConfigPath+"\")")
+	OpenStack.PersistentFlags().StringVar(&options.ConfigPath, "config-file", "", "config file (default \"~/"+auth.OpenStackConfigPath+"\" or search clouds.yaml in standard paths)")
 	OpenStack.PersistentFlags().StringVar(&options.Profile, "profile", "", "profile (default \"default\")")
 	cli.WrapPreRun(OpenStack, preflightCheck)
 }
