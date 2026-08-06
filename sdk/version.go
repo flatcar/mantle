@@ -91,10 +91,15 @@ func OSRelease(root string) (ver Versions, err error) {
 }
 
 func SetManifestSDKVersion(version string) error {
-	versionPath := filepath.Join(RepoRoot(), ".repo", "manifests", "version.txt")
+	versionPath := filepath.Join(RepoRoot(), "src", "scripts", "manifests", "version.txt")
 	originalContent, err := ioutil.ReadFile(versionPath)
 	if err != nil {
-		return err
+		// Try old location.
+		versionPath = filepath.Join(RepoRoot(), ".repo", "manifests", "version.txt")
+		originalContent, err = ioutil.ReadFile(versionPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	re := regexp.MustCompile(`FLATCAR_SDK_VERSION=.*`)
@@ -123,7 +128,11 @@ func VersionsFromDir(dir string) (ver Versions, err error) {
 }
 
 func VersionsFromManifest() (Versions, error) {
-	return VersionsFromDir(filepath.Join(RepoRoot(), ".repo", "manifests"))
+	versions, err := VersionsFromDir(filepath.Join(RepoRoot(), "src", "scripts", "manifests"))
+	if err != nil {
+		versions, err = VersionsFromDir(filepath.Join(RepoRoot(), ".repo", "manifests"))
+	}
+	return versions, err
 }
 
 func versionsFromRemoteRepoMaybeVerify(url, branch string, verify bool) (ver Versions, err error) {
