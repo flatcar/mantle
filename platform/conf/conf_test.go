@@ -128,3 +128,31 @@ func TestConfAddUserToGroups(t *testing.T) {
 		}
 	}
 }
+
+func TestConfAddSystemdUnitDropin(t *testing.T) {
+	tests := []*UserData{
+		Ignition(`{ "ignition": { "version": "3.0.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.1.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.2.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.3.0" } }`),
+		Butane("variant: flatcar\nversion: 1.0.0"),
+	}
+
+	for i, tt := range tests {
+		conf, err := tt.Render("")
+		if err != nil {
+			t.Errorf("failed to parse config %d: %v", i, err)
+			continue
+		}
+
+		conf.AddSystemdUnitDropin("test.service", "10-test.conf", "[Service]\nExecStart=/bin/true")
+
+		str := conf.String()
+
+		if !strings.Contains(str, "test.service") ||
+			!strings.Contains(str, "10-test.conf") ||
+			!strings.Contains(str, "ExecStart=/bin/true") {
+			t.Errorf("systemd dropin not found in config %d: %s", i, str)
+		}
+	}
+}
