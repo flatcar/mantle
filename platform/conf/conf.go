@@ -1154,7 +1154,7 @@ func (c *Conf) AddSystemdUnitDropin(service, name, contents string) {
 	} else if c.ignitionV3 != nil {
 		c.addSystemdDropinV3(service, name, contents)
 	} else if c.ignitionV31 != nil {
-		c.addSystemdDropinV3(service, name, contents)
+		c.addSystemdDropinV31(service, name, contents)
 	} else if c.ignitionV32 != nil {
 		c.addSystemdDropinV32(service, name, contents)
 	} else if c.ignitionV33 != nil {
