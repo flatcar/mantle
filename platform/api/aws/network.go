@@ -15,11 +15,13 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go"
 )
 
@@ -28,11 +30,11 @@ import (
 func (a *API) getSecurityGroupID(name string) (string, error) {
 	// using a Filter on group-name rather than the explicit GroupNames parameter
 	// disentangles this call from checking only inside of the default VPC
-	sgIds, err := a.ec2.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
-		Filters: []*ec2.Filter{
+	sgIds, err := a.ec2.DescribeSecurityGroups(context.TODO(), &ec2.DescribeSecurityGroupsInput{
+		Filters: []types.Filter{
 			{
 				Name:   aws.String("group-name"),
-				Values: []*string{&name},
+				Values: []string{name},
 			},
 		},
 	})
@@ -55,7 +57,7 @@ func (a *API) createSecurityGroup(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sg, err := a.ec2.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+	sg, err := a.ec2.CreateSecurityGroup(context.TODO(), &ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(name),
 		Description: aws.String("mantle security group for testing"),
 		VpcId:       aws.String(vpcId),
@@ -70,22 +72,22 @@ func (a *API) createSecurityGroup(name string) (string, error) {
 			// SSH access from the public internet
 			// Full access from inside the same security group
 			GroupId: sg.GroupId,
-			IpPermissions: []*ec2.IpPermission{
+			IpPermissions: []types.IpPermission{
 				{
 					IpProtocol: aws.String("tcp"),
-					IpRanges: []*ec2.IpRange{
+					IpRanges: []types.IpRange{
 						{
 							CidrIp: aws.String("0.0.0.0/0"),
 						},
 					},
-					FromPort: aws.Int64(22),
-					ToPort:   aws.Int64(22),
+					FromPort: aws.Int32(22),
+					ToPort:   aws.Int32(22),
 				},
 				{
 					IpProtocol: aws.String("tcp"),
-					FromPort:   aws.Int64(1),
-					ToPort:     aws.Int64(65535),
-					UserIdGroupPairs: []*ec2.UserIdGroupPair{
+					FromPort:   aws.Int32(1),
+					ToPort:     aws.Int32(65535),
+					UserIdGroupPairs: []types.UserIdGroupPair{
 						{
 							GroupId: sg.GroupId,
 							VpcId:   &vpcId,
@@ -94,9 +96,9 @@ func (a *API) createSecurityGroup(name string) (string, error) {
 				},
 				{
 					IpProtocol: aws.String("udp"),
-					FromPort:   aws.Int64(1),
-					ToPort:     aws.Int64(65535),
-					UserIdGroupPairs: []*ec2.UserIdGroupPair{
+					FromPort:   aws.Int32(1),
+					ToPort:     aws.Int32(65535),
+					UserIdGroupPairs: []types.UserIdGroupPair{
 						{
 							GroupId: sg.GroupId,
 							VpcId:   &vpcId,
@@ -105,9 +107,9 @@ func (a *API) createSecurityGroup(name string) (string, error) {
 				},
 				{
 					IpProtocol: aws.String("icmp"),
-					FromPort:   aws.Int64(-1),
-					ToPort:     aws.Int64(-1),
-					UserIdGroupPairs: []*ec2.UserIdGroupPair{
+					FromPort:   aws.Int32(-1),
+					ToPort:     aws.Int32(-1),
+					UserIdGroupPairs: []types.UserIdGroupPair{
 						{
 							GroupId: sg.GroupId,
 							VpcId:   &vpcId,
@@ -119,12 +121,12 @@ func (a *API) createSecurityGroup(name string) (string, error) {
 	}
 
 	for _, input := range allowedIngresses {
-		_, err := a.ec2.AuthorizeSecurityGroupIngress(&input)
+		_, err := a.ec2.AuthorizeSecurityGroupIngress(context.TODO(), &input)
 
 		if err != nil {
 			// We created the SG but can't add all the needed rules, let's try to
 			// bail gracefully
-			_, delErr := a.ec2.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+			_, delErr := a.ec2.DeleteSecurityGroup(context.TODO(), &ec2.DeleteSecurityGroupInput{
 				GroupId: sg.GroupId,
 			})
 			if delErr != nil {
@@ -138,7 +140,7 @@ func (a *API) createSecurityGroup(name string) (string, error) {
 
 // createVPC creates a VPC with an IPV4 CidrBlock of 172.31.0.0/16
 func (a *API) createVPC() (string, error) {
-	vpc, err := a.ec2.CreateVpc(&ec2.CreateVpcInput{
+	vpc, err := a.ec2.CreateVpc(context.TODO(), &ec2.CreateVpcInput{
 		CidrBlock: aws.String("172.31.0.0/16"),
 	})
 	if err != nil {
@@ -152,8 +154,8 @@ func (a *API) createVPC() (string, error) {
 		return "", err
 	}
 
-	_, err = a.ec2.ModifyVpcAttribute(&ec2.ModifyVpcAttributeInput{
-		EnableDnsHostnames: &ec2.AttributeBooleanValue{
+	_, err = a.ec2.ModifyVpcAttribute(context.TODO(), &ec2.ModifyVpcAttributeInput{
+		EnableDnsHostnames: &types.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
 		VpcId: vpc.Vpc.VpcId,
@@ -161,8 +163,8 @@ func (a *API) createVPC() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("enabling DNS Hostnames VPC attribute: %v", err)
 	}
-	_, err = a.ec2.ModifyVpcAttribute(&ec2.ModifyVpcAttributeInput{
-		EnableDnsSupport: &ec2.AttributeBooleanValue{
+	_, err = a.ec2.ModifyVpcAttribute(context.TODO(), &ec2.ModifyVpcAttributeInput{
+		EnableDnsSupport: &types.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
 		VpcId: vpc.Vpc.VpcId,
@@ -187,7 +189,7 @@ func (a *API) createVPC() (string, error) {
 // createRouteTable creates a RouteTable with a local target for destination
 // 172.31.0.0/16 as well as an InternetGateway for destination 0.0.0.0/0
 func (a *API) createRouteTable(vpcId string) (string, error) {
-	rt, err := a.ec2.CreateRouteTable(&ec2.CreateRouteTableInput{
+	rt, err := a.ec2.CreateRouteTable(context.TODO(), &ec2.CreateRouteTableInput{
 		VpcId: &vpcId,
 	})
 	if err != nil {
@@ -207,7 +209,7 @@ func (a *API) createRouteTable(vpcId string) (string, error) {
 		return "", fmt.Errorf("creating internet gateway: %v", err)
 	}
 
-	_, err = a.ec2.CreateRoute(&ec2.CreateRouteInput{
+	_, err = a.ec2.CreateRoute(context.TODO(), &ec2.CreateRouteInput{
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
 		GatewayId:            aws.String(igw),
 		RouteTableId:         rt.RouteTable.RouteTableId,
@@ -221,7 +223,7 @@ func (a *API) createRouteTable(vpcId string) (string, error) {
 
 // creates an InternetGateway and attaches it to the given VPC
 func (a *API) createInternetGateway(vpcId string) (string, error) {
-	igw, err := a.ec2.CreateInternetGateway(&ec2.CreateInternetGatewayInput{})
+	igw, err := a.ec2.CreateInternetGateway(context.TODO(), &ec2.CreateInternetGatewayInput{})
 	if err != nil {
 		return "", err
 	}
@@ -232,7 +234,7 @@ func (a *API) createInternetGateway(vpcId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, err = a.ec2.AttachInternetGateway(&ec2.AttachInternetGatewayInput{
+	_, err = a.ec2.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
 		InternetGatewayId: igw.InternetGateway.InternetGatewayId,
 		VpcId:             &vpcId,
 	})
@@ -245,7 +247,7 @@ func (a *API) createInternetGateway(vpcId string) (string, error) {
 // createSubnets creates a subnet in each availability zone for the region
 // that is associated with the given VPC associated with the given RouteTable
 func (a *API) createSubnets(vpcId, routeTableId string) error {
-	azs, err := a.ec2.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+	azs, err := a.ec2.DescribeAvailabilityZones(context.TODO(), &ec2.DescribeAvailabilityZonesInput{})
 	if err != nil {
 		return fmt.Errorf("retrieving availability zones: %v", err)
 	}
@@ -262,7 +264,7 @@ func (a *API) createSubnets(vpcId, routeTableId string) error {
 		}
 
 		name := *az.ZoneName
-		sub, err := a.ec2.CreateSubnet(&ec2.CreateSubnetInput{
+		sub, err := a.ec2.CreateSubnet(context.TODO(), &ec2.CreateSubnetInput{
 			AvailabilityZone: aws.String(name),
 			VpcId:            &vpcId,
 			// Increment the CIDR block by 16 every time
@@ -284,9 +286,9 @@ func (a *API) createSubnets(vpcId, routeTableId string) error {
 		if err != nil {
 			return err
 		}
-		_, err = a.ec2.ModifySubnetAttribute(&ec2.ModifySubnetAttributeInput{
+		_, err = a.ec2.ModifySubnetAttribute(context.TODO(), &ec2.ModifySubnetAttributeInput{
 			SubnetId: sub.Subnet.SubnetId,
-			MapPublicIpOnLaunch: &ec2.AttributeBooleanValue{
+			MapPublicIpOnLaunch: &types.AttributeBooleanValue{
 				Value: aws.Bool(true),
 			},
 		})
@@ -294,7 +296,7 @@ func (a *API) createSubnets(vpcId, routeTableId string) error {
 			return err
 		}
 
-		_, err = a.ec2.AssociateRouteTable(&ec2.AssociateRouteTableInput{
+		_, err = a.ec2.AssociateRouteTable(context.TODO(), &ec2.AssociateRouteTableInput{
 			RouteTableId: &routeTableId,
 			SubnetId:     sub.Subnet.SubnetId,
 		})
@@ -308,11 +310,11 @@ func (a *API) createSubnets(vpcId, routeTableId string) error {
 
 // getSubnetIDs gets the subnets for the given VPC.
 func (a *API) getSubnetIDs(vpc string) ([]string, error) {
-	subIds, err := a.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
+	subIds, err := a.ec2.DescribeSubnets(context.TODO(), &ec2.DescribeSubnetsInput{
+		Filters: []types.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []*string{&vpc},
+				Values: []string{vpc},
 			},
 		},
 	})
@@ -336,8 +338,8 @@ func (a *API) getSubnetIDs(vpc string) ([]string, error) {
 
 // getVPCID gets a VPC for the given security group
 func (a *API) getVPCID(sgId string) (string, error) {
-	sgs, err := a.ec2.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
-		GroupIds: []*string{&sgId},
+	sgs, err := a.ec2.DescribeSecurityGroups(context.TODO(), &ec2.DescribeSecurityGroupsInput{
+		GroupIds: []string{sgId},
 	})
 	if err != nil {
 		return "", fmt.Errorf("listing vpc's: %v", err)
