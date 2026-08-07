@@ -15,17 +15,17 @@
 package aws
 
 import (
+	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/aws/aws-sdk-go/service/marketplacecatalog"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/marketplacecatalog"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/coreos/pkg/capnslog"
 
 	"github.com/flatcar/mantle/platform"
@@ -58,11 +58,11 @@ type Options struct {
 }
 
 type API struct {
-	session     client.ConfigProvider
-	ec2         *ec2.EC2
-	iam         *iam.IAM
-	marketplace *marketplacecatalog.MarketplaceCatalog
-	S3          *s3.S3
+	cfg         aws.Config
+	ec2         *ec2.Client
+	iam         *iam.Client
+	marketplace *marketplacecatalog.Client
+	S3          *s3.Client
 	opts        *Options
 }
 
@@ -73,20 +73,33 @@ type API struct {
 // preflight check is recommended via api.PreflightCheck
 // Note that this method may modify Options to update the AMI ID
 func New(opts *Options) (*API, error) {
-	awsCfg := aws.Config{Region: aws.String(opts.Region)}
-	if opts.AccessKeyID != "" {
-		awsCfg.Credentials = credentials.NewStaticCredentials(opts.AccessKeyID, opts.SecretKey, "")
-	} else if opts.CredentialsFile != "" {
-		awsCfg.Credentials = credentials.NewSharedCredentials(opts.CredentialsFile, opts.Profile)
-	} else {
-		awsCfg.Credentials = credentials.NewEnvCredentials()
+	loadOpts := []func(*config.LoadOptions) error{
+		config.WithRegion(opts.Region),
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Profile:           opts.Profile,
-		Config:            awsCfg,
-	})
+	if opts.AccessKeyID != "" {
+		loadOpts = append(loadOpts, config.WithCredentialsProvider(
+			aws.NewCredentialsCache(
+				credentials.NewStaticCredentialsProvider(
+					opts.AccessKeyID,
+					opts.SecretKey,
+					"",
+				),
+			),
+		))
+	} else if opts.CredentialsFile != "" {
+		loadOpts = append(loadOpts,
+			config.WithSharedCredentialsFiles([]string{opts.CredentialsFile}),
+		)
+	}
+
+	if opts.Profile != "" {
+		loadOpts = append(loadOpts,
+			config.WithSharedConfigProfile(opts.Profile),
+		)
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), loadOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +107,11 @@ func New(opts *Options) (*API, error) {
 	opts.AMI = resolveAMI(opts.AMI, opts.Region)
 
 	api := &API{
-		session:     sess,
-		ec2:         ec2.New(sess),
-		marketplace: marketplacecatalog.New(sess),
-		iam:         iam.New(sess),
-		S3:          s3.New(sess),
+		cfg:         cfg,
+		ec2:         ec2.NewFromConfig(cfg),
+		marketplace: marketplacecatalog.NewFromConfig(cfg),
+		iam:         iam.NewFromConfig(cfg),
+		S3:          s3.NewFromConfig(cfg),
 		opts:        opts,
 	}
 
@@ -114,8 +127,8 @@ func (a *API) GC(gracePeriod time.Duration) error {
 // PreflightCheck validates that the aws configuration provided has valid
 // credentials
 func (a *API) PreflightCheck() error {
-	stsClient := sts.New(a.session)
-	_, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	stsClient := sts.NewFromConfig(a.cfg)
+	_, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 
 	return err
 }
