@@ -15,6 +15,7 @@
 package aws
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,9 +23,9 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/smithy-go"
 )
 
 const (
@@ -42,8 +43,9 @@ const (
 )
 
 func s3IsNotFound(err error) bool {
-	if awserr, ok := err.(awserr.Error); ok {
-		return awserr.Code() == documentedNotFoundErr || awserr.Code() == actualNotFoundErr
+	var awsErr smithy.APIError
+	if errors.As(err, &awsErr) {
+		return awsErr.ErrorCode() == documentedNotFoundErr || awsErr.ErrorCode() == actualNotFoundErr
 	}
 	return false
 }
@@ -114,8 +116,9 @@ func (a *API) InitializeBucket(bucket string) error {
 		Bucket: &bucket,
 	})
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok {
-			if awserr.Code() == alreadyExistsErr {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) {
+			if awsErr.ErrorCode() == alreadyExistsErr {
 				return nil
 			}
 		}
@@ -149,8 +152,9 @@ func (a *API) CopyObject(srcBucket, srcPath, destBucket, destPath, policy string
 		Key:        aws.String(destPath),
 	})
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok {
-			if awserr.Code() == alreadyExistsErr {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) {
+			if awsErr.ErrorCode() == alreadyExistsErr {
 				return nil
 			}
 		}

@@ -16,13 +16,14 @@ package aws
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/smithy-go"
 
 	"github.com/flatcar/mantle/util"
 )
@@ -130,7 +131,8 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 		err = util.RetryConditional(5, 5*time.Second, func(err error) bool {
 			// due to AWS' eventual consistency despite ensuring that the IAM Instance
 			// Profile has been created it may not be available to ec2 yet.
-			if awsErr, ok := err.(awserr.Error); ok && (awsErr.Code() == "InvalidParameterValue" && strings.Contains(awsErr.Message(), "iamInstanceProfile.name")) {
+			var awsErr smithy.APIError
+			if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidParameterValue" && strings.Contains(awsErr.ErrorMessage(), "iamInstanceProfile.name") {
 				return true
 			}
 			return false
@@ -167,10 +169,12 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 		})
 		if err != nil {
 			// Keep retrying if the InstanceID disappears momentarily
-			if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == "InvalidInstanceID.NotFound" {
+			var awsErr smithy.APIError
+			if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidInstanceID.NotFound" {
 				plog.Debugf("instance ID not found, retrying: %v", err)
 				return false, nil
 			}
+			return false, err
 			return false, err
 		}
 		insts = desc.Reservations[0].Instances

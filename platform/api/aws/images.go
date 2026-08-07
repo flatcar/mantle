@@ -16,6 +16,7 @@ package aws
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -23,11 +24,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/smithy-go"
 )
 
 // The default size of Container Linux disks on AWS, in GiB. See discussion in
@@ -142,7 +143,8 @@ func (a *API) FindSnapshot(imageName string) (*Snapshot, error) {
 				SnapshotIds: []*string{task.SnapshotTaskDetail.SnapshotId},
 			})
 			if err != nil {
-				if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "InvalidSnapshot.NotFound" {
+				var awsErr smithy.APIError
+				if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidSnapshot.NotFound" {
 					continue
 				} else {
 					return nil, fmt.Errorf("couldn't describe snapshot from import task: %v", err)
@@ -272,7 +274,8 @@ func (a *API) CreateImportRole(bucket string) error {
 		RoleName: &vmImportRole,
 	})
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "NoSuchEntity" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "NoSuchEntity" {
 			// Role does not exist, let's try to create it
 			_, err := iamc.CreateRole(&iam.CreateRoleInput{
 				RoleName: &vmImportRole,
@@ -307,7 +310,8 @@ func (a *API) CreateImportRole(bucket string) error {
 		PolicyName: &policyName,
 	})
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "NoSuchEntity" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "NoSuchEntity" {
 			// Policy does not exist, let's try to create it
 			partition, ok := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), a.opts.Region)
 			if !ok {
@@ -411,8 +415,9 @@ func (a *API) RemoveImage(amiName, imageName string, s3object BucketObject, othe
 	}
 	err := s3a.DeleteObject(s3object.Bucket, s3object.Path)
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok {
-			if awsErr.Code() != "NoSuchKey" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) {
+			if awsErr.ErrorCode() != "NoSuchKey" {
 				return err
 			}
 		} else {
@@ -466,9 +471,10 @@ func (a *API) createImage(params *ec2.RegisterImageInput) (string, error) {
 	res, err := a.ec2.RegisterImage(params)
 
 	var imageID string
+	var awsErr smithy.APIError
 	if err == nil {
 		imageID = *res.ImageId
-	} else if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "InvalidAMIName.Duplicate" {
+	} else if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidAMIName.Duplicate" {
 		// The AMI already exists. Get its ID. Due to races, this
 		// may take several attempts.
 		for {

@@ -15,11 +15,12 @@
 package aws
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/smithy-go"
 )
 
 // getSecurityGroupID gets a security group matching the given name.
@@ -270,7 +271,8 @@ func (a *API) createSubnets(vpcId, routeTableId string) error {
 		if err != nil {
 			// Some availability zones get returned but cannot have subnets
 			// created inside of them
-			if awsErr, ok := (err).(awserr.Error); ok && awsErr.Code() == "InvalidParameterValue" {
+			var awsErr smithy.APIError
+			if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidParameterValue" {
 				continue
 			}
 			return fmt.Errorf("creating subnet: %v", err)

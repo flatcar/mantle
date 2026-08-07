@@ -15,12 +15,13 @@
 package aws
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/smithy-go"
 
 	"github.com/flatcar/mantle/util"
 )
@@ -65,7 +66,8 @@ func (a *API) ensureInstanceProfile(name string) error {
 	if err == nil {
 		return nil
 	}
-	if awserr, ok := err.(awserr.Error); !ok || awserr.Code() != "NoSuchEntity" {
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "NoSuchEntity" {
 		return fmt.Errorf("getting instance profile %q: %v", name, err)
 	}
 
