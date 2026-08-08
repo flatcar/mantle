@@ -16,7 +16,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -61,9 +61,9 @@ func runCheckConsole(cmd *cobra.Command, args []string) {
 			if checkConsoleVerbose {
 				fmt.Printf("Reading input from %s...\n", sourceName)
 			}
-			console, err = ioutil.ReadAll(os.Stdin)
+			console, err = io.ReadAll(os.Stdin)
 		} else {
-			console, err = ioutil.ReadFile(arg)
+			console, err = os.ReadFile(arg)
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)

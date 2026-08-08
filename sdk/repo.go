@@ -17,7 +17,6 @@ package sdk
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -87,7 +86,7 @@ func RepoCache() string {
 func DefaultBoard() string {
 	defaultBoard := system.PortageArch() + "-usr"
 	cfg := filepath.Join(RepoRoot(), defaultBoardCfg)
-	board, err := ioutil.ReadFile(cfg)
+	board, err := os.ReadFile(cfg)
 	if err != nil {
 		return defaultBoard
 	}

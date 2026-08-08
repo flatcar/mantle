@@ -15,7 +15,6 @@
 package unprivqemu
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -89,7 +88,7 @@ func (m *machine) Destroy() {
 	}
 	m.journal.Destroy()
 
-	if buf, err := ioutil.ReadFile(filepath.Join(m.subDir, m.consolePath)); err == nil {
+	if buf, err := os.ReadFile(filepath.Join(m.subDir, m.consolePath)); err == nil {
 		m.console = string(buf)
 	} else {
 		plog.Errorf("Error reading console for instance %v: %v", m.ID(), err)

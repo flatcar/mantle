@@ -20,7 +20,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/textproto"
 	"net/url"
 	"os"
@@ -151,7 +151,7 @@ func Script(data string) *UserData {
 
 func decompressIfGzipped(data []byte) []byte {
 	if reader, err := gzip.NewReader(bytes.NewReader(data)); err == nil {
-		uncompressedData, err := ioutil.ReadAll(reader)
+		uncompressedData, err := io.ReadAll(reader)
 		reader.Close()
 		if err == nil {
 			return uncompressedData
@@ -506,7 +506,7 @@ func (c *Conf) getIgnitionValidateValue() reflect.Value {
 
 // WriteFile writes the userdata in Conf to a local file.
 func (c *Conf) WriteFile(name string) error {
-	return ioutil.WriteFile(name, []byte(c.String()), 0666)
+	return os.WriteFile(name, []byte(c.String()), 0666)
 }
 
 // Bytes returns the serialized userdata in Conf.

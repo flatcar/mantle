@@ -16,7 +16,7 @@ package system
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -34,7 +34,7 @@ func checkFile(t *testing.T, path string, data []byte, mode os.FileMode) {
 		t.Fatalf("Unexpected mode: %s %s", info.Mode(), path)
 	}
 
-	newData, err := ioutil.ReadAll(file)
+	newData, err := io.ReadAll(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,14 +45,14 @@ func checkFile(t *testing.T, path string, data []byte, mode os.FileMode) {
 
 func TestCopyRegularFile(t *testing.T) {
 	data := []byte("test")
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmp)
 
 	src := filepath.Join(tmp, "src")
-	if err := ioutil.WriteFile(src, data, 0600); err != nil {
+	if err := os.WriteFile(src, data, 0600); err != nil {
 		t.Fatal(err)
 	}
 	checkFile(t, src, data, 0600)
@@ -75,14 +75,14 @@ func TestCopyRegularFile(t *testing.T) {
 
 func TestInstallRegularFile(t *testing.T) {
 	data := []byte("test")
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmp)
 
 	src := filepath.Join(tmp, "src")
-	if err := ioutil.WriteFile(src, data, 0600); err != nil {
+	if err := os.WriteFile(src, data, 0600); err != nil {
 		t.Fatal(err)
 	}
 	checkFile(t, src, data, 0600)

@@ -17,7 +17,7 @@ package platform
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -257,7 +257,7 @@ func (bc *BaseCluster) GetDiscoveryURL(size int) (string, error) {
 			return fmt.Errorf("Discovery service returned %q", resp.Status)
 		}
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}

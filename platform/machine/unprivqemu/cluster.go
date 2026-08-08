@@ -17,7 +17,6 @@ package unprivqemu
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -244,7 +243,7 @@ func (qc *Cluster) newAddresses() (string, string, error) {
 
 // parse /proc/net/tcp to determine the port selected by QEMU
 func getAddress(pid string) (string, error) {
-	data, err := ioutil.ReadFile("/proc/net/tcp")
+	data, err := os.ReadFile("/proc/net/tcp")
 	if err != nil {
 		return "", fmt.Errorf("reading /proc/net/tcp: %v", err)
 	}
@@ -265,7 +264,7 @@ func getAddress(pid string) (string, error) {
 		}
 
 		dir := fmt.Sprintf("/proc/%s/fd/", pid)
-		fds, err := ioutil.ReadDir(dir)
+		fds, err := os.ReadDir(dir)
 		if err != nil {
 			return "", fmt.Errorf("listing %s: %v", dir, err)
 		}

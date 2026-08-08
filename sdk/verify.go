@@ -17,7 +17,6 @@ package sdk
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -441,7 +440,7 @@ func VerifyFile(file, verifyKeyFile string) error {
 	if verifyKeyFile == "" {
 		key = buildbot_coreos_PubKey
 	} else {
-		b, err := ioutil.ReadFile(verifyKeyFile)
+		b, err := os.ReadFile(verifyKeyFile)
 		if err != nil {
 			return fmt.Errorf("%v: %s", err, verifyKeyFile)
 		}

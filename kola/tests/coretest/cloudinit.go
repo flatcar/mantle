@@ -3,7 +3,6 @@ package coretest
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -14,7 +13,7 @@ import (
 const cloudinitBinPath = "/usr/bin/coreos-cloudinit"
 
 func read(filename string) (string, error) {
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := os.ReadFile(filename)
 	return string(bytes), err
 }
 
@@ -24,7 +23,7 @@ func rmdir(path string) error {
 }
 
 func TestCloudinitCloudConfig() error {
-	workspace, err := ioutil.TempDir("", "coretest-cloudinit-")
+	workspace, err := os.MkdirTemp("", "coretest-cloudinit-")
 	if err != nil {
 		return fmt.Errorf("Failed creating workspace: %v", err)
 	}
@@ -42,7 +41,7 @@ ssh_authorized_keys:
     - %s
 `
 	configData := fmt.Sprintf(configTmpl, keyOne, keyTwo)
-	configFile, err := ioutil.TempFile(os.TempDir(), "coretest-")
+	configFile, err := os.CreateTemp(os.TempDir(), "coretest-")
 	if err != nil {
 		return fmt.Errorf("Failed creating tempfile: %v", err)
 	}
@@ -83,7 +82,7 @@ ssh_authorized_keys:
 }
 
 func TestCloudinitScript() error {
-	workspace, err := ioutil.TempDir("", "coretest-cloudinit-")
+	workspace, err := os.MkdirTemp("", "coretest-cloudinit-")
 	if err != nil {
 		return fmt.Errorf("Failed creating workspace: %v", err)
 	}
@@ -92,7 +91,7 @@ func TestCloudinitScript() error {
 	configData := `#!/bin/bash
 /bin/sleep 10
 `
-	configFile, err := ioutil.TempFile(os.TempDir(), "coretest-")
+	configFile, err := os.CreateTemp(os.TempDir(), "coretest-")
 	if err != nil {
 		return fmt.Errorf("Failed creating tempfile: %v", err)
 	}
