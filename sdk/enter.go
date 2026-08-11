@@ -17,7 +17,6 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -171,7 +170,7 @@ func (e *enter) MountSSHAgent() error {
 		return nil
 	}
 
-	newDir, err := ioutil.TempDir(e.UserRunDir, "agent-")
+	newDir, err := os.MkdirTemp(e.UserRunDir, "agent-")
 	if err != nil {
 		return err
 	}
@@ -257,7 +256,7 @@ func (e *enter) CopyGoogleCreds() error {
 		return os.Unsetenv(jsonEnvName)
 	}
 
-	stateDir, err := ioutil.TempDir(e.UserRunDir, "google-")
+	stateDir, err := os.MkdirTemp(e.UserRunDir, "google-")
 	if err != nil {
 		return err
 	}
@@ -281,7 +280,7 @@ func (e *enter) CopyGoogleCreds() error {
 		return err
 	}
 
-	credsRaw, err := ioutil.ReadFile(jsonSrc)
+	credsRaw, err := os.ReadFile(jsonSrc)
 	if err != nil {
 		return err
 	}
@@ -327,7 +326,7 @@ func (e enter) SetupDNS() error {
 	resolv := "/etc/resolv.conf"
 	chrootResolv := filepath.Join(e.Chroot, resolv)
 	if !e.UseHostDNS {
-		return ioutil.WriteFile(chrootResolv, []byte(defaultResolv), 0644)
+		return os.WriteFile(chrootResolv, []byte(defaultResolv), 0644)
 	}
 
 	if _, err := os.Stat(resolv); err == nil {

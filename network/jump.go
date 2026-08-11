@@ -4,14 +4,14 @@ package network
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"golang.org/x/crypto/ssh"
 )
 
 // NewJumpDialer initializes a RetryDialer with SSH Proxy Jump.
 func NewJumpDialer(addr, user, keyfile string) (*RetryDialer, error) {
-	key, err := ioutil.ReadFile(keyfile)
+	key, err := os.ReadFile(keyfile)
 	if err != nil {
 		return nil, fmt.Errorf("reading private key: %w", err)
 	}

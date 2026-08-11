@@ -17,10 +17,10 @@ package ignition
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 
 	"github.com/coreos/go-semver/semver"
@@ -138,12 +138,12 @@ EOF
 }
 
 func ServeTLS(customFile []byte) error {
-	publicKey, err := ioutil.ReadFile("/var/tls/server.crt")
+	publicKey, err := os.ReadFile("/var/tls/server.crt")
 	if err != nil {
 		return fmt.Errorf("reading public key: %v", err)
 	}
 
-	privateKey, err := ioutil.ReadFile("/var/tls/server.key")
+	privateKey, err := os.ReadFile("/var/tls/server.key")
 	if err != nil {
 		return fmt.Errorf("reading private key: %v", err)
 	}

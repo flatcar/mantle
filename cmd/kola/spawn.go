@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,7 +89,7 @@ func doSpawn(cmd *cobra.Command, args []string) error {
 
 	var userdata *conf.UserData
 	if spawnUserData != "" {
-		userbytes, err := ioutil.ReadFile(spawnUserData)
+		userbytes, err := os.ReadFile(spawnUserData)
 		if err != nil {
 			return fmt.Errorf("Reading userdata failed: %v", err)
 		}
@@ -166,7 +165,7 @@ func doSpawn(cmd *cobra.Command, args []string) error {
 		plog.Infof("Spawning machine...")
 		if kolaPlatform == "qemu" && spawnMachineOptions != "" {
 			var b []byte
-			b, err = ioutil.ReadFile(spawnMachineOptions)
+			b, err = os.ReadFile(spawnMachineOptions)
 			if err != nil {
 				return fmt.Errorf("Could not read machine options: %v", err)
 			}

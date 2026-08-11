@@ -17,7 +17,7 @@ package platform
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	origExec "os/exec"
 	"path"
@@ -87,7 +87,7 @@ func MakeCLDiskTemplate(inputPath string) (output *os.File, result error) {
 	}
 
 	// create mount point
-	tmpdir, err := ioutil.TempDir("", "kola-qemu-")
+	tmpdir, err := os.MkdirTemp("", "kola-qemu-")
 	if err != nil {
 		return nil, fmt.Errorf("making temporary directory: %v", err)
 	}
@@ -107,7 +107,7 @@ func MakeCLDiskTemplate(inputPath string) (output *os.File, result error) {
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("running losetup: %v", err)
 	}
-	buf, err := ioutil.ReadAll(stdout)
+	buf, err := io.ReadAll(stdout)
 	if err != nil {
 		cmd.Wait()
 		return nil, fmt.Errorf("reading losetup output: %v", err)
@@ -288,7 +288,7 @@ func setupDisk(additionalOptions ...string) (*os.File, error) {
 }
 
 func mkpath(basedir string) (string, error) {
-	f, err := ioutil.TempFile(basedir, "mantle-qemu")
+	f, err := os.CreateTemp(basedir, "mantle-qemu")
 	if err != nil {
 		return "", err
 	}

@@ -15,7 +15,6 @@
 package sdk
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,7 +55,7 @@ FLATCAR_SDK_VERSION=967.0.0
 	}}}
 
 func TestVersionsFromDir(t *testing.T) {
-	dir, err := ioutil.TempDir("", "")
+	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +63,7 @@ func TestVersionsFromDir(t *testing.T) {
 
 	filename := filepath.Join(dir, "version.txt")
 	for _, data := range versionTestData {
-		err = ioutil.WriteFile(filename, []byte(data.Text), 0600)
+		err = os.WriteFile(filename, []byte(data.Text), 0600)
 		if err != nil {
 			t.Fatal(err)
 		}

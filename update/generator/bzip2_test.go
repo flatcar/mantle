@@ -17,14 +17,14 @@ package generator
 import (
 	"bytes"
 	"compress/bzip2"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/flatcar/mantle/system/exec"
 )
 
 func bunzip2(t *testing.T, z []byte) []byte {
-	b, err := ioutil.ReadAll(bzip2.NewReader(bytes.NewReader(z)))
+	b, err := io.ReadAll(bzip2.NewReader(bytes.NewReader(z)))
 	if err != nil {
 		t.Fatal(err)
 	}

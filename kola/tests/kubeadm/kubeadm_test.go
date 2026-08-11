@@ -17,7 +17,7 @@ package kubeadm
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +53,7 @@ func TestRenderTemplate(t *testing.T) {
 		for _, CNI := range CNIs {
 			res, err := render(masterScript, GetTestMasterScriptRenderParams(CNI), false)
 			require.Nil(t, err)
-			script, err := ioutil.ReadFile(fmt.Sprintf("testdata/master-%s-script.sh", CNI))
+			script, err := os.ReadFile(fmt.Sprintf("testdata/master-%s-script.sh", CNI))
 			require.Nil(t, err)
 			assert.Equal(t, string(script), res.String())
 		}
@@ -62,7 +62,7 @@ func TestRenderTemplate(t *testing.T) {
 		for _, arch := range TestArchitectures {
 			res, err := render(masterConfig, GetTestMasterConfigRenderParams(arch), false)
 			require.Nil(t, err)
-			script, err := ioutil.ReadFile(fmt.Sprintf("testdata/master-cilium-%s-config.yml", arch))
+			script, err := os.ReadFile(fmt.Sprintf("testdata/master-cilium-%s-config.yml", arch))
 			require.Nil(t, err)
 			assert.Equal(t, string(script), res.String())
 		}

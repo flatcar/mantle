@@ -18,7 +18,6 @@ package harness
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -322,7 +321,7 @@ func makeRegexp(s string) string {
 
 func TestOutputDir(t *testing.T) {
 	var suitedir string
-	if dir, err := ioutil.TempDir("", ""); err != nil {
+	if dir, err := os.MkdirTemp("", ""); err != nil {
 		t.Fatal(err)
 	} else {
 		defer os.RemoveAll(dir)
@@ -358,7 +357,7 @@ func TestOutputDir(t *testing.T) {
 
 func TestSubDirs(t *testing.T) {
 	var suitedir string
-	if dir, err := ioutil.TempDir("", ""); err != nil {
+	if dir, err := os.MkdirTemp("", ""); err != nil {
 		t.Fatal(err)
 	} else {
 		defer os.RemoveAll(dir)
@@ -394,7 +393,7 @@ func TestSubDirs(t *testing.T) {
 
 func TestTempDir(t *testing.T) {
 	var suitedir string
-	if dir, err := ioutil.TempDir("", ""); err != nil {
+	if dir, err := os.MkdirTemp("", ""); err != nil {
 		t.Fatal(err)
 	} else {
 		defer os.RemoveAll(dir)
@@ -440,7 +439,7 @@ func TestTempDir(t *testing.T) {
 
 func TestTempFile(t *testing.T) {
 	var suitedir string
-	if dir, err := ioutil.TempDir("", ""); err != nil {
+	if dir, err := os.MkdirTemp("", ""); err != nil {
 		t.Fatal(err)
 	} else {
 		defer os.RemoveAll(dir)

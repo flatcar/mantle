@@ -17,7 +17,6 @@ package sdk
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -92,14 +91,14 @@ func OSRelease(root string) (ver Versions, err error) {
 
 func SetManifestSDKVersion(version string) error {
 	versionPath := filepath.Join(RepoRoot(), ".repo", "manifests", "version.txt")
-	originalContent, err := ioutil.ReadFile(versionPath)
+	originalContent, err := os.ReadFile(versionPath)
 	if err != nil {
 		return err
 	}
 
 	re := regexp.MustCompile(`FLATCAR_SDK_VERSION=.*`)
 	newContent := re.ReplaceAll(originalContent, []byte("FLATCAR_SDK_VERSION="+version))
-	err = ioutil.WriteFile(versionPath, newContent, 0644)
+	err = os.WriteFile(versionPath, newContent, 0644)
 	if err != nil {
 		return err
 	}
@@ -140,7 +139,7 @@ func versionsFromRemoteRepoMaybeVerify(url, branch string, verify bool) (ver Ver
 		}
 	}
 
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		return
 	}

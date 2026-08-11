@@ -16,7 +16,6 @@ package local
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -62,7 +61,7 @@ func NewSimpleEtcd() (*SimpleEtcd, error) {
 		return nil, err
 	}
 
-	se.dataDir, err = ioutil.TempDir("", tempPrefix)
+	se.dataDir, err = os.MkdirTemp("", tempPrefix)
 	if err != nil {
 		se.Destroy()
 		return nil, err
