@@ -535,12 +535,14 @@ github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.7.7
 ## explicit; go 1.19
 github.com/hashicorp/go-retryablehttp
-# github.com/hetznercloud/hcloud-go/v2 v2.46.0
+# github.com/hetznercloud/hcloud-go/v2 v2.47.0
 ## explicit; go 1.25.0
 github.com/hetznercloud/hcloud-go/v2/hcloud
 github.com/hetznercloud/hcloud-go/v2/hcloud/exp/ctxutil
 github.com/hetznercloud/hcloud-go/v2/hcloud/exp/kit/sshutil
 github.com/hetznercloud/hcloud-go/v2/hcloud/internal/instrumentation
+github.com/hetznercloud/hcloud-go/v2/hcloud/internal/util
+github.com/hetznercloud/hcloud-go/v2/hcloud/internal/version
 github.com/hetznercloud/hcloud-go/v2/hcloud/schema
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
