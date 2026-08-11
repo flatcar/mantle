@@ -103,7 +103,7 @@ func (bm *machine) ConsoleOutput() string {
 }
 
 func (bm *machine) JournalOutput() string {
-	if bm.journal != nil {
+	if bm.journal == nil {
 		return ""
 	}
 

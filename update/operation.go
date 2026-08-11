@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/flatcar/mantle/update/metadata"
@@ -61,7 +60,7 @@ func (op *Operation) Verify() error {
 		if len(op.Operation.SrcExtents) != 0 {
 			return fmt.Errorf("replace contains source extents")
 		}
-		if _, err := io.Copy(ioutil.Discard, op); err != nil {
+		if _, err := io.Copy(io.Discard, op); err != nil {
 			return err
 		}
 		if err := op.verifyHash(); err != nil {
@@ -151,7 +150,7 @@ func (op *Operation) replace(dst *os.File, src io.Reader) error {
 	if op.N != 0 {
 		if op.Operation.GetType() == metadata.InstallOperation_REPLACE_BZ {
 			plog.Warningf("Go's bzip2 left %d bytes unread!", op.N)
-			if _, err := io.Copy(ioutil.Discard, op); err != nil {
+			if _, err := io.Copy(io.Discard, op); err != nil {
 				return err
 			}
 		} else {

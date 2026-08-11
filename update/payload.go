@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
 
@@ -152,7 +151,7 @@ func (p *Payload) VerifySignature() error {
 	}
 
 	// There shouldn't be any extra data following the signatures.
-	if n, err := io.Copy(ioutil.Discard, p); err != nil {
+	if n, err := io.Copy(io.Discard, p); err != nil {
 		return fmt.Errorf("trailing read failure: %v", err)
 	} else if n != 0 {
 		return fmt.Errorf("found %d trailing bytes", n)

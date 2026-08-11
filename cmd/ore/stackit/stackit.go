@@ -5,11 +5,12 @@ package stackit
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/coreos/pkg/capnslog"
 	"github.com/flatcar/mantle/cli"
 	"github.com/flatcar/mantle/platform/api/stackit"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (

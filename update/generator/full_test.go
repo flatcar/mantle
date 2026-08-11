@@ -17,7 +17,6 @@ package generator
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -155,7 +154,7 @@ func TestFullUpdateScanUnaligned(t *testing.T) {
 }
 
 func checkFullProc(t *testing.T, source, sourceHash []byte) *Procedure {
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +189,7 @@ func TestFullUpdateOnes(t *testing.T) {
 	proc := checkFullProc(t, testOnes, testOnesHash)
 	defer proc.Close()
 
-	payload, err := ioutil.ReadAll(proc)
+	payload, err := io.ReadAll(proc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +201,7 @@ func TestFullUpdateRand(t *testing.T) {
 	proc := checkFullProc(t, testRand, testRandHash)
 	defer proc.Close()
 
-	payload, err := ioutil.ReadAll(proc)
+	payload, err := io.ReadAll(proc)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -198,7 +197,7 @@ func DownloadSDK(urlHost, urlPath, version, verifyKeyFile, JSONKeyFile string) e
 
 	var client *http.Client = nil
 	if len(JSONKeyFile) != 0 {
-		b, err := ioutil.ReadFile(JSONKeyFile)
+		b, err := os.ReadFile(JSONKeyFile)
 		if err != nil {
 			return fmt.Errorf("reading key: %w", err)
 		}

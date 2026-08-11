@@ -15,7 +15,6 @@
 package system
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -23,7 +22,7 @@ import (
 )
 
 func TestAnonymousFile(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +36,7 @@ func TestAnonymousFile(t *testing.T) {
 	}
 	defer anon.Close()
 
-	info, err := ioutil.ReadDir(tmp)
+	info, err := os.ReadDir(tmp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +49,7 @@ func TestAnonymousFile(t *testing.T) {
 		t.Errorf("Link failed: %v", err)
 	}
 
-	info, err = ioutil.ReadDir(tmp)
+	info, err = os.ReadDir(tmp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,19 +59,19 @@ func TestAnonymousFile(t *testing.T) {
 }
 
 func TestLinkFile(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmp)
 
-	orig, err := ioutil.TempFile(tmp, "")
+	orig, err := os.CreateTemp(tmp, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer orig.Close()
 
-	info, err := ioutil.ReadDir(tmp)
+	info, err := os.ReadDir(tmp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +108,7 @@ func TestLinkFile(t *testing.T) {
 }
 
 func TestPrivateFile(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +129,7 @@ func TestPrivateFile(t *testing.T) {
 	}
 	defer priv.Close()
 
-	info, err := ioutil.ReadDir(tmp)
+	info, err := os.ReadDir(tmp)
 	if err != nil {
 		t.Fatal(err)
 	}

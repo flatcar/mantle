@@ -15,8 +15,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/spf13/cobra"
@@ -45,7 +45,7 @@ func getGoogleClient() (*http.Client, error) {
 	}
 
 	if gceJSONKeyFile != "" {
-		if b, err := ioutil.ReadFile(gceJSONKeyFile); err == nil {
+		if b, err := os.ReadFile(gceJSONKeyFile); err == nil {
 			return auth.GoogleClientFromJSONKey(b)
 		} else {
 			return nil, err

@@ -16,7 +16,7 @@ package generator
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -40,7 +40,7 @@ func TestGenerateWithoutPartition(t *testing.T) {
 	g := testGenerator{t: t}
 	defer g.Destroy()
 
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,13 +87,13 @@ func TestGenerateOneBlockPartition(t *testing.T) {
 				},
 			},
 		},
-		ReadCloser: ioutil.NopCloser(bytes.NewReader(testOnes)),
+		ReadCloser: io.NopCloser(bytes.NewReader(testOnes)),
 	}
 	if err := g.Partition(&proc); err != nil {
 		t.Fatal(err)
 	}
 
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestGenerateOneBlockPartition(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := ioutil.TempFile("", "")
+	out, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestGenerateOneBlockPartition(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	written, err := ioutil.ReadAll(out)
+	written, err := io.ReadAll(out)
 	if err != nil {
 		t.Fatal(err)
 	}

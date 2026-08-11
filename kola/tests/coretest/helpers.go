@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -103,7 +103,7 @@ func Sha256File(fileName string) (hash string, err error) {
 		return
 	}
 
-	bytes, err := ioutil.ReadAll(f)
+	bytes, err := io.ReadAll(f)
 	if err != nil {
 		return
 	}
@@ -131,7 +131,7 @@ func MachineID() string {
 
 	defer f.Close()
 
-	buf, err := ioutil.ReadAll(f)
+	buf, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}
