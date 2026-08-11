@@ -43,9 +43,11 @@ func TestConfCopyKey(t *testing.T) {
 		Ignition(`{ "ignition": { "version": "3.1.0" } }`),
 		Ignition(`{ "ignition": { "version": "3.2.0" } }`),
 		Ignition(`{ "ignition": { "version": "3.3.0" } }`),
+		Ignition(`{ "ignition": { "version": "3.4.0" } }`),
 		Ignition(`{ "ignitionVersion": 1 }`),
 		CloudConfig("#cloud-config"),
 		Butane("variant: flatcar\nversion: 1.0.0"),
+		Butane("variant: flatcar\nversion: 1.1.0"),
 	}
 
 	for i, tt := range tests {
@@ -108,7 +110,15 @@ func TestConfAddUserToGroups(t *testing.T) {
 			nil,
 		},
 		{
+			Ignition(`{ "ignition": { "version": "3.4.0" } }`),
+			nil,
+		},
+		{
 			Butane("variant: flatcar\nversion: 1.0.0"),
+			nil,
+		},
+		{
+			Butane("variant: flatcar\nversion: 1.1.0"),
 			nil,
 		},
 	}
