@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"syscall"
 )
 
 // prefix of first argument if it is defining an entrypoint to be called.
@@ -77,9 +76,7 @@ func MaybeExec() {
 func (e Entrypoint) Command(args ...string) *ExecCmd {
 	args = append([]string{entryArgPrefix + string(e)}, args...)
 	cmd := Command(exePath, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
+	setDeathSignal(cmd)
 	return cmd
 }
 
@@ -89,8 +86,6 @@ func (e Entrypoint) Sudo(args ...string) *ExecCmd {
 	args = append([]string{"-E", "-p", "sudo password for %p: ", "--",
 		exePath, entryArgPrefix + string(e)}, args...)
 	cmd := Command("sudo", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
+	setDeathSignal(cmd)
 	return cmd
 }
