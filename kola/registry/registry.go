@@ -2,6 +2,7 @@ package registry
 
 // Tests imported for registration side effects. These make up the OS test suite and is explicitly imported from the main package.
 import (
+	_ "github.com/flatcar/mantle/kola/tests/azure"
 	_ "github.com/flatcar/mantle/kola/tests/bpf"
 	_ "github.com/flatcar/mantle/kola/tests/coretest"
 	_ "github.com/flatcar/mantle/kola/tests/crio"
