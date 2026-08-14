@@ -278,7 +278,7 @@ func (a *API) CreateTags(resources []string, tags map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("error creating tags: %v", err)
 	}
-	return err
+	return nil
 }
 
 // GetConsoleOutput returns the console output. Returns "", nil if no logs
