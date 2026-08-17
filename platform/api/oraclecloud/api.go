@@ -60,7 +60,12 @@ type Instance struct {
 }
 
 func New(opts *Options) (*API, error) {
-	provider := common.NewRawConfigurationProvider(opts.Tenancy, opts.User, opts.Region, opts.Fingerprint, opts.PrivateKey, nil)
+	var privateKeyPassphrase *string
+	if opts.PrivateKeyPassphrase != "" {
+		privateKeyPassphrase = &opts.PrivateKeyPassphrase
+	}
+
+	provider := common.NewRawConfigurationProvider(opts.Tenancy, opts.User, opts.Region, opts.Fingerprint, opts.PrivateKey, privateKeyPassphrase)
 
 	compute, err := core.NewComputeClientWithConfigurationProvider(provider)
 	if err != nil {
