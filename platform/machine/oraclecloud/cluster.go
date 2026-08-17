@@ -29,7 +29,7 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	}
 
 	conf.AddSystemdUnitDropin("coreos-metadata.service", "00-custom-metadata.conf", `[Service]
-ExecStartPost=/usr/bin/sh -c 'ip=$(ip -4 addr show $(ip route get 1 | cut -d " " -f 5) | grep -m 1 -Po "inet \K[\d.]+"); printf "COREOS_CUSTOM_PRIVATE_IPV4=%s\nCOREOS_CUSTOM_PUBLIC_IPV4=%s\n" "$ip" "$ip" >> /run/metadata/flatcar'
+ExecStartPost=/usr/bin/sh -c 'ip=$(ip -json -4 addr show $(ip -json route get 1 | jq -r '.[0].dev') | jq -r .[0].addr_info.[0].local); printf "COREOS_CUSTOM_PRIVATE_IPV4=%%s\nCOREOS_CUSTOM_PUBLIC_IPV4=%%s\n" "$ip" "$ip" >> /run/metadata/flatcar'
 `)
 
 	instance, err := bc.flight.api.CreateInstance(context.TODO(), bc.vmname(), conf.String())
