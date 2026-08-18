@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
@@ -32,7 +33,20 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 ExecStartPost=/usr/bin/sh -c 'ip=$(ip -json -4 addr show $(ip -json route get 1 | jq -r '.[0].dev') | jq -r .[0].addr_info.[0].local); printf "COREOS_CUSTOM_PRIVATE_IPV4=%%s\nCOREOS_CUSTOM_PUBLIC_IPV4=%%s\n" "$ip" "$ip" >> /run/metadata/flatcar'
 `)
 
-	instance, err := bc.flight.api.CreateInstance(context.TODO(), bc.vmname(), conf.String())
+	var sshAuthorizedKeys string
+	if !bc.RuntimeConf().NoSSHKeyInMetadata {
+		keys, err := bc.Keys()
+		if err != nil {
+			return nil, err
+		}
+		keyStrings := make([]string, 0, len(keys))
+		for _, key := range keys {
+			keyStrings = append(keyStrings, key.String())
+		}
+		sshAuthorizedKeys = strings.Join(keyStrings, "\n")
+	}
+
+	instance, err := bc.flight.api.CreateInstance(context.TODO(), bc.vmname(), conf.String(), sshAuthorizedKeys)
 	if err != nil {
 		return nil, err
 	}
