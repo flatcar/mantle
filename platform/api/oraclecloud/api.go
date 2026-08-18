@@ -102,8 +102,14 @@ func New(opts *Options) (*API, error) {
 	}, nil
 }
 
-func (a *API) CreateInstance(ctx context.Context, name, userData string) (*Instance, error) {
+func (a *API) CreateInstance(ctx context.Context, name, userData, sshAuthorizedKeys string) (*Instance, error) {
 	encodedUserData := base64.StdEncoding.EncodeToString([]byte(userData))
+	metadata := map[string]string{
+		"user_data": encodedUserData,
+	}
+	if sshAuthorizedKeys != "" {
+		metadata["ssh_authorized_keys"] = sshAuthorizedKeys
+	}
 	shapeConfig := core.LaunchInstanceShapeConfigDetails{
 		Ocpus:       common.Float32(a.opts.OCPUs),
 		MemoryInGBs: common.Float32(a.opts.MemoryGB),
@@ -115,11 +121,9 @@ func (a *API) CreateInstance(ctx context.Context, name, userData string) (*Insta
 			CompartmentId:      common.String(a.opts.CompartmentID),
 			DisplayName:        common.String(name),
 			FreeformTags:       DefaultTags,
-			Metadata: map[string]string{
-				"user_data": encodedUserData,
-			},
-			Shape:       common.String(a.opts.Shape),
-			ShapeConfig: &shapeConfig,
+			Metadata:           metadata,
+			Shape:              common.String(a.opts.Shape),
+			ShapeConfig:        &shapeConfig,
 			SourceDetails: core.InstanceSourceViaImageDetails{
 				ImageId: common.String(a.opts.ImageID),
 			},
