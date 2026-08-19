@@ -38,7 +38,7 @@ func init() {
 }
 
 func preflightCheck(cmd *cobra.Command, args []string) error {
-	options.Options = &platform.Options{}
+	options.Options = &platform.Options{Board: imageBoard}
 
 	a, err := oraclecloudapi.New(&options)
 	if err != nil {
