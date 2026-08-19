@@ -118,7 +118,10 @@ create images from the image file.
   - UserData is passed to instances via OCI instance metadata as base64-encoded `user_data`.
   - Instances and VNICs are tagged with `managed-by: mantle`.
   - `kola` requires `--oraclecloud-compartment-id`, `--oraclecloud-availability-domain`, `--oraclecloud-subnet-id`, and `--oraclecloud-image-id`.
+  - The default shape is `VM.Standard.E4.Flex` for `amd64-usr` and `VM.Standard.A1.Flex` for `arm64-usr`. ARM64 instances use UEFI firmware and paravirtualized boot, network, and remote volume devices.
   - `ore oraclecloud create-image` uploads a local QCOW2 or VMDK image to Object Storage, imports it as an OCI custom image, waits for the image to become available, deletes the temporary object, and prints the image OCID.
+  - ARM64 image imports configure UEFI image capabilities and add `VM.Standard.A1.Flex` to the compatible shapes list.
+  - Configuring ARM64 image capabilities requires permission to manage Compute image capability schemas in the target compartment.
   - Test success is reported by the `kola` harness, not by the machine journal. Check terminal output for `PASS, output in ...`, `<output-dir>/test.tap`, or `<output-dir>/reports/report.json`.
   - Machine logs are collected under `<output-dir>/<instance-id>/journal.txt` for diagnostics.
   - `ore oraclecloud gc` deletes old mantle-managed custom images and terminates old mantle-managed instances in the configured compartment.

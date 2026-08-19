@@ -24,6 +24,13 @@ var DefaultTags = map[string]string{
 	"managed-by": "mantle",
 }
 
+const (
+	amd64Board       = "amd64-usr"
+	arm64Board       = "arm64-usr"
+	arm64Shape       = "VM.Standard.A1.Flex"
+	globalSchemaName = "OCI.ComputeGlobalImageCapabilitySchema"
+)
+
 // Options hold the specific Oracle Cloud Infrastructure options.
 type Options struct {
 	*platform.Options
@@ -114,6 +121,10 @@ func (a *API) CreateInstance(ctx context.Context, name, userData, sshAuthorizedK
 		Ocpus:       common.Float32(a.opts.OCPUs),
 		MemoryInGBs: common.Float32(a.opts.MemoryGB),
 	}
+	launchOptions, err := launchOptionsForBoard(a.opts.Board)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := a.compute.LaunchInstance(ctx, core.LaunchInstanceRequest{
 		LaunchInstanceDetails: core.LaunchInstanceDetails{
@@ -124,6 +135,7 @@ func (a *API) CreateInstance(ctx context.Context, name, userData, sshAuthorizedK
 			Metadata:           metadata,
 			Shape:              common.String(a.opts.Shape),
 			ShapeConfig:        &shapeConfig,
+			LaunchOptions:      launchOptions,
 			SourceDetails: core.InstanceSourceViaImageDetails{
 				ImageId: common.String(a.opts.ImageID),
 			},
@@ -242,6 +254,13 @@ func (a *API) UploadImage(ctx context.Context, name, path, objectName, sourceIma
 	if a.opts.Bucket == "" {
 		return "", fmt.Errorf("bucket is required")
 	}
+	board := a.opts.Board
+	if board == "" {
+		board = amd64Board
+	}
+	if err := validateBoard(board); err != nil {
+		return "", err
+	}
 
 	namespace := a.opts.Namespace
 	if namespace == "" {
@@ -282,12 +301,160 @@ func (a *API) UploadImage(ctx context.Context, name, path, objectName, sourceIma
 	if _, err := a.WaitForImageState(ctx, imageID, core.ImageLifecycleStateAvailable); err != nil {
 		return "", fmt.Errorf("waiting for image import %q: %w; uploaded object %q was left in bucket %q", imageID, err, objectName, a.opts.Bucket)
 	}
+	if err := a.ConfigureImageForBoard(ctx, imageID, board); err != nil {
+		return "", fmt.Errorf("configuring imported image %q for board %q: %w; uploaded object %q was left in bucket %q", imageID, board, err, objectName, a.opts.Bucket)
+	}
 
 	if err := a.DeleteObject(ctx, namespace, a.opts.Bucket, objectName); err != nil {
 		return "", fmt.Errorf("deleting uploaded object %q: %w", objectName, err)
 	}
 
 	return imageID, nil
+}
+
+func launchOptionsForBoard(board string) (*core.LaunchOptions, error) {
+	switch board {
+	case "", amd64Board:
+		return nil, nil
+	case arm64Board:
+		return &core.LaunchOptions{
+			BootVolumeType:                  core.LaunchOptionsBootVolumeTypeParavirtualized,
+			Firmware:                        core.LaunchOptionsFirmwareUefi64,
+			NetworkType:                     core.LaunchOptionsNetworkTypeParavirtualized,
+			RemoteDataVolumeType:            core.LaunchOptionsRemoteDataVolumeTypeParavirtualized,
+			IsConsistentVolumeNamingEnabled: common.Bool(true),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported Oracle Cloud board %q", board)
+	}
+}
+
+func validateBoard(board string) error {
+	switch board {
+	case amd64Board, arm64Board:
+		return nil
+	default:
+		return fmt.Errorf("unsupported Oracle Cloud board %q", board)
+	}
+}
+
+// ConfigureImageForBoard applies image capabilities that OCI cannot infer
+// from an imported ARM64 disk image.
+func (a *API) ConfigureImageForBoard(ctx context.Context, imageID, board string) error {
+	if err := validateBoard(board); err != nil {
+		return err
+	}
+	if board == amd64Board {
+		return nil
+	}
+
+	version, err := a.globalImageCapabilitySchemaVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	resp, err := a.compute.CreateComputeImageCapabilitySchema(ctx, core.CreateComputeImageCapabilitySchemaRequest{
+		CreateComputeImageCapabilitySchemaDetails: core.CreateComputeImageCapabilitySchemaDetails{
+			CompartmentId: common.String(a.opts.CompartmentID),
+			ComputeGlobalImageCapabilitySchemaVersionName: common.String(version),
+			ImageId:      common.String(imageID),
+			DisplayName:  common.String("flatcar-arm64"),
+			FreeformTags: DefaultTags,
+			SchemaData:   arm64ImageCapabilitySchemaData(),
+		},
+		OpcRetryToken: common.String(common.RetryToken()),
+	})
+	if err != nil {
+		return fmt.Errorf("creating image capability schema: %w", err)
+	}
+	if resp.ComputeImageCapabilitySchema.Id == nil {
+		return fmt.Errorf("created image capability schema response did not include an ID")
+	}
+	if err := a.waitForImageCapabilitySchema(ctx, *resp.ComputeImageCapabilitySchema.Id); err != nil {
+		return err
+	}
+
+	_, err = a.compute.AddImageShapeCompatibilityEntry(ctx, core.AddImageShapeCompatibilityEntryRequest{
+		ImageId:                                common.String(imageID),
+		ShapeName:                              common.String(arm64Shape),
+		AddImageShapeCompatibilityEntryDetails: core.AddImageShapeCompatibilityEntryDetails{},
+	})
+	if err != nil {
+		return fmt.Errorf("adding compatible shape %q: %w", arm64Shape, err)
+	}
+	return nil
+}
+
+func arm64ImageCapabilitySchemaData() map[string]core.ImageCapabilitySchemaDescriptor {
+	return map[string]core.ImageCapabilitySchemaDescriptor{
+		"Compute.Firmware":             enumStringImageCapability("UEFI_64"),
+		"Compute.LaunchMode":           enumStringImageCapability("PARAVIRTUALIZED"),
+		"Network.AttachmentType":       enumStringImageCapability("PARAVIRTUALIZED"),
+		"Storage.BootVolumeType":       enumStringImageCapability("PARAVIRTUALIZED"),
+		"Storage.RemoteDataVolumeType": enumStringImageCapability("PARAVIRTUALIZED"),
+	}
+}
+
+func enumStringImageCapability(value string) core.EnumStringImageCapabilitySchemaDescriptor {
+	return core.EnumStringImageCapabilitySchemaDescriptor{
+		Values:       []string{value},
+		DefaultValue: common.String(value),
+		Source:       core.ImageCapabilitySchemaDescriptorSourceImage,
+	}
+}
+
+func (a *API) globalImageCapabilitySchemaVersion(ctx context.Context) (string, error) {
+	var page *string
+	for {
+		resp, err := a.compute.ListComputeGlobalImageCapabilitySchemas(ctx, core.ListComputeGlobalImageCapabilitySchemasRequest{
+			DisplayName: common.String(globalSchemaName),
+			Page:        page,
+		})
+		if err != nil {
+			return "", fmt.Errorf("listing global image capability schemas: %w", err)
+		}
+		for _, schema := range resp.Items {
+			if schema.DisplayName != nil && *schema.DisplayName == globalSchemaName && schema.CurrentVersionName != nil && *schema.CurrentVersionName != "" {
+				return *schema.CurrentVersionName, nil
+			}
+		}
+		if resp.OpcNextPage == nil {
+			break
+		}
+		page = resp.OpcNextPage
+	}
+	return "", fmt.Errorf("global image capability schema %q has no current version", globalSchemaName)
+}
+
+func (a *API) waitForImageCapabilitySchema(ctx context.Context, schemaID string) error {
+	var terminalErr error
+	err := util.Retry(60, 10*time.Second, func() error {
+		resp, err := a.compute.GetComputeImageCapabilitySchema(ctx, core.GetComputeImageCapabilitySchemaRequest{
+			ComputeImageCapabilitySchemaId: common.String(schemaID),
+		})
+		if err != nil {
+			if ctx.Err() != nil {
+				terminalErr = ctx.Err()
+				return nil
+			}
+			return fmt.Errorf("getting image capability schema %q: %w", schemaID, err)
+		}
+		if resp.ComputeImageCapabilitySchema.LifecycleState == core.ComputeImageCapabilitySchemaLifecycleStateActive {
+			return nil
+		}
+		if resp.ComputeImageCapabilitySchema.LifecycleState == core.ComputeImageCapabilitySchemaLifecycleStateDeleted {
+			terminalErr = fmt.Errorf("image capability schema %q entered state %q", schemaID, resp.ComputeImageCapabilitySchema.LifecycleState)
+			return nil
+		}
+		return fmt.Errorf("image capability schema %q is in state %q, waiting for %q", schemaID, resp.ComputeImageCapabilitySchema.LifecycleState, core.ComputeImageCapabilitySchemaLifecycleStateActive)
+	})
+	if terminalErr != nil {
+		return terminalErr
+	}
+	if err != nil {
+		return fmt.Errorf("waiting for image capability schema %q: %w", schemaID, err)
+	}
+	return nil
 }
 
 func (a *API) GetNamespace(ctx context.Context) (string, error) {

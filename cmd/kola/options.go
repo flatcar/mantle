@@ -40,7 +40,7 @@ var (
 	kolaImageVersion            string // ${VERSION_ID} or ${VERSION_ID}+${BUILD_ID}
 	kolaDisableSELinuxAVCChecks bool
 	defaultTargetBoard          = sdk.DefaultBoard()
-	kolaArchitectures           = []string{"amd64"}
+	kolaArchitectures           = []string{"amd64", "arm64"}
 	kolaPlatforms               = []string{"akamai", "aws", "azure", "brightbox", "do", "esx", "external", "gce", "hetzner", "openstack", "oraclecloud", "qemu", "qemu-unpriv", "scaleway", "stackit"}
 	kolaDistros                 = []string{"cl", "fcos", "rhcos"}
 	kolaChannels                = []string{"alpha", "beta", "stable", "edge", "lts"}
@@ -200,7 +200,7 @@ func init() {
 	sv(&kola.OracleCloudOptions.AvailabilityDomain, "oraclecloud-availability-domain", "", "Oracle Cloud Infrastructure availability domain")
 	sv(&kola.OracleCloudOptions.SubnetID, "oraclecloud-subnet-id", "", "Oracle Cloud Infrastructure subnet OCID")
 	sv(&kola.OracleCloudOptions.ImageID, "oraclecloud-image-id", "", "Oracle Cloud Infrastructure custom image OCID")
-	sv(&kola.OracleCloudOptions.Shape, "oraclecloud-shape", "VM.Standard.E4.Flex", "Oracle Cloud Infrastructure instance shape")
+	sv(&kola.OracleCloudOptions.Shape, "oraclecloud-shape", "", "Oracle Cloud Infrastructure instance shape (default depends on --board)")
 	f32v(&kola.OracleCloudOptions.OCPUs, "oraclecloud-ocpus", 2, "Oracle Cloud Infrastructure flexible shape OCPUs")
 	f32v(&kola.OracleCloudOptions.MemoryGB, "oraclecloud-memory-gb", 8, "Oracle Cloud Infrastructure flexible shape memory in GB")
 
@@ -273,6 +273,17 @@ func syncOptions() error {
 	kola.AkamaiOptions.Board = board
 	kola.OracleCloudOptions.Board = board
 	kola.STACKITOptions.Board = board
+
+	if kola.OracleCloudOptions.Shape == "" {
+		switch board {
+		case "amd64-usr":
+			kola.OracleCloudOptions.Shape = "VM.Standard.E4.Flex"
+		case "arm64-usr":
+			kola.OracleCloudOptions.Shape = "VM.Standard.A1.Flex"
+		default:
+			return fmt.Errorf("unsupported Oracle Cloud board %q", board)
+		}
+	}
 
 	validateOption := func(name, item string, valid []string) error {
 		for _, v := range valid {
