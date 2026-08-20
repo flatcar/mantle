@@ -158,7 +158,8 @@ write_files:
 		Distros: []string{"cl"},
 		// Hetzner: we need to implement coreos-cloudinit support for Hetzner.
 		// Akamai: we need to implement coreos-cloudinit support for Akamai.
-		ExcludePlatforms: []string{"qemu-unpriv", "hetzner", "akamai"},
+		// Oraclecloud: we need to implement coreos-cloudinit support for Oraclecloud.
+		ExcludePlatforms: []string{"qemu-unpriv", "hetzner", "akamai", "oraclecloud"},
 		// This should run on all clouds
 	})
 	register.Register(&register.Test{
