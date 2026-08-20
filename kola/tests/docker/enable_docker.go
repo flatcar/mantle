@@ -65,13 +65,11 @@ systemd:
     enabled: true
 storage:
   links:
-  - path: /etc/systemd/system/multi-user.target.wants/docker.service
+  - path: /etc/systemd/system/multi-user.target.upholds/docker.service
     target: /usr/lib/systemd/system/docker.service
     hard: false
     overwrite: true
 `),
-		// TODO FIXME: Convert this to a multi-user.target.upholds/docker.service symlink
-		// after we switch to systemd-254.
 		Distros: []string{"cl"},
 	})
 }
