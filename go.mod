@@ -29,8 +29,8 @@ require (
 	github.com/flatcar/coreos-cloudinit v1.14.1-0.20240223132627-a7bc5f0050ab
 	github.com/flatcar/ignition v0.36.2
 	github.com/golang/protobuf v1.5.4
-	github.com/gophercloud/gophercloud v1.14.1
-	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
+	github.com/gophercloud/gophercloud/v2 v2.13.0
+	github.com/gophercloud/utils/v2 v2.0.0-20260626221802-4ae35253ac13
 	github.com/hetznercloud/hcloud-go/v2 v2.47.0
 	github.com/kballard/go-shellquote v0.0.0-20150810074751-d8ec1a69a250
 	github.com/kylelemons/godebug v1.1.0
