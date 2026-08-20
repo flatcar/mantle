@@ -191,7 +191,7 @@ func init() {
 	// Oracle Cloud Infrastructure specific options
 	sv(&kola.OracleCloudOptions.Tenancy, "oraclecloud-tenancy", "", "Oracle Cloud tenancy")
 	sv(&kola.OracleCloudOptions.User, "oraclecloud-user", "", "Oracle Cloud user")
-	sv(&kola.OracleCloudOptions.Region, "oraclecloud-region", "", "Oracle Cloud fingerprint")
+	sv(&kola.OracleCloudOptions.Region, "oraclecloud-region", "", "Oracle Cloud region")
 	sv(&kola.OracleCloudOptions.PrivateKey, "oraclecloud-private-key", "", "Oracle Cloud private key")
 	sv(&kola.OracleCloudOptions.PrivateKeyPassphrase, "oraclecloud-private-key-passphrase", "", "Oracle Cloud private key passphrase")
 	sv(&kola.OracleCloudOptions.Fingerprint, "oraclecloud-fingerprint", "", "Oracle Cloud fingerprint")
