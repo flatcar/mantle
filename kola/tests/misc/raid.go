@@ -26,68 +26,34 @@ import (
 )
 
 const (
-	IgnitionConfigRootRaid = `{
-  "ignition": {
-    "config": {},
-    "security": {
-      "tls": {}
-    },
-    "timeouts": {},
-    "version": "2.3.0"
-  },
-  "networkd": {},
-  "storage": {
-    "disks": [
-      {
-        "device": "/dev/disk/by-id/virtio-secondary",
-        "partitions": [
-          {
-            "label": "root1",
-            "number": 1,
-            "sizeMiB": 256,
-            "typeGuid": "be9067b9-ea49-4f15-b4f6-f36f8c9e1818"
-          },
-          {
-            "label": "root2",
-            "number": 2,
-            "sizeMiB": 256,
-            "typeGuid": "be9067b9-ea49-4f15-b4f6-f36f8c9e1818"
-          }
-        ],
-        "wipeTable": true
-      }
-    ],
-    "filesystems": [
-      {
-        "mount": {
-          "device": "/dev/md/rootarray",
-          "format": "ext4",
-          "label": "ROOT"
-        },
-        "name": "ROOT"
-      },
-      {
-        "mount": {
-          "device": "/dev/disk/by-id/virtio-primary-disk-part9",
-          "format": "ext4",
-          "label": "wasteland",
-          "wipeFilesystem": true
-        },
-        "name": "NOT_ROOT"
-      }
-    ],
-    "raid": [
-      {
-        "devices": [
-          "/dev/disk/by-partlabel/root1",
-          "/dev/disk/by-partlabel/root2"
-        ],
-        "level": "{{ .RaidLevel }}",
-        "name": "rootarray"
-      }
-    ]
-  }
-}
+	IgnitionConfigRootRaid = `variant: flatcar
+version: 1.0.0
+storage:
+  disks:
+    - device: /dev/disk/by-id/coreos-boot-disk
+      partitions:
+        - number: 9
+          wipe_partition_entry: true
+        - number: 9
+          label: root1
+          size_mib: 256
+          type_guid: be9067b9-ea49-4f15-b4f6-f36f8c9e1818
+        - number: 10
+          label: root2
+          size_mib: 256
+          type_guid: be9067b9-ea49-4f15-b4f6-f36f8c9e1818
+  raid:
+    - name: rootarray
+      level: "{{ .RaidLevel }}"
+      devices:
+        - /dev/disk/by-partlabel/root1
+        - /dev/disk/by-partlabel/root2
+  filesystems:
+    - path: /
+      device: /dev/md/rootarray
+      format: ext4
+      label: ROOT
+      wipe_filesystem: true
 `
 
 	IgnitionConfigDataRaid = `{
@@ -166,24 +132,18 @@ func init() {
 			fmt.Printf("fail to execute template for %s: %v\n", level, err)
 			return
 		}
-		userDataRoot := conf.Ignition(templRoot)
+		userDataRoot := conf.Butane(templRoot)
 
 		runRootOnRaid := func(c cluster.TestCluster) {
-			RootOnRaid(c, userDataRoot)
+			RootOnRaid(c)
 		}
 
 		register.Register(&register.Test{
-			// This test needs additional disks which is only supported on qemu since Ignition
-			// does not support deleting partitions without wiping the partition table and the
-			// disk doesn't have room for new partitions.
-			// TODO(ajeddeloh): change this to delete partition 9 and replace it with 9 and 10
-			// once Ignition supports it.
 			Run:         runRootOnRaid,
-			ClusterSize: 0,
-			// This test is normally not related to the cloud environment
-			Platforms: []string{"qemu"},
-			Name:      fmt.Sprintf("cl.disk.%s.root", raidLevel),
-			Distros:   []string{"cl"},
+			ClusterSize: 1,
+			UserData:    userDataRoot,
+			Name:        fmt.Sprintf("cl.disk.%s.root", raidLevel),
+			Distros:     []string{"cl"},
 		})
 
 		// data partition
@@ -212,21 +172,13 @@ func init() {
 	}
 }
 
-func RootOnRaid(c cluster.TestCluster, userData *conf.UserData) {
-	options := platform.MachineOptions{
-		AdditionalDisks: []platform.Disk{
-			{Size: "520M", DeviceOpts: []string{"serial=secondary"}},
-		},
-	}
-	m, err := tutil.NewMachineWithOptions(c, userData, options)
-	if err != nil {
-		c.Fatal(err)
-	}
+func RootOnRaid(c cluster.TestCluster) {
+	m := c.Machines()[0]
 
 	checkIfMountpointIsRaid(c, m, "/")
 
 	// reboot it to make sure it comes up again
-	err = m.Reboot()
+	err := m.Reboot()
 	if err != nil {
 		c.Fatalf("could not reboot machine: %v", err)
 	}
