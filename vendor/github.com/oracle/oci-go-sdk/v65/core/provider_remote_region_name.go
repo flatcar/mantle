@@ -21,41 +21,26 @@ import (
 	"strings"
 )
 
-// DedicatedVmHostInstanceSummary Condensed instance data when listing instances on a dedicated VM host.
-type DedicatedVmHostInstanceSummary struct {
+// ProviderRemoteRegionName A pair of OCI region and Provider remote region names for FastConnect MultiCloud interconnect.
+type ProviderRemoteRegionName struct {
 
-	// The availability domain the virtual machine instance is running in.
-	// Example: `Uocm:PHX-AD-1`
-	AvailabilityDomain *string `mandatory:"true" json:"availabilityDomain"`
+	// The OCI region name associated with the provider remote region.
+	// Example: `us-ashburn-1`.
+	OciRegionName *string `mandatory:"true" json:"ociRegionName"`
 
-	// The OCID of the compartment that contains the virtual machine instance.
-	CompartmentId *string `mandatory:"true" json:"compartmentId"`
-
-	// The OCID of the virtual machine instance.
-	InstanceId *string `mandatory:"true" json:"instanceId"`
-
-	// The shape of the VM instance.
-	Shape *string `mandatory:"true" json:"shape"`
-
-	// The date and time the virtual machine instance was created, in the format defined by RFC3339 (https://tools.ietf.org/html/rfc3339).
-	// Example: `2016-08-25T21:10:29.600Z`
-	TimeCreated *common.SDKTime `mandatory:"true" json:"timeCreated"`
-
-	// Specifies whether the VM instance is confidential.
-	IsMemoryEncryptionEnabled *bool `mandatory:"false" json:"isMemoryEncryptionEnabled"`
-
-	// Specifies if the Dedicated Virtual Machine Host (DVMH) is to running only Burstable VMs. If `true`, only Burstable VMs can be launched. If `false`, Burstable VMs cannot be launched.
-	IsBurstable *bool `mandatory:"false" json:"isBurstable"`
+	// The provider remote region name associated with the OCI region.
+	// Example: `us-east-1`.
+	ProviderRegionName *string `mandatory:"true" json:"providerRegionName"`
 }
 
-func (m DedicatedVmHostInstanceSummary) String() string {
+func (m ProviderRemoteRegionName) String() string {
 	return common.PointerString(m)
 }
 
 // ValidateEnumValue returns an error when providing an unsupported enum value
 // This function is being called during constructing API request process
 // Not recommended for calling this function directly
-func (m DedicatedVmHostInstanceSummary) ValidateEnumValue() (bool, error) {
+func (m ProviderRemoteRegionName) ValidateEnumValue() (bool, error) {
 	errMessage := []string{}
 
 	if len(errMessage) > 0 {

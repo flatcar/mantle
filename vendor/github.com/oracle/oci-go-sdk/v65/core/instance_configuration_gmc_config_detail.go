@@ -21,48 +21,48 @@ import (
 	"strings"
 )
 
-// UpdateCrossConnectGroupDetails The representation of UpdateCrossConnectGroupDetails
-type UpdateCrossConnectGroupDetails struct {
+// InstanceConfigurationGmcConfigDetail Configuration detail for a GPU Memory Cluster entry within an instance configuration.
+type InstanceConfigurationGmcConfigDetail struct {
+
+	// The OCID (https://docs.oracle.com/iaas/Content/General/Concepts/identifiers.htm) of the base compute instance configuration
+	// associated with this GMC configuration entry.
+	InstanceConfigurationId *string `mandatory:"true" json:"instanceConfigurationId"`
+
+	// The availability domain for this GMC configuration entry.
+	AvailabilityDomain *string `mandatory:"true" json:"availabilityDomain"`
+
+	// The OCID (https://docs.oracle.com/iaas/Content/General/Concepts/identifiers.htm) of the compartment associated with this GMC
+	// configuration entry.
+	CompartmentId *string `mandatory:"true" json:"compartmentId"`
+
+	// The desired number of instances for this GMC configuration entry.
+	Size *int64 `mandatory:"false" json:"size"`
+
+	GpuMemoryClusterScaleConfig *InstanceConfigurationGpuMemoryClusterScaleConfig `mandatory:"false" json:"gpuMemoryClusterScaleConfig"`
+
+	// A user-friendly name. Does not have to be unique, and it's changeable.
+	// Avoid entering confidential information.
+	DisplayName *string `mandatory:"false" json:"displayName"`
 
 	// Defined tags for this resource. Each key is predefined and scoped to a
 	// namespace. For more information, see Resource Tags (https://docs.oracle.com/iaas/Content/General/Concepts/resourcetags.htm).
 	// Example: `{"Operations": {"CostCenter": "42"}}`
 	DefinedTags map[string]map[string]interface{} `mandatory:"false" json:"definedTags"`
 
-	// A user-friendly name. Does not have to be unique, and it's changeable.
-	// Avoid entering confidential information.
-	DisplayName *string `mandatory:"false" json:"displayName"`
-
-	// A reference name or identifier for the physical fiber connection this cross-connect group uses.
-	CustomerReferenceName *string `mandatory:"false" json:"customerReferenceName"`
-
 	// Free-form tags for this resource. Each tag is a simple key-value pair with no
 	// predefined name, type, or namespace. For more information, see Resource Tags (https://docs.oracle.com/iaas/Content/General/Concepts/resourcetags.htm).
 	// Example: `{"Department": "Finance"}`
 	FreeformTags map[string]string `mandatory:"false" json:"freeformTags"`
-
-	MacsecProperties *UpdateMacsecProperties `mandatory:"false" json:"macsecProperties"`
-
-	// (Optional) Minimum number of active cross-connects required for the cross-connect group to be considered
-	// operational. If not specified, this value defaults to 1. Value must not exceed the total number of
-	// cross-connects in the cross-connect group.
-	MinimumLinks *int `mandatory:"false" json:"minimumLinks"`
-
-	// The flag to enable or disable the down timer for the interface.
-	IsInterfaceHoldTimerEnabled *bool `mandatory:"false" json:"isInterfaceHoldTimerEnabled"`
-
-	// The duration of the interface down timer in milliseconds between 0 and 3000 in multiples of 500.
-	InterfaceDownTimerValueInMilliseconds *int `mandatory:"false" json:"interfaceDownTimerValueInMilliseconds"`
 }
 
-func (m UpdateCrossConnectGroupDetails) String() string {
+func (m InstanceConfigurationGmcConfigDetail) String() string {
 	return common.PointerString(m)
 }
 
 // ValidateEnumValue returns an error when providing an unsupported enum value
 // This function is being called during constructing API request process
 // Not recommended for calling this function directly
-func (m UpdateCrossConnectGroupDetails) ValidateEnumValue() (bool, error) {
+func (m InstanceConfigurationGmcConfigDetail) ValidateEnumValue() (bool, error) {
 	errMessage := []string{}
 
 	if len(errMessage) > 0 {
