@@ -21,41 +21,21 @@ import (
 	"strings"
 )
 
-// DedicatedVmHostInstanceSummary Condensed instance data when listing instances on a dedicated VM host.
-type DedicatedVmHostInstanceSummary struct {
+// QuickRecycleSettings Additional quick recycle settings.
+type QuickRecycleSettings struct {
 
-	// The availability domain the virtual machine instance is running in.
-	// Example: `Uocm:PHX-AD-1`
-	AvailabilityDomain *string `mandatory:"true" json:"availabilityDomain"`
-
-	// The OCID of the compartment that contains the virtual machine instance.
-	CompartmentId *string `mandatory:"true" json:"compartmentId"`
-
-	// The OCID of the virtual machine instance.
-	InstanceId *string `mandatory:"true" json:"instanceId"`
-
-	// The shape of the VM instance.
-	Shape *string `mandatory:"true" json:"shape"`
-
-	// The date and time the virtual machine instance was created, in the format defined by RFC3339 (https://tools.ietf.org/html/rfc3339).
-	// Example: `2016-08-25T21:10:29.600Z`
-	TimeCreated *common.SDKTime `mandatory:"true" json:"timeCreated"`
-
-	// Specifies whether the VM instance is confidential.
-	IsMemoryEncryptionEnabled *bool `mandatory:"false" json:"isMemoryEncryptionEnabled"`
-
-	// Specifies if the Dedicated Virtual Machine Host (DVMH) is to running only Burstable VMs. If `true`, only Burstable VMs can be launched. If `false`, Burstable VMs cannot be launched.
-	IsBurstable *bool `mandatory:"false" json:"isBurstable"`
+	// Whether to wipe NVMe data during quick recycle.
+	NvmeWipe *bool `mandatory:"false" json:"nvmeWipe"`
 }
 
-func (m DedicatedVmHostInstanceSummary) String() string {
+func (m QuickRecycleSettings) String() string {
 	return common.PointerString(m)
 }
 
 // ValidateEnumValue returns an error when providing an unsupported enum value
 // This function is being called during constructing API request process
 // Not recommended for calling this function directly
-func (m DedicatedVmHostInstanceSummary) ValidateEnumValue() (bool, error) {
+func (m QuickRecycleSettings) ValidateEnumValue() (bool, error) {
 	errMessage := []string{}
 
 	if len(errMessage) > 0 {
