@@ -42,7 +42,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stackitcloud/stackit-sdk-go/core v0.26.0
-	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.14.0
+	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.14.1
 	github.com/stretchr/testify v1.12.1
 	github.com/vincent-petithory/dataurl v1.0.0
 	github.com/vishvananda/netlink v1.3.1
@@ -115,7 +115,7 @@ require (
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/sony/gobreaker/v2 v2.4.0 // indirect
-	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.24.1 // indirect
+	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.24.2 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.etcd.io/bbolt v1.3.9 // indirect
