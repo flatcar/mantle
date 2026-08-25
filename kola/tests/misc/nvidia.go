@@ -19,9 +19,9 @@ import (
 
 const (
 	CmdTimeout           = time.Second * 300
-	NvidiaSysextVersion  = "550-open"                         // NVIDIA drivers sysext version used in the template
+	NvidiaSysextVersion  = "570-open"                         // NVIDIA drivers sysext version used in the template
 	KubernetesVersion    = "v1.32.2"                          // Kubernetes version used in the template
-	NvidiaRuntimeVersion = "v1.16.2"                          // NVIDIA runtime version used in the template
+	NvidiaRuntimeVersion = "v1.19.1"                          // NVIDIA runtime version used in the template
 	GpuOperatorVersion   = "v24.9.2"                          // GPU operator version used for Helm install
 	CudaSampleImageTag   = "vectoradd-cuda11.7.1-ubuntu20.04" // CUDA sample image tag
 )
