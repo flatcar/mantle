@@ -276,7 +276,7 @@ func runUpload(cmd *cobra.Command, args []string) error {
 	}
 
 	// create AMIs and grant permissions
-	hvmID, err := API.CreateHVMImage(sourceSnapshot, uploadDiskSizeGiB, amiName+"-hvm", uploadAMIDescription, amiArch)
+	hvmID, err := API.CreateHVMImage(sourceSnapshot, int32(uploadDiskSizeGiB), amiName+"-hvm", uploadAMIDescription, amiArch)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to create HVM image: %v\n", err)
 		os.Exit(1)

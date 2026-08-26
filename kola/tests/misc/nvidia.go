@@ -139,7 +139,7 @@ func skipOnNonGpu(_ semver.Version, _, arch, platform string) bool {
 	if platform == "azure" && strings.Contains(kola.AzureOptions.Size, "NC") {
 		return false
 	}
-	if platform == "aws" && (strings.HasPrefix(kola.AWSOptions.InstanceType, "p") || strings.HasPrefix(kola.AWSOptions.InstanceType, "g")) {
+	if platform == "aws" && (strings.HasPrefix(string(kola.AWSOptions.InstanceType), "p") || strings.HasPrefix(string(kola.AWSOptions.InstanceType), "g")) {
 		return false
 	}
 	return true

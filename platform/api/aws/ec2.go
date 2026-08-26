@@ -15,20 +15,23 @@
 package aws
 
 import (
+	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/smithy-go"
 
 	"github.com/flatcar/mantle/util"
 )
 
 func (a *API) AddKey(name, key string) error {
-	_, err := a.ec2.ImportKeyPair(&ec2.ImportKeyPairInput{
+	_, err := a.ec2.ImportKeyPair(context.TODO(), &ec2.ImportKeyPairInput{
 		KeyName:           &name,
 		PublicKeyMaterial: []byte(key),
 	})
@@ -37,7 +40,7 @@ func (a *API) AddKey(name, key string) error {
 }
 
 func (a *API) DeleteKey(name string) error {
-	_, err := a.ec2.DeleteKeyPair(&ec2.DeleteKeyPairInput{
+	_, err := a.ec2.DeleteKeyPair(context.TODO(), &ec2.DeleteKeyPairInput{
 		KeyName: &name,
 	})
 
@@ -47,8 +50,8 @@ func (a *API) DeleteKey(name string) error {
 // CreateInstances creates EC2 instances with a given name tag, optional ssh key name, user data, and optional root disk size.
 // The image ID, instance type, and security group set in the API will be used.
 // CreateInstancesWithDiskOptions will block until all instances are running and have an IP address.
-func (a *API) CreateInstances(name, keyname, userdata string, count uint64, rootDiskSizeGB *int64) ([]*ec2.Instance, error) {
-	cnt := int64(count)
+func (a *API) CreateInstances(name, keyname, userdata string, count uint64, rootDiskSizeGB *int32) ([]types.Instance, error) {
+	cnt := int32(count)
 
 	var ud *string
 	if len(userdata) > 0 {
@@ -81,7 +84,7 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 		key = nil
 	}
 
-	var reservations *ec2.Reservation
+	var reservations *ec2.RunInstancesOutput
 
 	for _, subnetId := range subnetIds {
 		inst := ec2.RunInstancesInput{
@@ -89,22 +92,22 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 			MinCount:         &cnt,
 			MaxCount:         &cnt,
 			KeyName:          key,
-			InstanceType:     &a.opts.InstanceType,
-			SecurityGroupIds: []*string{&sgId},
+			InstanceType:     types.InstanceType(a.opts.InstanceType),
+			SecurityGroupIds: []string{sgId},
 			SubnetId:         &subnetId,
 			UserData:         ud,
-			IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
+			IamInstanceProfile: &types.IamInstanceProfileSpecification{
 				Name: &a.opts.IAMInstanceProfile,
 			},
-			TagSpecifications: []*ec2.TagSpecification{
-				&ec2.TagSpecification{
-					ResourceType: aws.String(ec2.ResourceTypeInstance),
-					Tags: []*ec2.Tag{
-						&ec2.Tag{
+			TagSpecifications: []types.TagSpecification{
+				types.TagSpecification{
+					ResourceType: types.ResourceTypeInstance,
+					Tags: []types.Tag{
+						types.Tag{
 							Key:   aws.String("Name"),
 							Value: aws.String(name),
 						},
-						&ec2.Tag{
+						types.Tag{
 							Key:   aws.String("CreatedBy"),
 							Value: aws.String("mantle"),
 						},
@@ -115,13 +118,13 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 
 		// Add block device mappings for root disk size if specified
 		if rootDiskSizeGB != nil && *rootDiskSizeGB > 0 {
-			inst.BlockDeviceMappings = []*ec2.BlockDeviceMapping{
+			inst.BlockDeviceMappings = []types.BlockDeviceMapping{
 				{
 					DeviceName: aws.String("/dev/xvda"),
-					Ebs: &ec2.EbsBlockDevice{
+					Ebs: &types.EbsBlockDevice{
 						DeleteOnTermination: aws.Bool(true),
 						VolumeSize:          rootDiskSizeGB,
-						VolumeType:          aws.String("gp2"),
+						VolumeType:          types.VolumeTypeGp2,
 					},
 				},
 			}
@@ -130,13 +133,14 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 		err = util.RetryConditional(5, 5*time.Second, func(err error) bool {
 			// due to AWS' eventual consistency despite ensuring that the IAM Instance
 			// Profile has been created it may not be available to ec2 yet.
-			if awsErr, ok := err.(awserr.Error); ok && (awsErr.Code() == "InvalidParameterValue" && strings.Contains(awsErr.Message(), "iamInstanceProfile.name")) {
+			var awsErr smithy.APIError
+			if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidParameterValue" && strings.Contains(awsErr.ErrorMessage(), "iamInstanceProfile.name") {
 				return true
 			}
 			return false
 		}, func() error {
 			var ierr error
-			reservations, ierr = a.ec2.RunInstances(&inst)
+			reservations, ierr = a.ec2.RunInstances(context.TODO(), &inst)
 			return ierr
 		})
 
@@ -151,23 +155,24 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 
 	ids := make([]string, len(reservations.Instances))
 	for i, inst := range reservations.Instances {
-		ids[i] = *inst.InstanceId
+		ids[i] = aws.ToString(inst.InstanceId)
 	}
 
 	// loop until all machines are online
-	var insts []*ec2.Instance
+	var insts []types.Instance
 
 	// 10 minutes is a pretty reasonable timeframe for AWS instances to work.
 	timeout := 10 * time.Minute
 	// don't make api calls too quickly, or we will hit the rate limit
 	delay := 10 * time.Second
 	err = util.WaitUntilReady(timeout, delay, func() (bool, error) {
-		desc, err := a.ec2.DescribeInstances(&ec2.DescribeInstancesInput{
-			InstanceIds: aws.StringSlice(ids),
+		desc, err := a.ec2.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
+			InstanceIds: ids,
 		})
 		if err != nil {
 			// Keep retrying if the InstanceID disappears momentarily
-			if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == "InvalidInstanceID.NotFound" {
+			var awsErr smithy.APIError
+			if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidInstanceID.NotFound" {
 				plog.Debugf("instance ID not found, retrying: %v", err)
 				return false, nil
 			}
@@ -176,7 +181,7 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 		insts = desc.Reservations[0].Instances
 
 		for _, i := range insts {
-			if *i.State.Name != ec2.InstanceStateNameRunning || i.PublicIpAddress == nil {
+			if i.State.Name != types.InstanceStateNameRunning || i.PublicIpAddress == nil {
 				return false, nil
 			}
 		}
@@ -196,11 +201,11 @@ func (a *API) CreateInstances(name, keyname, userdata string, count uint64, root
 func (a *API) gcEC2(gracePeriod time.Duration) error {
 	durationAgo := time.Now().Add(-1 * gracePeriod)
 
-	instances, err := a.ec2.DescribeInstances(&ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
-			&ec2.Filter{
+	instances, err := a.ec2.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
+		Filters: []types.Filter{
+			types.Filter{
 				Name:   aws.String("tag:CreatedBy"),
-				Values: aws.StringSlice([]string{"mantle"}),
+				Values: []string{"mantle"},
 			},
 		},
 	})
@@ -219,12 +224,12 @@ func (a *API) gcEC2(gracePeriod time.Duration) error {
 			}
 
 			if instance.State != nil {
-				switch *instance.State.Name {
-				case ec2.InstanceStateNamePending, ec2.InstanceStateNameRunning, ec2.InstanceStateNameStopped:
+				switch instance.State.Name {
+				case types.InstanceStateNamePending, types.InstanceStateNameRunning, types.InstanceStateNameStopped:
 					toTerminate = append(toTerminate, *instance.InstanceId)
-				case ec2.InstanceStateNameTerminated, ec2.InstanceStateNameShuttingDown:
+				case types.InstanceStateNameTerminated, types.InstanceStateNameShuttingDown:
 				default:
-					plog.Infof("ec2: skipping instance in state %s", *instance.State.Name)
+					plog.Infof("ec2: skipping instance in state %s", instance.State.Name)
 				}
 			} else {
 				plog.Warningf("ec2 instance had no state: %s", *instance.InstanceId)
@@ -242,17 +247,17 @@ func (a *API) TerminateInstances(ids []string) error {
 	}
 
 	stopInput := &ec2.StopInstancesInput{
-		InstanceIds: aws.StringSlice(ids),
+		InstanceIds: ids,
 		Force:       util.BoolToPtr(true),
 	}
-	if _, err := a.ec2.StopInstances(stopInput); err != nil {
+	if _, err := a.ec2.StopInstances(context.TODO(), stopInput); err != nil {
 		plog.Warningf("ec2 failed to stop instance: %v", err)
 	}
 
 	input := &ec2.TerminateInstancesInput{
-		InstanceIds: aws.StringSlice(ids),
+		InstanceIds: ids,
 	}
-	if _, err := a.ec2.TerminateInstances(input); err != nil {
+	if _, err := a.ec2.TerminateInstances(context.TODO(), input); err != nil {
 		return err
 	}
 
@@ -264,15 +269,15 @@ func (a *API) CreateTags(resources []string, tags map[string]string) error {
 		return nil
 	}
 
-	tagObjs := make([]*ec2.Tag, 0, len(tags))
+	tagObjs := make([]types.Tag, 0, len(tags))
 	for key, value := range tags {
-		tagObjs = append(tagObjs, &ec2.Tag{
+		tagObjs = append(tagObjs, types.Tag{
 			Key:   aws.String(key),
 			Value: aws.String(value),
 		})
 	}
-	_, err := a.ec2.CreateTags(&ec2.CreateTagsInput{
-		Resources: aws.StringSlice(resources),
+	_, err := a.ec2.CreateTags(context.TODO(), &ec2.CreateTagsInput{
+		Resources: resources,
 		Tags:      tagObjs,
 	})
 	if err != nil {
@@ -284,7 +289,7 @@ func (a *API) CreateTags(resources []string, tags map[string]string) error {
 // GetConsoleOutput returns the console output. Returns "", nil if no logs
 // are available.
 func (a *API) GetConsoleOutput(instanceID string) (string, error) {
-	res, err := a.ec2.GetConsoleOutput(&ec2.GetConsoleOutputInput{
+	res, err := a.ec2.GetConsoleOutput(context.TODO(), &ec2.GetConsoleOutputInput{
 		InstanceId: aws.String(instanceID),
 		Latest:     util.BoolToPtr(true),
 	})

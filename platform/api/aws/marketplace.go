@@ -3,10 +3,12 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/marketplacecatalog"
+	"github.com/aws/aws-sdk-go-v2/service/marketplacecatalog"
+	"github.com/aws/aws-sdk-go-v2/service/marketplacecatalog/types"
 )
 
 // UpdateProduct takes care of publishing the AMI to the AWS Marketplace by updating the existing product
@@ -64,10 +66,10 @@ func (a *API) UpdateProduct(amiID, accessRoleARN, username, version, productID, 
 
 	input := marketplacecatalog.StartChangeSetInput{
 		Catalog: &catalog,
-		ChangeSet: []*marketplacecatalog.Change{
-			&marketplacecatalog.Change{
+		ChangeSet: []types.Change{
+			{
 				ChangeType: &changeType,
-				Entity: &marketplacecatalog.Entity{
+				Entity: &types.Entity{
 					Identifier: &productID,
 					Type:       &t,
 				},
@@ -77,11 +79,12 @@ func (a *API) UpdateProduct(amiID, accessRoleARN, username, version, productID, 
 	}
 
 	if dryRun {
-		fmt.Println(input.String())
+		b, _ := json.Marshal(input)
+		fmt.Println(string(b))
 		return nil
 	}
 
-	if _, err := a.marketplace.StartChangeSet(&input); err != nil {
+	if _, err := a.marketplace.StartChangeSet(context.TODO(), &input); err != nil {
 		return fmt.Errorf("starting change set: %w", err)
 	}
 

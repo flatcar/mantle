@@ -46,14 +46,14 @@ func (ac *cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 	}
 
 	// Only pass the extra disk size if it's set
-	var rootDiskSize *int64
+	var rootDiskSize *int32
 	if options.ExtraPrimaryDiskSize != "" {
 		diskSize, err := platform.ParseDiskSize(options.ExtraPrimaryDiskSize)
 		if err != nil {
 			return nil, err
 		}
 		// expect disk size in GiB
-		diskSizeSigned := int64(diskSize / (1024 * 1024 * 1024))
+		diskSizeSigned := int32(diskSize / (1024 * 1024 * 1024))
 		rootDiskSize = &diskSizeSigned
 	}
 
@@ -64,7 +64,7 @@ func (ac *cluster) NewMachineWithOptions(userdata *conf.UserData, options platfo
 
 	mach := &machine{
 		cluster: ac,
-		mach:    instances[0],
+		mach:    &instances[0],
 	}
 
 	mach.dir = filepath.Join(ac.RuntimeConf().OutputDir, mach.ID())

@@ -4,12 +4,13 @@
 package scaleway
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 
@@ -75,19 +76,29 @@ func New(opts *Options) (*API, error) {
 		return nil, fmt.Errorf("creating Scaleway client: %w", err)
 	}
 
-	cfg := aws.Config{
-		Region:      aws.String(opts.Region),
-		Endpoint:    aws.String(fmt.Sprintf(endpoint, opts.Region)),
-		Credentials: credentials.NewStaticCredentials(opts.AccessKey, opts.SecretKey, ""),
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithRegion(opts.Region),
+		config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				opts.AccessKey,
+				opts.SecretKey,
+				"",
+			),
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating s3 config: %w", err)
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{Config: cfg})
-	if err != nil {
-		return nil, fmt.Errorf("creating s3 session: %w", err)
-	}
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(fmt.Sprintf(endpoint, opts.Region))
+	})
 
 	api := &API{
-		API:      &maws.API{S3: s3.New(sess)},
+		API: &maws.API{
+			S3: s3Client,
+		},
 		opts:     opts,
 		instance: instance.NewAPI(client),
 	}
