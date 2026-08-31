@@ -228,10 +228,18 @@ func (a *API) CreateServer(ctx context.Context, name string, networkId *string, 
 	if err != nil {
 		return nil, fmt.Errorf("error creating server: %s", err)
 	}
-	server, err := wait.CreateServerWaitHandler(ctx, a.client, a.projectID, a.region, *serverResponse.Id).WaitWithContext(ctx)
 
+	var server *iaas.Server
+	server, err = wait.CreateServerWaitHandler(ctx, a.client, a.projectID, a.region, *serverResponse.Id).WaitWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating server wait: %s", err)
+	}
+
+	// It might happen that 'server' is returned as a nil pointer without errors.
+	// Let's assign the previously created server for the next operations as a best effort
+	// to avoid nil pointer exceptions.
+	if server == nil {
+		server = serverResponse
 	}
 
 	// The labels sometimes get lost during creation. Verify them and patch
@@ -289,7 +297,9 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network: %w", err)
 	}
-	network, err := wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, a.region, networkResponse.Id).WaitWithContext(ctx)
+
+	var network *iaas.Network
+	network, err = wait.CreateNetworkWaitHandler(ctx, a.client, a.projectID, a.region, networkResponse.Id).WaitWithContext(ctx)
 	if isOpenAPINotFound(err) {
 		return nil, ErrorNotFound
 	}
@@ -297,9 +307,15 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 		return nil, fmt.Errorf("waiting for network creation: %w", err)
 	}
 
+	// It might happen that 'network' is returned as a nil pointer without errors.
+	// Let's assign the previously created network for the next operations as a best effort
+	// to avoid nil pointer exceptions.
+	if network == nil {
+		network = networkResponse
+	}
+
 	// The labels sometimes get lost during creation. Verify them and patch
-	// the network if they are missing. The network is ready at this point,
-	// so no retry is needed.
+	// the network if they are missing.
 	for key := range DefaultLabels {
 		if _, ok := network.Labels[key]; ok {
 			continue
