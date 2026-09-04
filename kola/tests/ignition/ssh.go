@@ -15,6 +15,8 @@
 package ignition
 
 import (
+	"github.com/coreos/go-semver/semver"
+
 	"github.com/flatcar/mantle/kola/register"
 	"github.com/flatcar/mantle/platform/conf"
 )
@@ -42,5 +44,9 @@ func init() {
 		UserData:         conf.Ignition(`{"ignition":{"version":"2.0.0"}}`),
 		UserDataV3:       conf.Ignition(`{"ignition":{"version":"3.0.0"}}`),
 		Distros:          []string{"cl", "fcos", "rhcos"},
+		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+			// LTS (4081) fails to run this test. It's an issue with WAagent and we never backported the fix to LTS.
+			return version.LessThan(semver.Version{Major: 4593}) && platform == "azure"
+		},
 	})
 }
