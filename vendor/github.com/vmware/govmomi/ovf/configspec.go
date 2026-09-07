@@ -584,9 +584,9 @@ func (e Envelope) setPCISlotNumber(
 
 func (e Envelope) ovfDisk(diskID string) *VirtualDiskDesc {
 
-	if strings.HasPrefix(diskID, "ovf:/disk/") {
+	if after, ok := strings.CutPrefix(diskID, "ovf:/disk/"); ok {
 		// Find an exact match.
-		diskID = strings.TrimPrefix(diskID, "ovf:/disk/")
+		diskID = after
 		for _, disk := range e.Disk.Disks {
 			if diskID == disk.DiskID {
 				return &disk
@@ -779,8 +779,8 @@ var validSCSIControllerTypes = map[string]struct{}{
 func resolveSCSIControllerType(resourceSubType string) string {
 	trimmed := strings.TrimSpace(resourceSubType)
 	// Split on comma or space (one or more of either)
-	tokens := strings.Fields(strings.ReplaceAll(trimmed, ",", " "))
-	for _, tok := range tokens {
+	tokens := strings.FieldsSeq(strings.ReplaceAll(trimmed, ",", " "))
+	for tok := range tokens {
 		t := strings.TrimSpace(tok)
 		lower := strings.ToLower(t)
 		if _, ok := validSCSIControllerTypes[lower]; ok {
