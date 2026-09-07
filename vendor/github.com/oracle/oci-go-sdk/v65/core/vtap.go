@@ -61,6 +61,10 @@ type Vtap struct {
 	// The VTAP's current running state.
 	LifecycleStateDetails VtapLifecycleStateDetailsEnum `mandatory:"false" json:"lifecycleStateDetails,omitempty"`
 
+	// Usage of system tag keys. These predefined keys are scoped to namespaces.
+	// Example: `{ "orcl-cloud": { "free-tier-retained": "true" } }`
+	SystemTags map[string]map[string]interface{} `mandatory:"false" json:"systemTags"`
+
 	// The date and time the VTAP was created, in the format defined by RFC3339 (https://tools.ietf.org/html/rfc3339).
 	// Example: `2020-08-25T21:10:29.600Z`
 	TimeCreated *common.SDKTime `mandatory:"false" json:"timeCreated"`
@@ -280,6 +284,7 @@ const (
 	VtapSourceTypeDbSystem                VtapSourceTypeEnum = "DB_SYSTEM"
 	VtapSourceTypeExadataVmCluster        VtapSourceTypeEnum = "EXADATA_VM_CLUSTER"
 	VtapSourceTypeAutonomousDataWarehouse VtapSourceTypeEnum = "AUTONOMOUS_DATA_WAREHOUSE"
+	VtapSourceTypeNetworkFirewall         VtapSourceTypeEnum = "NETWORK_FIREWALL"
 )
 
 var mappingVtapSourceTypeEnum = map[string]VtapSourceTypeEnum{
@@ -289,6 +294,7 @@ var mappingVtapSourceTypeEnum = map[string]VtapSourceTypeEnum{
 	"DB_SYSTEM":                 VtapSourceTypeDbSystem,
 	"EXADATA_VM_CLUSTER":        VtapSourceTypeExadataVmCluster,
 	"AUTONOMOUS_DATA_WAREHOUSE": VtapSourceTypeAutonomousDataWarehouse,
+	"NETWORK_FIREWALL":          VtapSourceTypeNetworkFirewall,
 }
 
 var mappingVtapSourceTypeEnumLowerCase = map[string]VtapSourceTypeEnum{
@@ -298,6 +304,7 @@ var mappingVtapSourceTypeEnumLowerCase = map[string]VtapSourceTypeEnum{
 	"db_system":                 VtapSourceTypeDbSystem,
 	"exadata_vm_cluster":        VtapSourceTypeExadataVmCluster,
 	"autonomous_data_warehouse": VtapSourceTypeAutonomousDataWarehouse,
+	"network_firewall":          VtapSourceTypeNetworkFirewall,
 }
 
 // GetVtapSourceTypeEnumValues Enumerates the set of values for VtapSourceTypeEnum
@@ -318,6 +325,7 @@ func GetVtapSourceTypeEnumStringValues() []string {
 		"DB_SYSTEM",
 		"EXADATA_VM_CLUSTER",
 		"AUTONOMOUS_DATA_WAREHOUSE",
+		"NETWORK_FIREWALL",
 	}
 }
 
