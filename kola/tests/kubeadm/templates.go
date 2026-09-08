@@ -183,6 +183,9 @@ cat << EOF > kubeadm-config.yaml
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: ${cgroup}
+{{- if .cgroupv1 }}
+failCgroupV1: false
+{{- end }}
 ---
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
@@ -271,7 +274,7 @@ EOF
 
 {
     kubeadm config images pull
-    kubeadm init --config kubeadm-config.yaml
+    kubeadm init --config kubeadm-config.yaml{{ if .cgroupv1 }} --ignore-preflight-errors=SystemVerification{{ end }}
     mkdir --parent "${HOME}"/.kube /home/core/.kube
     cp /etc/kubernetes/admin.conf "${HOME}"/.kube/config
     cp /etc/kubernetes/admin.conf /home/core/.kube/config
@@ -330,6 +333,9 @@ timeouts:
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: ${cgroup}
+{{- if .cgroupv1 }}
+failCgroupV1: false
+{{- end }}
 EOF
 `
 
@@ -343,6 +349,6 @@ EOF
 systemctl start --quiet coreos-metadata
 ipv4=$(cat /run/metadata/flatcar | grep -v -E '(IPV6|GATEWAY)' | grep IP | grep -E '({{ if eq .Platform "do" }}PUBLIC{{ else }}PRIVATE{{ end }}|LOCAL|DYNAMIC)' | cut -d = -f 2)
 
-kubeadm join --config worker-config.yaml --node-name "${ipv4}"
+kubeadm join --config worker-config.yaml --node-name "${ipv4}"{{ if .cgroupv1 }} --ignore-preflight-errors=SystemVerification{{ end }}
 `
 )
