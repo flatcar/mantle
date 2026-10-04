@@ -165,7 +165,7 @@ func (a *API) CreateSSHKey(ctx context.Context, name, publicKey string) (*SSHKey
 		Labels:    DefaultLabels,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating ssh key: %w", err)
 	}
 
 	return &SSHKey{sshKey}, nil
@@ -173,7 +173,10 @@ func (a *API) CreateSSHKey(ctx context.Context, name, publicKey string) (*SSHKey
 
 func (a *API) DeleteSSHKey(ctx context.Context, key *SSHKey) error {
 	_, err := a.client.SSHKey.Delete(ctx, key.SSHKey)
-	return err
+	if err != nil {
+		return fmt.Errorf("deleting ssh key: %w", err)
+	}
+	return nil
 }
 
 func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) {
@@ -223,10 +226,12 @@ func (a *API) UploadImage(ctx context.Context, name, path, board string) (int64,
 	if parsedUrl.Scheme != "" {
 		opts.ImageURL = parsedUrl
 	} else {
-		opts.ImageReader, err = os.Open(path)
+		f, err := os.Open(path)
 		if err != nil {
 			return 0, fmt.Errorf("opening local path: %w", err)
 		}
+		defer f.Close()
+		opts.ImageReader = f
 	}
 
 	switch board {
@@ -253,7 +258,7 @@ func (a *API) GC(ctx context.Context, gracePeriod time.Duration) error {
 	}
 
 	if err := a.gcImages(ctx, createdCutoff); err != nil {
-		return fmt.Errorf("failed to gc servers: %w", err)
+		return fmt.Errorf("failed to gc images: %w", err)
 	}
 
 	if err := a.gcSSHKeys(ctx, createdCutoff); err != nil {
