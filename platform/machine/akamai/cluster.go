@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
@@ -87,7 +88,12 @@ ExecStartPost=/usr/bin/sh -c "ip addr add $(cat /run/metadata/flatcar | grep PRI
 func (bc *cluster) vmname() string {
 	b := make([]byte, 5)
 	rand.Read(b)
-	return fmt.Sprintf("%s-%x", bc.Name()[0:13], b)
+	name := bc.Name()
+	if len(name) > 37 {
+		name = name[:37]
+	}
+	name = strings.TrimRight(name, "-_.")
+	return fmt.Sprintf("%s-%x", name, b)
 }
 
 func (bc *cluster) Destroy() {
