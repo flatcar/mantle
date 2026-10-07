@@ -134,19 +134,31 @@ func newInterface(s byte, i uint16) *Interface {
 	}
 }
 
-// configureNAT creates and append a NAT rule
-// using the interface i as output
+// configureNAT creates and appends a NAT rule using interface i as output.
+// It prefers the default iptables binary and falls back to iptables-legacy
+// for environments where nft backend fails for this operation.
 func configureNAT(i string) error {
-	table, err := iptables.New()
-	if err != nil {
-		return fmt.Errorf("unable to get iptables: %w", err)
+	bins := []string{"iptables", "iptables-legacy"}
+	var errs []string
+
+	for _, bin := range bins {
+		table, err := iptables.New(iptables.Path(bin))
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s init failed: %v", bin, err))
+			continue
+		}
+
+		if err := table.AppendUnique("nat", "POSTROUTING", "-j", "MASQUERADE", "-o", i); err == nil {
+			if bin == "iptables-legacy" {
+				plog.Warningf("Configured NAT via iptables-legacy fallback on interface %q", i)
+			}
+			return nil
+		} else {
+			errs = append(errs, fmt.Sprintf("%s append failed: %v", bin, err))
+		}
 	}
 
-	if err := table.AppendUnique("nat", "POSTROUTING", "-j", "MASQUERADE", "-o", i); err != nil {
-		return fmt.Errorf("unable to append rule: %w", err)
-	}
-
-	return nil
+	return fmt.Errorf("unable to append rule: %s", strings.Join(errs, "; "))
 }
 
 // generateVethPair creates and returns a map holding
