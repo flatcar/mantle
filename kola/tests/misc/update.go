@@ -31,12 +31,16 @@ import (
 var (
 	// prevents a race where update-engine sets the boot partition back to
 	// USR-A after the test sets it to USR-B
-	disableUpdateEngine = conf.ContainerLinuxConfig(`systemd:
+	disableUpdateEngine = conf.Butane(`
+variant: flatcar
+version: 1.0.0
+systemd:
   units:
     - name: update-engine.service
       mask: true
     - name: locksmithd.service
-      mask: true`)
+      mask: true
+`)
 )
 
 func init() {
