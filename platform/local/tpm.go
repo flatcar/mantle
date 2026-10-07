@@ -13,23 +13,16 @@ import (
 type SoftwareTPM struct {
 	process        *exec.ExecCmd
 	dirFromKolaCwd string
-	dirFromTestDir string
 }
 
 func NewSwtpm(testDir string, tpmDir string) (*SoftwareTPM, error) {
-	dirFromKolaCwd := filepath.Join(testDir, tpmDir)
-	swtpm := &SoftwareTPM{dirFromKolaCwd: dirFromKolaCwd, dirFromTestDir: tpmDir}
-
-	if err := os.Mkdir(swtpm.dirFromKolaCwd, 0700); err != nil {
-		return nil, fmt.Errorf("Failed to create TPM dir: %v", err)
+	dirFromKolaCwd, err := os.MkdirTemp("", "mantle-tpm-")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create TPM temp dir: %v", err)
 	}
+	swtpm := &SoftwareTPM{dirFromKolaCwd: dirFromKolaCwd}
 
-	swtpm.process = exec.Command("swtpm", "socket", "--tpmstate", fmt.Sprintf("dir=./%v", swtpm.dirFromTestDir), "--ctrl", fmt.Sprintf("type=unixio,path=./%v", swtpm.SocketRelativePathFromTestDir()), "--tpm2")
-	// Use the test directory as current working directory
-	// so that we don't have a socket path argument that
-	// exceeds 108 chars which is the limit for UNIX sockets
-	// (Using ./ as prefix helps to know that these are relative
-	// path arguments).
+	swtpm.process = exec.Command("swtpm", "socket", "--tpmstate", fmt.Sprintf("dir=%v", swtpm.dirFromKolaCwd), "--ctrl", fmt.Sprintf("type=unixio,path=%v", swtpm.SocketPath()), "--tpm2")
 	swtpm.process.Dir = testDir
 	plog.Debugf("Prepared swtpm process %q with CWD %q", swtpm.process, swtpm.process.Dir)
 	out, err := swtpm.process.StderrPipe()
@@ -55,7 +48,6 @@ func (swtpm *SoftwareTPM) Stop() {
 	os.RemoveAll(swtpm.dirFromKolaCwd)
 }
 
-func (swtpm *SoftwareTPM) SocketRelativePathFromTestDir() string {
-	const socket string = "socket"
-	return filepath.Join(swtpm.dirFromTestDir, socket)
+func (swtpm *SoftwareTPM) SocketPath() string {
+	return filepath.Join(swtpm.dirFromKolaCwd, "socket")
 }
