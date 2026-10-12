@@ -11,8 +11,8 @@
 set -euo pipefail
 
 
-# Fetch all the regions served via AWS, then filter only the commerical regions
-# We would not be publishing to any soverign region
+# Fetch all the regions served via AWS, then filter only the commercial regions
+# We would not be publishing to any sovereign region
 aws_regions=( $(curl --fail --silent --show-error 'https://ip-ranges.amazonaws.com/ip-ranges.json' | \
                     jq --raw-output '[.prefixes[].region, .ipv6_prefixes[].region] | unique | .[]' | \
                     grep -vE '^GLOBAL$|^(cn|us-gov|us-iso[a-z]*|eusc)-') )
@@ -59,7 +59,7 @@ joined=${joined//,/, }
     echo
     echo "AWS has published the following regions, which are not yet in the \`default\` partition of \`${file}\`:"
     echo
-    printf '- `%s`\n' "${new_regions[@]}"
+    printf -- '- `%s`\n' "${new_regions[@]}"
     echo
     echo "## Before merging"
     echo
@@ -70,7 +70,7 @@ joined=${joined//,/, }
     done
     echo
     echo "Enabling a region can take a while. Check that each region shows \`ENABLED\` with:"
-    echo "\`aws account get-region-opt-status --region-name $REGION\`"
+    echo "\`aws account get-region-opt-status --region-name \$REGION\`"
     echo
 } >"${RUNNER_TEMP}/aws-regions-pr-body.md"
 
