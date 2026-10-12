@@ -1,0 +1,30 @@
+name: Check for new AWS regions
+on:
+  schedule:
+    # run on Monday at 7
+    - cron:  '0 7 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sync-aws-regions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out scripts
+        uses: actions/checkout@v4
+      - name: Add new AWS regions to plume
+        id: update-regions
+        run: .github/workflows/sync-aws-regions.sh
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        if: steps.update-regions.outputs.UPDATE_NEEDED == 1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: aws-regions-update
+          title: "Enable AWS regions in the Flatcar AWS account and publishing pipeline"
+          body-path: ${{ steps.update-regions.outputs.PR_BODY_PATH }}
+          commit-message: "plume: Add AWS regions ${{ steps.update-regions.outputs.NEW_REGIONS }}"
+          delete-branch: true
+          signoff: true
