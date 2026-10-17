@@ -324,8 +324,8 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd/go.mod h1:hPqNNc0+uJM6H+SuU8sEs5K5IQeKccPqeSjfgcKGgPk=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37 h1:1Q6K8D0BagYYEnCTkT9fn3YHUFb06bS1OvIHWcc3JQM=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37/go.mod h1:Rtb4r3WZ5x4AqmL3t/wiF/DmQi+7GlU/nCRdqFbClV4=
+github.com/scaleway/scaleway-sdk-go v1.38.0 h1:8ddHz9QKDjEgSvqWN0uthFkuz476gVwcGhCMc2JYJeY=
+github.com/scaleway/scaleway-sdk-go v1.38.0/go.mod h1:ly2TNjJyW0SouDBZcQb2aNgqJYqI5t3BZF/UzBKFZ8o=
 github.com/sigma/bdoor v0.0.0-20160202064022-babf2a4017b0/go.mod h1:WBu7REWbxC/s/J06jsk//d+9DOz9BbsmcIrimuGRFbs=
 github.com/sigma/vmw-guestinfo v0.0.0-20160204083807-95dd4126d6e8/go.mod h1:JrRFFC0veyh0cibh0DAhriSY7/gV3kDdNaVUOmfx01U=
 github.com/smartystreets/assertions v1.2.0/go.mod h1:tcbTF8ujkAEcZ8TElKY+i30BzYlVhC/LOxJk7iOWnoo=
