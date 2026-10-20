@@ -17,11 +17,13 @@ const (
 	ScwActiveProfileEnv         = "SCW_PROFILE"
 	ScwAPIURLEnv                = "SCW_API_URL"
 	ScwS3EndpointEnv            = "SCW_S3_ENDPOINT"
+	ScwS3UsePathStyleEnv        = "SCW_S3_USE_PATH_STYLE"
 	ScwInsecureEnv              = "SCW_INSECURE"
 	ScwDefaultOrganizationIDEnv = "SCW_DEFAULT_ORGANIZATION_ID"
 	ScwDefaultProjectIDEnv      = "SCW_DEFAULT_PROJECT_ID"
 	ScwDefaultRegionEnv         = "SCW_DEFAULT_REGION"
 	ScwDefaultZoneEnv           = "SCW_DEFAULT_ZONE"
+	ScwUserAgentEnv             = "SCW_USER_AGENT"
 	ScwEnableBeta               = "SCW_ENABLE_BETA"
 	DebugEnv                    = logger.DebugEnv
 
@@ -84,6 +86,16 @@ func LoadEnvProfile() *Profile {
 		p.S3Endpoint = &s3Endpoint
 	}
 
+	s3UsePathStyleValue, _, envExist := getEnv(ScwS3UsePathStyleEnv)
+	if envExist {
+		s3UsePathStyle, err := strconv.ParseBool(s3UsePathStyleValue)
+		if err != nil {
+			logger.Warningf("env variable %s cannot be parsed: %s is invalid boolean", ScwS3UsePathStyleEnv, s3UsePathStyleValue)
+		} else {
+			p.S3UsePathStyle = &s3UsePathStyle
+		}
+	}
+
 	insecureValue, envKey, envExist := getEnv(ScwInsecureEnv, cliTLSVerifyEnv)
 	if envExist {
 		insecure, err := strconv.ParseBool(insecureValue)
@@ -117,6 +129,11 @@ func LoadEnvProfile() *Profile {
 	zone, _, envExist := getEnv(ScwDefaultZoneEnv)
 	if envExist {
 		p.DefaultZone = &zone
+	}
+
+	userAgent, _, envExist := getEnv(ScwUserAgentEnv)
+	if envExist {
+		p.UserAgent = &userAgent
 	}
 
 	return p
