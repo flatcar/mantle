@@ -38,7 +38,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.126.2
 	github.com/pborman/uuid v1.2.1
 	github.com/pin/tftp v2.1.0+incompatible
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37
+	github.com/scaleway/scaleway-sdk-go v1.39.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stackitcloud/stackit-sdk-go/core v0.27.1

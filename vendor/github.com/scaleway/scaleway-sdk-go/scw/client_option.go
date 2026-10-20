@@ -3,6 +3,7 @@ package scw
 import (
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/scaleway/scaleway-sdk-go/errors"
 	"github.com/scaleway/scaleway-sdk-go/internal/auth"
@@ -59,6 +60,14 @@ func WithS3Endpoint(s3Endpoint string) ClientOption {
 	}
 }
 
+// WithS3UsePathStyle client option overrides the UsePathStyle option when
+// accessing the S3 API.
+func WithS3UsePathStyle(s3UsePathStyle bool) ClientOption {
+	return func(s *settings) {
+		s.s3UsePathStyle = s3UsePathStyle
+	}
+}
+
 // WithInsecure client option enables insecure transport on the client.
 func WithInsecure() ClientOption {
 	return func(s *settings) {
@@ -76,8 +85,8 @@ func WithUserAgent(ua string) ClientOption {
 	}
 }
 
-// withDefaultUserAgent client option overrides the default user agent of the SDK.
-func withDefaultUserAgent(ua string) ClientOption {
+// WithDefaultUserAgent client option overrides the default user agent of the SDK.
+func WithDefaultUserAgent(ua string) ClientOption {
 	return func(s *settings) {
 		s.userAgent = ua
 	}
@@ -104,6 +113,10 @@ func WithProfile(p *Profile) ClientOption {
 			s.s3Endpoint = *p.S3Endpoint
 		}
 
+		if p.S3UsePathStyle != nil {
+			s.s3UsePathStyle = *p.S3UsePathStyle
+		}
+
 		if p.Insecure != nil {
 			s.insecure = *p.Insecure
 		}
@@ -126,6 +139,10 @@ func WithProfile(p *Profile) ClientOption {
 		if p.DefaultZone != nil {
 			defaultZone := Zone(*p.DefaultZone)
 			s.defaultZone = &defaultZone
+		}
+
+		if p.UserAgent != nil {
+			s.userAgent = *p.UserAgent
 		}
 	}
 }
@@ -184,6 +201,7 @@ func WithDefaultPageSize(pageSize uint32) ClientOption {
 type settings struct {
 	apiURL                string
 	s3Endpoint            string
+	s3UsePathStyle        bool
 	token                 auth.Auth
 	userAgent             string
 	httpClient            httpClient
@@ -206,11 +224,49 @@ func (s *settings) apply(opts []ClientOption) {
 }
 
 func (s *settings) validate() error {
-	// Auth.
+	if err := s.validateAuth(); err != nil {
+		return err
+	}
+
+	if err := s.validateOrgID(); err != nil {
+		return err
+	}
+
+	if err := s.validateProjectID(); err != nil {
+		return err
+	}
+
+	if err := s.validateRegion(); err != nil {
+		return err
+	}
+
+	if err := s.validateZone(); err != nil {
+		return err
+	}
+
+	if err := s.validateUserAgent(); err != nil {
+		return err
+	}
+
+	if err := s.validateAPIURL(); err != nil {
+		return err
+	}
+
+	if err := s.validateS3Endpoint(); err != nil {
+		return err
+	}
+
+	// TODO: check for max s.defaultPageSize
+
+	return nil
+}
+
+func (s *settings) validateAuth() error {
 	if s.token == nil {
 		// It should not happen, WithoutAuth option is used by default.
 		panic(errors.New("no credential option provided"))
 	}
+
 	if token, isToken := s.token.(*auth.Token); isToken {
 		if token.AccessKey == "" {
 			return NewInvalidClientOptionError("access key cannot be empty")
@@ -226,7 +282,10 @@ func (s *settings) validate() error {
 		}
 	}
 
-	// Default Organization ID.
+	return nil
+}
+
+func (s *settings) validateOrgID() error {
 	if s.defaultOrganizationID != nil {
 		if *s.defaultOrganizationID == "" {
 			return NewInvalidClientOptionError("default organization ID cannot be empty")
@@ -236,7 +295,10 @@ func (s *settings) validate() error {
 		}
 	}
 
-	// Default Project ID.
+	return nil
+}
+
+func (s *settings) validateProjectID() error {
 	if s.defaultProjectID != nil {
 		if *s.defaultProjectID == "" {
 			return NewInvalidClientOptionError("default project ID cannot be empty")
@@ -246,7 +308,10 @@ func (s *settings) validate() error {
 		}
 	}
 
-	// Default Region.
+	return nil
+}
+
+func (s *settings) validateRegion() error {
 	if s.defaultRegion != nil {
 		if *s.defaultRegion == "" {
 			return NewInvalidClientOptionError("default region cannot be empty")
@@ -260,7 +325,10 @@ func (s *settings) validate() error {
 		}
 	}
 
-	// Default Zone.
+	return nil
+}
+
+func (s *settings) validateZone() error {
 	if s.defaultZone != nil {
 		if *s.defaultZone == "" {
 			return NewInvalidClientOptionError("default zone cannot be empty")
@@ -274,15 +342,52 @@ func (s *settings) validate() error {
 		}
 	}
 
-	// API URL.
+	return nil
+}
+
+func (s *settings) validateUserAgent() error {
+	if s.userAgent != "" && s.userAgent != defaultUserAgent {
+		safeUA := SanitizeForLogging(s.userAgent)
+
+		if len(s.userAgent) > UserAgentMaxLength {
+			return NewInvalidClientOptionError(
+				"invalid user agent '%s': length should not be over %d",
+				safeUA, UserAgentMaxLength,
+			)
+		}
+
+		if !utf8.ValidString(s.userAgent) {
+			return NewInvalidClientOptionError(
+				"invalid user agent '%s': is not a valid UTF-8 string",
+				safeUA,
+			)
+		}
+
+		// Reject control characters (including CRLF \r\n, tabs, and null bytes)
+		if !printableASCIIRegex.MatchString(s.userAgent) {
+			return NewInvalidClientOptionError(
+				"invalid user agent '%s': contains prohibited characters",
+				safeUA,
+			)
+		}
+	}
+
+	return nil
+}
+
+func (s *settings) validateAPIURL() error {
 	if !validation.IsURL(s.apiURL) {
 		return NewInvalidClientOptionError("invalid API url '%s'", s.apiURL)
 	}
+
 	if s.apiURL[len(s.apiURL)-1:] == "/" {
 		return NewInvalidClientOptionError("invalid API url '%s' it should not have a trailing slash", s.apiURL)
 	}
 
-	// S3 endpoint.
+	return nil
+}
+
+func (s *settings) validateS3Endpoint() error {
 	if s.s3Endpoint != "" {
 		if !validation.IsURL(s.s3Endpoint) {
 			return NewInvalidClientOptionError("invalid S3 endpoint '%s'", s.s3Endpoint)
@@ -291,8 +396,6 @@ func (s *settings) validate() error {
 			return NewInvalidClientOptionError("invalid S3 endpoint '%s': trailing slash is not allowed", s.s3Endpoint)
 		}
 	}
-
-	// TODO: check for max s.defaultPageSize
 
 	return nil
 }
