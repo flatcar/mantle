@@ -124,7 +124,7 @@ ExecStartPost=/usr/bin/ln -fs /run/metadata/flatcar /run/metadata/coreos
 		if err != nil {
 			return nil, fmt.Errorf("starting swtpm: %v", err)
 		}
-		options.SoftwareTPMSocket = swtpm.SocketRelativePathFromTestDir()
+		options.SoftwareTPMSocket = swtpm.SocketPath()
 		defer func() {
 			if swtpm != nil {
 				swtpm.Stop()
