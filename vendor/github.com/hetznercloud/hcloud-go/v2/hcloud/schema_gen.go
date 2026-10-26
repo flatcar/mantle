@@ -58,6 +58,7 @@ You can find a documentation of goverter here: https://goverter.jmattheis.de/
 // goverter:extend int64FromZone
 // goverter:extend floatingIPFromInt64
 // goverter:extend int64FromFloatingIP
+// goverter:extend int64FromPrimaryIP
 // goverter:extend storageBoxFromInt64
 // goverter:extend int64FromStorageBox
 // goverter:extend mapFromFloatingIPDNSPtrSchema
@@ -644,6 +645,13 @@ func int64FromFloatingIP(f *FloatingIP) int64 {
 	return f.ID
 }
 
+func int64FromPrimaryIP(f *PrimaryIP) int64 {
+	if f == nil {
+		return 0
+	}
+	return f.ID
+}
+
 func storageBoxFromInt64(id int64) *StorageBox {
 	return &StorageBox{ID: id}
 }
@@ -1142,10 +1150,10 @@ func mapStorageBoxWeekdayPtrToIntPtr(w *time.Weekday) *int {
 	}
 
 	if *w == time.Sunday {
-		return Ptr(7)
+		return new(7)
 	}
 
-	return Ptr(int(*w))
+	return new(int(*w))
 }
 
 func mapStorageBoxIntPtrToWeekdayPtr(i *int) *time.Weekday {
@@ -1154,10 +1162,10 @@ func mapStorageBoxIntPtrToWeekdayPtr(i *int) *time.Weekday {
 	}
 
 	if *i == 7 {
-		return Ptr(time.Sunday)
+		return new(time.Sunday)
 	}
 
-	return Ptr(time.Weekday(*i))
+	return new(time.Weekday(*i))
 }
 
 // hcloud.DatacenterServerTypes is not nullable but *schema.DatacenterServerTypes is.
@@ -1166,5 +1174,5 @@ func schemaPtrFromDatacenterServerTypes(dst DatacenterServerTypes) *schema.Datac
 	if dst.Available == nil && dst.AvailableForMigration == nil && dst.Supported == nil {
 		return nil
 	}
-	return Ptr(schemaFromDatacenterServerTypes(dst))
+	return new(schemaFromDatacenterServerTypes(dst))
 }
