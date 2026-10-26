@@ -65,10 +65,26 @@ var (
 				"ap-northeast-1",
 				"ap-northeast-2",
 				"af-south-1",
-				// "ap-northeast-3", // Disabled for now because we do not have access
 				"sa-east-1",
 				"ca-central-1",
 				"ap-east-1",
+				"ap-east-2",
+				"ap-south-2",
+				"ap-southeast-4",
+				"ap-southeast-5",
+				"ap-southeast-6",
+				"ap-southeast-7",
+				"ca-west-1",
+				"eu-central-2",
+				"eu-south-2",
+				"il-central-1",
+				"me-central-1",
+				"me-south-1",
+				"mx-central-1",
+				// "ap-northeast-3", // Disabled for now because we do not have access
+				// "me-west-1", // not a opt-in region
+				// "sa-west-1", // not a opt-in region
+				// "us-south-1", // not a opt-in region
 			},
 		},
 		"china": awsPartitionSpec{

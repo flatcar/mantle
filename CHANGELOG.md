@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Kubernetes 1.27 tests ([#441](https://github.com/flatcar/mantle/pull/441))
 - Add tests for testing the installation/integrity of the NVIDIA drivers ([#433](https://github.com/flatcar/mantle/pull/433))
 - `--azure-disk-controller` parameter for selecting a disk controller for an Azure VM ([#517](https://github.com/flatcar/mantle/pull/517))
+- plume: Enable new AWS regions `ap-east-2`, `ap-south-2`, `ap-southeast-4`, `ap-southeast-5`, `ap-southeast-6`, `ap-southeast-7`, `ca-west-1`, `eu-central-2`, `eu-south-2`, `il-central-1`, `me-central-1`, `me-south-1` and `mx-central-1`. ([#986](https://github.com/flatcar/mantle/pull/986))
 
 ### Changed
 
