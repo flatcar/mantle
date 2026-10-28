@@ -21,12 +21,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	tutil "github.com/flatcar/mantle/kola/tests/util"
 	"github.com/flatcar/mantle/platform"
+	"github.com/flatcar/mantle/platform/conf"
 	"github.com/flatcar/mantle/util"
 )
+
+var butane = conf.Butane(`
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+  - path: /etc/flatcar/enabled-sysext.conf
+    contents:
+      inline: |
+        podman
+`)
 
 // init runs when the package is imported and takes care of registering tests
 func init() {
@@ -34,29 +47,36 @@ func init() {
 		Run:         podmanBaseTest,
 		ClusterSize: 1,
 		Name:        `podman.base`,
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:     semver.Version{Major: 3941},
+		UserData:       butane,
+		RequiresSysext: true,
 	})
-	// These remaining tests use networking, and hence don't work reliably on RHCOS
-	// right now due to due to https://bugzilla.redhat.com/show_bug.cgi?id=1757572
 	register.Register(&register.Test{
 		Run:         podmanWorkflow,
 		ClusterSize: 1,
 		Name:        `podman.workflow`,
-		Distros:     []string{"fcos"},
-		FailFast:    true,
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:     semver.Version{Major: 3941},
+		UserData:       butane,
+		RequiresSysext: true,
+		FailFast:       true,
 	})
 	register.Register(&register.Test{
 		Run:         podmanNetworksReliably,
 		ClusterSize: 1,
 		Name:        `podman.network-single`,
-		Distros:     []string{"fcos"},
+		Distros:     []string{"cl"},
+		// This test is normally not related to the cloud environment
+		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:     semver.Version{Major: 3941},
+		UserData:       butane,
+		RequiresSysext: true,
 	})
-	// https://github.com/coreos/mantle/pull/1080
-	// register.Register(&register.Test{
-	// 	Run:         podmanNetworkTest,
-	// 	ClusterSize: 2,
-	// 	Name:        `podman.network-multi`,
-	// 	Distros:     []string{"fcos"},
-	// })
 }
 
 // simplifiedContainerPsInfo represents a container entry in podman ps -a
@@ -121,7 +141,7 @@ func podmanWorkflow(c cluster.TestCluster) {
 	m := c.Machines()[0]
 
 	// Test: Verify container can run with volume mount and port forwarding
-	image := "docker.io/library/nginx"
+	image := "ghcr.io/flatcar/nginx"
 	wwwRoot := "/usr/share/nginx/html"
 	var id string
 
@@ -284,7 +304,7 @@ func podmanNetworksReliably(c cluster.TestCluster) {
 
 	numPass := strings.Count(string(output), "PASS")
 
-	if numPass <= 98 {
+	if numPass < 98 {
 		c.Fatalf("Expected more than or equal to 98/100 passes, but output was: %s", output)
 	}
 }
