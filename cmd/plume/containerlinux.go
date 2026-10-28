@@ -79,7 +79,6 @@ var (
 				"eu-south-2",
 				"il-central-1",
 				"me-central-1",
-				"me-south-1",
 				"mx-central-1",
 				// "ap-northeast-3", // Disabled for now because we do not have access
 				// "me-west-1", // not a opt-in region
