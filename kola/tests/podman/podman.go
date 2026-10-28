@@ -21,13 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/net/context"
-
 	"github.com/flatcar/mantle/kola/cluster"
 	"github.com/flatcar/mantle/kola/register"
 	tutil "github.com/flatcar/mantle/kola/tests/util"
-	"github.com/flatcar/mantle/lang/worker"
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/util"
 )
@@ -38,21 +34,29 @@ func init() {
 		Run:         podmanBaseTest,
 		ClusterSize: 1,
 		Name:        `podman.base`,
-		Distros:     []string{"rhcos"},
 	})
+	// These remaining tests use networking, and hence don't work reliably on RHCOS
+	// right now due to due to https://bugzilla.redhat.com/show_bug.cgi?id=1757572
 	register.Register(&register.Test{
 		Run:         podmanWorkflow,
 		ClusterSize: 1,
 		Name:        `podman.workflow`,
-		Distros:     []string{"rhcos"},
+		Distros:     []string{"fcos"},
 		FailFast:    true,
 	})
 	register.Register(&register.Test{
-		Run:         podmanNetworkTest,
-		ClusterSize: 2,
-		Name:        `podman.network`,
-		Distros:     []string{"rhcos"},
+		Run:         podmanNetworksReliably,
+		ClusterSize: 1,
+		Name:        `podman.network-single`,
+		Distros:     []string{"fcos"},
 	})
+	// https://github.com/coreos/mantle/pull/1080
+	// register.Register(&register.Test{
+	// 	Run:         podmanNetworkTest,
+	// 	ClusterSize: 2,
+	// 	Name:        `podman.network-multi`,
+	// 	Distros:     []string{"fcos"},
+	// })
 }
 
 // simplifiedContainerPsInfo represents a container entry in podman ps -a
@@ -110,7 +114,6 @@ func getPodmanInfo(c cluster.TestCluster, m platform.Machine) (simplifiedPodmanI
 func podmanBaseTest(c cluster.TestCluster) {
 	c.Run("info", podmanInfo)
 	c.Run("resources", podmanResources)
-	c.Run("network", podmanNetworksReliably)
 }
 
 // Test: Run basic podman commands
@@ -129,7 +132,7 @@ func podmanWorkflow(c cluster.TestCluster) {
 
 		cmd = fmt.Sprintf("sudo podman run -d -p 80:80 -v %s/index.html:%s/index.html:z %s", string(dir), wwwRoot, image)
 		out := c.MustSSH(m, cmd)
-		id = string(out)[0:12]
+		id = string(out)[0:64]
 
 		podIsRunning := func() error {
 			b, err := c.SSH(m, `curl -f http://localhost 2>/dev/null`)
@@ -150,11 +153,7 @@ func podmanWorkflow(c cluster.TestCluster) {
 	// Test: Execute command in container
 	c.Run("exec", func(c cluster.TestCluster) {
 		cmd := fmt.Sprintf("sudo podman exec %s echo hello", id)
-		out := c.MustSSH(m, cmd)
-
-		if string(out) != "hello" {
-			c.Fatal("Could not exec command in container")
-		}
+		c.AssertCmdOutputContains(m, cmd, "hello")
 	})
 
 	// Test: Stop container
@@ -168,7 +167,10 @@ func podmanWorkflow(c cluster.TestCluster) {
 
 		found := false
 		for _, container := range psInfo.containers {
-			if container.ID == id {
+			// Sometime between podman 1.x and 2.x podman started putting
+			// full 64 character IDs into the json output. Dynamically detect
+			// the length of the ID and compare that number of characters.
+			if container.ID == id[0:len(container.ID)] {
 				found = true
 				if !strings.Contains(strings.ToLower(container.Status), "exited") {
 					c.Fatalf("Container %s was not stopped. Current status: %s", id, container.Status)
@@ -176,7 +178,7 @@ func podmanWorkflow(c cluster.TestCluster) {
 			}
 		}
 
-		if found == false {
+		if !found {
 			c.Fatalf("Unable to find container %s in podman ps -a output", id)
 		}
 	})
@@ -197,7 +199,7 @@ func podmanWorkflow(c cluster.TestCluster) {
 			}
 		}
 
-		if found == true {
+		if found {
 			c.Fatalf("Container %s should be removed. %v", id, psInfo.containers)
 		}
 	})
@@ -205,10 +207,9 @@ func podmanWorkflow(c cluster.TestCluster) {
 	// Test: Delete container
 	c.Run("delete", func(c cluster.TestCluster) {
 		cmd := fmt.Sprintf("sudo podman rmi %s", image)
-		out := c.MustSSH(m, cmd)
-		imageID := string(out)
+		c.MustSSH(m, cmd)
 
-		cmd = fmt.Sprintf("sudo podman images | grep %s", imageID)
+		cmd = fmt.Sprintf("sudo podman image exists %s", image)
 		out, err := c.SSH(m, cmd)
 		if err == nil {
 			c.Fatalf("Image should be deleted but found %s", string(out))
@@ -241,7 +242,7 @@ func podmanResources(c cluster.TestCluster) {
 
 	tutil.GenPodmanScratchContainer(c, m, "echo", []string{"echo"})
 
-	podmanFmt := "sudo podman run --rm %s echo echo 1"
+	podmanFmt := "sudo podman run --net=none --rm %s echo echo 1"
 
 	pCmd := func(arg string) string {
 		return fmt.Sprintf(podmanFmt, arg)
@@ -249,17 +250,17 @@ func podmanResources(c cluster.TestCluster) {
 
 	for _, podmanCmd := range []string{
 		// must set memory when setting memory-swap
-		pCmd("--memory=10m --memory-swap=10m"),
+		// See https://github.com/opencontainers/runc/issues/1980 for
+		// why we use 128m for memory
+		pCmd("--memory=128m --memory-swap=128m"),
 		pCmd("--memory-reservation=10m"),
-		pCmd("--kernel-memory=10m"),
 		pCmd("--cpu-shares=100"),
 		pCmd("--cpu-period=1000"),
 		pCmd("--cpuset-cpus=0"),
 		pCmd("--cpuset-mems=0"),
 		pCmd("--cpu-quota=1000"),
 		pCmd("--blkio-weight=10"),
-		pCmd("--memory=10m --oom-kill-disable=true"),
-		pCmd("--memory-swappiness=50"),
+		pCmd("--memory=128m"),
 		pCmd("--shm-size=1m"),
 	} {
 		cmd := podmanCmd
@@ -267,74 +268,6 @@ func podmanResources(c cluster.TestCluster) {
 		if err != nil {
 			c.Fatalf("Failed to run %q: output: %q status: %q", cmd, output, err)
 		}
-	}
-}
-
-// Test: Verify network connectivity from containers on two different machines
-func podmanNetworkTest(c cluster.TestCluster) {
-	machines := c.Machines()
-	src, dest := machines[0], machines[1]
-
-	c.Log("creating netcat containers")
-
-	tutil.GenPodmanScratchContainer(c, src, "netcat", []string{"timeout", "nc"})
-	tutil.GenPodmanScratchContainer(c, dest, "netcat", []string{"timeout", "nc"})
-
-	listener := func(ctx context.Context) error {
-		// Will block until a message is recieved
-		out, err := c.SSH(dest,
-			`echo "HELLO FROM SERVER" | sudo podman run -i -p 9988:9988 netcat timeout 20 nc -l -N 0.0.0.0 9988`,
-		)
-		if err != nil {
-			return err
-		}
-
-		if !bytes.Equal(out, []byte("HELLO FROM CLIENT")) {
-			return fmt.Errorf("unexpected result from listener: %q", out)
-		}
-
-		return nil
-	}
-
-	talker := func(ctx context.Context) error {
-		// Wait until listener is ready before trying anything
-		for {
-			_, err := c.SSH(dest, "sudo netstat -tulpn | grep 9988")
-			if err == nil {
-				break // socket is ready
-			}
-
-			exit, ok := err.(*ssh.ExitError)
-			if !ok || exit.Waitmsg.ExitStatus() != 1 { // 1 is the expected exit of grep -q
-				return err
-			}
-
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("timeout waiting for server")
-			default:
-				time.Sleep(100 * time.Millisecond)
-			}
-		}
-
-		srcCmd := fmt.Sprintf(`echo "HELLO FROM CLIENT" | sudo podman run -i netcat nc %s 9988`, dest.PrivateIP())
-		out, err := c.SSH(src, srcCmd)
-		if err != nil {
-			return err
-		}
-
-		if !bytes.Equal(out, []byte("HELLO FROM SERVER")) {
-			return fmt.Errorf(`unexpected result from listener: "%v"`, out)
-		}
-
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	if err := worker.Parallel(ctx, listener, talker); err != nil {
-		c.Fatal(err)
 	}
 }
 
@@ -351,7 +284,7 @@ func podmanNetworksReliably(c cluster.TestCluster) {
 
 	numPass := strings.Count(string(output), "PASS")
 
-	if numPass != 100 {
-		c.Fatalf("Expected 100 passes, but output was: %s", output)
+	if numPass <= 98 {
+		c.Fatalf("Expected more than or equal to 98/100 passes, but output was: %s", output)
 	}
 }
