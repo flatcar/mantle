@@ -106,7 +106,7 @@ func init() {
 		// https://github.com/coreos/bugs/issues/2205
 		ExcludePlatforms: []string{"do", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 			// Let's skip this test for < 3034 on ESX.
@@ -120,7 +120,7 @@ func init() {
 		ClusterSize: 1,
 		// https://github.com/coreos/bugs/issues/2205 for DO
 		// This should run on all clouds to test initramfs networking
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 			// Let's skip this test for < 3034 on ESX.
@@ -250,7 +250,7 @@ func init() {
 		Run:              resourceS3Versioned,
 		ClusterSize:      1,
 		ExcludePlatforms: []string{"do"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 			// Let's skip this test for < 3034 on ESX.

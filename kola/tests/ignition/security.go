@@ -81,7 +81,7 @@ func init() {
 		// QEMU: https://github.com/coreos/ignition/issues/645
 		ExcludePlatforms: []string{"do", "qemu-unpriv"},
 		Distros:          []string{"cl", "fcos", "rhcos"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 			// Let's skip this test for < 3034 on ESX.

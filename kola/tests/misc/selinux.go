@@ -43,7 +43,7 @@ func init() {
 		Distros:     []string{"cl", "fcos", "rhcos"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv", "azure"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// Workaround to set the SELinux boolean name based of the Flatcar version.
 			// Note: it works only if we test '*'
 			if version.LessThan(semver.Version{Major: 3733}) {
@@ -60,7 +60,7 @@ func init() {
 		Distros:     []string{"fcos", "rhcos"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// Workaround to set the SELinux boolean name based of the Flatcar version.
 			// Note: it works only if we test '*'
 			if version.LessThan(semver.Version{Major: 3733}) {

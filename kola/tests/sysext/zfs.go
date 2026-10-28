@@ -5,7 +5,6 @@ package sysext
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/coreos/go-semver/semver"
 	"github.com/flatcar/mantle/kola"
@@ -131,9 +130,10 @@ func init() {
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
-		MinVersion: semver.Version{Major: 3902},
-		SkipFunc:   skipZfs,
+		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:     semver.Version{Major: 3902},
+		SkipFunc:       kola.SkipSecureboot,
+		RequiresSysext: true,
 	})
 
 	register.Register(&register.Test{
@@ -142,9 +142,10 @@ func init() {
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
-		MinVersion: semver.Version{Major: 3902},
-		SkipFunc:   skipZfs,
+		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:     semver.Version{Major: 3902},
+		SkipFunc:       kola.SkipSecureboot,
+		RequiresSysext: true,
 	})
 
 	register.Register(&register.Test{
@@ -153,28 +154,11 @@ func init() {
 		ClusterSize: 0,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:  []string{"qemu", "qemu-unpriv", "azure"},
-		MinVersion: semver.Version{Major: 3902},
-		SkipFunc:   skipZfs,
+		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:     semver.Version{Major: 3902},
+		SkipFunc:       kola.SkipSecureboot,
+		RequiresSysext: true,
 	})
-}
-
-func skipZfs(version semver.Version, channel, arch, platform string) bool {
-	return kola.SkipSecureboot(version, channel, arch, platform) || skipOnGha(version, channel, arch, platform)
-}
-
-func skipOnGha(version semver.Version, channel, arch, platform string) bool {
-	// Skip for release tests as we don't yet have a sysext signed with the
-	// prod key, nor is it on the release server.
-	if len(version.Metadata) == 0 {
-		return true
-	}
-	// GHA doesn't upload to bincache so we won't be able to fetch the sysext :(
-	reply, err := http.Head(fmt.Sprintf("https://bincache.flatcar-linux.net/images/%s/%s/version.txt", arch, version))
-	if reply.StatusCode != 200 || err != nil {
-		return true
-	}
-	return false
 }
 
 func createZfsMachine(c cluster.TestCluster, userdata *conf.UserData) platform.Machine {

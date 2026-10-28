@@ -284,7 +284,7 @@ func runList(cmd *cobra.Command, args []string) {
 			patterns = []string{"*"} // run all tests by default
 		}
 		var err error
-		tests, err = kola.FilterTests(register.Tests, patterns, kolaChannel, kolaOffering, kolaPlatform, semver.Version{})
+		tests, err = kola.FilterTests(register.Tests, patterns, kolaChannel, kolaOffering, kolaPlatform, semver.Version{}, "")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "filtering error: %v\n", err)
 			os.Exit(1)

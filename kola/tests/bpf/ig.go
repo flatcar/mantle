@@ -26,7 +26,7 @@ func init() {
 		// Required while SELinux policy is not correctly updated to support
 		// `bpf` and `perfmon` permissions.
 		Flags: []register.Flag{register.NoEnableSelinux},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// LTS (4081) fails to run this test. Given that:
 			// 1. It's Azure only on ARM64
 			// 2. This current LTS is about to be deprecated

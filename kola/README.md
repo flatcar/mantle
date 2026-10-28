@@ -139,6 +139,14 @@ sudo ./bin/kola run -p qemu \
 > **Note:** If you encounter `could not load PC BIOS 'bios-256k.bin'` errors, add `--qemu-firmware /usr/share/seabios/bios-256k.bin` to your command. Some systems may require installing the `seabios` package or using UEFI firmware instead.
 
 **Useful Testing Options:**
+
+`--image-version` accepts the full image identifier (`VERSION_ID+BUILD_ID` for
+development builds). The harness keeps this identifier for artifact lookups,
+separately from the semantic version used for test version comparisons. When
+discovering the version from a machine, it preserves `/etc/os-release` `VERSION`
+even when nightly builds use a synthetic comparison version. `SkipFunc` receives
+both versions; use `imageVersion`, not `version`, to construct artifact URLs.
+
 ```bash
 # Run with verbose output (INFO level logging)
 sudo ./bin/kola run -p qemu --verbose misc.os-release-exists
