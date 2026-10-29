@@ -83,6 +83,7 @@ func init() {
 	root.PersistentFlags().StringVarP(&kolaOffering, "offering", "", "basic", "Offering: "+strings.Join(kolaOfferings, ", "))
 	root.PersistentFlags().StringVarP(&kola.Options.Distribution, "distro", "b", "cl", "Distribution: "+strings.Join(kolaDistros, ", "))
 	root.PersistentFlags().IntVarP(&kola.TestParallelism, "parallel", "j", 1, "number of tests to run in parallel")
+	iv(&kola.MaxProvisionFailures, "max-provision-failures", 10, "abort the run after this many consecutive tests failed to provision machines (platform outage), 0 to disable")
 	sv(&kolaImageVersion, "image-version", "", "Version of the tested image, build ID (if any) should be separated from version ID with a '+'")
 	bv(&kolaDisableSELinuxAVCChecks, "disable-selinux-avc-checks", false, "Disable checking for AVC messages in test journal outputs")
 	sv(&kola.TAPFile, "tapfile", "", "file to write TAP results to")

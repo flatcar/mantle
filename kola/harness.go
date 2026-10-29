@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/flatcar/mantle/platform/machine/stackit"
@@ -98,6 +99,12 @@ var (
 	DevcontainerURL        string // dev container to expose to tests, if set
 	DevcontainerBinhostURL string // dev container binhost URL to use in the devcontainer test
 	DevcontainerFile       string // dev container path to expose to tests, if set
+	// MaxProvisionFailures aborts the remaining tests once this many tests
+	// in a row failed to provision their cluster or machines, which points
+	// to a platform outage (no capacity, quota exceeded, API down) rather
+	// than test failures. 0 disables the check.
+	MaxProvisionFailures int
+	provisionFailures    atomic.Int32
 	// TorcxManifest is the unmarshalled torcx manifest file. It is available for
 	// tests to access via `kola.TorcxManifest`. It will be nil if there was no
 	// manifest given to kola.
@@ -598,6 +605,10 @@ func parseCLVersion(input string) (*semver.Version, error) {
 func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flight, remove bool) {
 	h.Parallel()
 
+	if provisioningAborted() {
+		h.Fatalf("Aborting: %d tests in a row failed to provision machines, platform is unavailable", MaxProvisionFailures)
+	}
+
 	rconf := &platform.RuntimeConfig{
 		OutputDir:          h.OutputDir(),
 		NoSSHKeyInUserData: t.HasFlag(register.NoSSHKeyInUserData),
@@ -610,6 +621,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 	}
 	c, err := flight.NewCluster(rconf)
 	if err != nil {
+		provisionFailures.Add(1)
 		h.Fatalf("Cluster failed: %v", err)
 	}
 	defer func() {
@@ -648,9 +660,11 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 		}
 
 		if _, err := platform.NewMachines(c, userdata, t.ClusterSize); err != nil {
+			provisionFailures.Add(1)
 			h.Fatalf("Cluster failed starting machines: %v", err)
 		}
 	}
+	provisionFailures.Store(0)
 
 	// pass along all registered native functions
 	var names []string
@@ -679,6 +693,12 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 
 	// run test
 	t.Run(tcluster)
+}
+
+// provisioningAborted reports whether the consecutive provisioning failure
+// limit has been reached.
+func provisioningAborted() bool {
+	return MaxProvisionFailures > 0 && int(provisionFailures.Load()) >= MaxProvisionFailures
 }
 
 // architecture returns the machine architecture of the given platform.
