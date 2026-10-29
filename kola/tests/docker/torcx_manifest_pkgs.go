@@ -40,7 +40,7 @@ func init() {
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		// Torcx was retired after release 3760.
 		EndVersion: semver.Version{Major: 3760},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// LTS (3033) does not have the network-kargs service pulled in:
 			// https://github.com/flatcar/coreos-overlay/pull/1848/commits/9e04bc12c3c7eb38da05173dc0ff7beaefa13446
 			// Let's skip this test for < 3034 on ESX.

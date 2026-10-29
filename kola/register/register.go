@@ -74,8 +74,16 @@ type Test struct {
 	EndVersion semver.Version
 
 	// SkipFunc can be used to define if a test should be skip or not based on some
-	// condition on the version, channel, arch and platform.
-	SkipFunc func(version semver.Version, channel, arch, platform string) bool
+	// condition on the version, image version, channel, arch and platform.
+	// version is normalized for comparisons; imageVersion is the unmodified
+	// image identifier, including build metadata, for artifact lookups.
+	// It runs only after the static filters pass and the version is known.
+	SkipFunc func(version semver.Version, imageVersion, channel, arch, platform string) bool
+
+	// RequiresSysext skips Flatcar tests unless the development image's sysext
+	// artifacts are available. Availability is checked once per filtering pass,
+	// after the image version is known and other filters have passed.
+	RequiresSysext bool
 
 	// DefaultUser is the user used for SSH connection, it will be created via Ignition when possible.
 	DefaultUser string

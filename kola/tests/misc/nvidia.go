@@ -134,7 +134,7 @@ func init() {
 	})
 }
 
-func skipOnNonGpu(_ semver.Version, _, arch, platform string) bool {
+func skipOnNonGpu(_ semver.Version, _, _, arch, platform string) bool {
 	// N stands for GPU instance obviously :)
 	if platform == "azure" && strings.Contains(kola.AzureOptions.Size, "NC") {
 		return false
@@ -146,7 +146,7 @@ func skipOnNonGpu(_ semver.Version, _, arch, platform string) bool {
 }
 
 func runtimeSkipOnNonGpu(c cluster.TestCluster) {
-	if skipOnNonGpu(semver.Version{}, "", kola.QEMUOptions.Board, string(c.Platform())) {
+	if skipOnNonGpu(semver.Version{}, "", "", kola.QEMUOptions.Board, string(c.Platform())) {
 		c.Skip("wrong instance size")
 	}
 }

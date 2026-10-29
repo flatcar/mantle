@@ -46,7 +46,7 @@ func init() {
 		Distros: []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// This test can only run if the update payload to test is given.
 			// The image passed must also be an old release to ensure that we
 			// don't have incomaptible changes
@@ -73,7 +73,7 @@ func init() {
 		// The image passed must also be a release lower than or equal to 3760.0.0
 		// because newer versions ship docker 24.
 		EndVersion: semver.Version{Major: 3760},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			return kola.UpdatePayloadFile == ""
 		},
 		// Skip AVC checks, we will do our own only on the
@@ -93,7 +93,7 @@ func init() {
 		Distros: []string{"cl"},
 		// This test uses its own OEM files and shouldn't run on other platforms
 		Platforms: []string{"qemu", "qemu-unpriv"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			// This test can only run if the update payload to test is given.
 			// The image passed must also be an old release that does not have
 			// the OEM sysext setup because we want to test the migration path
@@ -172,7 +172,7 @@ systemd:
 		Distros: []string{"cl"},
 		// This test is normally not related to the cloud environment
 		Platforms: []string{"qemu", "qemu-unpriv"},
-		SkipFunc: func(version semver.Version, channel, arch, platform string) bool {
+		SkipFunc: func(version semver.Version, imageVersion, channel, arch, platform string) bool {
 			return kola.UpdatePayloadFile == ""
 		},
 		Flags: []register.Flag{register.NoSELinuxAVCChecks},

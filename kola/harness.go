@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -238,8 +239,35 @@ var (
 	}
 )
 
-func SkipSecureboot(_ semver.Version, channel, arch, platform string) bool {
+func SkipSecureboot(_ semver.Version, imageVersion, channel, arch, platform string) bool {
 	return Options.EnableSecureboot
+}
+
+// SkipUnavailableSysext excludes Flatcar release builds and development builds
+// that have not been uploaded to bincache. Other distributions are unaffected.
+func SkipUnavailableSysext(imageVersion, arch string) bool {
+	if Options.Distribution != "cl" {
+		return false
+	}
+
+	if _, metadata, ok := strings.Cut(imageVersion, "+"); !ok || metadata == "" {
+		plog.Infof("Skipping sysext test: %q is not a development image", imageVersion)
+		return true
+	}
+
+	url := fmt.Sprintf("https://bincache.flatcar-linux.net/images/%s/%s/version.txt", arch, imageVersion)
+	client := &http.Client{Timeout: 60 * time.Second}
+	reply, err := client.Head(url)
+	if err != nil {
+		plog.Infof("Skipping sysext test: checking %s: %v", url, err)
+		return true
+	}
+	defer reply.Body.Close()
+	if reply.StatusCode != http.StatusOK {
+		plog.Infof("Skipping sysext test: %s returned %s", url, reply.Status)
+		return true
+	}
+	return false
 }
 
 // NativeRunner is a closure passed to all kola test functions and used
@@ -297,8 +325,10 @@ func hasPattern(patterns []string) bool {
 	return false
 }
 
-func FilterTests(tests map[string]*register.Test, patterns []string, channel, offering string, pltfrm string, version semver.Version) (map[string]*register.Test, error) {
+func FilterTests(tests map[string]*register.Test, patterns []string, channel, offering string, pltfrm string, version semver.Version, imageVersion string) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
+	// The image and architecture are fixed for this filtering pass.
+	sysextChecked, skipSysext := false, false
 
 	checkPlatforms := []string{pltfrm}
 
@@ -308,11 +338,6 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, of
 	}
 
 	for name, t := range tests {
-		// The filtering is done twice, do not evaluate until we have fetched the version from the machine.
-		if version.Major != 0 && t.SkipFunc != nil && t.SkipFunc(version, channel, architecture(pltfrm), pltfrm) {
-			continue
-		}
-
 		noMatch := true
 		for _, pattern := range patterns {
 			match, err := filepath.Match(pattern, t.Name)
@@ -386,6 +411,22 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, of
 			continue
 		}
 
+		// The filtering is done twice, do not evaluate until we have fetched the version from the machine.
+		if version.Major != 0 {
+			if t.SkipFunc != nil && t.SkipFunc(version, imageVersion, channel, architecture(pltfrm), pltfrm) {
+				continue
+			}
+			if t.RequiresSysext {
+				if !sysextChecked {
+					skipSysext = SkipUnavailableSysext(imageVersion, architecture(pltfrm))
+					sysextChecked = true
+				}
+				if skipSysext {
+					continue
+				}
+			}
+		}
+
 		r[name] = t
 	}
 
@@ -421,12 +462,9 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 	imageSemver := semver.Version{}
 	haveVersion := false
 	if imageVersion != "" {
-		versionID := imageVersion
-		plusIndex := strings.IndexRune(versionID, '+')
-		if plusIndex >= 0 {
-			versionID = versionID[0:plusIndex]
-		}
-		if err := imageSemver.Set(versionID); err != nil {
+		var err error
+		imageSemver, err = parseImageVersion(imageVersion)
+		if err != nil {
 			return fmt.Errorf("could not parse passed image version as semver: %v", err)
 		}
 		haveVersion = true
@@ -460,15 +498,16 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 		// to do version checks on the matching tests.
 		plog.Info("Creating cluster to check semver...")
 
-		version, err := getClusterSemver(flight, outputDir)
+		version, rawVersion, err := getClusterSemver(flight, outputDir)
 		if err != nil {
 			plog.Fatal(err)
 		}
 		imageSemver = *version
+		imageVersion = rawVersion
 		haveVersion = true
 	}
 
-	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, imageSemver)
+	tests, err := FilterTests(register.Tests, patterns, channel, offering, pltfrm, imageSemver, imageVersion)
 	if err != nil {
 		plog.Fatal(err)
 	}
@@ -520,14 +559,14 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 	return err
 }
 
-// getClusterSemVer returns the CoreOS semantic version via starting a
-// machine and checking
-func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version, error) {
+// getClusterSemver starts a machine and returns its comparison version and
+// unmodified image version.
+func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version, string, error) {
 	var err error
 
 	testDir := filepath.Join(outputDir, "get_cluster_semver")
 	if err := os.MkdirAll(testDir, 0777); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	cluster, err := flight.NewCluster(&platform.RuntimeConfig{
@@ -536,34 +575,35 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 		SSHTimeout: Options.SSHTimeout,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("creating cluster for semver check: %v", err)
+		return nil, "", fmt.Errorf("creating cluster for semver check: %v", err)
 	}
 	defer cluster.Destroy()
 
 	m, err := cluster.NewMachine(nil)
 	if err != nil {
-		return nil, fmt.Errorf("creating new machine for semver check: %v", err)
+		return nil, "", fmt.Errorf("creating new machine for semver check: %v", err)
 	}
 
 	out, stderr, err := m.SSH(`. /etc/os-release && echo "${VERSION}"`)
 	if err != nil {
-		return nil, fmt.Errorf("parsing /etc/os-release for VERSION_ID: %v: %s", err, stderr)
+		return nil, "", fmt.Errorf("parsing /etc/os-release for VERSION: %v: %s", err, stderr)
 	}
-	ver := string(out)
+	imageVersion := string(out)
+	ver := imageVersion
 
 	out, stderr, err = m.SSH(`. /etc/os-release && echo "${BUILD_ID}"`)
 	if err != nil {
-		return nil, fmt.Errorf("parsing /etc/os-release for BUILD_ID: %v: %s", err, stderr)
+		return nil, "", fmt.Errorf("parsing /etc/os-release for BUILD_ID: %v: %s", err, stderr)
 	}
-	build_id := string(out)
+	buildID := string(out)
 
-	if strings.HasPrefix(build_id, "dev-main-nightly-") || strings.HasPrefix(build_id, "dev-flatcar-master-") {
+	if strings.HasPrefix(buildID, "dev-main-nightly-") || strings.HasPrefix(buildID, "dev-flatcar-master-") {
 		// "main" is a nightly build of the main branch,
 		// "flatcar-master" refers to the manifest branch where dev builds are started
 		ver = "999999.99.99"
-	} else if strings.HasPrefix(build_id, "dev-flatcar-") {
+	} else if strings.HasPrefix(buildID, "dev-flatcar-") {
 		// flatcar-MAJOR is a nightly build of the release branch
-		parts := strings.Split(build_id, "-")
+		parts := strings.Split(buildID, "-")
 		major := parts[2]
 		if major == "lts" {
 			major = parts[3]
@@ -575,12 +615,20 @@ func getClusterSemver(flight platform.Flight, outputDir string) (*semver.Version
 	// TODO: add distro specific version handling
 	switch Options.Distribution {
 	case "cl":
-		return parseCLVersion(ver)
+		version, err := parseCLVersion(ver)
+		return version, imageVersion, err
 	case "rhcos":
-		return &semver.Version{}, nil
+		return &semver.Version{}, imageVersion, nil
 	}
 
-	return nil, fmt.Errorf("no case to handle version parsing for distribution %q", Options.Distribution)
+	return nil, "", fmt.Errorf("no case to handle version parsing for distribution %q", Options.Distribution)
+}
+
+func parseImageVersion(imageVersion string) (semver.Version, error) {
+	versionID, _, _ := strings.Cut(imageVersion, "+")
+	var version semver.Version
+	err := version.Set(versionID)
+	return version, err
 }
 
 func parseCLVersion(input string) (*semver.Version, error) {
@@ -684,7 +732,7 @@ func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flig
 // architecture returns the machine architecture of the given platform.
 func architecture(pltfrm string) string {
 	nativeArch := "amd64"
-	if pltfrm == "qemu" && QEMUOptions.Board != "" {
+	if strings.HasPrefix(pltfrm, "qemu") && QEMUOptions.Board != "" {
 		nativeArch = boardToArch(QEMUOptions.Board)
 	}
 	if pltfrm == "aws" && AWSOptions.Board != "" {
