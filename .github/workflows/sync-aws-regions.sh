@@ -67,10 +67,13 @@ joined=${joined//,/, }
     echo
     for region in "${new_regions[@]}"; do
         echo "- [ ] Enable \`${region}\`: \`aws account enable-region --region-name ${region}\`"
+        echo "  - [ ] Once \`ENABLED\`, allow public AMIs: \`aws --region ${region} ec2 disable-image-block-public-access --query ImageBlockPublicAccessState --output text\` (should print \`unblocked\`)"
     done
     echo
     echo "Enabling a region can take a while. Check that each region shows \`ENABLED\` with:"
     echo "\`aws account get-region-opt-status --region-name \$REGION\`"
+    echo
+    echo "New regions have block public access for AMIs turned on by default, so publishing fails with \`OperationNotPermitted\` until it is disabled. The second command of each item only works after the region is \`ENABLED\`."
     echo
 } >"${RUNNER_TEMP}/aws-regions-pr-body.md"
 
