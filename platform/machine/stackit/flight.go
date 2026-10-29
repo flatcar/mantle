@@ -73,6 +73,14 @@ func (bf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		c.keypair = bf.keypair
 	}
 
+	// Tear down network and security group again if a later step fails.
+	cleanup := c
+	defer func() {
+		if cleanup != nil {
+			cleanup.Destroy()
+		}
+	}()
+
 	c.network, err = bf.api.CreateNetwork(context.Background(), bc.Name())
 	if err != nil {
 		return nil, fmt.Errorf("creating network for cluster: %w", err)
@@ -89,6 +97,7 @@ func (bf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		return nil, fmt.Errorf("creating security group rule: %w", err)
 	}
 
+	cleanup = nil
 	bf.AddCluster(c)
 
 	return c, nil
