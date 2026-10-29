@@ -68,17 +68,17 @@ var (
 				"sa-east-1",
 				"ca-central-1",
 				"ap-east-1",
-				"ap-east-2",
-				"ap-south-2",
-				"ap-southeast-4",
-				"ap-southeast-5",
-				"ap-southeast-6",
-				"ap-southeast-7",
-				"ca-west-1",
-				"eu-central-2",
-				"eu-south-2",
-				"il-central-1",
-				"mx-central-1",
+				// "ap-east-2", // Disable the region until the public AMIs quota is increased
+				// "ap-south-2", // Disable the region until the public AMIs quota is increased
+				// "ap-southeast-4", // Disable the region until the public AMIs quota is increased
+				// "ap-southeast-5", // Disable the region until the public AMIs quota is increased
+				// "ap-southeast-6", // Disable the region until the public AMIs quota is increased
+				// "ap-southeast-7", // Disable the region until the public AMIs quota is increased
+				// "ca-west-1", // Disable the region until the public AMIs quota is increased
+				// "eu-central-2", // Disable the region until the public AMIs quota is increased
+				// "eu-south-2", // Disable the region until the public AMIs quota is increased
+				// "il-central-1", // Disable the region until the public AMIs quota is increased
+				// "mx-central-1", // Disable the region until the public AMIs quota is increased
 				// "me-central-1", // Disable the region due to unavailability
 				// "me-south-1", // Disable the region ongoing long outage
 				// "ap-northeast-3", // Disabled for now because we do not have access

@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - plume: Enable new AWS regions `ap-east-2`, `ap-south-2`, `ap-southeast-4`, `ap-southeast-5`, `ap-southeast-6`, `ap-southeast-7`, `ca-west-1`, `eu-central-2`, `eu-south-2`, `il-central-1`, `me-central-1`, `me-south-1` and `mx-central-1`. ([#986](https://github.com/flatcar/mantle/pull/986))
 - plume: Disable new AWS region `me-south-1` due to service distruptions. ([#992](https://github.com/flatcar/mantle/pull/992))
 - plume: Disable new AWS region `me-central-1` due to service distruptions. ([#995](https://github.com/flatcar/mantle/pull/995))
+- plume: Disable the new AWS regions `ap-east-2`, `ap-south-2`, `ap-southeast-4`, `ap-southeast-5`, `ap-southeast-6`, `ap-southeast-7`, `ca-west-1`, `eu-central-2`, `eu-south-2`, `il-central-1`, `mx-central-1` until the public AMIs quota is increased in them ([#PR](https://github.com/flatcar/mantle/pull/PR))
 
 ### Changed
 
