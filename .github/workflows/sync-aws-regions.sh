@@ -54,6 +54,10 @@ mv "${file}.new" "${file}"
 joined=$(IFS=,; echo "${new_regions[*]}")
 joined=${joined//,/, }
 
+# Public AMIs quota to request in each new region. One release publishes about
+# 8 public AMIs, and the default quota of a new region is only 5.
+public_ami_quota=200
+
 {
     echo "## New AWS regions"
     echo
@@ -67,10 +71,17 @@ joined=${joined//,/, }
     echo
     for region in "${new_regions[@]}"; do
         echo "- [ ] Enable \`${region}\`: \`aws account enable-region --region-name ${region}\`"
+        echo "  - [ ] Once \`ENABLED\`, allow public AMIs: \`aws --region ${region} ec2 disable-image-block-public-access --query ImageBlockPublicAccessState --output text\` (should print \`unblocked\`)"
+        echo "  - [ ] Once \`ENABLED\`, raise the public AMIs quota: \`aws --region ${region} service-quotas request-service-quota-increase --service-code ec2 --quota-code L-0E3CBAB9 --desired-value ${public_ami_quota}\` (wait for the request to be \`APPROVED\`)"
     done
     echo
     echo "Enabling a region can take a while. Check that each region shows \`ENABLED\` with:"
     echo "\`aws account get-region-opt-status --region-name \$REGION\`"
+    echo
+    echo "New regions have block public access for AMIs turned on by default, so publishing fails with \`OperationNotPermitted\` until it is disabled. The second command of each item only works after the region is \`ENABLED\`."
+    echo
+    echo "New regions also start with a quota of only 5 public AMIs, and one release publishes about 8, so publishing fails with \`ResourceLimitExceeded\` until the quota is raised. Check the request with:"
+    echo "\`aws --region \$REGION service-quotas list-requested-service-quota-change-history-by-quota --service-code ec2 --quota-code L-0E3CBAB9 --query 'RequestedQuotas[].[Status,DesiredValue]' --output text\`"
     echo
 } >"${RUNNER_TEMP}/aws-regions-pr-body.md"
 
