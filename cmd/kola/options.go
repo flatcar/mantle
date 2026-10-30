@@ -245,7 +245,7 @@ func init() {
 	sv(&kola.AkamaiOptions.Type, "akamai-type", "g6-nanode-1", "Akamai instance type")
 
 	// STACKIT specific options
-	sv(&kola.STACKITOptions.Region, "stackit-region", "eu01", "STACKIT region")
+	sv(&kola.STACKITOptions.Region, "stackit-region", "", "STACKIT region (defaults to the region of the availability zone)")
 	sv(&kola.STACKITOptions.ProjectId, "stackit-project-id", "", "STACKIT project ID")
 	sv(&kola.STACKITOptions.ServiceAccountKeyPath, "stackit-service-account-key-path", "$HOME/.stackit/credentials.json", "STACKIT service account key path")
 	sv(&kola.STACKITOptions.MachineType, "stackit-type", "c2i.2", "STACKIT instance type")
@@ -273,6 +273,16 @@ func syncOptions() error {
 	kola.AkamaiOptions.Board = board
 	kola.OracleCloudOptions.Board = board
 	kola.STACKITOptions.Board = board
+
+	if kola.STACKITOptions.Region == "" {
+		// Availability zones are named "<region>-<n>", e.g. eu02-2.
+		az := kola.STACKITOptions.AvailabilityZone
+		if i := strings.LastIndex(az, "-"); i > 0 {
+			kola.STACKITOptions.Region = az[:i]
+		} else {
+			return fmt.Errorf("cannot derive STACKIT region from availability zone %q, use --stackit-region", az)
+		}
+	}
 
 	if kola.OracleCloudOptions.Shape == "" {
 		switch board {
