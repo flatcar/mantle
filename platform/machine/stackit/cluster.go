@@ -27,6 +27,10 @@ type cluster struct {
 func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
 	ctx := context.TODO()
 
+	if platform.ProvisioningAborted() {
+		return nil, platform.ErrProvisioningAborted
+	}
+
 	userDataConf, err := bc.RenderUserData(userdata, map[string]string{
 		"$public_ipv4":  "${COREOS_OPENSTACK_IPV4_PUBLIC}",
 		"$private_ipv4": "${COREOS_OPENSTACK_IPV4_PRIVATE}",
@@ -45,6 +49,7 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	securityGoups := []string{*bc.secGroup.Id}
 	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), ptr.To(bc.network.Id), securityGoups, keyPairName, ptr.To(string(base64Config)))
 	if err != nil {
+		platform.RecordProvisioning(err)
 		return nil, fmt.Errorf("creating server: %w", err)
 	}
 	ID := *instance.Id
@@ -65,12 +70,14 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 
 	ipAddress, err := bc.flight.api.CreateIPAddress(ctx)
 	if err != nil {
+		platform.RecordProvisioning(err)
 		return nil, fmt.Errorf("error creating IP address: %w", err)
 	}
 	mach.publicIPID = ipAddress.GetId()
 
 	err = bc.flight.api.AttachPublicIPAddress(ctx, mach.publicIPID, ID)
 	if err != nil {
+		platform.RecordProvisioning(err)
 		return nil, fmt.Errorf("attaching public IP address: %w", err)
 	}
 
@@ -94,6 +101,9 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		}
 		return fmt.Errorf("server does not have a public IP address")
 	})
+	// Everything the provider has to deliver exists now; what follows
+	// (journal, guest boot, SSH) is not a provisioning failure.
+	platform.RecordProvisioning(err)
 	if err != nil {
 		return nil, err
 	}
