@@ -490,6 +490,7 @@ func RunTests(patterns []string, channel, offering, pltfrm, outputDir string, ss
 	if remove {
 		defer flight.Destroy()
 	}
+	platform.ResetProvisioning()
 
 	if !haveVersion && hasPattern(patterns) {
 		// The passed names have patterns, which means
@@ -645,6 +646,10 @@ func parseCLVersion(input string) (*semver.Version, error) {
 // analysis after the test run. It should already exist.
 func runTest(h *harness.H, t *register.Test, pltfrm string, flight platform.Flight, remove bool) {
 	h.Parallel()
+
+	if platform.ProvisioningAborted() {
+		h.Fatalf("Aborting: %d provisioning attempts in a row failed, platform is unavailable", platform.MaxProvisionFailures)
+	}
 
 	rconf := &platform.RuntimeConfig{
 		OutputDir:          h.OutputDir(),

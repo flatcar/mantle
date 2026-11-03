@@ -5,16 +5,16 @@ import (
 
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/api/stackit"
-	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"golang.org/x/crypto/ssh"
 )
 
 type machine struct {
-	cluster *cluster
-	mach    *stackit.Server
-	dir     string
-	journal *platform.Journal
-	console string
+	cluster    *cluster
+	mach       *stackit.Server
+	publicIPID string
+	dir        string
+	journal    *platform.Journal
+	console    string
 }
 
 func (bm *machine) ID() string {
@@ -60,35 +60,25 @@ func (bm *machine) Reboot() error {
 func (bm *machine) Destroy() {
 	// TODO: Add "saveConsole" logic here when STACKIT API will support fetching the console output.
 	ctx := context.TODO()
-	server, err := bm.cluster.flight.api.GetServer(ctx, *bm.mach.Id)
-	if err != nil {
-		plog.Errorf("error getting server: %s", err)
-	}
+	api := bm.cluster.flight.api
 
-	nics := []iaas.ServerNetwork{}
-	if server != nil {
-		nics = server.Nics
-	}
-
-	for _, nic := range nics {
-		for _, securityGroupID := range nic.SecurityGroups {
-			if err := bm.cluster.flight.api.RemoveSecurityGroupFromServer(ctx, server.GetId(), securityGroupID); err != nil {
-				plog.Errorf("error removing security group from server: %s", err)
-			}
-		}
-		networkID := nic.GetNetworkId()
-		if err := bm.cluster.flight.api.RemoveNetworkFromServer(ctx, server.GetId(), networkID); err != nil {
-			plog.Errorf("error removing server from network: %s", err)
-		}
-		if nic.HasPublicIp() {
-			if err := bm.cluster.flight.api.DeleteIPAddressByIP(ctx, nic.GetPublicIp()); err != nil {
-				plog.Errorf("error deleting public ip: %s", err)
-			}
+	// Order matters: detach the IP first, then wait for the server to be
+	// gone, and only then delete the IP. Deleting the IP while the NIC still
+	// references it fails and leaves the IP behind for the GC.
+	if bm.publicIPID != "" {
+		if err := api.DetachPublicIPAddress(ctx, bm.publicIPID, bm.ID()); err != nil {
+			plog.Errorf("detaching public ip from server %v: %v", bm.ID(), err)
 		}
 	}
 
-	if err := bm.cluster.flight.api.DeleteServer(context.TODO(), *bm.mach.Id); err != nil {
+	if err := api.DeleteServer(ctx, bm.ID()); err != nil {
 		plog.Errorf("deleting server %v: %v", bm.ID(), err)
+	}
+
+	if bm.publicIPID != "" {
+		if err := api.DeleteIPAddress(ctx, bm.publicIPID); err != nil {
+			plog.Errorf("deleting public ip %v: %v", bm.publicIPID, err)
+		}
 	}
 
 	if bm.journal != nil {

@@ -27,6 +27,10 @@ type cluster struct {
 func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error) {
 	ctx := context.TODO()
 
+	if platform.ProvisioningAborted() {
+		return nil, platform.ErrProvisioningAborted
+	}
+
 	userDataConf, err := bc.RenderUserData(userdata, map[string]string{
 		"$public_ipv4":  "${COREOS_OPENSTACK_IPV4_PUBLIC}",
 		"$private_ipv4": "${COREOS_OPENSTACK_IPV4_PRIVATE}",
@@ -38,11 +42,6 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	base64Config := make([]byte, base64.StdEncoding.EncodedLen(len(userDataConf.Bytes())))
 	base64.StdEncoding.Encode(base64Config, userDataConf.Bytes())
 
-	ipAddress, err := bc.flight.api.CreateIPAddress(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error creating IP address: %w", err)
-	}
-
 	var keyPairName *string
 	if bc.keypair != nil {
 		keyPairName = bc.keypair.Name
@@ -50,12 +49,35 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 	securityGoups := []string{*bc.secGroup.Id}
 	instance, err := bc.flight.api.CreateServer(ctx, bc.vmname(), ptr.To(bc.network.Id), securityGoups, keyPairName, ptr.To(string(base64Config)))
 	if err != nil {
+		platform.RecordProvisioning(err)
 		return nil, fmt.Errorf("creating server: %w", err)
 	}
 	ID := *instance.Id
 
-	err = bc.flight.api.AttachPublicIPAddress(ctx, *ipAddress.Id, ID)
+	mach := &machine{
+		cluster: bc,
+		mach:    instance,
+	}
+
+	// From here on, every failure must tear down what has been created so
+	// far, otherwise the server and its public IP are left for the GC.
+	m := mach
+	defer func() {
+		if m != nil {
+			m.Destroy()
+		}
+	}()
+
+	ipAddress, err := bc.flight.api.CreateIPAddress(ctx)
 	if err != nil {
+		platform.RecordProvisioning(err)
+		return nil, fmt.Errorf("error creating IP address: %w", err)
+	}
+	mach.publicIPID = ipAddress.GetId()
+
+	err = bc.flight.api.AttachPublicIPAddress(ctx, mach.publicIPID, ID)
+	if err != nil {
+		platform.RecordProvisioning(err)
 		return nil, fmt.Errorf("attaching public IP address: %w", err)
 	}
 
@@ -79,21 +101,13 @@ func (bc *cluster) NewMachine(userdata *conf.UserData) (platform.Machine, error)
 		}
 		return fmt.Errorf("server does not have a public IP address")
 	})
+	// Everything the provider has to deliver exists now; what follows
+	// (journal, guest boot, SSH) is not a provisioning failure.
+	platform.RecordProvisioning(err)
 	if err != nil {
 		return nil, err
 	}
-
-	mach := &machine{
-		cluster: bc,
-		mach:    instance,
-	}
-
-	m := mach
-	defer func() {
-		if m != nil {
-			m.Destroy()
-		}
-	}()
+	mach.mach = instance
 
 	mach.dir = filepath.Join(bc.RuntimeConf().OutputDir, mach.ID())
 	if err := os.MkdirAll(mach.dir, 0777); err != nil {
@@ -139,7 +153,11 @@ func (bc *cluster) Destroy() {
 		}
 	}
 	if bc.network != nil {
-		if err := bc.flight.api.DeleteNetwork(context.TODO(), bc.network.Id); err != nil {
+		// Like the security group, the network can only go away once all
+		// server NICs have been released.
+		if err := util.Retry(5, 10*time.Second, func() error {
+			return bc.flight.api.DeleteNetwork(context.TODO(), bc.network.Id)
+		}); err != nil {
 			plog.Errorf("deleting network %v: %v", bc.network.Name, err)
 		}
 	}

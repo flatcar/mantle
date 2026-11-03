@@ -59,6 +59,10 @@ func NewFlight(opts *stackit.Options) (platform.Flight, error) {
 }
 
 func (bf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, error) {
+	if platform.ProvisioningAborted() {
+		return nil, platform.ErrProvisioningAborted
+	}
+
 	bc, err := platform.NewBaseCluster(bf.BaseFlight, rconf)
 	if err != nil {
 		return nil, fmt.Errorf("creating stackit base cluster: %w", err)
@@ -73,25 +77,46 @@ func (bf *flight) NewCluster(rconf *platform.RuntimeConfig) (platform.Cluster, e
 		c.keypair = bf.keypair
 	}
 
-	c.network, err = bf.api.CreateNetwork(context.Background(), bc.Name())
-	if err != nil {
-		return nil, fmt.Errorf("creating network for cluster: %w", err)
-	}
+	// Tear down network and security group again if a later step fails.
+	cleanup := c
+	defer func() {
+		if cleanup != nil {
+			cleanup.Destroy()
+		}
+	}()
 
-	c.secGroup, err = bf.api.CreateSecurityGroup(context.Background(), bc.Name())
-	if err != nil {
-		return nil, fmt.Errorf("creating security group for cluster: %w", err)
+	if err := c.createNetworking(); err != nil {
+		platform.RecordProvisioning(err)
+		return nil, err
 	}
-	if err := bf.api.CreateSecurityGroupRuleTCP(context.Background(), *c.secGroup.Id); err != nil {
-		return nil, fmt.Errorf("creating security group rule: %w", err)
-	}
-	if err := bf.api.CreateSecurityGroupRuleUDP(context.Background(), *c.secGroup.Id); err != nil {
-		return nil, fmt.Errorf("creating security group rule: %w", err)
-	}
+	platform.RecordProvisioning(nil)
 
+	cleanup = nil
 	bf.AddCluster(c)
 
 	return c, nil
+}
+
+func (c *cluster) createNetworking() error {
+	bf := c.flight
+	var err error
+
+	c.network, err = bf.api.CreateNetwork(context.Background(), c.Name())
+	if err != nil {
+		return fmt.Errorf("creating network for cluster: %w", err)
+	}
+
+	c.secGroup, err = bf.api.CreateSecurityGroup(context.Background(), c.Name())
+	if err != nil {
+		return fmt.Errorf("creating security group for cluster: %w", err)
+	}
+	if err := bf.api.CreateSecurityGroupRuleTCP(context.Background(), *c.secGroup.Id); err != nil {
+		return fmt.Errorf("creating security group rule: %w", err)
+	}
+	if err := bf.api.CreateSecurityGroupRuleUDP(context.Background(), *c.secGroup.Id); err != nil {
+		return fmt.Errorf("creating security group rule: %w", err)
+	}
+	return nil
 }
 
 func (bf *flight) Destroy() {
