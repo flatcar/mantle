@@ -341,6 +341,19 @@ func NewMachines(c Cluster, userdata *conf.UserData, n int) ([]Machine, error) {
 	return machs, nil
 }
 
+// systemRunningState classifies `systemctl is-system-running` output. keep
+// is true while still on the way to "running"; anything else, including
+// empty output, means stop retrying.
+func systemRunningState(raw []byte) (state string, keep bool) {
+	state = strings.TrimSpace(string(raw))
+	switch state {
+	case "initializing", "starting", "running", "stopping":
+		return state, true
+	default:
+		return state, false
+	}
+}
+
 // CheckMachine tests a machine for various error conditions such as ssh
 // being available and no systemd units failing at the time ssh is reachable.
 // It also ensures the remote system is running Flatcar Container Linux.
@@ -353,11 +366,12 @@ func CheckMachine(ctx context.Context, m Machine) error {
 			return err
 		}
 		out, stderr, err := m.SSH("systemctl is-system-running")
-		if !bytes.Contains([]byte("initializing starting running stopping"), out) {
+		state, keep := systemRunningState(out)
+		if !keep {
 			return nil // stop retrying if the system went haywire, e.g., "degraded"
 		}
 		jobs := ""
-		if bytes.Contains([]byte("starting"), out) {
+		if state == "starting" {
 			startingOut, startingStderr, startingErr := m.SSH("systemctl list-jobs")
 			jobs = fmt.Sprintf(", systemctl list-jobs returned stdout: %q, stderr: %q, err: %v", startingOut, startingStderr, startingErr)
 		}
