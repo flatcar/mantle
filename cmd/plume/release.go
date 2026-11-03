@@ -210,6 +210,43 @@ func gceUploadImage(spec *channelSpec, api *gcloud.API, obj *gs.Object, name, de
 	return op.TargetLink
 }
 
+const (
+	// gceRetentionMonths is the age below which GCE images are always kept,
+	// regardless of the channel image limit.
+	gceRetentionMonths = 9
+	// gceMinKeptImages is the minimum number of GCE images to keep, regardless
+	// of the channel image limit.
+	gceMinKeptImages = 10
+)
+
+// gceImagesToKeep returns how many of the newest images to retain when pruning.
+// oldImages must be sorted newest-first. The result is never less than limit,
+// never less than gceMinKeptImages, and always large enough to keep every image
+// created after cutoff (the retention window). This makes sure a small channel
+// limit can't prune away recent or too many images.
+func gceImagesToKeep(oldImages []*compute.Image, limit int, cutoff time.Time) int {
+	keep := limit
+	if keep < gceMinKeptImages {
+		keep = gceMinKeptImages
+	}
+	recent := 0
+	for _, image := range oldImages {
+		stamp, err := time.Parse(time.RFC3339, image.CreationTimestamp)
+		if err != nil {
+			// The sort in doGCE already fails on unparseable timestamps; treat
+			// them as old here so retention only ever errs towards keeping more.
+			continue
+		}
+		if stamp.After(cutoff) {
+			recent++
+		}
+	}
+	if keep < recent {
+		keep = recent
+	}
+	return keep
+}
+
 func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *channelSpec) {
 	if spec.GCE.Project == "" || spec.GCE.Image == "" {
 		plog.Notice("GCE image creation disabled.")
@@ -351,9 +388,10 @@ func doGCE(ctx context.Context, client *http.Client, src *storage.Bucket, spec *
 		pendings = append(pendings, pending)
 	}
 
-	if spec.GCE.Limit > 0 && len(oldImages) > spec.GCE.Limit {
-		plog.Noticef("Pruning %d GCE images.", len(oldImages)-spec.GCE.Limit)
-		for _, old := range oldImages[spec.GCE.Limit:] {
+	keep := gceImagesToKeep(oldImages, spec.GCE.Limit, date.AddDate(0, -gceRetentionMonths, 0))
+	if spec.GCE.Limit > 0 && len(oldImages) > keep {
+		plog.Noticef("Pruning %d GCE images.", len(oldImages)-keep)
+		for _, old := range oldImages[keep:] {
 			plog.Noticef("Deleting old image %s", old.Name)
 			pending, err := api.DeleteImage(old.Name)
 			if err != nil {
