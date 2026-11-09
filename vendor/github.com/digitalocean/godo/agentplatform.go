@@ -281,10 +281,10 @@ type AgentPlatformService interface {
 	UpdateSimulationRun(ctx context.Context, runUUID string, updateRequest *UpdateSimulationRunRequest) (*SimulationRun, *Response, error)
 	CancelSimulationRun(ctx context.Context, runUUID string) (*SimulationRun, *Response, error)
 	DeleteSimulationRun(ctx context.Context, runUUID string) (*SimulationRunDeleteResponse, *Response, error)
-	ListSimulationJourneys(ctx context.Context, runUUID string, opt *SimulationJourneyListOptions) (*SimulationJourneyListResponse, *Response, error)
-	GetSimulationJourney(ctx context.Context, runUUID, journeyUUID string) (*SimulationJourney, *Response, error)
-	GetSimulationJourneyTrajectoryURL(ctx context.Context, runUUID, journeyUUID string) (*SimulationJourneyTrajectoryURLResponse, *Response, error)
-	GetSimulationJourneyTrajectory(ctx context.Context, runUUID, journeyUUID string) (*SimulationTrajectory, *Response, error)
+	ListSimulationEpisodes(ctx context.Context, runUUID string, opt *SimulationEpisodeListOptions) (*SimulationEpisodeListResponse, *Response, error)
+	GetSimulationEpisode(ctx context.Context, runUUID, episodeUUID string) (*SimulationEpisode, *Response, error)
+	GetSimulationEpisodeTrajectoryURL(ctx context.Context, runUUID, episodeUUID string) (*SimulationEpisodeTrajectoryURLResponse, *Response, error)
+	GetSimulationEpisodeTrajectory(ctx context.Context, runUUID, episodeUUID string) (*SimulationTrajectory, *Response, error)
 }
 
 var _ AgentPlatformService = &AgentPlatformServiceOp{}
@@ -2767,7 +2767,6 @@ func (s *AgentPlatformServiceOp) UpdateModelEvaluationRun(ctx context.Context, e
 // CandidateInferenceConfig is the inference configuration applied to the
 // candidate model when running a model evaluation run.
 type CandidateInferenceConfig struct {
-	MaxTokens       int64   `json:"max_tokens,omitempty"`
 	ReasoningEffort string  `json:"reasoning_effort,omitempty"`
 	StopToken       string  `json:"stop_token,omitempty"`
 	SystemPrompt    string  `json:"system_prompt,omitempty"`
@@ -2812,7 +2811,7 @@ type CreateModelEvaluationRunRequest struct {
 	CandidateModelUUID       string                    `json:"candidate_model_uuid,omitempty"`
 	DatasetUUID              string                    `json:"dataset_uuid,omitempty"`
 	// Epochs is the number of times to evaluate each dataset row (n-pass).
-	// Defaults to 1 when unset. Capped at 3 by the API today.
+	// Defaults to 1 when unset. Capped at 10 by the API today.
 	Epochs         uint32   `json:"epochs,omitempty"`
 	EvalPresetUUID string   `json:"eval_preset_uuid,omitempty"`
 	JudgeModelUUID string   `json:"judge_model_uuid,omitempty"`
