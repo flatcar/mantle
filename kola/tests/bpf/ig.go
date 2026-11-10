@@ -13,7 +13,7 @@ import (
 	"github.com/flatcar/mantle/platform/conf"
 )
 
-var igVer = "v0.50.0"
+var igVer = "v0.58.0"
 
 func init() {
 	register.Register(&register.Test{
@@ -79,9 +79,10 @@ func igTest(c cluster.TestCluster) {
 			docker images
 			kill %%%%
 			wait
-			jq -s -e '.[] | select(.args == "/usr/bin/docker\u00a0ps")' ig.json
-			jq -s -e 'isempty(.[] | select(.args == "/usr/bin/docker\u00a0info"))' ig.json
-			jq -s -e 'isempty(.[] | select(.args == "/usr/bin/docker\u00a0images"))' ig.json
+			trap - ERR
+			jq -s -e '.[] | select(.args == "docker\u00a0ps")' ig.json
+			jq -s -e 'isempty(.[] | select(.args == "docker\u00a0info"))' ig.json
+			jq -s -e 'isempty(.[] | select(.args == "docker\u00a0images"))' ig.json
 		`, igVer)); err != nil {
 			c.Fatalf("ig run trace_exec did not behave as expected: %v", err)
 		}
@@ -97,6 +98,7 @@ func igTest(c cluster.TestCluster) {
 			dig stable.release.flatcar-linux.net
 			kill %%%%
 			wait
+			trap - ERR
 			jq -s -e '.[] | select(.name == "flatcar.org.")' ig.json
 			jq -s -e 'isempty(.[] | select(.name == "kinvolk.io."))' ig.json
 			jq -s -e 'isempty(.[] | select(.name == "stable.release.flatcar-linux.net."))' ig.json
