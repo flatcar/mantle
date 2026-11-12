@@ -185,6 +185,8 @@ func init() {
 		NativeFuncs: map[string]func() error{
 			"Http": util.Serve,
 		},
+		// The devcontainer is available only on Bincache (so this does not work on GHA)
+		RequiresBincache: true,
 	})
 	register.Register(&register.Test{
 		Name:        "devcontainer.docker",
@@ -198,6 +200,8 @@ func init() {
 		NativeFuncs: map[string]func() error{
 			"Http": util.Serve,
 		},
+		// The devcontainer is available only on Bincache (so this does not work on GHA)
+		RequiresBincache: true,
 	})
 }
 
