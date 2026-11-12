@@ -302,6 +302,8 @@ storage:
 		NativeFuncs: map[string]func() error{
 			"Http": util.Serve,
 		},
+		// The Http serve function does not work on GHA - this is usually tested through Bincache + Jenkins
+		RequiresBincache: true,
 	})
 }
 

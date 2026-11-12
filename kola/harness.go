@@ -243,15 +243,15 @@ func SkipSecureboot(_ semver.Version, imageVersion, channel, arch, platform stri
 	return Options.EnableSecureboot
 }
 
-// SkipUnavailableSysext excludes Flatcar release builds and development builds
+// SkipUnavailableBincache excludes Flatcar release builds and development builds
 // that have not been uploaded to bincache. Other distributions are unaffected.
-func SkipUnavailableSysext(imageVersion, arch string) bool {
+func SkipUnavailableBincache(imageVersion, arch string) bool {
 	if Options.Distribution != "cl" {
 		return false
 	}
 
 	if _, metadata, ok := strings.Cut(imageVersion, "+"); !ok || metadata == "" {
-		plog.Infof("Skipping sysext test: %q is not a development image", imageVersion)
+		plog.Infof("Skipping test: %q is not a development image", imageVersion)
 		return true
 	}
 
@@ -259,12 +259,12 @@ func SkipUnavailableSysext(imageVersion, arch string) bool {
 	client := &http.Client{Timeout: 60 * time.Second}
 	reply, err := client.Head(url)
 	if err != nil {
-		plog.Infof("Skipping sysext test: checking %s: %v", url, err)
+		plog.Infof("Skipping test: checking %s: %v", url, err)
 		return true
 	}
 	defer reply.Body.Close()
 	if reply.StatusCode != http.StatusOK {
-		plog.Infof("Skipping sysext test: %s returned %s", url, reply.Status)
+		plog.Infof("Skipping test: %s returned %s", url, reply.Status)
 		return true
 	}
 	return false
@@ -328,7 +328,7 @@ func hasPattern(patterns []string) bool {
 func FilterTests(tests map[string]*register.Test, patterns []string, channel, offering string, pltfrm string, version semver.Version, imageVersion string) (map[string]*register.Test, error) {
 	r := make(map[string]*register.Test)
 	// The image and architecture are fixed for this filtering pass.
-	sysextChecked, skipSysext := false, false
+	bincacheChecked, skipBincache := false, false
 
 	checkPlatforms := []string{pltfrm}
 
@@ -416,12 +416,12 @@ func FilterTests(tests map[string]*register.Test, patterns []string, channel, of
 			if t.SkipFunc != nil && t.SkipFunc(version, imageVersion, channel, architecture(pltfrm), pltfrm) {
 				continue
 			}
-			if t.RequiresSysext {
-				if !sysextChecked {
-					skipSysext = SkipUnavailableSysext(imageVersion, architecture(pltfrm))
-					sysextChecked = true
+			if t.RequiresBincache {
+				if !bincacheChecked {
+					skipBincache = SkipUnavailableBincache(imageVersion, architecture(pltfrm))
+					bincacheChecked = true
 				}
-				if skipSysext {
+				if skipBincache {
 					continue
 				}
 			}

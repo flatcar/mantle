@@ -49,10 +49,10 @@ func init() {
 		Name:        `podman.base`,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
-		MinVersion:     semver.Version{Major: 3941},
-		UserData:       butane,
-		RequiresSysext: true,
+		Platforms:        []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:       semver.Version{Major: 3941},
+		UserData:         butane,
+		RequiresBincache: true,
 	})
 	register.Register(&register.Test{
 		Run:         podmanWorkflow,
@@ -60,11 +60,11 @@ func init() {
 		Name:        `podman.workflow`,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
-		MinVersion:     semver.Version{Major: 3941},
-		UserData:       butane,
-		RequiresSysext: true,
-		FailFast:       true,
+		Platforms:        []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:       semver.Version{Major: 3941},
+		UserData:         butane,
+		RequiresBincache: true,
+		FailFast:         true,
 	})
 	register.Register(&register.Test{
 		Run:         podmanNetworksReliably,
@@ -72,10 +72,10 @@ func init() {
 		Name:        `podman.network-single`,
 		Distros:     []string{"cl"},
 		// This test is normally not related to the cloud environment
-		Platforms:      []string{"qemu", "qemu-unpriv", "azure"},
-		MinVersion:     semver.Version{Major: 3941},
-		UserData:       butane,
-		RequiresSysext: true,
+		Platforms:        []string{"qemu", "qemu-unpriv", "azure"},
+		MinVersion:       semver.Version{Major: 3941},
+		UserData:         butane,
+		RequiresBincache: true,
 	})
 }
 
