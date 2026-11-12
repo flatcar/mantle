@@ -244,23 +244,23 @@ func TestFilterTestsCheapFilters(t *testing.T) {
 	}
 }
 
-type sysextTransport func(*http.Request) (*http.Response, error)
+type bincacheTransport func(*http.Request) (*http.Response, error)
 
-func (f sysextTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (f bincacheTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-type sysextBody struct {
+type bincacheBody struct {
 	io.Reader
 	closed bool
 }
 
-func (b *sysextBody) Close() error {
+func (b *bincacheBody) Close() error {
 	b.closed = true
 	return nil
 }
 
-func TestSkipUnavailableSysext(t *testing.T) {
+func TestSkipUnavailableBincache(t *testing.T) {
 	oldOptions := Options
 	oldTransport := http.DefaultTransport
 	t.Cleanup(func() {
@@ -289,8 +289,8 @@ func TestSkipUnavailableSysext(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			Options.Distribution = tc.distribution
 			called := false
-			body := &sysextBody{Reader: strings.NewReader("")}
-			http.DefaultTransport = sysextTransport(func(req *http.Request) (*http.Response, error) {
+			body := &bincacheBody{Reader: strings.NewReader("")}
+			http.DefaultTransport = bincacheTransport(func(req *http.Request) (*http.Response, error) {
 				called = true
 				wantURL := "https://bincache.flatcar-linux.net/images/arm64/" + tc.version + "/version.txt"
 				if req.Method != http.MethodHead || req.URL.String() != wantURL {
@@ -301,7 +301,7 @@ func TestSkipUnavailableSysext(t *testing.T) {
 				}
 				return &http.Response{StatusCode: tc.status, Status: http.StatusText(tc.status), Body: body}, nil
 			})
-			if got := SkipUnavailableSysext(tc.version, "arm64"); got != tc.want {
+			if got := SkipUnavailableBincache(tc.version, "arm64"); got != tc.want {
 				t.Errorf("skip = %t, want %t", got, tc.want)
 			}
 			if called != tc.probe {
