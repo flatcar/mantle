@@ -129,8 +129,11 @@ var (
 			match: regexp.MustCompile("Oops:"),
 		},
 		{
-			desc:  "kernel warning",
-			match: regexp.MustCompile(`WARNING: CPU: \d+ PID: \d+ at (.+)`),
+			desc: "kernel warning",
+			// WARN can print its message between "cut here" and the WARNING header.
+			match: regexp.MustCompile(`(?s:------------\[ cut here \]------------.*?)?WARNING: CPU: \d+ PID: \d+ at (.+)`),
+			// Ignore missing DTB warnings because Flatcar doesn't use them yet.
+			skipIfMatch: regexp.MustCompile(`No '#(address|size)-cells' in root node`),
 		},
 		{
 			desc:  "failure of disk under I/O",

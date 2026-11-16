@@ -24,6 +24,8 @@ func TestCheckConsole(t *testing.T) {
 			"[    0.000000] WARNING: CPU: 0 PID: 0 at " + location + "\n" +
 			"[    0.000000] ---[ end trace 0000000000000000 ]---\n"
 	}
+	missingSize := warning("No '#size-cells' in root node", "drivers/of/fdt.c:975 early_init_dt_scan_root+0x0/0x100")
+	missingAddress := warning("No '#address-cells' in root node", "drivers/of/fdt.c:980 early_init_dt_scan_root+0x0/0x100")
 	realWarning := warning("Unexpected condition", "kernel/example.c:42 example+0x0/0x100")
 	wantWarning := []string{"kernel warning (kernel/example.c:42 example+0x0/0x100)"}
 	diskError := "blk_update_request: I/O error, dev sda, sector 123\n"
@@ -43,6 +45,9 @@ func TestCheckConsole(t *testing.T) {
 		want   []string
 	}{
 		{name: "empty"},
+		{name: "missing DTB cells", output: missingSize + missingAddress},
+		{name: "exempt then real warning", output: missingSize + realWarning, want: wantWarning},
+		{name: "real then exempt warning", output: realWarning + missingAddress, want: wantWarning},
 		{name: "multiple real warnings", output: realWarning + realWarning, want: wantWarning},
 		{name: "bare warning header", output: "WARNING: CPU: 0 PID: 0 at kernel/example.c:42 example+0x0/0x100\n", want: wantWarning},
 		{name: "unrelated DTB message", output: "No '#size-cells' in root node\n" + realWarning, want: wantWarning},
