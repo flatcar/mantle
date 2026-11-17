@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -15,6 +16,84 @@ import (
 	"github.com/flatcar/mantle/platform"
 	"github.com/flatcar/mantle/platform/conf"
 )
+
+func TestCheckConsole(t *testing.T) {
+	warning := func(message, location string) string {
+		return "[    0.000000] ------------[ cut here ]------------\n" +
+			"[    0.000000] " + message + "\n" +
+			"[    0.000000] WARNING: CPU: 0 PID: 0 at " + location + "\n" +
+			"[    0.000000] ---[ end trace 0000000000000000 ]---\n"
+	}
+	missingSize := warning("No '#size-cells' in root node", "drivers/of/fdt.c:975 early_init_dt_scan_root+0x0/0x100")
+	missingAddress := warning("No '#address-cells' in root node", "drivers/of/fdt.c:980 early_init_dt_scan_root+0x0/0x100")
+	realWarning := warning("Unexpected condition", "kernel/example.c:42 example+0x0/0x100")
+	wantWarning := []string{"kernel warning (kernel/example.c:42 example+0x0/0x100)"}
+	diskError := "blk_update_request: I/O error, dev sda, sector 123\n"
+	cdromError := "blk_update_request: I/O error, dev sr0, sector 123\n"
+	bufferError := "Buffer I/O error on device sda, logical block 123\n"
+	cdromBufferError := "Buffer I/O error on dev sr0, logical block 123\n"
+	ext4Error := "EXT4-fs warning (device sda): example:42: I/O error 5 writing to inode 123\n"
+	linkUp := "[    1.000000] bond0: link status up for interface eth1, enabling it in 200 ms\n"
+	burst := strings.Repeat(linkUp, 3)
+	recovery := "[    2.000000] bond0: link status definitely up for interface eth1, 1000 Mbps full duplex\n"
+	wantBonding := []string{"excessive bonding link status messages"}
+
+	for _, tc := range []struct {
+		name   string
+		output string
+		test   *register.Test
+		want   []string
+	}{
+		{name: "empty"},
+		{name: "missing DTB cells", output: missingSize + missingAddress},
+		{name: "exempt then real warning", output: missingSize + realWarning, want: wantWarning},
+		{name: "real then exempt warning", output: realWarning + missingAddress, want: wantWarning},
+		{name: "multiple real warnings", output: realWarning + realWarning, want: wantWarning},
+		{name: "bare warning header", output: "WARNING: CPU: 0 PID: 0 at kernel/example.c:42 example+0x0/0x100\n", want: wantWarning},
+		{name: "unrelated DTB message", output: "No '#size-cells' in root node\n" + realWarning, want: wantWarning},
+		{name: "CD-ROM errors", output: cdromError + cdromBufferError},
+		{name: "exempt then real disk error", output: cdromError + diskError, want: []string{"disk I/O errors ()"}},
+		{name: "real then exempt disk error", output: diskError + cdromError, want: []string{"disk I/O errors ()"}},
+		{name: "exempt then real buffer error", output: cdromBufferError + bufferError, want: []string{"disk I/O errors (device)"}},
+		{name: "real then exempt buffer error", output: bufferError + cdromBufferError, want: []string{"disk I/O errors (device)"}},
+		{name: "exempt then ext4 error", output: cdromError + ext4Error, want: []string{"disk I/O errors ()"}},
+		{name: "multiple disk errors", output: diskError + bufferError, want: []string{"disk I/O errors ()"}},
+		{name: "two link messages", output: strings.Repeat(linkUp, 2)},
+		{name: "three link messages", output: burst, want: wantBonding},
+		{name: "interleaved link messages", output: strings.Repeat(linkUp+"unrelated log message\n", 3), want: wantBonding},
+		{name: "recovered burst", output: burst + recovery},
+		{name: "recovery before burst", output: recovery + burst, want: wantBonding},
+		{name: "recovered then unrecovered burst", output: burst + recovery + burst, want: wantBonding},
+		{name: "recovery resets count", output: strings.Repeat(linkUp, 2) + recovery + strings.Repeat(linkUp, 2)},
+		{name: "all bursts recovered", output: burst + recovery + burst + recovery},
+		{name: "multiple unrecovered bursts", output: burst + burst, want: wantBonding},
+		{name: "kernel panic", output: "Kernel panic - not syncing: example\n", want: []string{"kernel panic (example)"}},
+		{name: "skipped kernel panic", output: "Kernel panic - not syncing: example\n", test: &register.Test{Flags: []register.Flag{register.NoKernelPanicCheck}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := CheckConsole([]byte(tc.output), tc.test); !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("CheckConsole() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+
+	for _, message := range []string{
+		"link status definitely up for interface eth1",
+		"first active interface up!",
+		"Gained carrier",
+		"link becomes ready",
+	} {
+		t.Run("bonding recovery "+message, func(t *testing.T) {
+			reset := "bond0: " + message + "\n"
+			if got := CheckConsole([]byte(burst+reset), nil); len(got) != 0 {
+				t.Fatalf("recovered burst: CheckConsole() = %q, want no failures", got)
+			}
+			if got := CheckConsole([]byte(burst+reset+burst), nil); !reflect.DeepEqual(got, wantBonding) {
+				t.Fatalf("subsequent burst: CheckConsole() = %q, want %q", got, wantBonding)
+			}
+		})
+	}
+}
 
 func TestParseImageVersion(t *testing.T) {
 	for _, imageVersion := range []string{

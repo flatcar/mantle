@@ -108,10 +108,11 @@ var (
 	ForceFlatcarKey   bool
 
 	consoleChecks = []struct {
-		desc        string
-		match       *regexp.Regexp
-		skipIfMatch *regexp.Regexp
-		skipFlag    *register.Flag
+		desc         string
+		match        *regexp.Regexp
+		skipIfMatch  *regexp.Regexp
+		resetIfMatch *regexp.Regexp
+		skipFlag     *register.Flag
 	}{
 		{
 			desc:     "emergency shell",
@@ -128,8 +129,11 @@ var (
 			match: regexp.MustCompile("Oops:"),
 		},
 		{
-			desc:  "kernel warning",
-			match: regexp.MustCompile(`WARNING: CPU: \d+ PID: \d+ at (.+)`),
+			desc: "kernel warning",
+			// WARN can print its message between "cut here" and the WARNING header.
+			match: regexp.MustCompile(`(?s:------------\[ cut here \]------------.*?)?WARNING: CPU: \d+ PID: \d+ at (.+)`),
+			// Ignore missing DTB warnings because Flatcar doesn't use them yet.
+			skipIfMatch: regexp.MustCompile(`No '#(address|size)-cells' in root node`),
 		},
 		{
 			desc:  "failure of disk under I/O",
@@ -143,9 +147,10 @@ var (
 		},
 		{
 			// https://github.com/coreos/bugs/issues/2065
-			desc:        "excessive bonding link status messages",
-			match:       regexp.MustCompile("(?s:link status up for interface [^,]+, enabling it in [0-9]+ ms.*?){3}"),
-			skipIfMatch: regexp.MustCompile("(bond.*? link status definitely up for interface)|(bond.*? first active interface up)|(bond.*? Gained carrier)|(bond.*? link becomes ready)"),
+			// A recovery excuses preceding bursts, but not a subsequent burst.
+			desc:         "excessive bonding link status messages",
+			match:        regexp.MustCompile("(?s:link status up for interface [^,]+, enabling it in [0-9]+ ms.*?){3}"),
+			resetIfMatch: regexp.MustCompile("(bond.*? link status definitely up for interface)|(bond.*? first active interface up)|(bond.*? Gained carrier)|(bond.*? link becomes ready)"),
 		},
 		{
 			// https://github.com/coreos/bugs/issues/2180
@@ -202,9 +207,7 @@ var (
 			skipFlag: &[]register.Flag{register.NoVerityCorruptionCheck}[0],
 		},
 		{
-			// With regexp in Go we can't do a Perl lookahead to exclude sr0 matches in the regular expression
-			// (would be 'dev (?!(sr0),).*, sector' and '(device|dev) (?!(sr0),).*, logical'),
-			// therefore, we just silence any found matches if the sr0 match was also around
+			// Go regexps cannot exclude sr0 with lookahead, so filter individual matches.
 			desc:        "disk I/O errors",
 			match:       regexp.MustCompile(`blk_update_request: I/O error, dev .*, sector \d+|Buffer I/O error on (device|dev) .*, logical block \d+|EXT4-fs warning \(device .*\): .*:\d+: I/O error .* writing to inode \d+`),
 			skipIfMatch: regexp.MustCompile(`blk_update_request: I/O error, dev sr0, sector \d+|Buffer I/O error on (device|dev) sr0, logical block \d+`),
@@ -811,20 +814,24 @@ func ScpKolet(c cluster.TestCluster, mArch string) {
 
 // CheckConsole checks some console output for badness and returns short
 // descriptions of any badness it finds. If t is specified, its flags are
-// respected.
+// respected. Exclusions apply to individual matches; recovery messages reset
+// checks that allow preceding failures to recover.
 func CheckConsole(output []byte, t *register.Test) []string {
 	var ret []string
 	for _, check := range consoleChecks {
 		if check.skipFlag != nil && t != nil && t.HasFlag(*check.skipFlag) {
 			continue
 		}
-		match := check.match.FindSubmatch(output)
-		if match != nil {
-			if check.skipIfMatch != nil {
-				skipMatch := check.skipIfMatch.FindSubmatch(output)
-				if skipMatch != nil {
-					continue
-				}
+		checkOutput := output
+		if check.resetIfMatch != nil {
+			resets := check.resetIfMatch.FindAllIndex(checkOutput, -1)
+			if len(resets) > 0 {
+				checkOutput = checkOutput[resets[len(resets)-1][1]:]
+			}
+		}
+		for _, match := range check.match.FindAllSubmatch(checkOutput, -1) {
+			if check.skipIfMatch != nil && check.skipIfMatch.Match(match[0]) {
+				continue
 			}
 			badness := check.desc
 			if len(match) > 1 {
@@ -832,6 +839,7 @@ func CheckConsole(output []byte, t *register.Test) []string {
 				badness += fmt.Sprintf(" (%s)", match[1])
 			}
 			ret = append(ret, badness)
+			break
 		}
 	}
 	return ret
