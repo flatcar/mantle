@@ -60,7 +60,7 @@ func TestSysextFiltering(t *testing.T) {
 	}{
 		{"explicit development version", "cl", semver.Version{Major: 4593}, "4593.0.0+developer-build", false, http.StatusOK, 6, 1, "*", nil},
 		{"nightly comparison version", "cl", semver.Version{Major: 999999, Minor: 99, Patch: 99}, "4593.0.0+dev-main-nightly-20261028", false, http.StatusOK, 6, 1, "*", nil},
-		{"release", "cl", semver.Version{Major: 4593}, "4593.0.0", false, http.StatusOK, 0, 0, "*", nil},
+		{"release", "cl", semver.Version{Major: 4593}, "4593.0.0", false, http.StatusOK, 6, 1, "*", nil},
 		{"missing artifacts", "cl", semver.Version{Major: 4593}, "4593.0.0+developer-build", false, http.StatusNotFound, 0, 1, "*", nil},
 		{"request failure", "cl", semver.Version{Major: 4593}, "4593.0.0+developer-build", false, 0, 0, 1, "*", errors.New("network failure")},
 		{"secure boot excludes ZFS", "cl", semver.Version{Major: 4593}, "4593.0.0+developer-build", true, http.StatusOK, 3, 1, "*", nil},
