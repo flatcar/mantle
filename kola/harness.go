@@ -253,11 +253,6 @@ func SkipUnavailableBincache(imageVersion, arch string) bool {
 		return false
 	}
 
-	if _, metadata, ok := strings.Cut(imageVersion, "+"); !ok || metadata == "" {
-		plog.Infof("Skipping test: %q is not a development image", imageVersion)
-		return true
-	}
-
 	url := fmt.Sprintf("https://bincache.flatcar-linux.net/images/%s/%s/version.txt", arch, imageVersion)
 	client := &http.Client{Timeout: 60 * time.Second}
 	reply, err := client.Head(url)

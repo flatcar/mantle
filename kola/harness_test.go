@@ -356,9 +356,9 @@ func TestSkipUnavailableBincache(t *testing.T) {
 		want         bool
 		probe        bool
 	}{
-		{name: "unknown", distribution: "cl", want: true},
-		{name: "release", distribution: "cl", version: "4593.0.0", want: true},
-		{name: "empty metadata", distribution: "cl", version: "4593.0.0+", want: true},
+		{name: "unknown", distribution: "cl", want: true, probe: true},
+		{name: "release", distribution: "cl", version: "4593.0.0", want: true, probe: true},
+		{name: "empty metadata", distribution: "cl", version: "4593.0.0+", want: true, probe: true},
 		{name: "available", distribution: "cl", version: "4593.0.0+dev-main-nightly-20261028", status: http.StatusOK, probe: true},
 		{name: "unavailable", distribution: "cl", version: "4593.0.0+dev-main-nightly-20261028", status: http.StatusNotFound, want: true, probe: true},
 		{name: "request failure", distribution: "cl", version: "4593.0.0+dev-main-nightly-20261028", err: errors.New("network failure"), want: true, probe: true},
