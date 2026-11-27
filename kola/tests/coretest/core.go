@@ -134,22 +134,25 @@ func TestUpdateEngine() error {
 
 	errc := make(chan error, 1)
 	go func() {
-		c := exec.Command("update_engine_client", "-status")
+		c := exec.Command(
+			"gdbus", "call", "--system",
+			"--dest", "org.chromium.UpdateEngine",
+			"--object-path", "/org/chromium/UpdateEngine",
+			"--method", "org.chromium.UpdateEngineInterface.GetStatus",
+		)
 		err := c.Run()
 		errc <- err
 	}()
 
 	select {
 	case <-time.After(CmdTimeout):
-		return fmt.Errorf("update_engine_client timed out after %s.", CmdTimeout)
+		return fmt.Errorf("update_engine dbus call timed out after %s.", CmdTimeout)
 	case err := <-errc:
 		if err != nil {
-			return err
+			return fmt.Errorf("update_engine dbus call failed: %v", err)
 		}
 		return nil
 	}
-
-	// FIXME(marineam): Test DBus directly
 }
 
 func TestDockerEcho() error {
