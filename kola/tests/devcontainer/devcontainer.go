@@ -58,7 +58,47 @@ export FEATURES="-ipc-sandbox -network-sandbox"
 emerge-gitclone
 emerge --getbinpkg --verbose coreos-sources
 zcat /proc/config.gz >/usr/src/linux/.config
-exec make -C /usr/src/linux "-j$(nproc)" modules_prepare V=1
+make -C /usr/src/linux "-j$(nproc)" modules_prepare V=1
+
+# Verify that the developer container can actually build an out-of-tree
+# kernel module against the prepared kernel tree, not just prepare the tree.
+# See https://github.com/flatcar/Flatcar/issues/310.
+#
+# /var/tmp is used (rather than the default /tmp) because it is backed by
+# disk here, mirroring the modules_prepare workdir - under qemu we might
+# not have enough memory for a tmpfs.
+module_dir="$(mktemp -d -p /var/tmp)"
+
+cat >"${module_dir}/hello.c" <<'MODULE_EOF'
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+
+static int __init hello_init(void)
+{
+	pr_info("flatcar out-of-tree module test: loaded\n");
+	return 0;
+}
+
+static void __exit hello_exit(void)
+{
+	pr_info("flatcar out-of-tree module test: unloaded\n");
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("Flatcar out-of-tree kernel module build test");
+MODULE_EOF
+
+cat >"${module_dir}/Kbuild" <<'KBUILD_EOF'
+obj-m := hello.o
+KBUILD_EOF
+
+make -C /usr/src/linux "-j$(nproc)" M="${module_dir}" modules V=1
+
+# The build must have produced a loadable, non-empty module object.
+test -s "${module_dir}/hello.ko"
 `)
 
 	scriptPrologTemplate = util.TrimLeftSpace(`
