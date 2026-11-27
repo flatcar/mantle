@@ -232,7 +232,12 @@ func (a *API) CreateServer(ctx context.Context, name string, networkId *string, 
 	var server *iaas.Server
 	server, err = wait.CreateServerWaitHandler(ctx, a.client, a.projectID, a.region, *serverResponse.Id).WaitWithContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error creating server wait: %s", err)
+		// The server exists but never became ACTIVE (e.g. "no valid host
+		// found"); remove it so it does not linger in ERROR state.
+		if derr := a.DeleteServer(ctx, *serverResponse.Id); derr != nil {
+			err = errors.Join(err, derr)
+		}
+		return nil, fmt.Errorf("error creating server wait: %w", err)
 	}
 
 	// It might happen that 'server' is returned as a nil pointer without errors.
@@ -253,6 +258,9 @@ func (a *API) CreateServer(ctx context.Context, name string, networkId *string, 
 			Labels: DefaultLabels,
 		}).Execute()
 		if err != nil {
+			if derr := a.DeleteServer(ctx, *server.Id); derr != nil {
+				err = errors.Join(err, derr)
+			}
 			return nil, fmt.Errorf("updating server labels: %w", err)
 		}
 		server = updated
@@ -269,18 +277,20 @@ func (a *API) GetServer(ctx context.Context, id string) (*Server, error) {
 	return &Server{server}, nil
 }
 
+// DeleteServer deletes the server and waits until it is gone, so that
+// dependent resources (public IP, security group, network) can be released.
 func (a *API) DeleteServer(ctx context.Context, id string) error {
-	server, err := a.client.GetServer(ctx, a.projectID, a.region, id).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to get server: %w", err)
-	}
-	if server == nil {
+	err := a.client.DeleteServer(ctx, a.projectID, a.region, id).Execute()
+	if isOpenAPINotFound(err) {
 		return nil
 	}
-
-	err = a.client.DeleteServer(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete server: %w", err)
+	}
+
+	_, err = wait.DeleteServerWaitHandler(ctx, a.client, a.projectID, a.region, id).WaitWithContext(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting for server deletion: %w", err)
 	}
 	return nil
 }
@@ -333,33 +343,17 @@ func (a *API) CreateNetwork(ctx context.Context, name string) (*Network, error) 
 }
 
 func (a *API) DeleteNetwork(ctx context.Context, id string) error {
-	network, err := a.client.GetNetwork(ctx, a.projectID, a.region, id).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to get network: %w", err)
-	}
-	if network == nil {
+	err := a.client.DeleteNetwork(ctx, a.projectID, a.region, id).Execute()
+	if isOpenAPINotFound(err) {
 		return nil
 	}
-
-	err = a.client.DeleteNetwork(ctx, a.projectID, a.region, id).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete network: %w", err)
 	}
-	return nil
-}
 
-func (a *API) RemoveSecurityGroupFromServer(ctx context.Context, serverID string, securityGroupID string) error {
-	err := a.client.RemoveSecurityGroupFromServer(ctx, a.projectID, a.region, serverID, securityGroupID).Execute()
+	_, err = wait.DeleteNetworkWaitHandler(ctx, a.client, a.projectID, a.region, id).WaitWithContext(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to remove security group from server: %w", err)
-	}
-	return nil
-}
-
-func (a *API) RemoveNetworkFromServer(ctx context.Context, serverID string, networkID string) error {
-	err := a.client.RemoveNetworkFromServer(ctx, a.projectID, a.region, serverID, networkID).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to remove server from network: %w", err)
+		return fmt.Errorf("waiting for network deletion: %w", err)
 	}
 	return nil
 }
@@ -498,6 +492,9 @@ func (a *API) CreateIPAddress(ctx context.Context) (*PublicIP, error) {
 		return nil
 	})
 	if err != nil {
+		if derr := a.DeleteIPAddress(ctx, ipAddress.GetId()); derr != nil {
+			err = errors.Join(err, derr)
+		}
 		return nil, fmt.Errorf("failed to verify public IP labels: %w", err)
 	}
 	return &PublicIP{ipAddress}, nil
@@ -511,20 +508,31 @@ func (a *API) AttachPublicIPAddress(ctx context.Context, ipAddressId, serverId s
 	return nil
 }
 
-func (a *API) DeleteIPAddressByIP(ctx context.Context, ipAddress string) error {
-	publicIPs, err := a.client.ListPublicIPs(ctx, a.projectID, a.region).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to get public ips: %w", err)
+func (a *API) DetachPublicIPAddress(ctx context.Context, ipAddressId, serverId string) error {
+	err := a.client.RemovePublicIpFromServer(ctx, a.projectID, a.region, serverId, ipAddressId).Execute()
+	if isOpenAPINotFound(err) {
+		return nil
 	}
-	for _, ip := range publicIPs.GetItems() {
-		if *ip.Ip == ipAddress {
-			err = a.client.DeletePublicIP(ctx, a.projectID, a.region, *ip.Id).Execute()
-			if err != nil {
-				return fmt.Errorf("failed to delete public ip %s: %w", ip.GetIp(), err)
-			}
-		}
+	if err != nil {
+		return fmt.Errorf("failed to remove public ip from server: %w", err)
 	}
 	return nil
+}
+
+// DeleteIPAddress deletes a public IP by ID. The deletion is retried as the
+// API may still report the IP as associated shortly after a detach or server
+// deletion.
+func (a *API) DeleteIPAddress(ctx context.Context, ipAddressId string) error {
+	return util.Retry(6, 5*time.Second, func() error {
+		err := a.client.DeletePublicIP(ctx, a.projectID, a.region, ipAddressId).Execute()
+		if isOpenAPINotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("failed to delete public ip %s: %w", ipAddressId, err)
+		}
+		return nil
+	})
 }
 
 func isOpenAPINotFound(err error) bool {
