@@ -38,10 +38,14 @@ func init() {
 		// This test is normally not related to the cloud environment unless the OEM tools would unexpectedly listen on ports
 		Platforms: []string{"qemu", "qemu-unpriv"},
 		// be sure to notice listeners in the docker stack
-		UserData: conf.ContainerLinuxConfig(`systemd:
+		UserData: conf.Butane(`---
+variant: flatcar
+version: 1.0.0
+systemd:
   units:
     - name: docker.service
-      enabled: true`),
+      enabled: true
+`),
 		MinVersion: semver.Version{Major: 1967},
 	})
 	register.Register(&register.Test{
